@@ -26,6 +26,26 @@ def getItemTemplateDict():
     return result
 
 class Converter:
+
+    champ_names_old = ['TwistedFate', 'Akali', 'Sivir', 'KogMaw', 'Nidalee', 'MegaGnar', 'Kled', 'Rengar', 'Tristana', 'Volibear',
+     'Leona', 'Amumu', 'Katarina', 'Sona', 'Velkoz', 'Nautilus', 'Rumble', 'Veigar', 'Teemo', 'Annie', 'Blitzcrank',
+     'Alistar', 'Rhaast', 'Kassadin', 'Ziggs', 'MasterYi', 'LeeSin', 'Karthus', 'Varus', 'Vi', 'Udyr', 'Nami',
+     'Orianna', 'Talon', 'Rakan', 'Sejuani', 'Yasuo', 'Karma', 'Ryze', 'Gangplank', 'Kindred', 'Leblanc', 'Zed',
+     'Syndra', 'Warwick', 'Ashe', 'Malzahar', 'Cassiopeia', 'Ekko', 'Morgana', 'Lulu', 'Vayne', 'Khazix', 'Jinx',
+     'XinZhao', 'Aatrox', 'Thresh', 'Kaisa', 'Ahri', 'Lucian', 'Ezreal', 'Maokai', 'Jhin', 'Skarner', 'Trundle',
+     'Jayce', 'Zoe', 'Swain', 'Elise', 'Hecarim', 'Irelia', 'Fizz', 'Singed', 'DrMundo', 'Camille', 'Soraka',
+     'JarvanIV', 'Nocturne', 'Fiddlesticks', 'Rammus', 'Quinn', 'Kennen', 'Gnar', 'Zac', 'Mordekaiser', 'Renekton',
+     'Anivia', 'Nasus', 'Pyke', 'Shyvana', 'ShadowAssassin', 'Tryndamere', 'Bard', 'Kalista', 'MissFortune', 'Caitlyn',
+     'Janna', 'AurelionSol', 'Kayle', 'Urgot', 'Xerath', 'Corki', 'Malphite', 'Ornn', 'Graves', 'Garen', 'Nunu',
+     'RekSai', 'Zilean', 'Ivern', 'Kayn', 'Pantheon', 'Illaoi', 'Twitch', 'Draven', 'Diana', 'TahmKench', 'Viktor',
+     'Xayah', 'MonkeyKing', 'Galio', 'Vladimir', 'Shen', 'Lux', 'Braum', 'Olaf', 'Taric', 'Zyra', 'Lissandra',
+     'Evelynn', 'Poppy', 'Gragas', 'Azir', 'Darius', 'Jax', 'Heimerdinger', 'Shaco', 'Fiora', 'Yorick', 'Sion', 'Brand',
+     'Riven', 'Chogath', 'Taliyah']
+
+    item_names_old = ["Sorcerer's Shoes", "Mikael's Crucible", 'Travel Size Elixir of Wrath', 'Crystalline Bracer', 'The Hex Core mk-2', 'Chain Vest', 'Quicksilver Sash', 'Hexdrinker', 'Cloak of Agility', 'The Hex Core mk-1', 'Edge of Night', 'Righteous Glory', 'Pilfered Health Potion', 'The Obsidian Cleaver', 'Last Whisper', 'Boots of Swiftness', "Bami's Cinder", 'Salvation', 'Sweeping Lens (Trinket)', 'Lost Chapter', 'Adaptive Helm', 'Blasting Wand', "Zhonya's Hourglass", "Randuin's Omen", "Youmuu's Ghostblade", 'Null-Magic Mantle', 'Sapphire Crystal', 'Maw of Malmortius', 'Warding Totem (Trinket)', 'Pilfered Potion of Rouge', 'Circlet of the Iron Solari', "Lord Dominik's Regards", 'Frozen Mallet', 'Guardian Angel', "Seeker's Armguard", 'Hextech Protobelt-01', 'Pickaxe', 'Hextech Gunblade', 'Long Sword', 'Duskblade of Draktharr', 'Blade of the Ruined King', "Death's Dance", 'Locket of the Iron Solari', 'Infernal Mask', "Zhonya's Paradox", 'Mortal Reminder', 'Rod of Ages', 'Infinity Edge', 'Iceborn Gauntlet', 'Elixir of Sorcery', 'Trinity Fusion', 'Travel Size Elixir of Sorcery', "Shurelya's Reverie", 'Hextech Revolver', "Liandry's Torment", 'Bilgewater Cutlass', 'Gargoyle Stoneplate', 'Travel Size Elixir of Iron', 'Enchantment: Bloodrazor: Sabre', 'Elixir of Iron', "Dead Man's Plate", 'Glacial Shroud', 'Hextech GLP-800', 'Oblivion Orb', "Death's Daughter", 'Rapid Firecannon', 'Sheen', 'Health Potion', "Executioner's Calling", 'Amplifying Tome', 'Haunting Guise', 'Vampiric Scepter', 'Muramana', 'Ohmwrecker', 'Stormrazor', 'Raise Morale', 'Fire at Will', "Warmog's Armor", "Targon's Brace", 'Sunfire Cape', "Seraph's Embrace", 'Fiendish Codex', 'Serrated Dirk', "Brawler's Gloves", 'Void Staff', "Knight's Vow", 'Kircheis Shard', "Mejai's Soulstealer", 'Remnant of the Ascended', "Nomad's Medallion", "Warden's Mail", 'Zeal', 'Remnant of the Watchers', 'Cull', "Doran's Shield", "Guinsoo's Rageblade", "Doran's Blade", "Hunter's Machete", 'The Dark Seal', 'Mana Potion', 'Essence Reaver', "Poacher's Dirk", "Luden's Echo", 'Trinity Force', "Zeke's Convergence", 'Phage', 'Twin Shadows', 'Statikk Shiv', "Wit's End", "Runaan's Hurricane", 'Spellbinder', "Jaurim's Fist", 'Phantom Dancer', 'Negatron Cloak', 'Recurve Bow', "Caulfield's Warhammer", 'Dagger', "Doran's Ring", 'Minion Dematerializer', 'Ninja Tabi', "Sterak's Gage", "Rabadon's Deathcap", 'Bramble Vest', "Zz'Rot Portal", "Banshee's Veil", "Rylai's Crystal Scepter", 'Boots of Mobility', 'Ancient Coin', 'Tiamat', 'Thornmail', 'Total Biscuit of Rejuvenation', "Spellthief's Edge", 'Needlessly Large Rod', "Nashor's Tooth", 'Stinger', 'Lich Bane', 'Forbidden Idol', 'Relic Shield', 'Ardent Censer', 'Elixir of Wrath', 'Ravenous Hydra', 'Banner of Command', "Stalker's Blade", 'Broken Stopwatch', 'Tear of the Goddess', 'Frozen Heart', 'Mercurial Scimitar', 'Aegis of the Legion', "Mercury's Treads", 'Refillable Potion', 'The Black Cleaver', 'Spirit Visage', 'Frostfang', "Skirmisher's Sabre", 'Kindlegem', 'Stopwatch', 'Corrupting Potion', 'Redemption', 'Aether Wisp', "Hunter's Potion", 'Slightly Magical Boots', 'The Bloodthirster', 'Abyssal Mask', 'Enchantment: Warrior', 'Enchantment: Runic Echoes', 'Control Ward', 'Farsight Alteration', 'B. F. Sword', 'Faerie Charm', "Athene's Unholy Grail", "Giant's Belt", "Hunter's Talisman", 'Enchantment: Cinderhulk', 'Chalice of Harmony', 'The Black Spear', 'Prototype Hex Core', 'Pilfered Stealth Ward', "Rabadon's Deathcrown", 'Rejuvenation Bead', 'Enchantment: Runic Echoes: Sabre', 'Enchantment: Bloodrazor', "Archangel's Staff", 'Sly Sack of Gold', 'Enchantment: Warrior: Sabre', "Spectre's Cowl", 'Molten Edge', 'Raptor Cloak', 'Perfect Hex Core', 'Oracle Alteration', 'Enchantment: Cinderhulk: Sabre', 'Titanic Hydra', "Berserker's Greaves", 'Catalyst of Aeons', 'Manamune', 'Boots of Speed', 'Ionian Boots of Lucidity', 'Cloth Armor', 'Ruby Crystal', 'Morellonomicon', 'Forgefire Cape', 'Remnant of the Aspect']
+    champ_int2string_old = dict(zip(np.arange(0,len(champ_names_old)), champ_names_old))
+    item_int2string_old = dict(zip(np.arange(0, len(item_names_old)), item_names_old))
+
     def __init__(self):
         with open('res/item2id') as f:
             item2id = json.load(f)
@@ -79,7 +99,6 @@ class Converter:
 
     def champ_id2int(self, id):
         return self.champ_id2int_dict[id]
-
 
 def getSelfTemplateDict():
     self_paths = glob.glob("res/self_indicator/*.png")
