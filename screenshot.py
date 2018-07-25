@@ -5,6 +5,7 @@ import keyboard
 import glob
 import os
 from predict import Predictor
+import time
 
 def take_screenshot():
     image = pyautogui.screenshot()
@@ -13,21 +14,22 @@ def take_screenshot():
 
     
 def take_windows_screenshot():
-    winpath = 'L:\Spiele\Screenshots\*'
-    list_of_files = glob.glob(winpath) # * means all if need specific format then *.csv
+    folder = 'L:\Spiele\Screenshots\*'
+    list_of_files = glob.glob(folder) # * means all if need specific format then *.csv
     latest_file = max(list_of_files, key=os.path.getctime)
-    screenshot = cv.imread(winpath*latest_file)
+    print(latest_file)
+    screenshot = cv.imread("L:\Spiele\Screenshots\Screen15.png")
     return screenshot
     
+
 predict = Predictor()
-# while True:
-    # keyboard.wait('tab')
-    # print('you pressed tab')
-    # screenshot = take_screenshot()
-champs, spells, items, self_ = predict(cv.imread('/Users/DorjeeBaro/Downloads/3.png'))
-print(champs)
-print(spells)
-print(items)
-print(self_)
-# cv.imshow('fds', screenshot)
-# cv.waitKey(0)
+while True:
+    keyboard.wait('tab+f12')
+    print('you pressed tab + f12')
+    time.sleep(2)
+    screenshot = take_windows_screenshot()
+    champs, spells, items, self_ = predict(screenshot)
+    print(champs)
+    print(spells)
+    print(items)
+    print(self_)

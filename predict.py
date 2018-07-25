@@ -17,6 +17,7 @@ class Predictor:
         elif (x,y) == (1600,900):
             const = constants.Res_1600_900()
         elif (x,y) == (1920,1080):
+            print("Using resolution 1920,1080")
             const = constants.Res_1920_1080()
 
         print("Initializing neural networks...")
@@ -100,18 +101,26 @@ class Predictor:
             X = [cv.cvtColor(x, cv.COLOR_BGR2GRAY) for x in X]
             X = [np.reshape(x, (*x.shape[:2], 1)) for x in X]
 
-        # counter = 0
+        counter = 0
         # for i in X:
-        #     cv.imshow(str(counter), i)
-        #     counter +=1
+            # cv.imshow(str(counter), i)
+            # counter +=1
         # cv.waitKey(0)
-
+         
         with graph.as_default():
-            Y_pred = model.predict(X)
+            
+            Y_pred = model.predict([X[0]])
+            
+            
+            # Y_pred = model.predict(X)
             if not binary:
                 Y_pred_mapped  = [mapper[np.argmax(y)] for y in Y_pred]
             else:
                 Y_pred_mapped = np.argmax(Y_pred)
+            print(Y_pred_mapped)    
+            cv.imshow('lol', X[0])
+            cv.waitKey(0)
+            
             return Y_pred_mapped
 
     def __call__(self, img):

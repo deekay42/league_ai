@@ -1,4 +1,3 @@
-from jq import jq
 import json
 from random import *
 import tensorflow as tf
@@ -41,16 +40,13 @@ class DataLoader:
             print("Unable to read numpy files. Is your disc full or do you not have write access to directory?")
 
     def get_train_data(self, game_config):
-        # X = [self.transform_X_to_one_hot(x, game_config) for x in self.train_x]
-        X = self.train_x
-        Y = [self.transform_Y_to_one_hot(y, game_config) for y in self.train_y]
-        return np.array(X), np.array(Y)
+        return np.array(self.train_x), np.array(self.train_y)
 
     def get_test_data(self, game_config):
         # X = [self.transform_X_to_one_hot(x, game_config) for x in self.test_x]
         X = self.test_x
         Y = [self.transform_Y_to_one_hot(y, game_config) for y in self.test_y]
-        return np.array(X), np.array(Y)
+        return np.array(self.train_x), np.array(self.train_y)
 
     def transform_X_to_one_hot(self, X, game_config):
         champs_per_game = game_config["champs_per_game"]
