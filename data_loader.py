@@ -7,6 +7,7 @@ import numpy as np
 import glob
 from itertools import zip_longest
 import utils
+from tflearn.data_utils import shuffle, to_categorical
 
 TRAIN_TEST_SPLIT=0.95
 
@@ -17,7 +18,7 @@ SPELLS_PER_CHAMP = 2
 SPELLS_PER_GAME = SPELLS_PER_CHAMP * CHAMPS_PER_GAME
 NUM_FEATURES = CHAMPS_PER_GAME + CHAMPS_PER_GAME * SPELLS_PER_CHAMP + CHAMPS_PER_GAME * MAX_ITEMS_PER_CHAMP
 
-class LoadData:
+class DataLoader:
 
     def __init__(self):
         self.train_x = []
@@ -38,6 +39,31 @@ class LoadData:
         except FileNotFoundError as error:
             repr(error)
             print("Unable to read numpy files. Is your disc full or do you not have write access to directory?")
+
+    def get_train_data(self, game_config):
+        # X = [self.transform_X_to_one_hot(x, game_config) for x in self.train_x]
+        X = self.train_x
+        Y = [self.transform_Y_to_one_hot(y, game_config) for y in self.train_y]
+        return np.array(X), np.array(Y)
+
+    def get_test_data(self, game_config):
+        # X = [self.transform_X_to_one_hot(x, game_config) for x in self.test_x]
+        X = self.test_x
+        Y = [self.transform_Y_to_one_hot(y, game_config) for y in self.test_y]
+        return np.array(X), np.array(Y)
+
+    def transform_X_to_one_hot(self, X, game_config):
+        champs_per_game = game_config["champs_per_game"]
+        total_num_champs = game_config["total_num_champs"]
+        total_num_items = game_config["total_num_items"]
+        champs_one_hot = to_categorical(X[0:champs_per_game], nb_classes=total_num_champs)
+        items_one_hot = to_categorical(X[champs_per_game:], nb_classes=total_num_items)
+        result = np.concatenate([np.ravel(champs_one_hot), np.ravel(items_one_hot)])
+        return result
+
+    def transform_Y_to_one_hot(self, Y, game_config):
+        items_one_hot = to_categorical(Y, nb_classes=game_config["total_num_items"])
+        return np.ravel(items_one_hot)
 
     @staticmethod
     def _uniformShuffle(l1, l2):
@@ -113,11 +139,11 @@ class LoadData:
     def readFromNumpyFiles(self):
         # Creates a dataset that reads all of the examples from filenames.
         self.train_x_filenames = sorted(glob.glob('training_data/processed/*_train_x.npz'))
-        # self.test_x_filenames = sorted(glob.glob('training_data/processed/*_test_x.npz'))
+        self.test_x_filenames = sorted(glob.glob('training_data/processed/*_test_x.npz'))
         self.train_y_filenames = sorted(glob.glob('training_data/processed/*_train_y.npz'))
-        # self.test_y_filenames = sorted(glob.glob('training_data/processed/*_test_y.npz'))
+        self.test_y_filenames = sorted(glob.glob('training_data/processed/*_test_y.npz'))
 
-        if not self.train_x_filenames or not self.train_y_filenames:
+        if not self.train_x_filenames or not self.train_y_filenames or not self.test_x_filenames or not self.test_y_filenames:
             raise FileNotFoundError("No train or test numpy files in that location")
 
         for i in self.train_x_filenames:
@@ -126,12 +152,12 @@ class LoadData:
         for i in self.train_y_filenames:
             data = np.load(i)['arr_0']
             self.train_y += list(data)
-        # for i in self.test_x_filenames:
-        #     data = np.load(i)
-        #     self.test_x += data
-        # for i in self.test_y_filenames:
-        #     data = np.load(i)
-        #     self.test_y += data
+        for i in self.test_x_filenames:
+            data = np.load(i)['arr_0']
+            self.test_x += list(data)
+        for i in self.test_y_filenames:
+            data = np.load(i)['arr_0']
+            self.test_y += list(data)
 
 
     def writeToNumpyFile(self, chunksize):
@@ -151,5 +177,3 @@ class LoadData:
 
             counter += 1
             print("{}% complete".format(int(min(100, 100*(counter*chunksize/len(x))))))
-
-l = LoadData()
