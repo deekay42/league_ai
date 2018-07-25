@@ -26,8 +26,8 @@ class Predictor:
         spell_model_path = './best_models/spells/my_model'
         self_model_path = './best_models/self/my_model'
 
-        self.champ_mapper = utils.champ_int2string()
-        self.item_mapper = utils.item_int2string()
+        self.champ_mapper = utils.Converter().champ_int2string_old
+        self.item_mapper = utils.Converter().item_int2string_old
         self.spell_mapper = utils.int2spell()
         self.self_mapper = [0,1]
         
@@ -101,7 +101,7 @@ class Predictor:
             X = [cv.cvtColor(x, cv.COLOR_BGR2GRAY) for x in X]
             X = [np.reshape(x, (*x.shape[:2], 1)) for x in X]
 
-        counter = 0
+        # counter = 0
         # for i in X:
             # cv.imshow(str(counter), i)
             # counter +=1
@@ -117,9 +117,9 @@ class Predictor:
                 Y_pred_mapped  = [mapper[np.argmax(y)] for y in Y_pred]
             else:
                 Y_pred_mapped = np.argmax(Y_pred)
-            print(Y_pred_mapped)    
-            cv.imshow('lol', X[0])
-            cv.waitKey(0)
+            # print(Y_pred_mapped)
+            # cv.imshow('lol', X[0])
+            # cv.waitKey(0)
             
             return Y_pred_mapped
 
