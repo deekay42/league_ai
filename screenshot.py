@@ -29,5 +29,5 @@ while True:
     print(spells)
     print(items)
     print(self_)
-# cv.imshow('fds', screenshot)
-# cv.waitKey(0)
+    # cv.imshow('fds', screenshot)
+    # cv.waitKey(0)

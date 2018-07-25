@@ -248,7 +248,7 @@ def cvtVert(std, current):
     return std
     
 def getResolution():
-    return 1440,900
+    return 1600,900
     # TODO:
 
 
