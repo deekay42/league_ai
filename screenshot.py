@@ -9,7 +9,6 @@ from predict import Predictor
 def take_screenshot():
     image = pyautogui.screenshot()
     image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
-    cv.imwrite('fds.png', image)
     return image
 
     
@@ -24,11 +23,11 @@ predict = Predictor()
 while True:
     keyboard.wait('tab')
     print('you pressed tab')
-    screenshot = take_windows_screenshot()
+    screenshot = take_screenshot()
     champs, spells, items, self_ = predict(screenshot)
     print(champs)
     print(spells)
     print(items)
     print(self_)
-    # cv.imshow('fds', screenshot)
-    # cv.waitKey(0)
+# cv.imshow('fds', screenshot)
+# cv.waitKey(0)

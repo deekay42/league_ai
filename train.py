@@ -1,3 +1,4 @@
+import constants
 import network
 import cv2 as cv
 import utils
@@ -94,18 +95,20 @@ def load_elems_test_data():
     # items_y = np.ravel([[items_mapper[y] for y in items_y_set] for items_y_set in items_y])
 
 
-    champ_coords = utils.generateChampCoordinates(utils.CHAMP_LEFT_X_OFFSET, utils.CHAMP_RIGHT_X_OFFSET,
-                                                utils.CHAMP_Y_DIFF,
-                                                utils.CHAMP_Y_OFFSET)
-    item_coords = utils.generateItemCoordinates(utils.ITEM_X_DIFF, utils.ITEM_LEFT_X_OFFSET, utils.ITEM_RIGHT_X_OFFSET,
-                                                utils.ITEM_Y_DIFF,
-                                                utils.ITEM_Y_OFFSET)
-    spell_coords = utils.generateSpellCoordinates(utils.SPELL_SIZE, utils.SPELL_LEFT_X_OFFSET,
-                                                  utils.SPELL_RIGHT_X_OFFSET, utils.SPELL_Y_DIFF,
-                                                  utils.SPELL_Y_OFFSET)
-    self_coords = utils.generateChampCoordinates(utils.SELF_INDICATOR_LEFT_X_OFFSET,
-                                                  utils.SELF_INDICATOR_RIGHT_X_OFFSET, utils.SELF_INDICATOR_Y_DIFF,
-                                                  utils.SELF_INDICATOR_Y_OFFSET)
+    champ_coords = utils.generateChampCoordinates(constants.CHAMP_LEFT_X_OFFSET, constants.CHAMP_RIGHT_X_OFFSET,
+                                                  constants.CHAMP_Y_DIFF,
+                                                  constants.CHAMP_Y_OFFSET)
+    item_coords = utils.generateItemCoordinates(constants.ITEM_X_DIFF, constants.ITEM_LEFT_X_OFFSET,
+                                                constants.ITEM_RIGHT_X_OFFSET,
+                                                constants.ITEM_Y_DIFF,
+                                                constants.ITEM_Y_OFFSET)
+    spell_coords = utils.generateSpellCoordinates(constants.SPELL_SIZE, constants.SPELL_LEFT_X_OFFSET,
+                                                  constants.SPELL_RIGHT_X_OFFSET, constants.SPELL_Y_DIFF,
+                                                  constants.SPELL_Y_OFFSET)
+    self_coords = utils.generateChampCoordinates(constants.SELF_INDICATOR_LEFT_X_OFFSET,
+                                                 constants.SELF_INDICATOR_RIGHT_X_OFFSET,
+                                                 constants.SELF_INDICATOR_Y_DIFF,
+                                                 constants.SELF_INDICATOR_Y_OFFSET)
 
     champ_coords = np.reshape(champ_coords, (-1, 2))
     item_coords = np.reshape(item_coords, (-1, 2))
@@ -118,13 +121,13 @@ def load_elems_test_data():
     items_x = []
     self_x = []
     for img in imgs:
-        spells_x_raw = [img[coord[1]:coord[1] + utils.SPELL_SIZE, coord[0]:coord[0] + utils.SPELL_SIZE] for coord in spell_coords]
+        spells_x_raw = [img[coord[1]:coord[1] + constants.SPELL_SIZE, coord[0]:coord[0] + constants.SPELL_SIZE] for coord in spell_coords]
         spells_x += [cv.resize(img, network.SPELL_IMG_SIZE, cv.INTER_AREA) for img in spells_x_raw]
-        items_x_raw = [img[coord[1]:coord[1] + utils.ITEM_SIZE, coord[0]:coord[0] + utils.ITEM_SIZE] for coord in item_coords]
+        items_x_raw = [img[coord[1]:coord[1] + constants.ITEM_SIZE, coord[0]:coord[0] + constants.ITEM_SIZE] for coord in item_coords]
         items_x += [cv.resize(img, network.ITEM_IMG_SIZE, cv.INTER_AREA) for img in items_x_raw]
-        champs_x_raw = [img[coord[1]:coord[1] + utils.CHAMP_SIZE, coord[0]:coord[0] + utils.CHAMP_SIZE] for coord in champ_coords]
+        champs_x_raw = [img[coord[1]:coord[1] + constants.CHAMP_SIZE, coord[0]:coord[0] + constants.CHAMP_SIZE] for coord in champ_coords]
         champs_x += [cv.resize(img, network.CHAMP_IMG_SIZE, cv.INTER_AREA) for img in champs_x_raw]
-        self_x_raw = [img[coord[1]:coord[1] + utils.SELF_INDICATOR_SIZE, coord[0]:coord[0] + utils.SELF_INDICATOR_SIZE] for coord in self_coords]
+        self_x_raw = [img[coord[1]:coord[1] + constants.SELF_INDICATOR_SIZE, coord[0]:coord[0] + constants.SELF_INDICATOR_SIZE] for coord in self_coords]
         self_x += [cv.resize(img, network.SELF_IMG_SIZE, cv.INTER_AREA) for img in self_x_raw]
 
     champs_x = [cv.cvtColor(champ, cv.COLOR_BGR2GRAY) for champ in champs_x]
