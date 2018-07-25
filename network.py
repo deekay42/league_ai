@@ -1,4 +1,3 @@
-from tflearn.layers.conv import highway_conv_2d
 from tflearn.layers.estimator import regression
 
 import tflearn
@@ -6,11 +5,11 @@ import tflearn
 from tflearn.activations import relu
 
 from tflearn.layers.conv import avg_pool_2d, conv_2d, max_pool_2d
-from tflearn.layers.core import dropout, flatten, fully_connected, input_data
+from tflearn.layers.core import fully_connected, input_data, dropout, highway
+from tflearn.layers.embedding_ops import embedding
 from tflearn.layers.merge_ops import merge
 from tflearn.layers.normalization import batch_normalization
-
-
+import tensorflow as tf
 
 SPELL_IMG_SIZE = (20,20)
 ITEM_IMG_SIZE = (24,24)
@@ -191,3 +190,61 @@ def classify_self(img_size, num_elements, learning_rate):
 
     return regression(net, optimizer='adam', learning_rate=learning_rate,
                       loss='binary_crossentropy', name='target')
+
+def multi_class_acc(pred, target, input):
+    pred = tf.reshape(pred, [-1, 5, 204])
+    target = tf.reshape(target, [-1, 5, 204])
+    correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+    # all_labels_true = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 2)
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    return acc
+
+def multi_class_top_k_acc(preds, targets, input):
+    preds = tf.reshape(preds, [-1, 204])
+    targets = tf.reshape(targets, [-1, 204])
+    targets = tf.cast(targets, tf.int32)
+    correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 6)
+    acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+    return acc
+
+
+def classify_next_item(game_config, network_config):
+    champs_per_game = game_config["champs_per_game"]
+    total_num_champs = game_config["total_num_champs"]
+    total_num_items = game_config["total_num_items"]
+    items_per_champ = game_config["items_per_champ"]
+    champs_per_team = game_config["champs_per_team"]
+
+    learning_rate = network_config["learning_rate"]
+    champ_emb_dim = network_config["champ_emb_dim"]
+    item_emb_dim = network_config["item_emb_dim"]
+
+    total_champ_dim = champs_per_game
+    total_item_dim = champs_per_game * items_per_champ
+
+    in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
+    champ_ids = in_vec[:, 0:champs_per_game]
+    item_ids =  in_vec[:, champs_per_game:]
+    champs = embedding(champ_ids, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE, scope="champ_scope")
+    items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE, scope="item_scope")
+
+    s = tf.reshape(items, [-1, champs_per_game, items_per_champ, item_emb_dim])
+    su = tf.reduce_sum(s, axis=2)
+    items_by_champ = tf.reshape(su, [-1, champs_per_game*item_emb_dim])
+    champs = tf.reshape(champs, [-1, champs_per_game*champ_emb_dim])
+
+    final_input_layer = merge([champs,items_by_champ], mode='concat', axis=1)
+
+    net = relu(batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation=None, regularizer="L2")))
+
+    for i in range(7):
+        net = highway(net, 512,  activation='elu', regularizer="L2", transform_dropout=0.7)
+    
+    
+    net = fully_connected(net, total_num_items * champs_per_team , activation=None)
+
+    # TODO: consider using item embedding layer as output layer...
+    return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True, learning_rate=learning_rate,
+                      loss='binary_crossentropy', name='target', metric=multi_class_top_k_acc)
+
+

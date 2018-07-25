@@ -85,6 +85,61 @@ def getItemTemplateDict():
 
     return result
 
+class Converter:
+    def __init__(self):
+        with open('res/item2id') as f:
+            item2id = json.load(f)
+        ids = sorted(list(item2id.values()))
+        seq_num = np.arange(0, len(ids), dtype=np.uint16)
+        self.item_id2int_dict = dict(zip(ids, seq_num))
+
+        with open('res/champ2id') as f:
+            champ2id = json.load(f)
+        ids = sorted(list(champ2id.values()))
+        seq_num = np.arange(0, len(ids), dtype=np.uint16)
+        self.champ_id2int_dict = dict(zip(ids, seq_num))
+
+    def item_id2int(self, id):
+        if id == [] or id == 0:
+            return 0
+        # there are some items in the training files that have since been deleted
+        if id == 3711:
+            id = 1412
+        elif id == 1409:
+            id = 1413
+        elif id == 1408:
+            id = 1412
+        elif id == 1410:
+            id = 1402
+        elif id == 3034:
+            id = 1037
+        elif id == 1418:
+            id = 1419
+        elif id == 2420:
+            id = 2423
+        elif id == 2420:
+            id = 2423
+        elif id == 2421:
+            id = 2424
+        elif id == 2045:
+            id = 0
+        elif id == 2049:
+            id = 0
+		#this is really bad TODO:
+        elif id == 2301:
+            id = 3092
+        elif id == 2302:
+            id = 3092
+        elif id == 2303:
+            id = 3092
+
+
+
+        return self.item_id2int_dict[id]
+
+    def champ_id2int(self, id):
+        return self.champ_id2int_dict[id]
+
 
 def getSelfTemplateDict():
     self_paths = glob.glob("res/self_indicator/*.png")
@@ -245,5 +300,19 @@ def init_champ_data_for_training():
     imgs = list(item_imgs.values())
     newkeys = np.arange(0, len(list(item_imgs.keys())))
     return dict(zip(newkeys, imgs))
+    
+def cvtHrzt(std, current):
+    return int(current * std/1440)
+    
+def cvtVert(std, current):
+    return int(current * std/900)
+    
+def getResolution():
+    return 1600,900
+    # TODO:
+
+
+
+
 
 

@@ -1,5 +1,4 @@
 import network
-import generate
 import cv2 as cv
 import utils
 import numpy as np
@@ -9,6 +8,7 @@ from threading import Thread
 from queue import Queue
 import tflearn
 from tflearn.data_utils import shuffle, to_categorical
+import data_loader
 
 num_epochs = 100000
 batch_size = 128
@@ -16,7 +16,7 @@ num_examples = 1024
 
 NUM_SPELLS = 9
 NUM_CHAMPS = 144
-NUM_ITEMS = 202
+NUM_ITEMS = 203
 NUM_SELF = 1
 
 
@@ -332,4 +332,62 @@ def train_self_network():
     training_data_generator = lambda img_size: generate.generate_training_data(self_imgs, 1024, img_size)
     train_elements_network(training_data_generator, network.SELF_IMG_SIZE, NUM_SELF, 0.01)
 
-# train_self_network()
+
+def train_elements_network():
+    game_config = \
+        {
+            "champs_per_game": 10,
+            "champs_per_team": 5,
+            "total_num_champs": 141,
+            "total_num_items": 204,
+            "items_per_champ": 6
+        }
+
+    network_config = \
+        {
+            "learning_rate": 0.001,
+            "champ_emb_dim": 6,
+            "item_emb_dim": 7
+        }
+    print("Building model")
+    net = network.classify_next_item(game_config, network_config)
+    model = tflearn.DNN(net, tensorboard_verbose=0)
+#    model.load('models/my_model3')
+    print("Loading training data")
+    dataloader = data_loader.DataLoader()
+    print("Encoding training data")
+    X, Y = dataloader.get_train_data(game_config)
+
+    # X = np.array([X[0], X[1]])
+    # Y = np.array([Y[0], Y[1]])
+    print("Encoding test data")
+    X_test, Y_test = dataloader.get_test_data(game_config)
+    print("Commencing training")
+    with open("models/accuracies", "w") as f:
+        class MonitorCallback(tflearn.callbacks.Callback):
+
+            def on_epoch_end(self, training_state):
+                f.write("Epoch {0} train accuracy {1:.2f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
+                f.flush()
+
+        monitorCallback = MonitorCallback()
+        for epoch in range(num_epochs):
+            model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
+                      show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
+            pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
+            print("eval is {0:.4f}".format(pred1[0]))
+            # prediction = model.predict(X)
+            # print("Prediction 1 is")
+            # for i,j in zip(prediction[0], Y[0]):
+            #     print("{0:.2f} {1:.2f}".format(i,j))
+            # print("Prediction 2 is")
+            # for i,j in zip(prediction[1], Y[1]):
+            #     print("{0:.2f} {1:.2f}".format(i,j))
+
+
+            model.save('models/my_model' + str(epoch + 1))
+            f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
+            f.flush()
+
+
+#train_elements_network()

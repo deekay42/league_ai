@@ -7,8 +7,11 @@ import tensorflow as tf
 import train
 
 class Predictor:
-
     def __init__(self):
+    
+        x,y = utils.getResolution()
+        
+        utils.cvtHrzt(utils.CHAMP_LEFT_X_OFFSET, x)
         print("Initializing neural networks...")
         champ_model_path = './best_models/champs/my_model'
         item_model_path = './best_models/items/my_model'
@@ -19,26 +22,41 @@ class Predictor:
         self.item_mapper = utils.item_int2string()
         self.spell_mapper = utils.int2spell()
         self.self_mapper = [0,1]
-
-        self.champ_coords = utils.generateChampCoordinates(utils.CHAMP_LEFT_X_OFFSET, utils.CHAMP_RIGHT_X_OFFSET,
-                                                      utils.CHAMP_Y_DIFF,
-                                                      utils.CHAMP_Y_OFFSET)
+        
+        my_champ_leftx_offset = utils.cvtHrzt(utils.CHAMP_LEFT_X_OFFSET, x)
+        my_champ_rightx_offset = utils.cvtHrzt(utils.CHAMP_RIGHT_X_OFFSET, x)
+        my_champ_ydiff = utils.cvtHrzt(utils.CHAMP_Y_DIFF, y)
+        my_champ_yoffset = utils.cvtHrzt(utils.CHAMP_Y_OFFSET, y)
+        
+        self.champ_coords = utils.generateChampCoordinates(my_champ_leftx_offset, my_champ_rightx_offset, my_champ_ydiff, my_champ_yoffset)
         self.champ_coords = np.reshape(self.champ_coords, (-1, 2))
-        self.item_coords = utils.generateItemCoordinates(utils.ITEM_X_DIFF, utils.ITEM_LEFT_X_OFFSET,
-                                                    utils.ITEM_RIGHT_X_OFFSET, utils.ITEM_Y_DIFF,
-                                                    utils.ITEM_Y_OFFSET)
+        
+        
+        my_item_leftx_offset = utils.cvtHrzt(utils.ITEM_LEFT_X_OFFSET, x)
+        my_item_rightx_offset = utils.cvtHrzt(utils.ITEM_RIGHT_X_OFFSET, x)
+        my_item_ydiff = utils.cvtHrzt(utils.ITEM_Y_DIFF, y)
+        my_item_yoffset = utils.cvtHrzt(utils.ITEM_Y_OFFSET, y)
+        
+        self.item_coords = utils.generateItemCoordinates(utils.ITEM_X_DIFF, my_item_leftx_offset, my_item_rightx_offset, my_item_ydiff, my_item_yoffset)
         self.item_coords = np.reshape(self.item_coords, (-1, 2))
         self.item_coords = [(coord[0] + 2, coord[1] + 2) for coord in self.item_coords]
-        self.spell_coords = utils.generateSpellCoordinatesLarge(utils.SPELL_SIZE, utils.SPELL_LEFT_X_OFFSET,
-                                                           utils.SPELL_RIGHT_X_OFFSET, utils.SPELL_Y_DIFF_LARGE,
-                                                           utils.SPELL_Y_OFFSET)
+        
+        my_spell_leftx_offset = utils.cvtHrzt(utils.SPELL_LEFT_X_OFFSET, x)
+        my_spell_rightx_offset = utils.cvtHrzt(utils.SPELL_RIGHT_X_OFFSET, x)
+        my_spell_ydiff = utils.cvtHrzt(utils.SPELL_Y_DIFF_LARGE, y)
+        my_spell_yoffset = utils.cvtHrzt(utils.SPELL_Y_OFFSET, y)
+        
+        self.spell_coords = utils.generateSpellCoordinatesLarge(utils.SPELL_SIZE, my_spell_leftx_offset, my_spell_rightx_offset, my_spell_ydiff, my_spell_yoffset)
         self.spell_coords = np.reshape(self.spell_coords, (-1, 2))
 
-        self.self_coords = utils.generateChampCoordinates(utils.SELF_INDICATOR_LEFT_X_OFFSET,
-                                                     utils.SELF_INDICATOR_RIGHT_X_OFFSET, utils.SELF_INDICATOR_Y_DIFF,
-                                                     utils.SELF_INDICATOR_Y_OFFSET)
+        
+        my_self_leftx_offset = utils.cvtHrzt(utils.SELF_INDICATOR_LEFT_X_OFFSET, x)
+        my_self_rightx_offset = utils.cvtHrzt(utils.SELF_INDICATOR_RIGHT_X_OFFSET, x)
+        my_self_ydiff = utils.cvtHrzt(utils.SELF_INDICATOR_Y_DIFF, y)
+        my_self_yoffset = utils.cvtHrzt(utils.SELF_INDICATOR_Y_OFFSET, y)
+        
+        self.self_coords = utils.generateChampCoordinates(my_self_leftx_offset, my_self_rightx_offset, my_self_ydiff, my_self_yoffset)
         self.self_coords = np.reshape(self.self_coords, (-1, 2))
-
 
         self.champ_graph = tf.Graph()
         with self.champ_graph.as_default():
@@ -48,16 +66,14 @@ class Predictor:
 
         self.item_graph = tf.Graph()
         with self.item_graph.as_default():
-            item_network = network.classify_items(network.ITEM_IMG_SIZE, train.NUM_ITEMS, 0.001)
+            item_network = network.classify_items(network.ITEM_IMG_SIZE, 202, 0.001)
             self.item_model = tflearn.DNN(item_network)
             self.item_model.load(item_model_path)
-
         self.spell_graph = tf.Graph()
         with self.spell_graph.as_default():
             spell_network = network.classify_spells(network.SPELL_IMG_SIZE, train.NUM_SPELLS, 0.001)
             self.spell_model = tflearn.DNN(spell_network)
             self.spell_model.load(spell_model_path)
-
         self.self_graph = tf.Graph()
         with self.self_graph.as_default():
             self_network = network.classify_self(network.SELF_IMG_SIZE, train.NUM_SELF, 0.001)
@@ -65,7 +81,8 @@ class Predictor:
             self.self_model.load(self_model_path)
         print("Complete")
 
-
+    
+            
     def predictElements(self, img, coords, size, mapper, model, graph, model_input_size, bw=False, binary=False):
         X = [img[coord[1]:coord[1] + size, coord[0]:coord[0] + size] for coord in coords]
         X = [cv.resize(img, model_input_size, cv.INTER_AREA) for img in X]
