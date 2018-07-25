@@ -20,14 +20,14 @@ def take_windows_screenshot():
     return screenshot
     
 predict = Predictor()
-while True:
-    keyboard.wait('tab')
-    print('you pressed tab')
-    screenshot = take_screenshot()
-    champs, spells, items, self_ = predict(screenshot)
-    print(champs)
-    print(spells)
-    print(items)
-    print(self_)
-    # cv.imshow('fds', screenshot)
-    # cv.waitKey(0)
+# while True:
+    # keyboard.wait('tab')
+    # print('you pressed tab')
+    # screenshot = take_screenshot()
+champs, spells, items, self_ = predict(cv.imread('/Users/DorjeeBaro/Downloads/3.png'))
+print(champs)
+print(spells)
+print(items)
+print(self_)
+# cv.imshow('fds', screenshot)
+# cv.waitKey(0)

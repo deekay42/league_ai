@@ -14,8 +14,10 @@ class Predictor:
         x,y = utils.getResolution()
         if (x,y) == (1440,900):
             const = constants.Res_1440_900()
-        elif (x,y) == (1600,900)    :
+        elif (x,y) == (1600,900):
             const = constants.Res_1600_900()
+        elif (x,y) == (1920,1080):
+            const = constants.Res_1920_1080()
 
         print("Initializing neural networks...")
         champ_model_path = './best_models/champs/my_model'
@@ -44,7 +46,7 @@ class Predictor:
         
         self.item_coords = utils.generateItemCoordinates(const.ITEM_X_DIFF, my_item_leftx_offset, my_item_rightx_offset, my_item_ydiff, my_item_yoffset)
         self.item_coords = np.reshape(self.item_coords, (-1, 2))
-        self.item_coords = [(coord[0] + 2, coord[1] + 2) for coord in self.item_coords]
+        self.item_coords = [(coord[0] + const.ITEM_INNER_OFFSET, coord[1] + const.ITEM_INNER_OFFSET) for coord in self.item_coords]
         
         my_spell_leftx_offset = utils.cvtHrzt(const.SPELL_LEFT_X_OFFSET, x)
         my_spell_rightx_offset = utils.cvtHrzt(const.SPELL_RIGHT_X_OFFSET, x)
