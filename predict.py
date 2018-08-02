@@ -18,13 +18,21 @@ class Predictor:
             const = constants.Res_1600_900()
         elif (x,y) == (1920,1080):
             print("Using resolution 1920,1080")
-            const = constants.Res_1920_1080()
+            const = constants.Res_16_9()
+        summ_names_displayed = utils.summ_names_displayed()
+        if summ_names_displayed:
+            item_x_offset = -9
+            item_y_offset = 11
+        else:
+            item_x_offset = 0
+            item_y_offset = 0
 
         print("Initializing neural networks...")
         champ_model_path = './best_models/champs/my_model'
         item_model_path = './best_models/items/my_model'
         spell_model_path = './best_models/spells/my_model'
         self_model_path = './best_models/self/my_model'
+        next_item_model_path = './best_models/next_items/my_model'
 
         self.champ_mapper = utils.Converter().champ_int2string_old
         self.item_mapper = utils.Converter().item_int2string_old
@@ -47,7 +55,7 @@ class Predictor:
         
         self.item_coords = utils.generateItemCoordinates(const.ITEM_X_DIFF, my_item_leftx_offset, my_item_rightx_offset, my_item_ydiff, my_item_yoffset)
         self.item_coords = np.reshape(self.item_coords, (-1, 2))
-        self.item_coords = [(coord[0] + const.ITEM_INNER_OFFSET, coord[1] + const.ITEM_INNER_OFFSET) for coord in self.item_coords]
+        self.item_coords = [(coord[0] + const.ITEM_INNER_OFFSET+item_x_offset, coord[1] + const.ITEM_INNER_OFFSET+item_y_offset) for coord in self.item_coords]
         
         my_spell_leftx_offset = utils.cvtHrzt(const.SPELL_LEFT_X_OFFSET, x)
         my_spell_rightx_offset = utils.cvtHrzt(const.SPELL_RIGHT_X_OFFSET, x)
@@ -87,8 +95,14 @@ class Predictor:
             self_network = network.classify_self(network.SELF_IMG_SIZE, train.NUM_SELF, 0.001)
             self.self_model = tflearn.DNN(self_network)
             self.self_model.load(self_model_path)
+        self.next_graph = tf.Graph()
+        # with self.next_graph.as_default():
+        next_network = network.classify_next_item(network.game_config, network.next_network_config)
+        self.next_model = tflearn.DNN(next_network, tensorboard_verbose=0)
+        self.next_model.load(next_item_model_path)
 
         self.const = const
+        self.cvt = utils.Converter()
         print("Complete")
 
     
@@ -108,25 +122,15 @@ class Predictor:
         # cv.waitKey(0)
          
         with graph.as_default():
-            
-            Y_pred = model.predict([X[0]])
-            
-            
-            # Y_pred = model.predict(X)
+
+            Y_pred = model.predict(X)
             if not binary:
                 Y_pred_mapped  = [mapper[np.argmax(y)] for y in Y_pred]
             else:
                 Y_pred_mapped = np.argmax(Y_pred)
-            # print(Y_pred_mapped)
-            # cv.imshow('lol', X[0])
-            # cv.waitKey(0)
-            
             return Y_pred_mapped
 
-    def __call__(self, img):
-        return self.predictSBElems(img)
-
-    def predictSBElems(self, img):
+    def predict_sb_elems(self, img):
 
         champs = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_mapper, self.champ_model, self.champ_graph,
                                       network.CHAMP_IMG_SIZE, True)
@@ -134,11 +138,32 @@ class Predictor:
         items = self.predictElements(img, self.item_coords, self.const.ITEM_SIZE, self.item_mapper, self.item_model, self.item_graph,
                                      network.ITEM_IMG_SIZE)
 
-        spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
-                                      network.SPELL_IMG_SIZE)
+        # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
+        #                               network.SPELL_IMG_SIZE)
 
         self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_mapper, self.self_model,
                                      self.self_graph,
                                      network.SELF_IMG_SIZE, True, True)
 
-        return champs, spells, items, self_
+        print(champs)
+        print(items)
+        print(self_)
+        # from string to id
+        champs = [self.cvt.champ_string2id_dict[champ] for champ in champs]
+        # from id to int
+        champs = [self.cvt.champ_id2int(champ) for champ in champs]
+
+        items = [self.cvt.item_string2id_dict[item] for item in items]
+        # from id to int
+        items = [self.cvt.item_id2int(item) for item in items]
+
+        return np.array(champs), np.array(items), np.array(self_)
+
+    def predict_next_items(self, X):
+        # with next_graph.as_default():
+        Y_pred = self.next_model.predict(X)
+        Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
+        Y_pred = np.argmax(Y_pred, axis=1)
+        Y_pred_mapped = [self.cvt.item_int2string(y) for y in Y_pred]
+        return Y_pred_mapped, Y_pred
+

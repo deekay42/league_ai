@@ -39,14 +39,11 @@ class DataLoader:
             repr(error)
             print("Unable to read numpy files. Is your disc full or do you not have write access to directory?")
 
-    def get_train_data(self, game_config):
+    def get_train_data(self):
         return np.array(self.train_x), np.array(self.train_y)
 
-    def get_test_data(self, game_config):
-        # X = [self.transform_X_to_one_hot(x, game_config) for x in self.test_x]
-        X = self.test_x
-        Y = [self.transform_Y_to_one_hot(y, game_config) for y in self.test_y]
-        return np.array(self.train_x), np.array(self.train_y)
+    def get_test_data(self):
+        return np.array(self.test_x), np.array(self.test_y)
 
     def transform_X_to_one_hot(self, X, game_config):
         champs_per_game = game_config["champs_per_game"]
@@ -173,3 +170,5 @@ class DataLoader:
 
             counter += 1
             print("{}% complete".format(int(min(100, 100*(counter*chunksize/len(x))))))
+
+# l = DataLoader()

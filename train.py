@@ -336,35 +336,39 @@ def train_self_network():
     train_elements_network(training_data_generator, network.SELF_IMG_SIZE, NUM_SELF, 0.01)
 
 
-def train_elements_network():
-    game_config = \
-        {
-            "champs_per_game": 10,
-            "champs_per_team": 5,
-            "total_num_champs": 141,
-            "total_num_items": 204,
-            "items_per_champ": 6
-        }
 
-    network_config = \
-        {
-            "learning_rate": 0.001,
-            "champ_emb_dim": 6,
-            "item_emb_dim": 7
-        }
+
+def train_elements_network():
+
     print("Building model")
-    net = network.classify_next_item(game_config, network_config)
+    net = network.classify_next_item(network.game_config, network.next_network_config)
     model = tflearn.DNN(net, tensorboard_verbose=0)
-#    model.load('models/my_model3')
+    # model.load('./best_models/next_items/my_model')
     print("Loading training data")
     dataloader = data_loader.DataLoader()
     print("Encoding training data")
-    X, Y = dataloader.get_train_data(game_config)
+    X, Y = dataloader.get_train_data()
 
-    # X = np.array([X[0], X[1]])
-    # Y = np.array([Y[0], Y[1]])
     print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data(game_config)
+    X_test, Y_test = dataloader.get_test_data()
+    cvt = utils.Converter()
+    # counter = 0
+    # for x,y in zip(X_test, Y_test):
+    #     counter += 1
+    #     x_champs_str = [cvt.champ_int2string(champ) for champ in x[:10]]
+    #     x_items_str = [cvt.item_int2string(item) for item in x[10:]]
+    #     y_items_str = [cvt.item_int2string(item) for item in y]
+    #
+    #     x_champs_id = [cvt.champ_int2id(champ) for champ in x[:10]]
+    #     x_items_id = [cvt.item_int2id(item) for item in x[10:]]
+    #     y_items_id = [cvt.item_int2id(item) for item in y]
+    #
+    #     Y_pred = model.predict([x])
+    #     Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
+    #     Y_pred = np.argmax(Y_pred, axis=1)
+    #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
+    #     a = 42
+
     print("Commencing training")
     with open("models/accuracies", "w") as f:
         class MonitorCallback(tflearn.callbacks.Callback):
@@ -372,6 +376,7 @@ def train_elements_network():
             def on_epoch_end(self, training_state):
                 f.write("Epoch {0} train accuracy {1:.2f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
                 f.flush()
+                pass
 
         monitorCallback = MonitorCallback()
         for epoch in range(num_epochs):
@@ -391,6 +396,5 @@ def train_elements_network():
             model.save('models/my_model' + str(epoch + 1))
             f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
             f.flush()
-
 
 # train_elements_network()

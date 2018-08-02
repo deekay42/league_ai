@@ -207,6 +207,21 @@ def multi_class_top_k_acc(preds, targets, input):
     acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return acc
 
+game_config = \
+    {
+        "champs_per_game": 10,
+        "champs_per_team": 5,
+        "total_num_champs": 141,
+        "total_num_items": 204,
+        "items_per_champ": 6
+    }
+
+next_network_config = \
+    {
+        "learning_rate": 0.001,
+        "champ_emb_dim": 6,
+        "item_emb_dim": 7
+    }
 
 def classify_next_item(game_config, network_config):
     champs_per_game = game_config["champs_per_game"]
@@ -218,7 +233,7 @@ def classify_next_item(game_config, network_config):
     learning_rate = network_config["learning_rate"]
     champ_emb_dim = network_config["champ_emb_dim"]
     item_emb_dim = network_config["item_emb_dim"]
-
+                    
     total_champ_dim = champs_per_game
     total_item_dim = champs_per_game * items_per_champ
 
@@ -228,17 +243,20 @@ def classify_next_item(game_config, network_config):
     champs = embedding(champ_ids, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE, scope="champ_scope")
     items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE, scope="item_scope")
 
-    s = tf.reshape(items, [-1, champs_per_game, items_per_champ, item_emb_dim])
-    su = tf.reduce_sum(s, axis=2)
-    items_by_champ = tf.reshape(su, [-1, champs_per_game*item_emb_dim])
+    # summing up items for each summoner
+    # edit: this doesnt work. some items are unique and cannot be bought twice.
+    # summing up items causes predictions like double items
+    # individual_items = tf.reshape(items, [-1, champs_per_game, items_per_champ, item_emb_dim])
+    # summed_items = tf.reduce_sum(individual_items, axis=2)
+    items_by_champ = tf.reshape(items, [-1, champs_per_game*items_per_champ*item_emb_dim])
     champs = tf.reshape(champs, [-1, champs_per_game*champ_emb_dim])
 
     final_input_layer = merge([champs,items_by_champ], mode='concat', axis=1)
 
-    net = relu(batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation=None, regularizer="L2")))
+    net = relu(batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
 
-    for i in range(7):
-        net = highway(net, 512,  activation='elu', regularizer="L2", transform_dropout=0.7)
+    for i in range(5):
+        net = highway(net, 256,  activation='elu', regularizer="L2", transform_dropout=0.7)
     
     
     net = fully_connected(net, total_num_items * champs_per_team , activation=None)
