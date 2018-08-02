@@ -1,7 +1,7 @@
 import numpy as np
-import pyautogui
+# import pyautogui
 import cv2 as cv
-import keyboard
+# import keyboard
 import glob
 import os
 from predict import Predictor
@@ -13,11 +13,11 @@ import configparser
 class Main:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        config.read(path)
-        self.res = self.config['General']['Width'], self.config['General']['Height']
-        self.show_names_in_sb = self.config['HUD']['ShowSummonerNamesInScoreboard']
-        self.flipped_sb = self.config['HUD']['MirroredScoreboard']
-        self.predict = Predictor()
+        self.config.read("/Applications/League of Legends.app/Contents/LoL/Config/game.cfg")
+        self.res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        self.show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        self.flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        self.predict = Predictor(*self.res)
 
 
     @staticmethod
@@ -86,31 +86,36 @@ class Main:
     #         counter += 1
     #     return counter
 
+    def run(self):
 
-while True:
-    keyboard.wait('tab+f12')
-    print('you pressed tab + f12')
-    time.sleep(2)
-    screenshot = take_windows_screenshot()
-    champs, items, summ_index = predict.predict_sb_elems(screenshot)
-    items = np.reshape(items, (-1, 7))
-    items = items[:,:network.game_config["items_per_champ"]]
-    items = np.ravel(items)
-    if summ_index > 4:
-        print("switching teams!")
-        champs, items = swapTeams(champs, items)
-        summ_index -= 5
-    # items = swapItems(items)
-    # champs = swapChamps(champs)
-    next_items_input = np.concatenate([champs, items], axis=0)
-    next_items_str, next_items_int = predict.predict_next_items([next_items_input])
-    print(next_items_str)
+        while True:
+            # keyboard.wait('tab')
+            print('you pressed tab + f12')
+            time.sleep(2)
+            # screenshot = take_screenshot()
+            screenshot = cv.imread('fds_screenshot_25.07.2018.png')
+            champs, items, summ_index = self.predict.predict_sb_elems(screenshot)
+            items = np.reshape(items, (-1, 7))
+            items = items[:,:network.game_config["items_per_champ"]]
+            items = np.ravel(items)
+            if summ_index > 4:
+                print("switching teams!")
+                champs, items = swapTeams(champs, items)
+                summ_index -= 5
+            # items = swapItems(items)
+            # champs = swapChamps(champs)
+            next_items_input = np.concatenate([champs, items], axis=0)
+            next_items_str, next_items_int = self.predict.predict_next_items([next_items_input])
+            print(next_items_str)
+            cv.waitKey(0)
+            # while True:
+            #     empty_item_index = item_slots_left(items, summ_index)
+            #     if empty_item_index == -1:
+            #         break
+            #     items[summ_index*6 + empty_item_index] = next_items_int[summ_index]
+            #     next_items_input = np.concatenate([champs, items], axis=0)
+            #     next_items_str, next_items_int = predict.predict_next_items([next_items_input])
+            #     print(next_items_str)
 
-    # while True:
-    #     empty_item_index = item_slots_left(items, summ_index)
-    #     if empty_item_index == -1:
-    #         break
-    #     items[summ_index*6 + empty_item_index] = next_items_int[summ_index]
-    #     next_items_input = np.concatenate([champs, items], axis=0)
-    #     next_items_str, next_items_int = predict.predict_next_items([next_items_input])
-    #     print(next_items_str)
+m = Main()
+m.run()

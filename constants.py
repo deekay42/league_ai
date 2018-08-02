@@ -37,18 +37,18 @@ SPELL_MAX_SIZE = 40
 # 1440x900
 class Res_8_5:
 
-    CHAMP_LEFT_X_OFFSET = 335
-    CHAMP_RIGHT_X_OFFSET = 813
-    CHAMP_Y_OFFSET = 275
-    CHAMP_Y_DIFF = 64
-    CHAMP_SIZE = 23
+    CHAMP_LEFT_X_OFFSET = 373
+    CHAMP_RIGHT_X_OFFSET = 804
+    CHAMP_Y_OFFSET = 293
+    CHAMP_Y_DIFF = 57
+    CHAMP_SIZE = 21
 
-    ITEM_LEFT_X_OFFSET = 516
-    ITEM_RIGHT_X_OFFSET = 992
-    ITEM_Y_DIFF = 64
-    ITEM_Y_OFFSET = 276
-    ITEM_X_DIFF = 28
-    ITEM_SIZE = 24
+    ITEM_LEFT_X_OFFSET = 536
+    ITEM_RIGHT_X_OFFSET = 965
+    ITEM_Y_DIFF = 57
+    ITEM_Y_OFFSET = 293
+    ITEM_X_DIFF = 25
+    ITEM_SIZE = 21
     ITEM_INNER_OFFSET = 2
 
     SPELL_LEFT_X_OFFSET = 276
@@ -58,11 +58,11 @@ class Res_8_5:
     SPELL_Y_OFFSET = 267
     SPELL_SIZE = 22
 
-    SELF_INDICATOR_LEFT_X_OFFSET = 247
+    SELF_INDICATOR_LEFT_X_OFFSET = 295
     SELF_INDICATOR_RIGHT_X_OFFSET = 723
     SELF_INDICATOR_Y_DIFF = 64
-    SELF_INDICATOR_Y_OFFSET = 267
-    SELF_INDICATOR_SIZE = 15
+    SELF_INDICATOR_Y_OFFSET = 301
+    SELF_INDICATOR_SIZE = 12
 
     STD_WIDTH = 1440
     STD_HEIGHT = 900
@@ -133,45 +133,45 @@ class Res_4_3:
 class ResConverter:
 
     def __init__(self, x,y):
-        if x/y == 16/9:
+        if round(x/y, 4) == round(16/9, 4):
             self.selected_res = Res_16_9()
-        elif x/y == 8/5:
+        elif round(x/y, 4) == round(8/5, 4):
             self.selected_res = Res_8_5()
-        elif x/y == 4/3:
+        elif round(x/y, 4) == round(4/3, 4):
             self.selected_res = Res_4_3()
-        else
+        else:
             raise Exception("Screen resolution not supported: "+res)
 
-        self.CHAMP_LEFT_X_OFFSET = x * self.selected_res.CHAMP_LEFT_X_OFFSET/self.selected_res.STD_WIDTH
+        self.CHAMP_LEFT_X_OFFSET = int(x * self.selected_res.CHAMP_LEFT_X_OFFSET/self.selected_res.STD_WIDTH)
 
-        self.CHAMP_RIGHT_X_OFFSET = x * self.selected_res.CHAMP_RIGHT_X_OFFSET/self.selected_res.STD_WIDTH
+        self.CHAMP_RIGHT_X_OFFSET = int(x * self.selected_res.CHAMP_RIGHT_X_OFFSET/self.selected_res.STD_WIDTH)
 
-        self.CHAMP_Y_OFFSET = y * self.selected_res.CHAMP_Y_OFFSET/self.selected_res.STD_HEIGHT
+        self.CHAMP_Y_OFFSET = int(y * self.selected_res.CHAMP_Y_OFFSET/self.selected_res.STD_HEIGHT)
 
-        self.CHAMP_Y_DIFF = y * self.selected_res.CHAMP_Y_DIFF/self.selected_res.STD_HEIGHT
+        self.CHAMP_Y_DIFF = int(y * self.selected_res.CHAMP_Y_DIFF/self.selected_res.STD_HEIGHT)
 
-        self.CHAMP_SIZE = x * self.selected_res.CHAMP_SIZE/self.selected_res.STD_WIDTH
+        self.CHAMP_SIZE = int(x * self.selected_res.CHAMP_SIZE/self.selected_res.STD_WIDTH)
 
-        self.ITEM_LEFT_X_OFFSET = x * self.selected_res.ITEM_LEFT_X_OFFSET / self.selected_res.STD_WIDTH
+        self.ITEM_LEFT_X_OFFSET = int(x * self.selected_res.ITEM_LEFT_X_OFFSET / self.selected_res.STD_WIDTH)
 
-        self.ITEM_RIGHT_X_OFFSET = x * self.selected_res.ITEM_RIGHT_X_OFFSET / self.selected_res.STD_WIDTH
+        self.ITEM_RIGHT_X_OFFSET = int(x * self.selected_res.ITEM_RIGHT_X_OFFSET / self.selected_res.STD_WIDTH)
 
-        self.ITEM_Y_OFFSET = y * self.selected_res.ITEM_Y_OFFSET / self.selected_res.STD_HEIGHT
+        self.ITEM_Y_OFFSET = int(y * self.selected_res.ITEM_Y_OFFSET / self.selected_res.STD_HEIGHT)
 
-        self.ITEM_Y_DIFF = y * self.selected_res.ITEM_Y_DIFF / self.selected_res.STD_HEIGHT
+        self.ITEM_Y_DIFF = int(y * self.selected_res.ITEM_Y_DIFF / self.selected_res.STD_HEIGHT)
 
-        self.ITEM_SIZE = x * self.selected_res.ITEM_SIZE / self.selected_res.STD_WIDTH#
+        self.ITEM_SIZE = int(x * self.selected_res.ITEM_SIZE / self.selected_res.STD_WIDTH)
 
-        self.ITEM_X_DIFF = x * self.selected_res.ITEM_X_DIFF / self.selected_res.STD_WIDTH
+        self.ITEM_X_DIFF = int(x * self.selected_res.ITEM_X_DIFF / self.selected_res.STD_WIDTH)
 
-        self.ITEM_INNER_OFFSET = x * self.selected_res.ITEM_INNER_OFFSET / self.selected_res.STD_WIDTH
+        self.ITEM_INNER_OFFSET = int(x * self.selected_res.ITEM_INNER_OFFSET / self.selected_res.STD_WIDTH)
 
-        self.SELF_INDICATOR_LEFT_X_OFFSET = x * self.selected_res.SELF_INDICATOR_LEFT_X_OFFSET/self.selected_res.STD_WIDTH
+        self.SELF_INDICATOR_LEFT_X_OFFSET = int(x * self.selected_res.SELF_INDICATOR_LEFT_X_OFFSET/self.selected_res.STD_WIDTH)
 
-        self.SELF_INDICATOR_RIGHT_X_OFFSET = x * self.selected_res.SELF_INDICATOR_RIGHT_X_OFFSET/self.selected_res.STD_WIDTH
+        self.SELF_INDICATOR_RIGHT_X_OFFSET = int(x * self.selected_res.SELF_INDICATOR_RIGHT_X_OFFSET/self.selected_res.STD_WIDTH)
 
-        self.SELF_INDICATOR_Y_OFFSET = y * self.selected_res.SELF_INDICATOR_Y_OFFSET/self.selected_res.STD_HEIGHT
+        self.SELF_INDICATOR_Y_OFFSET = int(y * self.selected_res.SELF_INDICATOR_Y_OFFSET/self.selected_res.STD_HEIGHT)
 
-        self.SELF_INDICATOR_Y_DIFF = y * self.selected_res.SELF_INDICATOR_Y_DIFF/self.selected_res.STD_HEIGHT
+        self.SELF_INDICATOR_Y_DIFF = int(y * self.selected_res.SELF_INDICATOR_Y_DIFF/self.selected_res.STD_HEIGHT)
 
-        self.SELF_INDICATOR_SIZE = x * self.selected_res.SELF_INDICATOR_SIZE/self.selected_res.STD_WIDTH
+        self.SELF_INDICATOR_SIZE = int(x * self.selected_res.SELF_INDICATOR_SIZE/self.selected_res.STD_WIDTH)
