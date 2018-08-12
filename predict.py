@@ -128,7 +128,15 @@ class Predictor:
         # with next_graph.as_default():
         Y_pred = self.next_model.predict(X)
         Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
-        Y_pred = np.argmax(Y_pred, axis=1)
-        Y_pred_mapped = [self.cvt.item_int2string(y) for y in Y_pred]
+        Y_pred_mapped = []
+        counter = 0
+        for y in Y_pred:
+            pred = np.argmax(y)
+            if pred == 0:
+                pred = np.argmax(y[1:])
+                print("High uncertainty!"+counter)
+                counter += 1
+            pred_mapped = self.cvt.item_int2string(pred)
+            Y_pred_mapped.append(pred_mapped)
         return Y_pred_mapped, Y_pred
 

@@ -30,9 +30,9 @@ class Converter:
     champ_names_old = ['TwistedFate', 'Akali', 'Sivir', 'KogMaw', 'Nidalee', 'MegaGnar', 'Kled', 'Rengar', 'Tristana', 'Volibear',
      'Leona', 'Amumu', 'Katarina', 'Sona', 'VelKoz', 'Nautilus', 'Rumble', 'Veigar', 'Teemo', 'Annie', 'Blitzcrank',
      'Alistar', 'Rhaast', 'Kassadin', 'Ziggs', 'MasterYi', 'LeeSin', 'Karthus', 'Varus', 'Vi', 'Udyr', 'Nami',
-     'Orianna', 'Talon', 'Rakan', 'Sejuani', 'Yasuo', 'Karma', 'Ryze', 'Gangplank', 'Kindred', 'Leblanc', 'Zed',
+     'Orianna', 'Talon', 'Rakan', 'Sejuani', 'Yasuo', 'Karma', 'Ryze', 'Gangplank', 'Kindred', 'LeBlanc', 'Zed',
      'Syndra', 'Warwick', 'Ashe', 'Malzahar', 'Cassiopeia', 'Ekko', 'Morgana', 'Lulu', 'Vayne', 'KhaZix', 'Jinx',
-     'XinZhao', 'Aatrox', 'Thresh', 'Kaisa', 'Ahri', 'Lucian', 'Ezreal', 'Maokai', 'Jhin', 'Skarner', 'Trundle',
+     'XinZhao', 'Aatrox', 'Thresh', 'KaiSa', 'Ahri', 'Lucian', 'Ezreal', 'Maokai', 'Jhin', 'Skarner', 'Trundle',
      'Jayce', 'Zoe', 'Swain', 'Elise', 'Hecarim', 'Irelia', 'Fizz', 'Singed', 'Dr.Mundo', 'Camille', 'Soraka',
      'JarvanIV', 'Nocturne', 'Fiddlesticks', 'Rammus', 'Quinn', 'Kennen', 'Gnar', 'Zac', 'Mordekaiser', 'Renekton',
      'Anivia', 'Nasus', 'Pyke', 'Shyvana', 'ShadowAssassin', 'Tryndamere', 'Bard', 'Kalista', 'MissFortune', 'Caitlyn',
@@ -80,6 +80,9 @@ class Converter:
         keys = list(champ2id.keys())
         keys = [key.replace(" ", "") for key in keys]
         self.champ_string2id_dict = dict(zip(keys, champ2id.values()))
+        self.champ_string2id_dict["MegaGnar"] = self.champ_string2id_dict["Gnar"]
+        self.champ_string2id_dict["Rhaast"] = self.champ_string2id_dict["Kayn"]
+        self.champ_string2id_dict["ShadowAssassin"] = self.champ_string2id_dict["Kayn"]
 
 
     def champ_int2id(self, id):

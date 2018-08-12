@@ -4,7 +4,7 @@ import tflearn
 # Data loading and preprocessing
 from tflearn.activations import relu
 
-from tflearn.layers.conv import avg_pool_2d, conv_2d, max_pool_2d
+from tflearn.layers.conv import avg_pool_2d, conv_2d, max_pool_2d, conv_1d
 from tflearn.layers.core import fully_connected, input_data, dropout, highway
 from tflearn.layers.embedding_ops import embedding
 from tflearn.layers.merge_ops import merge
@@ -203,7 +203,7 @@ def multi_class_top_k_acc(preds, targets, input):
     preds = tf.reshape(preds, [-1, 204])
     targets = tf.reshape(targets, [-1, 204])
     targets = tf.cast(targets, tf.int32)
-    correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 6)
+    correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 4)
     acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return acc
 
@@ -220,7 +220,9 @@ next_network_config = \
     {
         "learning_rate": 0.001,
         "champ_emb_dim": 6,
-        "item_emb_dim": 7
+        "item_emb_dim": 7,
+        "all_items_emb_dim": 10,
+        "champ_all_items_emb_dim": 12
     }
 
 def classify_next_item(game_config, network_config):
@@ -233,7 +235,9 @@ def classify_next_item(game_config, network_config):
     learning_rate = network_config["learning_rate"]
     champ_emb_dim = network_config["champ_emb_dim"]
     item_emb_dim = network_config["item_emb_dim"]
-                    
+    all_items_emb_dim = network_config["all_items_emb_dim"]
+    champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
+
     total_champ_dim = champs_per_game
     total_item_dim = champs_per_game * items_per_champ
 
@@ -243,17 +247,32 @@ def classify_next_item(game_config, network_config):
     champs = embedding(champ_ids, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE, scope="champ_scope")
     items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE, scope="item_scope")
 
-    # summing up items for each summoner
-    # edit: this doesnt work. some items are unique and cannot be bought twice.
-    # summing up items causes predictions like double items
-    # individual_items = tf.reshape(items, [-1, champs_per_game, items_per_champ, item_emb_dim])
-    # summed_items = tf.reduce_sum(individual_items, axis=2)
-    items_by_champ = tf.reshape(items, [-1, champs_per_game*items_per_champ*item_emb_dim])
-    champs = tf.reshape(champs, [-1, champs_per_game*champ_emb_dim])
+    items_by_champ = tf.reshape(items, [-1, items_per_champ * item_emb_dim])
+    summed_items_by_champ_emb = fully_connected(items_by_champ, all_items_emb_dim, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE,
+                                                scope="item_sum_scope")
+    summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
 
-    final_input_layer = merge([champs,items_by_champ], mode='concat', axis=1)
+    champs_with_items = merge([champs, summed_items_by_champ], mode='concat', axis=2)
+    champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim + all_items_emb_dim))
+    champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+                                            reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+    champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game, champ_all_items_emb_dim))
+    champs_with_items_emb_vs = tf.reshape(champs_with_items_emb, (-1, 2, champs_per_team, champ_all_items_emb_dim))
+    champs_with_items_emb_vs = tf.transpose(champs_with_items_emb_vs, perm=[0, 2, 1, 3])
+    champs_with_items_emb_vs = tf.reshape(champs_with_items_emb_vs, (-1, champs_per_game, champ_all_items_emb_dim))
 
-    net = relu(batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
+    conv1 = conv_1d(champs_with_items_emb, 256, 1, regularizer="L2", strides=1)
+    conv2 = conv_1d(champs_with_items_emb_vs, 256, 2, regularizer="L2", strides=2)
+    conv3 = conv_1d(champs_with_items_emb, 256, 5, regularizer="L2", strides=5)
+
+    conv1 = tf.reshape(conv1, (-1, 10*256))
+    conv2 = tf.reshape(conv2, (-1, 5*256))
+    conv3 = tf.reshape(conv3, (-1, 512))
+
+    final_input_layer = merge([conv1, conv2, conv3], mode='concat', axis=1)
+    net = relu(
+        batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
 
     for i in range(5):
         net = highway(net, 256,  activation='elu', regularizer="L2", transform_dropout=0.7)

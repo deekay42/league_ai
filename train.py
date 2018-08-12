@@ -343,7 +343,7 @@ def train_elements_network():
     print("Building model")
     net = network.classify_next_item(network.game_config, network.next_network_config)
     model = tflearn.DNN(net, tensorboard_verbose=0)
-    # model.load('./best_models/next_items/my_model')
+    model.load('./models/my_model1')
     print("Loading training data")
     dataloader = data_loader.DataLoader()
     print("Encoding training data")
@@ -397,4 +397,4 @@ def train_elements_network():
             f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
             f.flush()
 
-# train_elements_network()
+train_elements_network()
