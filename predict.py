@@ -72,7 +72,7 @@ class Predictor:
 
     
             
-    def predictElements(self, img, coords, size, mapper, model, graph, model_input_size, bw=False, binary=False):
+    def predictElements(self, img, coords, size, model, graph, model_input_size, bw=False, binary=False):
         X = [img[coord[1]:coord[1] + size, coord[0]:coord[0] + size] for coord in coords]
         X = [cv.resize(img, model_input_size, cv.INTER_AREA) for img in X]
 
@@ -87,20 +87,14 @@ class Predictor:
         # cv.waitKey(0)
          
         with graph.as_default():
-
-            Y_pred = model.predict(X)
-            if not binary:
-                Y_pred_mapped  = [mapper[np.argmax(y)] for y in Y_pred]
-            else:
-                Y_pred_mapped = np.argmax(Y_pred)
-            return Y_pred_mapped
+            return model.predict(X)
 
     def predict_sb_elems(self, img):
 
-        champs = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_mapper, self.champ_model, self.champ_graph,
+        champs_int = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_model, self.champ_graph,
                                       network.CHAMP_IMG_SIZE, True)
 
-        items = self.predictElements(img, self.item_coords, self.const.ITEM_SIZE, self.item_mapper, self.item_model, self.item_graph,
+        items_int = self.predictElements(img, self.item_coords, self.const.ITEM_SIZE, self.item_model, self.item_graph,
                                      network.ITEM_IMG_SIZE)
 
         # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
@@ -110,33 +104,33 @@ class Predictor:
                                      self.self_graph,
                                      network.SELF_IMG_SIZE, True, True)
 
-        print(champs)
-        print(items)
+        champs_str = [self.cvt.champ_int2string_old[champ] for champ in champs_int]
+        items_str = [self.cvt.item_int2string_old[champ] for champ in items_int]
+
+        print(champs_str)
+        print(items_str)
         print(self_)
         # from string to id
-        champs = [self.cvt.champ_string2id_dict[champ] for champ in champs]
-        # from id to int
-        champs = [self.cvt.champ_id2int(champ) for champ in champs]
+        champs_id = [self.cvt.champ_string2id_dict[champ] for champ in champs_str]
+        items_id = [self.cvt.item_string2id_dict[item] for item in items_str]
 
-        items = [self.cvt.item_string2id_dict[item] for item in items]
-        # from id to int
-        items = [self.cvt.item_id2int(item) for item in items]
-
-        return np.array(champs), np.array(items), np.array(self_)
+        return np.array(champs_int), np.array(champs_id), np.array(items_int), np.array(items_id), np.array(self_)
 
     def predict_next_items(self, X):
         # with next_graph.as_default():
-        Y_pred = self.next_model.predict(X)
-        Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
-        Y_pred_mapped = []
+        Y_pred_int = self.next_model.predict(X)
+        Y_pred_int = np.reshape(Y_pred_int, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
+        Y_pred_str = []
         counter = 0
-        for y in Y_pred:
-            pred = np.argmax(y)
-            if pred == 0:
-                pred = np.argmax(y[1:])
+        for y in Y_pred_int:
+            pred_int = np.argmax(y)
+            if pred_int == 0:
+                pred_int = np.argmax(y[1:])
                 print("High uncertainty!"+counter)
                 counter += 1
-            pred_mapped = self.cvt.item_int2string(pred)
-            Y_pred_mapped.append(pred_mapped)
-        return Y_pred_mapped, Y_pred
+            pred_str = self.cvt.item_int2string(pred_int)
+            pred_id = self.cvt.item_string2id(pred_str)
+            Y_pred_str.append(pred_mapped)
+            Y_pred_id.append(pred_id)
+        return Y_pred_int, Y_pred_id, Y_pred_str
 

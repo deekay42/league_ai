@@ -225,6 +225,7 @@ next_network_config = \
         "champ_all_items_emb_dim": 12
     }
 
+
 def classify_next_item(game_config, network_config):
     champs_per_game = game_config["champs_per_game"]
     total_num_champs = game_config["total_num_champs"]
@@ -242,46 +243,115 @@ def classify_next_item(game_config, network_config):
     total_item_dim = champs_per_game * items_per_champ
 
     in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
-    champ_ids = in_vec[:, 0:champs_per_game]
-    item_ids =  in_vec[:, champs_per_game:]
-    champs = embedding(champ_ids, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE, scope="champ_scope")
-    items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE, scope="item_scope")
+    #  10 elements long
+    champ_ints = in_vec[:, 0:champs_per_game]
+    # 60 elements long
+    item_ints = in_vec[:, champs_per_game:]
+    champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
+                       scope="champ_scope")
+    # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
+    #                   scope="item_scope")
 
-    items_by_champ = tf.reshape(items, [-1, items_per_champ * item_emb_dim])
-    summed_items_by_champ_emb = fully_connected(items_by_champ, all_items_emb_dim, bias=False, activation=None,
+    items_by_champ = tf.reshape(item_ints, [-1, items_per_champ])
+    items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
+    items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=1)
+
+    summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot, item_emb_dim, bias=False, activation=None,
                                                 reuse=tf.AUTO_REUSE,
                                                 scope="item_sum_scope")
-    summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
+    summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
+    champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
 
-    champs_with_items = merge([champs, summed_items_by_champ], mode='concat', axis=2)
-    champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim + all_items_emb_dim))
-    champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
-                                            reuse=tf.AUTO_REUSE, scope="champ_item_scope")
-    champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game, champ_all_items_emb_dim))
-    champs_with_items_emb_vs = tf.reshape(champs_with_items_emb, (-1, 2, champs_per_team, champ_all_items_emb_dim))
-    champs_with_items_emb_vs = tf.transpose(champs_with_items_emb_vs, perm=[0, 2, 1, 3])
-    champs_with_items_emb_vs = tf.reshape(champs_with_items_emb_vs, (-1, champs_per_game, champ_all_items_emb_dim))
+    # summed_items_by_team1 = summed_items_by_champ[:, :champs_per_team * item_emb_dim]
+    # summed_items_by_team2 = summed_items_by_champ[:, champs_per_team * item_emb_dim:]
+    # champs_team1 = champs[:, :champs_per_team * champ_emb_dim]
+    # champs_team2 = champs[:, champs_per_team * champ_emb_dim:]
+    #
+    # team1 = merge([champs_team1, summed_items_by_team1], mode='concat', axis=1)
+    # team2 = merge([champs_team2, summed_items_by_team2], mode='concat', axis=1)
+    #
+    # team1_score = fully_connected(team1, 10, bias=False, activation=None,
+    #                               reuse=tf.AUTO_REUSE,
+    #                               scope="team_sum_scope")
+    # team2_score = fully_connected(team2, 10, bias=False, activation=None,
+    #                               reuse=tf.AUTO_REUSE,
+    #                               scope="team_sum_scope")
 
-    conv1 = conv_1d(champs_with_items_emb, 256, 1, regularizer="L2", strides=1)
-    conv2 = conv_1d(champs_with_items_emb_vs, 256, 2, regularizer="L2", strides=2)
-    conv3 = conv_1d(champs_with_items_emb, 256, 5, regularizer="L2", strides=5)
+    final_input_layer = merge([champs, summed_items_by_champ], mode='concat', axis=1)
 
-    conv1 = tf.reshape(conv1, (-1, 10*256))
-    conv2 = tf.reshape(conv2, (-1, 5*256))
-    conv3 = tf.reshape(conv3, (-1, 512))
-
-    final_input_layer = merge([conv1, conv2, conv3], mode='concat', axis=1)
     net = relu(
         batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
 
     for i in range(5):
-        net = highway(net, 256,  activation='elu', regularizer="L2", transform_dropout=0.7)
-    
-    
-    net = fully_connected(net, total_num_items * champs_per_team , activation=None)
+        net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.7)
+
+    net = fully_connected(net, total_num_items * champs_per_team, activation=None)
 
     # TODO: consider using item embedding layer as output layer...
-    return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True, learning_rate=learning_rate,
+    return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
+                      learning_rate=learning_rate,
                       loss='binary_crossentropy', name='target', metric=multi_class_top_k_acc)
 
+
+# def classify_next_item(game_config, network_config):
+#     champs_per_game = game_config["champs_per_game"]
+#     total_num_champs = game_config["total_num_champs"]
+#     total_num_items = game_config["total_num_items"]
+#     items_per_champ = game_config["items_per_champ"]
+#     champs_per_team = game_config["champs_per_team"]
+#
+#     learning_rate = network_config["learning_rate"]
+#     champ_emb_dim = network_config["champ_emb_dim"]
+#     item_emb_dim = network_config["item_emb_dim"]
+#     all_items_emb_dim = network_config["all_items_emb_dim"]
+#     champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
+#
+#     total_champ_dim = champs_per_game
+#     total_item_dim = champs_per_game * items_per_champ
+#
+#     in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
+#     champ_ids = in_vec[:, 0:champs_per_game]
+#     item_ids = in_vec[:, champs_per_game:]
+#     champs = embedding(champ_ids, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
+#                        scope="champ_scope")
+#     items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
+#                       scope="item_scope")
+#
+#     items_by_champ = tf.reshape(items, [-1, items_per_champ * item_emb_dim])
+#     summed_items_by_champ_emb = fully_connected(items_by_champ, all_items_emb_dim, bias=False, activation=None,
+#                                                 reuse=tf.AUTO_REUSE,
+#                                                 scope="item_sum_scope")
+#     summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
+#
+#     champs_with_items = merge([champs, summed_items_by_champ], mode='concat', axis=2)
+#     champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim + all_items_emb_dim))
+#     champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+#                                             reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+#     champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game, champ_all_items_emb_dim))
+#     champs_with_items_emb_vs = tf.reshape(champs_with_items_emb, (-1, 2, champs_per_team, champ_all_items_emb_dim))
+#     champs_with_items_emb_vs = tf.transpose(champs_with_items_emb_vs, perm=[0, 2, 1, 3])
+#     champs_with_items_emb_vs = tf.reshape(champs_with_items_emb_vs, (-1, champs_per_game, champ_all_items_emb_dim))
+#
+#     conv1 = conv_1d(champs_with_items_emb, 256, 1, regularizer="L2", strides=1)
+#     conv2 = conv_1d(champs_with_items_emb_vs, 256, 2, regularizer="L2", strides=2)
+#     conv3 = conv_1d(champs_with_items_emb, 256, 5, regularizer="L2", strides=5)
+#
+#     conv1 = tf.reshape(conv1, (-1, 10 * 256))
+#     conv2 = tf.reshape(conv2, (-1, 5 * 256))
+#     conv3 = tf.reshape(conv3, (-1, 512))
+#
+#     final_input_layer = merge([conv1, conv2, conv3], mode='concat', axis=1)
+#     net = relu(
+#         batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
+#
+#     for i in range(5):
+#         net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.7)
+#
+#     net = fully_connected(net, total_num_items * champs_per_team, activation=None)
+#
+#     # TODO: consider using item embedding layer as output layer...
+#     return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
+#                       learning_rate=learning_rate,
+#                       loss='binary_crossentropy', name='target', metric=multi_class_top_k_acc)
+#
 

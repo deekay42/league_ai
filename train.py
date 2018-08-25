@@ -343,7 +343,7 @@ def train_elements_network():
     print("Building model")
     net = network.classify_next_item(network.game_config, network.next_network_config)
     model = tflearn.DNN(net, tensorboard_verbose=0)
-    model.load('./models/my_model1')
+    # model.load('./models/my_model1')
     print("Loading training data")
     dataloader = data_loader.DataLoader()
     print("Encoding training data")
@@ -351,7 +351,7 @@ def train_elements_network():
 
     print("Encoding test data")
     X_test, Y_test = dataloader.get_test_data()
-    cvt = utils.Converter()
+    # cvt = utils.Converter()
     # counter = 0
     # for x,y in zip(X_test, Y_test):
     #     counter += 1
