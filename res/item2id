@@ -1,0 +1,1027 @@
+{
+  "Empty": {
+    "name": "Empty",
+    "id": 0,
+    "int": 0
+  },
+  "Boots of Speed": {
+    "name": "Boots of Speed",
+    "id": 1001,
+    "int": 1
+  },
+  "Faerie Charm": {
+    "name": "Faerie Charm",
+    "id": 1004,
+    "int": 2
+  },
+  "Rejuvenation Bead": {
+    "name": "Rejuvenation Bead",
+    "id": 1006,
+    "int": 3
+  },
+  "Giant's Belt": {
+    "name": "Giant's Belt",
+    "id": 1011,
+    "int": 4
+  },
+  "Cloak of Agility": {
+    "name": "Cloak of Agility",
+    "id": 1018,
+    "int": 5
+  },
+  "Blasting Wand": {
+    "name": "Blasting Wand",
+    "id": 1026,
+    "int": 6
+  },
+  "Sapphire Crystal": {
+    "name": "Sapphire Crystal",
+    "id": 1027,
+    "int": 7
+  },
+  "Ruby Crystal": {
+    "name": "Ruby Crystal",
+    "id": 1028,
+    "int": 8
+  },
+  "Cloth Armor": {
+    "name": "Cloth Armor",
+    "id": 1029,
+    "int": 9
+  },
+  "Chain Vest": {
+    "name": "Chain Vest",
+    "id": 1031,
+    "int": 10
+  },
+  "Null-Magic Mantle": {
+    "name": "Null-Magic Mantle",
+    "id": 1033,
+    "int": 11
+  },
+  "Long Sword": {
+    "name": "Long Sword",
+    "id": 1036,
+    "int": 12
+  },
+  "Pickaxe": {
+    "name": "Pickaxe",
+    "id": 1037,
+    "int": 13
+  },
+  "B. F. Sword": {
+    "name": "B. F. Sword",
+    "id": 1038,
+    "int": 14
+  },
+  "Hunter's Talisman": {
+    "name": "Hunter's Talisman",
+    "id": 1039,
+    "int": 15
+  },
+  "Hunter's Machete": {
+    "name": "Hunter's Machete",
+    "id": 1041,
+    "int": 16
+  },
+  "Dagger": {
+    "name": "Dagger",
+    "id": 1042,
+    "int": 17
+  },
+  "Recurve Bow": {
+    "name": "Recurve Bow",
+    "id": 1043,
+    "int": 18
+  },
+  "Brawler's Gloves": {
+    "name": "Brawler's Gloves",
+    "id": 1051,
+    "int": 19
+  },
+  "Amplifying Tome": {
+    "name": "Amplifying Tome",
+    "id": 1052,
+    "int": 20
+  },
+  "Vampiric Scepter": {
+    "name": "Vampiric Scepter",
+    "id": 1053,
+    "int": 21
+  },
+  "Doran's Shield": {
+    "name": "Doran's Shield",
+    "id": 1054,
+    "int": 22
+  },
+  "Doran's Blade": {
+    "name": "Doran's Blade",
+    "id": 1055,
+    "int": 23
+  },
+  "Doran's Ring": {
+    "name": "Doran's Ring",
+    "id": 1056,
+    "int": 24
+  },
+  "Negatron Cloak": {
+    "name": "Negatron Cloak",
+    "id": 1057,
+    "int": 25
+  },
+  "Needlessly Large Rod": {
+    "name": "Needlessly Large Rod",
+    "id": 1058,
+    "int": 26
+  },
+  "The Dark Seal": {
+    "name": "The Dark Seal",
+    "id": 1082,
+    "int": 27
+  },
+  "Cull": {
+    "name": "Cull",
+    "id": 1083,
+    "int": 28
+  },
+  "Enchantment: Warrior": {
+    "name": "Enchantment: Warrior",
+    "id": 1400,
+    "int": 29
+  },
+  "Enchantment: Cinderhulk": {
+    "name": "Enchantment: Cinderhulk",
+    "id": 1401,
+    "int": 30
+  },
+  "Enchantment: Runic Echoes: Sabre": {
+    "name": "Enchantment: Runic Echoes: Sabre",
+    "id": 1402,
+    "int": 31
+  },
+  "Enchantment: Warrior: Sabre": {
+    "name": "Enchantment: Warrior: Sabre",
+    "id": 1412,
+    "int": 32
+  },
+  "Enchantment: Cinderhulk: Sabre": {
+    "name": "Enchantment: Cinderhulk: Sabre",
+    "id": 1413,
+    "int": 33
+  },
+  "Enchantment: Runic Echoes": {
+    "name": "Enchantment: Runic Echoes",
+    "id": 1414,
+    "int": 34
+  },
+  "Enchantment: Bloodrazor": {
+    "name": "Enchantment: Bloodrazor",
+    "id": 1416,
+    "int": 35
+  },
+  "Enchantment: Bloodrazor: Sabre": {
+    "name": "Enchantment: Bloodrazor: Sabre",
+    "id": 1419,
+    "int": 36
+  },
+  "Health Potion": {
+    "name": "Health Potion",
+    "id": 2003,
+    "int": 37
+  },
+  "Mana Potion": {
+    "name": "Mana Potion",
+    "id": 2004,
+    "int": 38
+  },
+  "Total Biscuit of Rejuvenation": {
+    "name": "Total Biscuit of Rejuvenation",
+    "id": 2009,
+    "int": 39
+  },
+  "Elixir Of Skill": {
+    "name": "Elixir Of Skill",
+    "id": 2011,
+    "int": 40
+  },
+  "Kircheis Shard": {
+    "name": "Kircheis Shard",
+    "id": 2015,
+    "int": 41
+  },
+  "Refillable Potion": {
+    "name": "Refillable Potion",
+    "id": 2031,
+    "int": 42
+  },
+  "Hunter's Potion": {
+    "name": "Hunter's Potion",
+    "id": 2032,
+    "int": 43
+  },
+  "Corrupting Potion": {
+    "name": "Corrupting Potion",
+    "id": 2033,
+    "int": 44
+  },
+  "Raptor Cloak": {
+    "name": "Raptor Cloak",
+    "id": 2053,
+    "int": 45
+  },
+  "Control Ward": {
+    "name": "Control Ward",
+    "id": 2055,
+    "int": 46
+  },
+  "Pilfered Stealth Ward": {
+    "name": "Pilfered Stealth Ward",
+    "id": 2056,
+    "int": 47
+  },
+  "Travel Size Elixir of Iron": {
+    "name": "Travel Size Elixir of Iron",
+    "id": 2058,
+    "int": 48
+  },
+  "Travel Size Elixir of Sorcery": {
+    "name": "Travel Size Elixir of Sorcery",
+    "id": 2059,
+    "int": 49
+  },
+  "Travel Size Elixir of Wrath": {
+    "name": "Travel Size Elixir of Wrath",
+    "id": 2060,
+    "int": 50
+  },
+  "Pilfered Health Potion": {
+    "name": "Pilfered Health Potion",
+    "id": 2061,
+    "int": 51
+  },
+  "Pilfered Potion of Rouge": {
+    "name": "Pilfered Potion of Rouge",
+    "id": 2062,
+    "int": 52
+  },
+  "Shurelya's Reverie": {
+    "name": "Shurelya's Reverie",
+    "id": 2065,
+    "int": 53
+  },
+  "Elixir of Iron": {
+    "name": "Elixir of Iron",
+    "id": 2138,
+    "int": 54
+  },
+  "Elixir of Sorcery": {
+    "name": "Elixir of Sorcery",
+    "id": 2139,
+    "int": 55
+  },
+  "Elixir of Wrath": {
+    "name": "Elixir of Wrath",
+    "id": 2140,
+    "int": 56
+  },
+  "Sly Sack of Gold": {
+    "name": "Sly Sack of Gold",
+    "id": 2319,
+    "int": 57
+  },
+  "Minion Dematerializer": {
+    "name": "Minion Dematerializer",
+    "id": 2403,
+    "int": 58
+  },
+  "Slightly Magical Boots": {
+    "name": "Slightly Magical Boots",
+    "id": 2422,
+    "int": 59
+  },
+  "Stopwatch": {
+    "name": "Stopwatch",
+    "id": 2420,
+    "int": 60
+  },
+  "Broken Stopwatch": {
+    "name": "Broken Stopwatch",
+    "id": 2421,
+    "int": 61
+  },
+  "Rune Stopwatch": {
+    "name": "Stopwatch",
+    "id": 2423,
+    "int": 60
+  },
+  "Rune Broken Stopwatch": {
+    "name": "Broken Stopwatch",
+    "id": 2424,
+    "int": 61
+  },
+  "Abyssal Mask": {
+    "name": "Abyssal Mask",
+    "id": 3001,
+    "int": 62
+  },
+  "Archangel's Staff": {
+    "name": "Archangel's Staff",
+    "id": 3003,
+    "int": 63
+  },
+  "Manamune": {
+    "name": "Manamune",
+    "id": 3004,
+    "int": 64
+  },
+  "Berserker's Greaves": {
+    "name": "Berserker's Greaves",
+    "id": 3006,
+    "int": 65
+  },
+  "Boots of Swiftness": {
+    "name": "Boots of Swiftness",
+    "id": 3009,
+    "int": 66
+  },
+  "Catalyst of Aeons": {
+    "name": "Catalyst of Aeons",
+    "id": 3010,
+    "int": 67
+  },
+  "Sorcerer's Shoes": {
+    "name": "Sorcerer's Shoes",
+    "id": 3020,
+    "int": 68
+  },
+  "Frozen Mallet": {
+    "name": "Frozen Mallet",
+    "id": 3022,
+    "int": 69
+  },
+  "Glacial Shroud": {
+    "name": "Glacial Shroud",
+    "id": 3024,
+    "int": 70
+  },
+  "Iceborn Gauntlet": {
+    "name": "Iceborn Gauntlet",
+    "id": 3025,
+    "int": 71
+  },
+  "Guardian Angel": {
+    "name": "Guardian Angel",
+    "id": 3026,
+    "int": 72
+  },
+  "Rod of Ages": {
+    "name": "Rod of Ages",
+    "id": 3027,
+    "int": 73
+  },
+  "Chalice of Harmony": {
+    "name": "Chalice of Harmony",
+    "id": 3028,
+    "int": 74
+  },
+  "Hextech GLP-800": {
+    "name": "Hextech GLP-800",
+    "id": 3030,
+    "int": 75
+  },
+  "Infinity Edge": {
+    "name": "Infinity Edge",
+    "id": 3031,
+    "int": 76
+  },
+  "Mortal Reminder": {
+    "name": "Mortal Reminder",
+    "id": 3033,
+    "int": 77
+  },
+  "Last Whisper": {
+    "name": "Last Whisper",
+    "id": 3035,
+    "int": 78
+  },
+  "Lord Dominik's Regards": {
+    "name": "Lord Dominik's Regards",
+    "id": 3036,
+    "int": 79
+  },
+  "Seraph's Embrace": {
+    "name": "Seraph's Embrace",
+    "id": 3040,
+    "int": 80
+  },
+  "Mejai's Soulstealer": {
+    "name": "Mejai's Soulstealer",
+    "id": 3041,
+    "int": 81
+  },
+  "Muramana": {
+    "name": "Muramana",
+    "id": 3042,
+    "int": 82
+  },
+  "Phage": {
+    "name": "Phage",
+    "id": 3044,
+    "int": 83
+  },
+  "Phantom Dancer": {
+    "name": "Phantom Dancer",
+    "id": 3046,
+    "int": 84
+  },
+  "Ninja Tabi": {
+    "name": "Ninja Tabi",
+    "id": 3047,
+    "int": 85
+  },
+  "Zeke's Convergence": {
+    "name": "Zeke's Convergence",
+    "id": 3050,
+    "int": 86
+  },
+  "Jaurim's Fist": {
+    "name": "Jaurim's Fist",
+    "id": 3052,
+    "int": 87
+  },
+  "Sterak's Gage": {
+    "name": "Sterak's Gage",
+    "id": 3053,
+    "int": 88
+  },
+  "Ohmwrecker": {
+    "name": "Ohmwrecker",
+    "id": 3056,
+    "int": 89
+  },
+  "Sheen": {
+    "name": "Sheen",
+    "id": 3057,
+    "int": 90
+  },
+  "Banner of Command": {
+    "name": "Banner of Command",
+    "id": 3060,
+    "int": 91
+  },
+  "Spirit Visage": {
+    "name": "Spirit Visage",
+    "id": 3065,
+    "int": 92
+  },
+  "Kindlegem": {
+    "name": "Kindlegem",
+    "id": 3067,
+    "int": 93
+  },
+  "Sunfire Cape": {
+    "name": "Sunfire Cape",
+    "id": 3068,
+    "int": 94
+  },
+  "Remnant of the Ascended": {
+    "name": "Remnant of the Ascended",
+    "id": 3069,
+    "int": 95
+  },
+  "Tear of the Goddess": {
+    "name": "Tear of the Goddess",
+    "id": 3070,
+    "int": 96
+  },
+  "The Black Cleaver": {
+    "name": "The Black Cleaver",
+    "id": 3071,
+    "int": 97
+  },
+  "The Bloodthirster": {
+    "name": "The Bloodthirster",
+    "id": 3072,
+    "int": 98
+  },
+  "Ravenous Hydra": {
+    "name": "Ravenous Hydra",
+    "id": 3074,
+    "int": 99
+  },
+  "Thornmail": {
+    "name": "Thornmail",
+    "id": 3075,
+    "int": 100
+  },
+  "Bramble Vest": {
+    "name": "Bramble Vest",
+    "id": 3076,
+    "int": 101
+  },
+  "Tiamat": {
+    "name": "Tiamat",
+    "id": 3077,
+    "int": 102
+  },
+  "Trinity Force": {
+    "name": "Trinity Force",
+    "id": 3078,
+    "int": 103
+  },
+  "Warden's Mail": {
+    "name": "Warden's Mail",
+    "id": 3082,
+    "int": 104
+  },
+  "Warmog's Armor": {
+    "name": "Warmog's Armor",
+    "id": 3083,
+    "int": 105
+  },
+  "Runaan's Hurricane": {
+    "name": "Runaan's Hurricane",
+    "id": 3085,
+    "int": 106
+  },
+  "Zeal": {
+    "name": "Zeal",
+    "id": 3086,
+    "int": 107
+  },
+  "Statikk Shiv": {
+    "name": "Statikk Shiv",
+    "id": 3087,
+    "int": 108
+  },
+  "Rabadon's Deathcap": {
+    "name": "Rabadon's Deathcap",
+    "id": 3089,
+    "int": 109
+  },
+  "Wit's End": {
+    "name": "Wit's End",
+    "id": 3091,
+    "int": 110
+  },
+  "Remnant of the Watchers": {
+    "name": "Remnant of the Watchers",
+    "id": 3092,
+    "int": 111
+  },
+  "Rapid Firecannon": {
+    "name": "Rapid Firecannon",
+    "id": 3094,
+    "int": 112
+  },
+  "Stormrazor": {
+    "name": "Stormrazor",
+    "id": 3095,
+    "int": 113
+  },
+  "Nomad's Medallion": {
+    "name": "Nomad's Medallion",
+    "id": 3096,
+    "int": 114
+  },
+  "Targon's Brace": {
+    "name": "Targon's Brace",
+    "id": 3097,
+    "int": 115
+  },
+  "Frostfang": {
+    "name": "Frostfang",
+    "id": 3098,
+    "int": 116
+  },
+  "Lich Bane": {
+    "name": "Lich Bane",
+    "id": 3100,
+    "int": 117
+  },
+  "Stinger": {
+    "name": "Stinger",
+    "id": 3101,
+    "int": 118
+  },
+  "Banshee's Veil": {
+    "name": "Banshee's Veil",
+    "id": 3102,
+    "int": 119
+  },
+  "Aegis of the Legion": {
+    "name": "Aegis of the Legion",
+    "id": 3105,
+    "int": 120
+  },
+  "Redemption": {
+    "name": "Redemption",
+    "id": 3107,
+    "int": 121
+  },
+  "Fiendish Codex": {
+    "name": "Fiendish Codex",
+    "id": 3108,
+    "int": 122
+  },
+  "Knight's Vow": {
+    "name": "Knight's Vow",
+    "id": 3109,
+    "int": 123
+  },
+  "Frozen Heart": {
+    "name": "Frozen Heart",
+    "id": 3110,
+    "int": 124
+  },
+  "Mercury's Treads": {
+    "name": "Mercury's Treads",
+    "id": 3111,
+    "int": 125
+  },
+  "Aether Wisp": {
+    "name": "Aether Wisp",
+    "id": 3113,
+    "int": 126
+  },
+  "Forbidden Idol": {
+    "name": "Forbidden Idol",
+    "id": 3114,
+    "int": 127
+  },
+  "Nashor's Tooth": {
+    "name": "Nashor's Tooth",
+    "id": 3115,
+    "int": 128
+  },
+  "Rylai's Crystal Scepter": {
+    "name": "Rylai's Crystal Scepter",
+    "id": 3116,
+    "int": 129
+  },
+  "Boots of Mobility": {
+    "name": "Boots of Mobility",
+    "id": 3117,
+    "int": 130
+  },
+  "Executioner's Calling": {
+    "name": "Executioner's Calling",
+    "id": 3123,
+    "int": 131
+  },
+  "Guinsoo's Rageblade": {
+    "name": "Guinsoo's Rageblade",
+    "id": 3124,
+    "int": 132
+  },
+  "Caulfield's Warhammer": {
+    "name": "Caulfield's Warhammer",
+    "id": 3133,
+    "int": 133
+  },
+  "Serrated Dirk": {
+    "name": "Serrated Dirk",
+    "id": 3134,
+    "int": 134
+  },
+  "Void Staff": {
+    "name": "Void Staff",
+    "id": 3135,
+    "int": 135
+  },
+  "Haunting Guise": {
+    "name": "Haunting Guise",
+    "id": 3136,
+    "int": 136
+  },
+  "Mercurial Scimitar": {
+    "name": "Mercurial Scimitar",
+    "id": 3139,
+    "int": 137
+  },
+  "Quicksilver Sash": {
+    "name": "Quicksilver Sash",
+    "id": 3140,
+    "int": 138
+  },
+  "Youmuu's Ghostblade": {
+    "name": "Youmuu's Ghostblade",
+    "id": 3142,
+    "int": 139
+  },
+  "Randuin's Omen": {
+    "name": "Randuin's Omen",
+    "id": 3143,
+    "int": 140
+  },
+  "Bilgewater Cutlass": {
+    "name": "Bilgewater Cutlass",
+    "id": 3144,
+    "int": 141
+  },
+  "Hextech Revolver": {
+    "name": "Hextech Revolver",
+    "id": 3145,
+    "int": 142
+  },
+  "Hextech Gunblade": {
+    "name": "Hextech Gunblade",
+    "id": 3146,
+    "int": 143
+  },
+  "Duskblade of Draktharr": {
+    "name": "Duskblade of Draktharr",
+    "id": 3147,
+    "int": 144
+  },
+  "Liandry's Torment": {
+    "name": "Liandry's Torment",
+    "id": 3151,
+    "int": 145
+  },
+  "Hextech Protobelt-01": {
+    "name": "Hextech Protobelt-01",
+    "id": 3152,
+    "int": 146
+  },
+  "Blade of the Ruined King": {
+    "name": "Blade of the Ruined King",
+    "id": 3153,
+    "int": 147
+  },
+  "Hexdrinker": {
+    "name": "Hexdrinker",
+    "id": 3155,
+    "int": 148
+  },
+  "Maw of Malmortius": {
+    "name": "Maw of Malmortius",
+    "id": 3156,
+    "int": 149
+  },
+  "Zhonya's Hourglass": {
+    "name": "Zhonya's Hourglass",
+    "id": 3157,
+    "int": 150
+  },
+  "Ionian Boots of Lucidity": {
+    "name": "Ionian Boots of Lucidity",
+    "id": 3158,
+    "int": 151
+  },
+  "Morellonomicon": {
+    "name": "Morellonomicon",
+    "id": 3165,
+    "int": 152
+  },
+  "Athene's Unholy Grail": {
+    "name": "Athene's Unholy Grail",
+    "id": 3174,
+    "int": 153
+  },
+  "Locket of the Iron Solari": {
+    "name": "Locket of the Iron Solari",
+    "id": 3190,
+    "int": 154
+  },
+  "Seeker's Armguard": {
+    "name": "Seeker's Armguard",
+    "id": 3191,
+    "int": 155
+  },
+  "Gargoyle Stoneplate": {
+    "name": "Gargoyle Stoneplate",
+    "id": 3193,
+    "int": 156
+  },
+  "Adaptive Helm": {
+    "name": "Adaptive Helm",
+    "id": 3194,
+    "int": 157
+  },
+  "The Hex Core mk-1": {
+    "name": "The Hex Core mk-1",
+    "id": 3196,
+    "int": 158
+  },
+  "The Hex Core mk-2": {
+    "name": "The Hex Core mk-2",
+    "id": 3197,
+    "int": 159
+  },
+  "Perfect Hex Core": {
+    "name": "Perfect Hex Core",
+    "id": 3198,
+    "int": 160
+  },
+  "Prototype Hex Core": {
+    "name": "Prototype Hex Core",
+    "id": 3200,
+    "int": 161
+  },
+  "Spectre's Cowl": {
+    "name": "Spectre's Cowl",
+    "id": 3211,
+    "int": 162
+  },
+  "Mikael's Crucible": {
+    "name": "Mikael's Crucible",
+    "id": 3222,
+    "int": 163
+  },
+  "Poacher's Dirk": {
+    "name": "Poacher's Dirk",
+    "id": 3252,
+    "int": 164
+  },
+  "Luden's Echo": {
+    "name": "Luden's Echo",
+    "id": 3285,
+    "int": 165
+  },
+  "Ancient Coin": {
+    "name": "Ancient Coin",
+    "id": 3301,
+    "int": 166
+  },
+  "Relic Shield": {
+    "name": "Relic Shield",
+    "id": 3302,
+    "int": 167
+  },
+  "Spellthief's Edge": {
+    "name": "Spellthief's Edge",
+    "id": 3303,
+    "int": 168
+  },
+  "Warding Totem (Trinket)": {
+    "name": "Warding Totem (Trinket)",
+    "id": 3340,
+    "int": 169
+  },
+  "Sweeping Lens (Trinket)": {
+    "name": "Sweeping Lens (Trinket)",
+    "id": 3341,
+    "int": 170
+  },
+  "Farsight Alteration": {
+    "name": "Farsight Alteration",
+    "id": 3363,
+    "int": 171
+  },
+  "Oracle Alteration": {
+    "name": "Oracle Alteration",
+    "id": 3364,
+    "int": 172
+  },
+  "Molten Edge": {
+    "name": "Molten Edge",
+    "id": 3371,
+    "int": 173
+  },
+  "Forgefire Cape": {
+    "name": "Forgefire Cape",
+    "id": 3373,
+    "int": 174
+  },
+  "Rabadon's Deathcrown": {
+    "name": "Rabadon's Deathcrown",
+    "id": 3374,
+    "int": 175
+  },
+  "Infernal Mask": {
+    "name": "Infernal Mask",
+    "id": 3379,
+    "int": 176
+  },
+  "The Obsidian Cleaver": {
+    "name": "The Obsidian Cleaver",
+    "id": 3380,
+    "int": 177
+  },
+  "Salvation": {
+    "name": "Salvation",
+    "id": 3382,
+    "int": 178
+  },
+  "Circlet of the Iron Solari": {
+    "name": "Circlet of the Iron Solari",
+    "id": 3383,
+    "int": 179
+  },
+  "Trinity Fusion": {
+    "name": "Trinity Fusion",
+    "id": 3384,
+    "int": 180
+  },
+  "Zhonya's Paradox": {
+    "name": "Zhonya's Paradox",
+    "id": 3386,
+    "int": 181
+  },
+  "Remnant of the Aspect": {
+    "name": "Remnant of the Aspect",
+    "id": 3401,
+    "int": 182
+  },
+  "Ardent Censer": {
+    "name": "Ardent Censer",
+    "id": 3504,
+    "int": 183
+  },
+  "Essence Reaver": {
+    "name": "Essence Reaver",
+    "id": 3508,
+    "int": 184
+  },
+  "Zz'Rot Portal": {
+    "name": "Zz'Rot Portal",
+    "id": 3512,
+    "int": 185
+  },
+  "The Black Spear": {
+    "name": "The Black Spear",
+    "id": 3599,
+    "int": 186
+  },
+  "Stalker's Blade": {
+    "name": "Stalker's Blade",
+    "id": 3706,
+    "int": 187
+  },
+  "Skirmisher's Sabre": {
+    "name": "Skirmisher's Sabre",
+    "id": 3715,
+    "int": 188
+  },
+  "Dead Man's Plate": {
+    "name": "Dead Man's Plate",
+    "id": 3742,
+    "int": 189
+  },
+  "Titanic Hydra": {
+    "name": "Titanic Hydra",
+    "id": 3748,
+    "int": 190
+  },
+  "Bami's Cinder": {
+    "name": "Bami's Cinder",
+    "id": 3751,
+    "int": 191
+  },
+  "Righteous Glory": {
+    "name": "Righteous Glory",
+    "id": 3800,
+    "int": 192
+  },
+  "Crystalline Bracer": {
+    "name": "Crystalline Bracer",
+    "id": 3801,
+    "int": 193
+  },
+  "Lost Chapter": {
+    "name": "Lost Chapter",
+    "id": 3802,
+    "int": 194
+  },
+  "Death's Dance": {
+    "name": "Death's Dance",
+    "id": 3812,
+    "int": 195
+  },
+  "Edge of Night": {
+    "name": "Edge of Night",
+    "id": 3814,
+    "int": 196
+  },
+  "Fire at Will": {
+    "name": "Fire at Will",
+    "id": 3901,
+    "int": 197
+  },
+  "Death's Daughter": {
+    "name": "Death's Daughter",
+    "id": 3902,
+    "int": 198
+  },
+  "Raise Morale": {
+    "name": "Raise Morale",
+    "id": 3903,
+    "int": 199
+  },
+  "Twin Shadows": {
+    "name": "Twin Shadows",
+    "id": 3905,
+    "int": 200
+  },
+  "Spellbinder": {
+    "name": "Spellbinder",
+    "id": 3907,
+    "int": 201
+  },
+  "Oblivion Orb": {
+    "name": "Oblivion Orb",
+    "id": 3916,
+    "int": 202
+  }
+}

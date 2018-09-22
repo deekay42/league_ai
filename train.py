@@ -336,8 +336,6 @@ def train_self_network():
     train_elements_network(training_data_generator, network.SELF_IMG_SIZE, NUM_SELF, 0.01)
 
 
-
-
 def train_elements_network():
 
     print("Building model")
@@ -347,10 +345,10 @@ def train_elements_network():
     print("Loading training data")
     dataloader = data_loader.DataLoader()
     print("Encoding training data")
-    X, Y = dataloader.get_train_data()
+    X, Y = dataloader.get_train_data(1)
 
     print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data()
+    X_test, Y_test = dataloader.get_test_data(1)
     # cvt = utils.Converter()
     # counter = 0
     # for x,y in zip(X_test, Y_test):
@@ -397,4 +395,5 @@ def train_elements_network():
             f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
             f.flush()
 
-train_elements_network()
+if __name__ == '__main__':
+    train_elements_network()

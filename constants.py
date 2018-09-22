@@ -133,14 +133,14 @@ class Res_4_3:
 class ResConverter:
 
     def __init__(self, x,y):
-        if round(x/y, 4) == round(16/9, 4):
+        if round(x/y, 2) == round(16/9, 2):
             self.selected_res = Res_16_9()
-        elif round(x/y, 4) == round(8/5, 4):
+        elif round(x/y, 2) == round(8/5, 2):
             self.selected_res = Res_8_5()
-        elif round(x/y, 4) == round(4/3, 4):
+        elif round(x/y, 2) == round(4/3, 2):
             self.selected_res = Res_4_3()
         else:
-            raise Exception("Screen resolution not supported: "+res)
+            raise Exception("Screen resolution not supported: "+str(x)+ " "+str(y))
 
         self.CHAMP_LEFT_X_OFFSET = int(x * self.selected_res.CHAMP_LEFT_X_OFFSET/self.selected_res.STD_WIDTH)
 

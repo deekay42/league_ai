@@ -51,99 +51,55 @@ class Converter:
     def __init__(self):
         with open('res/item2id') as f:
             item2id = json.load(f)
-        ids = sorted(list(item2id.values()))
-        seq_num = np.arange(0, len(ids), dtype=np.uint16)
-        self.item_id2int_dict = dict(zip(ids, seq_num))
-        self.item_int2id_dict = dict(map(reversed, self.item_id2int_dict.items()))
-        self.item_string2id_dict = item2id
-        self.item_id2string_dict = dict(map(reversed, item2id.items()))
-        self.item_int2string_dict = dict()
-        for i in range(len(ids)):
-            target_id = self.item_int2id_dict[i]
-            self.item_int2string_dict[i] = self.item_id2string_dict[target_id]
+
+        self.item_dict = dict()
+        for item in item2id.values():
+            self.item_dict.update(dict.fromkeys([('str', item['name']), ('id', item['id']), ('int', item['int'])], item))
 
         with open('res/champ2id') as f:
             champ2id = json.load(f)
-        ids = sorted(list(champ2id.values()))
-        seq_num = np.arange(0, len(ids), dtype=np.uint16)
-        self.champ_id2int_dict = dict(zip(ids, seq_num))
-        self.champ_int2id_dict = dict(map(reversed, self.champ_id2int_dict.items()))
-        self.champ_id2string_dict = dict(map(reversed, champ2id.items()))
-        self.champ_int2string_dict = dict()
-        for i in range(len(ids)):
-            target_id = self.champ_int2id_dict[i]
-            self.champ_int2string_dict[i] = self.champ_id2string_dict[target_id]
 
-            # self.champ_string2int_dict = self.champ_string2id
-
-
-        keys = list(champ2id.keys())
-        keys = [key.replace(" ", "") for key in keys]
-        self.champ_string2id_dict = dict(zip(keys, champ2id.values()))
-        self.champ_string2id_dict["MegaGnar"] = self.champ_string2id_dict["Gnar"]
-        self.champ_string2id_dict["Rhaast"] = self.champ_string2id_dict["Kayn"]
-        self.champ_string2id_dict["ShadowAssassin"] = self.champ_string2id_dict["Kayn"]
-
+        self.champ_dict = dict()
+        for champ in champ2id.values():
+            self.champ_dict.update(dict.fromkeys([('str', champ['name']), ('id', champ['id']), ('int', champ['int'])], champ))
 
     def champ_int2id(self, id):
-        return self.champ_int2id_dict[id]
+        return self.champ_dict.get(('int', id)).get('id')
 
     def item_int2id(self, i):
-        return self.item_int2id_dict[i]
+        return self.item_dict.get(('int', i)).get('id')
 
     def item_int2string(self, i):
-        return self.item_int2string_dict[i]
+        return self.item_dict.get(('int', i)).get('name')
+
+    def item_id2string(self, i):
+        if i == 2420:
+            i = 2423
+        return self.item_dict.get(('id', i)).get('name')
 
     def item_id2int(self, id):
         if id == [] or id == 0:
             return 0
-        # there are some items in the training files that have since been deleted
-        if id == 3711:
-            id = 1412
-        elif id == 1409:
-            id = 1413
-        elif id == 1408:
-            id = 1412
-        elif id == 1410:
-            id = 1402
-        elif id == 3034:
-            id = 1037
-        elif id == 1418:
-            id = 1419
-        elif id == 2420:
-            id = 2423
-        elif id == 2420:
-            id = 2423
-        elif id == 2421:
-            id = 2424
-        elif id == 2045:
-            id = 0
-        elif id == 2049:
-            id = 0
 		#this is really bad TODO:
-        elif id == 2301:
-            id = 3092
-        elif id == 2302:
-            id = 3092
-        elif id == 2303:
-            id = 3092
-        return self.item_id2int_dict[id]
+        # elif id == 2301:
+        #     id = 3092
+        # elif id == 2302:
+        #     id = 3092
+        # elif id == 2303:
+        #     id = 3092
+        return self.item_dict.get(('id', id)).get('int')
 
     def champ_id2int(self, id):
-        return self.champ_id2int_dict[id]
+        return self.champ_dict.get(('id', id)).get('int')
 
     def champ_int2string(self, i):
-        return self.champ_int2string_dict[i]
+        return self.champ_dict.get(('int', i)).get('name')
 
     def champ_string2id(self, champ_string):
-        if champ_string == 'ShadowAssassin':
-            return 141
-        elif champ_string == 'Rhaast':
-            return 141
-        return self.champ_string2id_dict[champ_string]
+        return self.champ_dict.get(('str', champ_string)).get('id')
 
     def item_string2id(self, item_string):
-        return self.item_string2id_dict[item_string]
+        return self.item_dict.get(('str', item_string)).get('id')
 
 def getSelfTemplateDict():
     self_paths = glob.glob("res/self_indicator/*.png")
@@ -316,4 +272,4 @@ def getResolution():
     # TODO:
 
 def summ_names_displayed():
-    return False
+    return True
