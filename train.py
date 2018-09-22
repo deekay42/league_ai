@@ -364,7 +364,7 @@ def train_elements_network():
         #     Y_pred = np.argmax(Y_pred, axis=1)
         #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
         #     a = 42
-    with tf.device('/gpu:0'):
+    with tf.device('/device:GPU:0'):
         print("Building model")
         net = network.classify_next_item(network.game_config, network.next_network_config)
         model = tflearn.DNN(net, tensorboard_verbose=0)
