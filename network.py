@@ -288,10 +288,9 @@ def classify_next_item(game_config, network_config):
     final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
 
     net = relu(
-        batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
-    net = relu(
-        batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation=None, regularizer="L2")))
 
+    # net = dropout(net, 0.5)
     # for i in range(5):
     #     net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.7)
 
