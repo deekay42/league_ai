@@ -337,63 +337,63 @@ def train_self_network():
 
 
 def train_elements_network():
+    with tf.device('/gpu:0'):
+        print("Building model")
+        net = network.classify_next_item(network.game_config, network.next_network_config)
+        model = tflearn.DNN(net, tensorboard_verbose=0)
+        # model.load('./models/my_model1')
+        print("Loading training data")
+        dataloader = data_loader.DataLoader()
+        print("Encoding training data")
+        X, Y = dataloader.get_train_data(1)
 
-    print("Building model")
-    net = network.classify_next_item(network.game_config, network.next_network_config)
-    model = tflearn.DNN(net, tensorboard_verbose=0)
-    # model.load('./models/my_model1')
-    print("Loading training data")
-    dataloader = data_loader.DataLoader()
-    print("Encoding training data")
-    X, Y = dataloader.get_train_data(1)
+        print("Encoding test data")
+        X_test, Y_test = dataloader.get_test_data(1)
+        # cvt = utils.Converter()
+        # counter = 0
+        # for x,y in zip(X_test, Y_test):
+        #     counter += 1
+        #     x_champs_str = [cvt.champ_int2string(champ) for champ in x[:10]]
+        #     x_items_str = [cvt.item_int2string(item) for item in x[10:]]
+        #     y_items_str = [cvt.item_int2string(item) for item in y]
+        #
+        #     x_champs_id = [cvt.champ_int2id(champ) for champ in x[:10]]
+        #     x_items_id = [cvt.item_int2id(item) for item in x[10:]]
+        #     y_items_id = [cvt.item_int2id(item) for item in y]
+        #
+        #     Y_pred = model.predict([x])
+        #     Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
+        #     Y_pred = np.argmax(Y_pred, axis=1)
+        #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
+        #     a = 42
 
-    print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data(1)
-    # cvt = utils.Converter()
-    # counter = 0
-    # for x,y in zip(X_test, Y_test):
-    #     counter += 1
-    #     x_champs_str = [cvt.champ_int2string(champ) for champ in x[:10]]
-    #     x_items_str = [cvt.item_int2string(item) for item in x[10:]]
-    #     y_items_str = [cvt.item_int2string(item) for item in y]
-    #
-    #     x_champs_id = [cvt.champ_int2id(champ) for champ in x[:10]]
-    #     x_items_id = [cvt.item_int2id(item) for item in x[10:]]
-    #     y_items_id = [cvt.item_int2id(item) for item in y]
-    #
-    #     Y_pred = model.predict([x])
-    #     Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
-    #     Y_pred = np.argmax(Y_pred, axis=1)
-    #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
-    #     a = 42
+        print("Commencing training")
+        with open("models/accuracies", "w") as f:
+            class MonitorCallback(tflearn.callbacks.Callback):
 
-    print("Commencing training")
-    with open("models/accuracies", "w") as f:
-        class MonitorCallback(tflearn.callbacks.Callback):
+                def on_epoch_end(self, training_state):
+                    f.write("Epoch {0} train accuracy {1:.2f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
+                    f.flush()
+                    pass
 
-            def on_epoch_end(self, training_state):
-                f.write("Epoch {0} train accuracy {1:.2f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
+            monitorCallback = MonitorCallback()
+            for epoch in range(num_epochs):
+                model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
+                          show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
+                pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
+                print("eval is {0:.4f}".format(pred1[0]))
+                # prediction = model.predict(X)
+                # print("Prediction 1 is")
+                # for i,j in zip(prediction[0], Y[0]):
+                #     print("{0:.2f} {1:.2f}".format(i,j))
+                # print("Prediction 2 is")
+                # for i,j in zip(prediction[1], Y[1]):
+                #     print("{0:.2f} {1:.2f}".format(i,j))
+
+
+                model.save('models/my_model' + str(epoch + 1))
+                f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
                 f.flush()
-                pass
-
-        monitorCallback = MonitorCallback()
-        for epoch in range(num_epochs):
-            model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
-                      show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
-            pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
-            print("eval is {0:.4f}".format(pred1[0]))
-            # prediction = model.predict(X)
-            # print("Prediction 1 is")
-            # for i,j in zip(prediction[0], Y[0]):
-            #     print("{0:.2f} {1:.2f}".format(i,j))
-            # print("Prediction 2 is")
-            # for i,j in zip(prediction[1], Y[1]):
-            #     print("{0:.2f} {1:.2f}".format(i,j))
-
-
-            model.save('models/my_model' + str(epoch + 1))
-            f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
-            f.flush()
 
 if __name__ == '__main__':
     train_elements_network()
