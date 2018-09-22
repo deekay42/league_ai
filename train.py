@@ -338,18 +338,15 @@ def train_self_network():
 
 
 def train_elements_network():
-    with tf.device('/gpu:0'):
-        print("Building model")
-        net = network.classify_next_item(network.game_config, network.next_network_config)
-        model = tflearn.DNN(net, tensorboard_verbose=0)
-        # model.load('./models/my_model1')
-        print("Loading training data")
-        dataloader = data_loader.DataLoader()
-        print("Encoding training data")
-        X, Y = dataloader.get_train_data(1)
 
-        print("Encoding test data")
-        X_test, Y_test = dataloader.get_test_data(1)
+    # model.load('./models/my_model1')
+    print("Loading training data")
+    dataloader = data_loader.DataLoader()
+    print("Encoding training data")
+    X, Y = dataloader.get_train_data(1)
+
+    print("Encoding test data")
+    X_test, Y_test = dataloader.get_test_data(1)
         # cvt = utils.Converter()
         # counter = 0
         # for x,y in zip(X_test, Y_test):
@@ -367,7 +364,10 @@ def train_elements_network():
         #     Y_pred = np.argmax(Y_pred, axis=1)
         #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
         #     a = 42
-
+    with tf.device('/gpu:0'):
+        print("Building model")
+        net = network.classify_next_item(network.game_config, network.next_network_config)
+        model = tflearn.DNN(net, tensorboard_verbose=0)
         print("Commencing training")
         with open("models/accuracies", "w") as f:
             class MonitorCallback(tflearn.callbacks.Callback):
