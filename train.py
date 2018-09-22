@@ -10,6 +10,7 @@ from queue import Queue
 import tflearn
 from tflearn.data_utils import shuffle, to_categorical
 import data_loader
+import tensorflow as tf
 
 num_epochs = 100000
 batch_size = 128
