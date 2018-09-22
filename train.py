@@ -364,8 +364,7 @@ def train_elements_network():
         #     Y_pred = np.argmax(Y_pred, axis=1)
         #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
         #     a = 42
-    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, \
-                                          log_device_placement=True)) as sess:
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
         print("Building model")
@@ -377,7 +376,7 @@ def train_elements_network():
             class MonitorCallback(tflearn.callbacks.Callback):
 
                 def on_epoch_end(self, training_state):
-                    f.write("Epoch {0} train accuracy {1:.2f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
+                    f.write("Epoch {0} train accuracy {1:.4f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
                     f.flush()
                     pass
 
