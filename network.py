@@ -295,10 +295,16 @@ def classify_next_item(game_config, network_config):
     # net = dropout(net, 0.7)
 
     net = relu(
-        batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
-    for i in range(5):
-        net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.8)
-        net = dropout(net, 0.6)
+        batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation=None, regularizer="L2")))
+    net = dropout(net, 0.9)
+    net = relu(
+        batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
+    net = dropout(net, 0.9)
+
+  
+    # for i in range(5):
+    #     net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.8)
+    #
 
     # net = fully_connected(final_input_layer, 256, activation='relu', regularizer='L2')
     net = fully_connected(net, total_num_items, activation='softmax')
