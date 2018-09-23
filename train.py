@@ -367,38 +367,38 @@ def train_elements_network():
     # with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
     #     tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
-        print("Building model")
-        net = network.classify_next_item(network.game_config, network.next_network_config)
-        model = tflearn.DNN(net, tensorboard_verbose=0)
-        model.load('./models/my_model3')
-        # sess.run(tf.global_variables_initializer())
-        print("Commencing training")
-        with open("models/accuracies", "w") as f:
-            class MonitorCallback(tflearn.callbacks.Callback):
+    print("Building model")
+    net = network.classify_next_item(network.game_config, network.next_network_config)
+    model = tflearn.DNN(net, tensorboard_verbose=0)
+    model.load('./models/my_model3')
+    # sess.run(tf.global_variables_initializer())
+    print("Commencing training")
+    with open("models/accuracies", "w") as f:
+        class MonitorCallback(tflearn.callbacks.Callback):
 
-                def on_epoch_end(self, training_state):
-                    f.write("Epoch {0} train accuracy {1:.4f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
-                    f.flush()
-                    pass
-
-            monitorCallback = MonitorCallback()
-            for epoch in range(num_epochs):
-                model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
-                          show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
-                pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
-                print("eval is {0:.4f}".format(pred1[0]))
-                # prediction = model.predict(X)
-                # print("Prediction 1 is")
-                # for i,j in zip(prediction[0], Y[0]):
-                #     print("{0:.2f} {1:.2f}".format(i,j))
-                # print("Prediction 2 is")
-                # for i,j in zip(prediction[1], Y[1]):
-                #     print("{0:.2f} {1:.2f}".format(i,j))
-
-
-                model.save('models/my_model' + str(epoch + 1))
-                f.write("Epoch {0} eval accuracy {1:.4f}\n".format(epoch + 1, pred1[0]))
+            def on_epoch_end(self, training_state):
+                f.write("Epoch {0} train accuracy {1:.4f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
                 f.flush()
+                pass
+
+        monitorCallback = MonitorCallback()
+        for epoch in range(num_epochs):
+            model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
+                      show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
+            pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
+            print("eval is {0:.4f}".format(pred1[0]))
+            # prediction = model.predict(X)
+            # print("Prediction 1 is")
+            # for i,j in zip(prediction[0], Y[0]):
+            #     print("{0:.2f} {1:.2f}".format(i,j))
+            # print("Prediction 2 is")
+            # for i,j in zip(prediction[1], Y[1]):
+            #     print("{0:.2f} {1:.2f}".format(i,j))
+
+
+            model.save('models/my_model' + str(epoch + 1))
+            f.write("Epoch {0} eval accuracy {1:.4f}\n".format(epoch + 1, pred1[0]))
+            f.flush()
 
 if __name__ == '__main__':
     train_elements_network()
