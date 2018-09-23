@@ -218,7 +218,7 @@ game_config = \
 
 next_network_config = \
     {
-        "learning_rate": 0.01,
+        "learning_rate": 0.001,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,
@@ -295,7 +295,7 @@ def classify_next_item(game_config, network_config):
     # net = dropout(net, 0.7)
 
     net = relu(
-        batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.7)
     net = relu(
         batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
