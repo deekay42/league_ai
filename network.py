@@ -286,7 +286,7 @@ def classify_next_item(game_config, network_config):
                                   scope="team_sum_scope")
 
     final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
-    net = dropout(net, 0.8)
+    net = dropout(final_input_layer, 0.8)
     # net = relu(
     #     batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
     # net = dropout(net, 0.7)
