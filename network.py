@@ -218,7 +218,7 @@ game_config = \
 
 next_network_config = \
     {
-        "learning_rate": 0.001,
+        "learning_rate": 0.01,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,
