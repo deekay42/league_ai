@@ -339,7 +339,7 @@ def train_self_network():
 
 def train_elements_network():
 
-    # model.load('./models/my_model1')
+
     print("Loading training data")
     dataloader = data_loader.DataLoader()
     print("Encoding training data")
@@ -370,7 +370,8 @@ def train_elements_network():
         print("Building model")
         net = network.classify_next_item(network.game_config, network.next_network_config)
         model = tflearn.DNN(net, tensorboard_verbose=0, session=sess)
-        sess.run(tf.global_variables_initializer())
+        model.load('./models/my_model3')
+        # sess.run(tf.global_variables_initializer())
         print("Commencing training")
         with open("models/accuracies", "w") as f:
             class MonitorCallback(tflearn.callbacks.Callback):
@@ -396,7 +397,7 @@ def train_elements_network():
 
 
                 model.save('models/my_model' + str(epoch + 1))
-                f.write("Epoch {0} eval accuracy {1:.2f}\n".format(epoch + 1, pred1[0]))
+                f.write("Epoch {0} eval accuracy {1:.4f}\n".format(epoch + 1, pred1[0]))
                 f.flush()
 
 if __name__ == '__main__':
