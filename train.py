@@ -364,13 +364,13 @@ def train_elements_network():
         #     Y_pred = np.argmax(Y_pred, axis=1)
         #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
         #     a = 42
-    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-        tflearn.is_training(True, session=sess)
+    # with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+    #     tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
         print("Building model")
         net = network.classify_next_item(network.game_config, network.next_network_config)
-        model = tflearn.DNN(net, tensorboard_verbose=0, session=sess)
-        model.load('./models/my_model3', create_new_session=False)
+        model = tflearn.DNN(net, tensorboard_verbose=0)
+        model.load('./models/my_model3')
         # sess.run(tf.global_variables_initializer())
         print("Commencing training")
         with open("models/accuracies", "w") as f:
