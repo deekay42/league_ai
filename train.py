@@ -370,7 +370,7 @@ def train_elements_network():
         print("Building model")
         net = network.classify_next_item(network.game_config, network.next_network_config)
         model = tflearn.DNN(net, tensorboard_verbose=0, session=sess)
-        model.load('./models/my_model3', ['create_new_session'=False])
+        model.load('./models/my_model3', create_new_session=False)
         # sess.run(tf.global_variables_initializer())
         print("Commencing training")
         with open("models/accuracies", "w") as f:
