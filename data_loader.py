@@ -96,44 +96,36 @@ class PositionsDataLoader(DataLoaderBase):
     def get_train_data(self):
         result_x, result_y = [], []
         order = [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]
-
         for x in self.train_x:
-            counter = 0
+
 
             comp_order = ((comp,pos) for comp, pos in zip(x, order))
             for champ_position in itertools.permutations(comp_order, 5):
-                one_hot = [0] * 120
                 champ_position = np.array(champ_position)
                 team_comp = np.stack(champ_position[:, 0])
-                # positions = np.stack(champ_position[:, 1])
+                positions = np.stack(champ_position[:, 1])
                 result_x.append(
                     np.concatenate((np.ravel(team_comp[:, 0]), np.ravel(team_comp[:, 1:3]), np.ravel(team_comp[:, 3:])),
                                    axis=0))
-                one_hot[counter] = 1
-                result_y.append(one_hot)
-                counter += 1
+                result_y.append(np.ravel(positions))
         return np.array(result_x), np.array(result_y)
 
 
     def get_test_data(self):
         result_x, result_y = [], []
-        order = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
-
+        order = [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]
         for x in self.test_x:
-            counter = 0
 
-            comp_order = ((comp, pos) for comp, pos in zip(x, order))
+
+            comp_order = ((comp,pos) for comp, pos in zip(x, order))
             for champ_position in itertools.permutations(comp_order, 5):
-                one_hot = [0] * 120
                 champ_position = np.array(champ_position)
                 team_comp = np.stack(champ_position[:, 0])
-                # positions = np.stack(champ_position[:, 1])
+                positions = np.stack(champ_position[:, 1])
                 result_x.append(
                     np.concatenate((np.ravel(team_comp[:, 0]), np.ravel(team_comp[:, 1:3]), np.ravel(team_comp[:, 3:])),
                                    axis=0))
-                one_hot[counter] = 1
-                result_y.append(one_hot)
-                counter += 1
+                result_y.append(np.ravel(positions))
         return np.array(result_x), np.array(result_y)
 
 
