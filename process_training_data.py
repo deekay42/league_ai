@@ -73,20 +73,54 @@ class ProcessTrainingData:
             counter += 1
 
         print("Writing to disk...")
-        self.writeToNumpyFile(EXAMPLES_PER_CHUNK)
 
-    def champ2id(self, champname):
-        try:
-            return str(self.lookup_table[champname])
-        except AttributeError:
-            with open("res/champ2id") as f:
-                self.lookup_table = json.load(f)
-            try:
-                return str(self.lookup_table[champname])
-            except KeyError as k:
-                print("Key {} not found".format(k))
+        new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('absolute_') + 1:]
+        for x_chunk, y_chunk in zip(_chunks(x, chunksize), _chunks(y, chunksize)):
+            with open('training_data/processed/' + new_file_name_x + '_train_x_' + str(offset) + '.npz',
+                      "wb") as writer:
+                np.savez_compressed(writer, x_chunk)
+            with open('training_data/processed/' + new_file_name_y + '_train_y_' + str(offset) + '.npz',
+                      "wb") as writer:
+                np.savez_compressed(writer, y_chunk)
 
-    def writeToNumpyFile(self, chunksize):
+            offset += 1
+            print("{}% complete".format(int(min(100, 100 * (offset * chunksize / len(x))))))
+
+        self.writeNextItemToNumpyFile(EXAMPLES_PER_CHUNK)
+
+    def buildNumpyDBForPositions(self):
+        print("Building numpy database now. This may take a few minutes.")
+        if len(sys.argv) != 2:
+            print("specify gamefile")
+            exit(-1)
+        self.x_filename = sys.argv[1]
+        print("Loading input files")
+        with open(self.x_filename) as f:
+            self.raw = json.load(f)
+        print("Complete")
+
+        self.data_x = []
+        print("Generating input & output vectors...")
+        counter = 0
+        for game in self.raw:
+            team1 = np.array(game['participants'][:5])
+            team2 = np.array(game['participants'][5:])
+            converter = utils.Converter()
+
+            for team in [team1, team2]:
+                x = tuple([[converter.champ_id2int(participant['championId']), converter.spell_id2int(
+                    participant['spell1Id']), converter.spell_id2int(
+                    participant['spell2Id']), participant['kills'], participant['deaths'], participant['assists'], participant['earned'], participant['level'],
+                    participant['minionsKilled'], participant['neutralMinionsKilled'], participant['wardsPlaced']] for participant in team])
+                self.data_x.append(x)
+
+            print("current file {:.2%} processed".format(counter / len(self.raw)))
+            counter += 1
+
+        print("Writing to disk...")
+        self.writePositionsToNumpyFile(EXAMPLES_PER_CHUNK)
+
+    def writeNextItemToNumpyFile(self, chunksize):
         def _chunks(l, n):
             n = max(1, n)
             return [l[i:i + n] for i in range(0, len(l), n)]
@@ -98,13 +132,27 @@ class ProcessTrainingData:
         new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('absolute_') + 1:]
         new_file_name_y = self.y_filename[self.y_filename.rfind("/") + len('next_') + 1:]
         for x_chunk, y_chunk in zip(_chunks(x, chunksize), _chunks(y, chunksize)):
-            with open('training_data/processed/'+new_file_name_x+'_train_x_'+str(offset)+'.npz', "wb") as writer:
+            with open('training_data/next_items/processed/'+new_file_name_x+'_train_x_'+str(offset)+'.npz', "wb") as writer:
                 np.savez_compressed(writer, x_chunk)
-            with open('training_data/processed/'+new_file_name_y+'_train_y_'+str(offset)+'.npz', "wb") as writer:
+            with open('training_data/next_items/processed/'+new_file_name_y+'_train_y_'+str(offset)+'.npz', "wb") as writer:
                 np.savez_compressed(writer, y_chunk)
 
             offset += 1
             print("{}% complete".format(int(min(100, 100*(offset*chunksize/len(x))))))
+
+    def writePositionsToNumpyFile(self, chunksize):
+        def _chunks(l, n):
+            n = max(1, n)
+            return [l[i:i + n] for i in range(0, len(l), n)]
+
+        offset = 0
+        print("Now writing numpy files to disk")
+        new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('structuredForRole') + 1:]
+        for x_chunk in _chunks(self.data_x, chunksize):
+            with open('training_data/positions/processed/'+new_file_name_x+'_train_x_'+str(offset)+'.npz', "wb") as writer:
+                np.savez_compressed(writer, x_chunk)
+            offset += 1
+            print("{}% complete".format(int(min(100, 100*(offset*chunksize/len(self.data_x))))))
 
     @staticmethod
     def _uniformShuffle(l1, l2):
@@ -116,4 +164,4 @@ class ProcessTrainingData:
 
 if __name__ == "__main__":
     p = ProcessTrainingData()
-    p.buildNumpyDB()
+    p.buildNumpyDBForPositions()

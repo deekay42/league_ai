@@ -14,8 +14,11 @@ class Predictor:
         self.const = constants.ResConverter(img_width, img_height)
         summ_names_displayed = utils.summ_names_displayed()
         if summ_names_displayed:
-            item_x_offset = -9
-            item_y_offset = 11
+            #16:9 :
+            # item_x_offset = -9
+            # item_y_offset = 11
+            item_x_offset = -6
+            item_y_offset = 9
         else:
             item_x_offset = 0
             item_y_offset = 0
@@ -100,37 +103,32 @@ class Predictor:
         # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
         #                               network.SPELL_IMG_SIZE)
 
-        self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_mapper, self.self_model,
+        self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_model,
                                      self.self_graph,
                                      network.SELF_IMG_SIZE, True, True)
 
-        champs_str = [self.cvt.champ_int2string_old[champ] for champ in champs_int]
-        items_str = [self.cvt.item_int2string_old[champ] for champ in items_int]
+        champs_str = [self.cvt.champ_int2string_old[np.argmax(champ)] for champ in champs_int]
+        items_str = [self.cvt.item_int2string_old[np.argmax(item)] for item in items_int]
 
+        self_ = np.argmax(np.array(self_))
         print(champs_str)
         print(items_str)
         print(self_)
         # from string to id
-        champs_id = [self.cvt.champ_string2id_dict[champ] for champ in champs_str]
-        items_id = [self.cvt.item_string2id_dict[item] for item in items_str]
+        champs_id = [self.cvt.champ_string2id(champ) for champ in champs_str]
+        items_id = [self.cvt.item_string2id(item) for item in items_str]
+        # cnn maps to the wrong ints so we must do this ugly conversion
+        champs_int = [self.cvt.champ_id2int(champ) for champ in champs_id]
+        items_int = [self.cvt.item_id2int(item) for item in items_id]
 
-        return np.array(champs_int), np.array(champs_id), np.array(items_int), np.array(items_id), np.array(self_)
+        return np.array(champs_int), np.array(champs_id), np.array(items_int), np.array(items_id), self_
 
     def predict_next_items(self, X):
         # with next_graph.as_default():
-        Y_pred_int = self.next_model.predict(X)
-        Y_pred_int = np.reshape(Y_pred_int, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
-        Y_pred_str = []
-        counter = 0
-        for y in Y_pred_int:
-            pred_int = np.argmax(y)
-            if pred_int == 0:
-                pred_int = np.argmax(y[1:])
-                print("High uncertainty!"+counter)
-                counter += 1
-            pred_str = self.cvt.item_int2string(pred_int)
-            pred_id = self.cvt.item_string2id(pred_str)
-            Y_pred_str.append(pred_mapped)
-            Y_pred_id.append(pred_id)
-        return Y_pred_int, Y_pred_id, Y_pred_str
+        y = self.next_model.predict(X)
+        y_int = np.argmax(y)
+
+        y_str = self.cvt.item_int2string(y_int)
+        y_id = self.cvt.item_string2id(y_str)
+        return y_int, y_id, y_str
 

@@ -336,12 +336,49 @@ def train_self_network():
     training_data_generator = lambda img_size: generate.generate_training_data(self_imgs, 1024, img_size)
     train_elements_network(training_data_generator, network.SELF_IMG_SIZE, NUM_SELF, 0.01)
 
+def train_positions_network():
+
+    # model.load('./models/my_model1')
+    print("Loading training data")
+    dataloader = data_loader.PositionsDataLoader()
+    print("Encoding training data")
+    X, Y = dataloader.get_train_data()
+
+    print("Encoding test data")
+    X_test, Y_test = dataloader.get_test_data()
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+        tflearn.is_training(True, session=sess)
+    # with tf.device('/device:GPU:0'):
+        print("Building model")
+        net = network.classify_positions(network.positions_game_config, network.positions_network_config)
+        model = tflearn.DNN(net, tensorboard_verbose=0, session=sess)
+        sess.run(tf.global_variables_initializer())
+        print("Commencing training")
+        with open("models/positions/accuracies", "w") as f:
+            class MonitorCallback(tflearn.callbacks.Callback):
+
+                def on_epoch_end(self, training_state):
+                    f.write("Epoch {0} train accuracy {1:.4f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
+                    f.flush()
+                    pass
+
+            monitorCallback = MonitorCallback()
+            for epoch in range(num_epochs):
+                model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
+                          show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
+                pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
+                print("eval is {0:.4f}".format(pred1[0]))
+
+                model.save('models/positions/my_model' + str(epoch + 1))
+                f.write("Epoch {0} eval accuracy {1:.4f}\n".format(epoch + 1, pred1[0]))
+                f.flush()
+
 
 def train_elements_network():
 
     # model.load('./models/my_model1')
     print("Loading training data")
-    dataloader = data_loader.DataLoader()
+    dataloader = data_loader.NextItemsDataLoader()
     print("Encoding training data")
     X, Y = dataloader.get_train_data(1)
 
@@ -400,4 +437,4 @@ def train_elements_network():
                 f.flush()
 
 if __name__ == '__main__':
-    train_elements_network()
+    train_positions_network()

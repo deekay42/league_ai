@@ -191,6 +191,7 @@ def classify_self(img_size, num_elements, learning_rate):
     return regression(net, optimizer='adam', learning_rate=learning_rate,
                       loss='binary_crossentropy', name='target')
 
+
 def multi_class_acc(pred, target, input):
     pred = tf.reshape(pred, [-1, 5, 204])
     target = tf.reshape(target, [-1, 5, 204])
@@ -206,6 +207,73 @@ def multi_class_top_k_acc(preds, targets, input):
     correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 4)
     acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return acc
+
+def multi_class_acc_positions(pred, target, input):
+    pred = tf.reshape(pred, [-1, 5, 5])
+    target = tf.reshape(target, [-1, 5, 5])
+    correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+    # all_labels_true = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 2)
+    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    return acc
+
+positions_game_config = \
+    {
+        "champs_per_team": 5,
+        "total_num_champs": 141,
+        "spells_per_summ": 2,
+        "total_num_spells": 10,
+        "rest_dim": 8
+    }
+
+positions_network_config = \
+    {
+        "learning_rate": 0.001,
+        "champ_emb_dim": 6,
+        "item_emb_dim": 7,
+        "all_items_emb_dim": 10,
+        "champ_all_items_emb_dim": 12,
+        "target_summ": 1
+    }
+
+
+def classify_positions(game_config, network_config):
+    champs_per_team = game_config["champs_per_team"]
+    total_num_champs = game_config["total_num_champs"]
+    spells_per_summ = game_config["spells_per_summ"]
+    total_num_spells = game_config["total_num_spells"]
+    rest_dim = game_config["rest_dim"]
+
+    learning_rate = network_config["learning_rate"]
+    champ_emb_dim = network_config["champ_emb_dim"]
+
+
+
+    in_vec = input_data(shape=[None, champs_per_team + champs_per_team*(spells_per_summ + rest_dim)], name='input')
+
+    champ_ints = in_vec[:, 0:champs_per_team]
+    champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
+                       scope="champ_scope")
+    champs = tf.reshape(champs, [-1, champs_per_team * champ_emb_dim])
+
+    spell_ints = in_vec[:, champs_per_team:champs_per_team+spells_per_summ*champs_per_team]
+    spell_ints = tf.reshape(spell_ints, [-1, champs_per_team, spells_per_summ])
+
+    spells_one_hot_i = tf.one_hot(tf.cast(spell_ints, tf.int32), depth=total_num_spells)
+    spells_one_hot = tf.reduce_sum(spells_one_hot_i, axis=2)
+    spells_one_hot = tf.reshape(spells_one_hot, [-1, champs_per_team*total_num_spells])
+
+    final_input_layer = merge([champs, spells_one_hot, in_vec[:,champs_per_team+spells_per_summ*champs_per_team:]], mode='concat', axis=1)
+
+    net = relu(
+        batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
+
+    net = fully_connected(net, champs_per_team*champs_per_team, activation=None)
+
+    return regression(net, optimizer='adam', to_one_hot=False, shuffle_batches=True,
+                      learning_rate=learning_rate,
+                      loss='binary_crossentropy', name='target', metric=multi_class_acc_positions)
+
+
 
 game_config = \
     {

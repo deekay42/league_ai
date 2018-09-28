@@ -22,7 +22,7 @@ class Main:
         # self.show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         # self.flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         # self.predict = Predictor(*self.res)
-        self.predict = Predictor(1440,810)
+        self.predict = Predictor(1920,1080)
         self.cvt = utils.Converter()
 
 
@@ -85,7 +85,7 @@ class Main:
 
     def run(self):
 
-        for current in sorted(glob.glob('screenies/streamers/*')):
+        for current in sorted(glob.glob('screenies/weird/*')):
             # keyboard.wait('tab')
             print('you pressed tab + f12 '+current)
             time.sleep(2)
@@ -123,10 +123,9 @@ class Main:
                     champs_id, items_id = self.swapTeams(champs_id, items_id)
 
 
-                # items_int = self.swapItems(items_int)
-                # items_id = self.swapItems(items_id)
-                # champs_int = self.swapChamps(champs_int)
-                # champs_id = self.swapChamps(champs_id)
+                items_int = self.swapItems(items_int)
+                items_id = self.swapItems(items_id)
+                champs_int = self.swapChamps(champs_int)
 
 
                 summ_next_item_cass = None
@@ -140,16 +139,20 @@ class Main:
                         print(self.cvt.item_id2string(next_item.id))
 
                     abs_items[-1] = list(filter(lambda a: a != 0, abs_items[-1]))
-                    items_id[summ_index * 6:summ_index * 6 + 6] = np.pad(abs_items[-1], (0, 6 - len(abs_items[-1])),
-                                                                          'constant',
-                                                                          constant_values=(
-                                                                              0, 0))
-                    new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
-                    items_int[summ_index * 6:summ_index * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
-                                                                          'constant',
-                                                                          constant_values=(
-                                                                              0, 0))
-                    summ_next_item_cass = cass.Item(id=next_items_id, region="KR")
+                    try:
+                        items_id[summ_index * 6:summ_index * 6 + 6] = np.pad(abs_items[-1], (0, 6 - len(abs_items[-1])),
+                                                                              'constant',
+                                                                              constant_values=(
+                                                                                  0, 0))
+                        new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
+                        items_int[summ_index * 6:summ_index * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
+                                                                              'constant',
+                                                                              constant_values=(
+                                                                                  0, 0))
+                        summ_next_item_cass = cass.Item(id=next_items_id, region="KR")
+                    except:
+                        break
+
 
 
 m = Main()
