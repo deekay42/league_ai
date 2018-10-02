@@ -212,8 +212,8 @@ def multi_class_acc_positions(pred, target, input):
     pred = tf.reshape(pred, [-1, 5, 5])
     target = tf.reshape(target, [-1, 5, 5])
     correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
-    # all_labels_true = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 2)
-    acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    all_correct = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 1)
+    acc = tf.reduce_mean(all_correct)
     return acc
 
 positions_game_config = \
@@ -227,7 +227,7 @@ positions_game_config = \
 
 positions_network_config = \
     {
-        "learning_rate": 0.001,
+        "learning_rate": 0.00025,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,

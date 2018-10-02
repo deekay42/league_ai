@@ -63,6 +63,16 @@ class Converter:
         for champ in champ2id.values():
             self.champ_dict.update(dict.fromkeys([('str', champ['name']), ('id', champ['id']), ('int', champ['int'])], champ))
 
+        with open('res/spell2id') as f:
+            spell2id = json.load(f)
+
+        self.spell_dict = dict()
+        for spell in spell2id.values():
+            self.spell_dict.update(dict.fromkeys([('str', spell['name']), ('id', spell['id']), ('int', spell['int'])], spell))
+
+    def spell_id2int(self, id):
+        return self.spell_dict.get(('id', id)).get('int')
+
     def champ_int2id(self, id):
         return self.champ_dict.get(('int', id)).get('id')
 
@@ -272,4 +282,4 @@ def getResolution():
     # TODO:
 
 def summ_names_displayed():
-    return True
+    return False
