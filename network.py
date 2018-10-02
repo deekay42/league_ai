@@ -264,8 +264,11 @@ def classify_positions(game_config, network_config):
 
     final_input_layer = merge([champs, spells_one_hot, in_vec[:,champs_per_team+spells_per_summ*champs_per_team:]], mode='concat', axis=1)
 
+    net = dropout(final_input_layer, 0.9)
+
     net = relu(
-        batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
+    net = dropout(net, 0.7)
 
     net = fully_connected(net, champs_per_team*champs_per_team, activation=None)
 
