@@ -227,7 +227,7 @@ positions_game_config = \
 
 positions_network_config = \
     {
-        "learning_rate": 0.00025,
+        "learning_rate": 0.001,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,
