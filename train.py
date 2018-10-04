@@ -346,6 +346,17 @@ def train_positions_network():
 
     print("Encoding test data")
     X_test, Y_test = dataloader.get_test_data()
+
+
+    # for i in range(1,44):
+    #     with tf.Graph().as_default():
+    #         net = network.classify_positions(network.positions_game_config, network.positions_network_config)
+    #         model = tflearn.DNN(net, tensorboard_verbose=0)
+    #         model.load('./position_models/models_improved/positions/my_model'+str(i))
+    #         pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
+    #         print(i)
+    #         print("eval is {0:.4f}".format(pred1[0]))
+
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
@@ -384,23 +395,6 @@ def train_elements_network():
 
     print("Encoding test data")
     X_test, Y_test = dataloader.get_test_data(1)
-        # cvt = utils.Converter()
-        # counter = 0
-        # for x,y in zip(X_test, Y_test):
-        #     counter += 1
-        #     x_champs_str = [cvt.champ_int2string(champ) for champ in x[:10]]
-        #     x_items_str = [cvt.item_int2string(item) for item in x[10:]]
-        #     y_items_str = [cvt.item_int2string(item) for item in y]
-        #
-        #     x_champs_id = [cvt.champ_int2id(champ) for champ in x[:10]]
-        #     x_items_id = [cvt.item_int2id(item) for item in x[10:]]
-        #     y_items_id = [cvt.item_int2id(item) for item in y]
-        #
-        #     Y_pred = model.predict([x])
-        #     Y_pred = np.reshape(Y_pred, [network.game_config["champs_per_team"], network.game_config["total_num_items"]])
-        #     Y_pred = np.argmax(Y_pred, axis=1)
-        #     Y_pred_mapped = [cvt.item_int2string(y) for y in Y_pred]
-        #     a = 42
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):

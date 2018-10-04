@@ -208,13 +208,58 @@ def multi_class_top_k_acc(preds, targets, input):
     acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
     return acc
 
+# def multi_class_acc_positions(pred, target, input):
+#     pred_5x5 = tf.reshape(pred, [-1, 5, 5])
+#
+#     correct = 0
+#     tf.map_fn(lambda x:, elems_flat)
+#
+#     for example in pred_5x5:
+#         final_pred = [-1, -1, -1, -1, -1]
+#         for _ in range(5):
+#             summ, role = tf.unravel_index(tf.argmax(example), (5,5))
+#             example[summoner, :] = float('-inf')
+#             example[:, role] = float('-inf')
+#             final_pred[summ] = tf.one_hot(role, depth=5)
+#         correct += tf.equal(final_pred, target)
+#     return correct/batch_len
+
+def permute(a, l, r):
+    if l==r:
+        yield list(zip([0,1,2,3,4],a))
+    else:
+        for i in range(l,r+1):
+            a[l], a[i] = a[i], a[l]
+            yield from permute(a, l+1, r)
+            a[l], a[i] = a[i], a[l]
+
+def best_permutations_one_hot(pred):
+    pred_5x5 = tf.reshape(pred, [-1, 5, 5])
+    pred_5x5_T = tf.transpose(pred_5x5, (1, 2, 0))
+    all_perms = tf.constant(list(permute([0, 1, 2, 3, 4], 0, 4)))
+    selected_elemens_per_example = tf.gather_nd(pred_5x5_T, all_perms)
+    sums_per_example = tf.reduce_sum(selected_elemens_per_example, axis=1)
+    best_perm_per_example_index = tf.argmax(sums_per_example, axis=0)
+    best_perms = tf.gather_nd(all_perms, best_perm_per_example_index[:, tf.newaxis])[:, :, 1]
+    pred_5x5_one_hot = tf.reshape(tf.one_hot(best_perms, depth=5), (-1, 5, 5))
+    return pred_5x5_one_hot
+
 def multi_class_acc_positions(pred, target, input):
-    pred = tf.reshape(pred, [-1, 5, 5])
-    target = tf.reshape(target, [-1, 5, 5])
-    correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+    pred_5x5_one_hot = best_permutations_one_hot(pred)
+    target_5x5 = tf.reshape(target, [-1, 5, 5])
+    correct_prediction = tf.equal(tf.argmax(pred_5x5_one_hot, axis=2), tf.argmax(target_5x5, axis=2))
     all_correct = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 1)
     acc = tf.reduce_mean(all_correct)
     return acc
+
+#
+# def multi_class_acc_positions(pred, target, input):
+#     pred = tf.reshape(pred, [-1, 5, 5])
+#     target = tf.reshape(target, [-1, 5, 5])
+#     correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+#     all_correct = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 1)
+#     acc = tf.reduce_mean(all_correct)
+#     return acc
 
 positions_game_config = \
     {
@@ -261,14 +306,15 @@ def classify_positions(game_config, network_config):
     spells_one_hot_i = tf.one_hot(tf.cast(spell_ints, tf.int32), depth=total_num_spells)
     spells_one_hot = tf.reduce_sum(spells_one_hot_i, axis=2)
     spells_one_hot = tf.reshape(spells_one_hot, [-1, champs_per_team*total_num_spells])
+    rest = in_vec[:,champs_per_team+spells_per_summ*champs_per_team:]
 
-    final_input_layer = merge([champs, spells_one_hot, in_vec[:,champs_per_team+spells_per_summ*champs_per_team:]], mode='concat', axis=1)
+    final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 
-    net = dropout(final_input_layer, 0.9)
+    net = dropout(final_input_layer, 0.8)
 
     net = relu(
         batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
-    net = dropout(net, 0.7)
+    net = dropout(net, 0.6)
 
     net = fully_connected(net, champs_per_team*champs_per_team, activation=None)
 

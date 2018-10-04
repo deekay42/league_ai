@@ -79,13 +79,9 @@ def get_team_positions(team, predictor):
 cass.set_default_region("NA")
 cass.apply_settings(config)
 
-match = cass.get_match(3102390845, region="KR")
+match = cass.get_match(3092968903, region="KR")
 predictor = PredictRoles()
 roles_winning_team = get_team_positions(match.blue_team, predictor)
-
-
-
-
 
 def get_match_ids(summoners):
     # with open("matchids", "r") as f:
@@ -203,4 +199,4 @@ def main():
 
 if __name__ == "__main__":
     match = cass.get_match(3102390845, region="KR")
-    get_team_positions(match.blue_team)
+    get_team_positions(match.blue_team, predictor)

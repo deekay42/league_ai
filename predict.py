@@ -149,15 +149,10 @@ class PredictRoles:
         champs = [self.cvt.champ_id2int(champ) for champ in champs]
         spells = [self.cvt.spell_id2int(spell) for spell in spells]
         input = np.concatenate([champs, spells, rest], axis=0)
-        input = np.array([   46,26,73, 5,44, 5, 4, 9, 4, 8, 4, 4
-, 6, 2, 4, 5, 5, 8, 11891,15,132,39,16, 5
-, 3, 6, 14969,17,262, 8, 7, 7, 9, 7,13400,15
-,81,104,13, 1, 5, 8, 13940,16,295,12,12, 2
-, 5, 9,10358,14,15, 0,30])
-        y = self.model.predict([input])
-        y = np.reshape(y,(5,5))
-        y = [np.argmax(pred) for pred in y]
-        champ_roles = [self.roles[tuple(role)] for role in y]
-        champs = [self.cvt.champ_int2id(champ) for champ in y[0]]
+        pred = self.model.predict([input])
+        with tf.Graph().as_default(), tf.Session() as sess:
+            final_pred = network.best_permutations_one_hot(pred)
+            final_pred = sess.run(final_pred)[0]
+        champ_roles = [self.roles[tuple(role)] for role in final_pred]
+        champs = [self.cvt.champ_int2id(champ) for champ in champs]
         return dict(zip(champ_roles, champs))
-
