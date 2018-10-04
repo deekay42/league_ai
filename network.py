@@ -272,7 +272,7 @@ positions_game_config = \
 
 positions_network_config = \
     {
-        "learning_rate": 0.00025,
+        "learning_rate": 0.001,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,
@@ -310,11 +310,11 @@ def classify_positions(game_config, network_config):
 
     final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 
-    net = dropout(final_input_layer, 0.8)
+    # net = dropout(final_input_layer, 0.8)
 
     net = relu(
         batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
-    net = dropout(net, 0.6)
+    # net = dropout(net, 0.6)
 
     net = fully_connected(net, champs_per_team*champs_per_team, activation=None)
 
