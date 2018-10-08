@@ -409,7 +409,6 @@ def train_elements_network():
                 def on_epoch_end(self, training_state):
                     f.write("Epoch {0} train accuracy {1:.4f} | loss {2:.4f}\n".format(training_state.epoch,training_state.acc_value, training_state.global_loss))
                     f.flush()
-                    pass
 
             monitorCallback = MonitorCallback()
             for epoch in range(num_epochs):
@@ -431,4 +430,4 @@ def train_elements_network():
                 f.flush()
 
 if __name__ == '__main__':
-    train_positions_network()
+    train_elements_network()

@@ -79,10 +79,6 @@ def get_team_positions(team, predictor):
 cass.set_default_region("NA")
 cass.apply_settings(config)
 
-match = cass.get_match(3092968903, region="KR")
-predictor = PredictRoles()
-roles_winning_team = get_team_positions(match.blue_team, predictor)
-
 def get_match_ids(summoners):
     # with open("matchids", "r") as f:
     #     match_ids = f.readlines()
@@ -91,12 +87,18 @@ def get_match_ids(summoners):
 
     match_ids = set()
 
-    with open("matchids2", "w") as f:
+    with open("scrape/matchids", "w") as f:
+        f.write('[')
+        first = True
         for summoner in summoners:
             try:
                 summ_match_hist = summoner.match_history(queues={Queue.ranked_solo_fives},
-                                                                  begin_time=arrow.Arrow(2018, 8, 1, 0, 0, 0))
+                                                                  begin_time=arrow.Arrow(2018, 9, 16, 0, 0, 0))
                 for match in summ_match_hist:
+                    if first:
+                        first = False
+                    else:
+                        f.write(',')
                     match_id = match.id
                     if match_id in match_ids:
                         continue
@@ -105,11 +107,12 @@ def get_match_ids(summoners):
                 f.flush()
             except HTTPError:
                 print('ERROR: There was an error obtaining this summoners match history')
+        f.write(']')
     return match_ids
 
 def get_top_summoners(num):
     elite_summoners = cass.get_challenger_league(Queue.ranked_solo_fives, 'KR').entries + cass.get_master_league(Queue.ranked_solo_fives, 'KR').entries
-    with open("res/diamond_league_ids") as f:
+    with open("scrape/diamond_league_ids") as f:
         leagues = f.readlines()
     leagues = [x.strip() for x in leagues]
     high_dia_summoners = []
@@ -123,28 +126,44 @@ def get_top_summoners(num):
 
 def main():
     sort_order = [Role.top, Role.jungle, Role.middle, Role.adc, Role.support]
-    champion_roles = get_data()
+    predictor = PredictRoles()
+    lane2role = {Lane.bot_lane: Role.adc, Lane.jungle: Role.jungle, Lane.mid_lane: Role.middle,
+     Lane.top_lane: Role.top}
+
+
     # summoners = get_top_summoners(10000)
-    # with open("summoner_account_ids_2", "w") as f:
+    # with open("scrape/summoner_account_ids", "w") as f:
+    #     f.write('[')
+    #     first = True
     #     for summoner in summoners:
+    #         if first:
+    #             first = False
+    #         else:
+    #             f.write(',')
     #         f.write(str(summoner.summoner.account.id)+'\n')
-    # with open("cha_mas_dia1_account_ids", encoding='utf-8') as f:
+    #     f.write(']')
+
+
+    # with open("scrape/summoner_account_ids", encoding='utf-8') as f:
     #     summoners = f.readlines()
     # summoners = [Summoner(account=int(x.strip()), region='KR') for x in summoners]
+
+
     # match_ids = get_match_ids(summoners)
     #
-    # print("Number of matches found:"+str(len(match_ids)))
-    with open("matchids_final_interrupted3", "r") as f:
-        match_ids = f.readlines()
-    match_ids = [int(x.strip()) for x in match_ids]
+
+
+
+    with open("scrape/matchids_left_final2", "r") as f:
+        match_ids = json.load(f)
     first = True
-    with open("matches4", "w") as f:
+    with open("scrape/matches3", "w") as f:
         f.write('[')
 
         for match_id in match_ids:
             try:
                 if first:
-                   first = True
+                   first = False
                 else:
                     f.write(',')
                 match = cass.get_match(match_id, region="KR")
@@ -159,19 +178,35 @@ def main():
                 if losing_team.win:
                     winning_team, losing_team = losing_team, winning_team
 
-                winning_team_positions = [participant.timeline.lane for participant in winning_team]
-                losing_team_positions = [participant.timeline.lane for participant in losing_team]
+                winning_team_positions = [participant.timeline.lane for participant in winning_team.participants]
+                losing_team_positions = [participant.timeline.lane for participant in losing_team.participants]
 
-                if not (sorted(winning_team_positions) == sorted(losing_team_positions) == ["BOTTOM", "BOTTOM", "JUNGLE", "MIDDLE", "TOP"]):
+                team_roles = [-1,-1]
+
+                if not (None not in winning_team_positions and None not in losing_team_positions and (sorted(winning_team_positions, key=lambda x: x.value) == [Lane.bot_lane, Lane.bot_lane, Lane.jungle, Lane.mid_lane,
+                                                           Lane.top_lane] == sorted(
+                        losing_team_positions, key=lambda x: x.value))):
                     roles_winning_team = get_team_positions(winning_team, predictor)
                     roles_losing_team = get_team_positions(losing_team, predictor)
+                else:
+                    for i, (team_positions, team) in enumerate(zip([winning_team_positions, losing_team_positions], [winning_team, losing_team])):
+                        team_roles[i] = [lane2role[pos] for pos in team_positions]
+                        first_adc_i = team_roles[i].index(Role.adc)
+                        second_adc_i = len(team_roles[i]) - team_roles[i][-1::-1].index(Role.adc) - 1
+                        if team.participants[first_adc_i].stats.total_minions_killed > team.participants[second_adc_i].stats.total_minions_killed:
+                            team_roles[i][second_adc_i] = Role.support
+                        else:
+                            team_roles[i][first_adc_i] = Role.support
+                    roles_winning_team = dict(zip(team_roles[0], [participant.champion.id for participant in winning_team.participants]))
+                    roles_losing_team = dict(zip(team_roles[1], [participant.champion.id for participant in losing_team.participants]))
+
                 teams = []
                 for position in sort_order:
                     teams.append({"championId": roles_winning_team[position],
-                              "participantId": champ2participant[roles_winning_team[position].id]})
+                              "participantId": champ2participant[roles_winning_team[position]]})
                 for position in sort_order:
                     teams.append({"championId": roles_losing_team[position],
-                              "participantId": champ2participant[roles_losing_team[position].id]})
+                              "participantId": champ2participant[roles_losing_team[position]]})
                 events = []
                 for frame in match.timeline.frames:
                     for event in frame.events:
@@ -189,14 +224,11 @@ def main():
                 f.write(json.dumps({"gameId": match_id, "participants": teams, "itemsTimeline": events}))
                 f.flush()
             except HTTPError:
-                print('ERROR: There was an error obtaining this match')
-            finally:
-                print('ERROR: Skipping this one')
-
-        # f.seek(-1, f.tell())
-        # f.write(']')
+                print('HTTP ERROR: There was an error obtaining this match. Skip.')
+            except Exception:
+                print('ERROR: There was an error obtaining this match. Skip.')
+        f.write(']')
 
 
 if __name__ == "__main__":
-    match = cass.get_match(3102390845, region="KR")
-    get_team_positions(match.blue_team, predictor)
+    main()

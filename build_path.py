@@ -105,7 +105,7 @@ def main():
                         if new_item:
                             new_item = cass.Item(id=int(new_item), region="KR")
                             l = new_item.name
-                            insert_item_states = build_path(prev_state[summ_index], new_item)
+                            insert_item_states = build_path(prev_state[summ_index], new_item)[2]
                             if len(insert_item_states) > 1:
                                 for summ_item_state in insert_item_states:
                                     if len(summ_item_state) <= MAX_ITEMS_PER_SUMM:

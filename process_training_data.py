@@ -73,19 +73,6 @@ class ProcessTrainingData:
             counter += 1
 
         print("Writing to disk...")
-
-        new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('absolute_') + 1:]
-        for x_chunk, y_chunk in zip(_chunks(x, chunksize), _chunks(y, chunksize)):
-            with open('training_data/processed/' + new_file_name_x + '_train_x_' + str(offset) + '.npz',
-                      "wb") as writer:
-                np.savez_compressed(writer, x_chunk)
-            with open('training_data/processed/' + new_file_name_y + '_train_y_' + str(offset) + '.npz',
-                      "wb") as writer:
-                np.savez_compressed(writer, y_chunk)
-
-            offset += 1
-            print("{}% complete".format(int(min(100, 100 * (offset * chunksize / len(x))))))
-
         self.writeNextItemToNumpyFile(EXAMPLES_PER_CHUNK)
 
     def buildNumpyDBForPositions(self):
@@ -164,4 +151,4 @@ class ProcessTrainingData:
 
 if __name__ == "__main__":
     p = ProcessTrainingData()
-    p.buildNumpyDBForPositions()
+    p.buildNumpyDB()
