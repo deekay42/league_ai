@@ -13,7 +13,7 @@ import data_loader
 import tensorflow as tf
 
 num_epochs = 100000
-batch_size = 128
+batch_size = 512
 num_examples = 1024
 
 NUM_SPELLS = 9
