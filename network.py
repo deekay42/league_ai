@@ -360,11 +360,11 @@ def classify_next_item(game_config, network_config):
 
     in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
     #  5 elements long
-    pos = in_vec[:, :champs_per_team]
+    # pos = in_vec[:, :champs_per_team]
     #  10 elements long
-    champ_ints = in_vec[:, champs_per_team:champs_per_game+champs_per_team]
+    champ_ints = in_vec[:, :champs_per_game]
     # 60 elements long
-    item_ints = in_vec[:, champs_per_game+champs_per_team:]
+    item_ints = in_vec[:, champs_per_game:]
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
@@ -404,13 +404,13 @@ def classify_next_item(game_config, network_config):
     final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
     net = dropout(final_input_layer, 0.9)
     net = relu(
-        batch_normalization(fully_connected(net, 1024, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.7)
     net = relu(
-        batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.6)
 
-    net = merge([net, pos], mode='concat', axis=1)
+    # net = merge([net, pos], mode='concat', axis=1)
 
     net = fully_connected(net, total_num_items, activation='softmax')
 
