@@ -66,7 +66,7 @@ class NextItemsDataLoader(DataLoaderBase):
             print("Thread "+str(self.counter)+" complete")
 
     def _generate_train_test_data(self, train_test_x, train_test_y):
-        num_threads = 4
+        num_threads = 8
         collective_x = []
         collective_y = []
         threads = []
