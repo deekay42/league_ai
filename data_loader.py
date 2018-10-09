@@ -58,12 +58,12 @@ class NextItemsDataLoader(DataLoaderBase):
             return np.array(result_train_x), np.array(result_train_y)
 
         def run(self):
-            print("Thread " + str(counter) + " started")
+            print("Thread " + str(self.counter) + " started")
             x,y = self.generate_train_data()
             with self.threadLock:
                 self.return_x.extend(x)
                 self.return_y.extend(y)
-            print("Thread "+str(counter)+" complete")
+            print("Thread "+str(self.counter)+" complete")
 
     def _generate_train_test_data(self, train_test_x, train_test_y):
         num_threads = 4
