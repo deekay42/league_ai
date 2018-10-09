@@ -108,9 +108,6 @@ class ProcessTrainingData:
         self.writePositionsToNumpyFile(EXAMPLES_PER_CHUNK)
 
     def writeNextItemToNumpyFile(self, chunksize):
-        def _chunks(l, n):
-            n = max(1, n)
-            return [l[i:i + n] for i in range(0, len(l), n)]
 
         x = list(self.data_x_y.keys())
         y = list(self.data_x_y.values())
@@ -118,7 +115,7 @@ class ProcessTrainingData:
         print("Now writing numpy files to disk")
         new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('absolute_') + 1:]
         new_file_name_y = self.y_filename[self.y_filename.rfind("/") + len('next_') + 1:]
-        for x_chunk, y_chunk in zip(_chunks(x, chunksize), _chunks(y, chunksize)):
+        for x_chunk, y_chunk in zip(utils.chunks(x, chunksize), utils.chunks(y, chunksize)):
             with open('training_data/next_items/processed/'+new_file_name_x+'_train_x_'+str(offset)+'.npz', "wb") as writer:
                 np.savez_compressed(writer, x_chunk)
             with open('training_data/next_items/processed/'+new_file_name_y+'_train_y_'+str(offset)+'.npz', "wb") as writer:
@@ -128,14 +125,11 @@ class ProcessTrainingData:
             print("{}% complete".format(int(min(100, 100*(offset*chunksize/len(x))))))
 
     def writePositionsToNumpyFile(self, chunksize):
-        def _chunks(l, n):
-            n = max(1, n)
-            return [l[i:i + n] for i in range(0, len(l), n)]
 
         offset = 0
         print("Now writing numpy files to disk")
         new_file_name_x = self.x_filename[self.x_filename.rfind("/") + len('structuredForRole') + 1:]
-        for x_chunk in _chunks(self.data_x, chunksize):
+        for x_chunk in utils.chunks(self.data_x, chunksize):
             with open('training_data/positions/processed/'+new_file_name_x+'_train_x_'+str(offset)+'.npz', "wb") as writer:
                 np.savez_compressed(writer, x_chunk)
             offset += 1
