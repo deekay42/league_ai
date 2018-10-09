@@ -335,7 +335,7 @@ game_config = \
 
 next_network_config = \
     {
-        "learning_rate": 0.001,
+        "learning_rate": 0.00025,
         "champ_emb_dim": 6,
         "item_emb_dim": 7,
         "all_items_emb_dim": 10,
@@ -354,18 +354,17 @@ def classify_next_item(game_config, network_config):
     learning_rate = network_config["learning_rate"]
     champ_emb_dim = network_config["champ_emb_dim"]
     item_emb_dim = network_config["item_emb_dim"]
-    all_items_emb_dim = network_config["all_items_emb_dim"]
-    champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
-    target_summ = network_config["target_summ"]
 
     total_champ_dim = champs_per_game
     total_item_dim = champs_per_game * items_per_champ
 
     in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
+    #  5 elements long
+    pos = in_vec[:, :champs_per_team]
     #  10 elements long
-    champ_ints = in_vec[:, 0:champs_per_game]
+    champ_ints = in_vec[:, champs_per_team:champs_per_game+champs_per_team]
     # 60 elements long
-    item_ints = in_vec[:, champs_per_game:]
+    item_ints = in_vec[:, champs_per_game+champs_per_team:]
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
@@ -402,13 +401,13 @@ def classify_next_item(game_config, network_config):
                                   reuse=tf.AUTO_REUSE,
                                   scope="team_sum_scope")
 
-    final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
+    final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score, pos], mode='concat', axis=1)
     net = dropout(final_input_layer, 0.9)
     net = relu(
-        batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 1024, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.7)
     net = relu(
-        batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
+        batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.6)
 
 

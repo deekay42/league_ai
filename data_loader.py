@@ -28,28 +28,32 @@ class NextItemsDataLoader(DataLoaderBase):
         self.test_y_filenames = sorted(glob.glob('training_data/next_items/processed/*_test_y*.npz'))
         super().__init__()
 
-    def get_train_data(self, pos):
+    def get_train_data(self):
         train_x, train_y = [], []
+        pos_indicator = [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]
         for x, y in zip(self.train_x, self.train_y):
-            y_summ = y[pos]
-            if y_summ == 0:
-                continue
-            else:
-                train_x += [x]
-                train_y += [y_summ]
+            for pos in range(5):
+                y_summ = y[pos]
+                if y_summ == 0:
+                    continue
+                else:
+                    train_x += [np.concatenate([pos_indicator[pos], x])]
+                    train_y += [y_summ]
         self.train_x = np.array(train_x)
         self.train_y = np.array(train_y)
         return self.train_x, self.train_y
 
-    def get_test_data(self, pos):
+    def get_test_data(self):
         test_x, test_y = [], []
+        pos_indicator = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
         for x, y in zip(self.test_x, self.test_y):
-            y_summ = y[pos]
-            if y_summ == 0:
-                continue
-            else:
-                test_x += [x]
-                test_y += [y_summ]
+            for pos in range(5):
+                y_summ = y[pos]
+                if y_summ == 0:
+                    continue
+                else:
+                    test_x += [np.concatenate([pos_indicator[pos], x])]
+                    test_y += [y_summ]
         self.test_x = np.array(test_x)
         self.test_y = np.array(test_y)
         return self.test_x, self.test_y

@@ -22,7 +22,7 @@ class Main:
         # self.show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         # self.flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         # self.predict = Predictor(*self.res)
-        self.predict = Predictor(1920,1080)
+        self.predict = Predictor(1440,810)
         self.cvt = utils.Converter()
 
 
@@ -85,7 +85,7 @@ class Main:
 
     def run(self):
 
-        for current in sorted(glob.glob('screenies/weird/*')):
+        for current in sorted(glob.glob('screenies/streamers/*')):
             # keyboard.wait('tab')
             print('you pressed tab + f12 '+current)
             time.sleep(2)
@@ -123,9 +123,9 @@ class Main:
                     champs_id, items_id = self.swapTeams(champs_id, items_id)
 
 
-                items_int = self.swapItems(items_int)
-                items_id = self.swapItems(items_id)
-                champs_int = self.swapChamps(champs_int)
+                # items_int = self.swapItems(items_int)
+                # items_id = self.swapItems(items_id)
+                # champs_int = self.swapChamps(champs_int)
 
 
                 summ_next_item_cass = None

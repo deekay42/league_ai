@@ -282,4 +282,4 @@ def getResolution():
     # TODO:
 
 def summ_names_displayed():
-    return False
+    return True

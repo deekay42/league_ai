@@ -13,7 +13,7 @@ import data_loader
 import tensorflow as tf
 
 num_epochs = 100000
-batch_size = 512
+batch_size = 128
 num_examples = 1024
 
 NUM_SPELLS = 9
@@ -391,10 +391,10 @@ def train_elements_network():
     print("Loading training data")
     dataloader = data_loader.NextItemsDataLoader()
     print("Encoding training data")
-    X, Y = dataloader.get_train_data(1)
+    X, Y = dataloader.get_train_data()
 
     print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data(1)
+    X_test, Y_test = dataloader.get_test_data()
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
