@@ -391,10 +391,10 @@ def train_elements_network():
     print("Loading training data")
     dataloader = data_loader.NextItemsDataLoader()
     print("Encoding training data")
-    X, Y = dataloader.get_train_data()
+    X, Y = dataloader.get_train_data(0)
 
     print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data()
+    X_test, Y_test = dataloader.get_test_data(0)
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
