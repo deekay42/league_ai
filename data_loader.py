@@ -66,8 +66,8 @@ class NextItemsDataLoader(DataLoaderBase):
                 self.return_y.extend(y)
             print("Thread "+str(self.counter)+" complete")
 
-    def _generate_train_test_data(self, train_test_x, train_test_y):
-        num_threads = 4
+    def _generate_train_test_data_threaded(self, train_test_x, train_test_y):
+        num_threads = 1
         collective_x = []
         collective_y = []
         threads = []
@@ -79,6 +79,20 @@ class NextItemsDataLoader(DataLoaderBase):
         for thread in threads:
             thread.join()
         return collective_x, collective_y
+
+    def _generate_train_test_data(self, train_test_x, train_test_y):
+        result_train_test_x, result_train_test_y = [], []
+        # pos_indicator = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
+        for x, y in zip(train_test_x, train_test_y):
+            for pos in range(5):
+                y_summ = y[0]
+                if y_summ == 0:
+                    continue
+                else:
+                    # result_train_x += [np.concatenate([pos_indicator[pos], x])]
+                    result_train_test_x += [x]
+                    result_train_test_y += [y_summ]
+        return np.array(result_train_test_x), np.array(result_train_test_y)
 
 
     def get_train_data(self):
