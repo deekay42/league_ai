@@ -35,6 +35,7 @@ class NextItemsDataLoader(DataLoaderBase):
     class GenerateTrainingData(Thread):
 
         def __init__(self, train_x, train_y, return_x, return_y, counter, threadLock):
+            super(GenerateTrainingData, self).__init__()
             self.train_x = train_x
             self.train_y = train_y
             self.return_x = return_x
