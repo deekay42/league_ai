@@ -401,7 +401,7 @@ def classify_next_item(game_config, network_config):
                                   reuse=tf.AUTO_REUSE,
                                   scope="team_sum_scope")
 
-    final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score, pos], mode='concat', axis=1)
+    final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
     net = dropout(final_input_layer, 0.9)
     net = relu(
         batch_normalization(fully_connected(net, 1024, bias=False, activation=None, regularizer="L2")))
@@ -410,12 +410,8 @@ def classify_next_item(game_config, network_config):
         batch_normalization(fully_connected(net, 512, bias=False, activation=None, regularizer="L2")))
     net = dropout(net, 0.6)
 
+    net = merge([net, pos], mode='concat', axis=1)
 
-    # for i in range(5):
-    #     net = highway(net, 256, activation='elu', regularizer="L2", transform_dropout=0.8)
-    #
-
-    # net = fully_connected(final_input_layer, 256, activation='relu', regularizer='L2')
     net = fully_connected(net, total_num_items, activation='softmax')
 
     # TODO: consider using item embedding layer as output layer...
