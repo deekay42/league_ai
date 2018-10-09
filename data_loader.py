@@ -70,7 +70,7 @@ class NextItemsDataLoader(DataLoaderBase):
         collective_y = []
         threads = []
         for counter, (chunk_x, chunk_y) in enumerate(zip(np.array_split(train_test_x, num_threads), np.array_split(train_test_y, num_threads))):
-            thread = GenerateTrainingData(chunk_x, chunk_y, collective_x, collective_y, counter, self.threadLock)
+            thread = self.GenerateTrainingData(chunk_x, chunk_y, collective_x, collective_y, counter, self.threadLock)
             thread.start()
             threads.append(thread)
 
