@@ -107,7 +107,6 @@ class Main:
             items_id = np.ravel(items_id)
             items_id = [0 if item == 2055 else 3004 if item == 3042 else 3003 if item == 3040 else item for item in
                         items_id]
-            summ_index = 1
 
             champs_id_cpy, champs_int_cpy, items_id_cpy, items_int_cpy = copy.deepcopy(champs_id), copy.deepcopy(champs_int), copy.deepcopy(items_id), copy.deepcopy(items_int)
             for i in range(2):
@@ -117,41 +116,46 @@ class Main:
                 #     champs_id, items_id = self.swapTeams(champs_id, items_id)
                 #     summ_index -= 5
 
-                champs_id, champs_int, items_id, items_int = copy.deepcopy(champs_id_cpy), copy.deepcopy(champs_int_cpy), copy.deepcopy(items_id_cpy), copy.deepcopy(items_int_cpy)
-                if i:
-                    champs_int, items_int = self.swapTeams(champs_int, items_int)
-                    champs_id, items_id = self.swapTeams(champs_id, items_id)
-
 
                 # items_int = self.swapItems(items_int)
                 # items_id = self.swapItems(items_id)
                 # champs_int = self.swapChamps(champs_int)
+                print("\n")
+                for role in range(5):
+                    print("\nRole: "+str(role))
+                    champs_id, champs_int, items_id, items_int = copy.deepcopy(champs_id_cpy), copy.deepcopy(
+                        champs_int_cpy), copy.deepcopy(items_id_cpy), copy.deepcopy(items_int_cpy)
+                    if i:
+                        champs_int, items_int = self.swapTeams(champs_int, items_int)
+                        champs_id, items_id = self.swapTeams(champs_id, items_id)
+                        # items_int[12] = 96
+                        # items_id[12] = 3070
 
 
-                summ_next_item_cass = None
-                while summ_next_item_cass == None or summ_next_item_cass.tier < 2:
-                    next_items_input = np.concatenate([champs_int, items_int], axis=0)
-                    next_items_int, next_items_id, next_items_str = self.predict.predict_next_items([next_items_input])
-                    # print(next_items_str[summ_index])
-                    summ_curr_items = items_id[summ_index * 6:summ_index * 6 + 6]
-                    next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=next_items_id, region="KR"))
-                    for next_item in next_items:
-                        print(self.cvt.item_id2string(next_item.id))
+                    summ_next_item_cass = None
+                    while summ_next_item_cass == None or summ_next_item_cass.tier < 3:
+                        next_items_input = np.concatenate([champs_int, items_int], axis=0)
+                        next_items_int, next_items_id, next_items_str = self.predict.predict_next_items([next_items_input], role)
+                        # print(next_items_str[summ_index])
+                        summ_curr_items = items_id[role * 6:role * 6 + 6]
+                        next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=next_items_id, region="KR"))
+                        for next_item in next_items:
+                            print(self.cvt.item_id2string(next_item.id))
 
-                    abs_items[-1] = list(filter(lambda a: a != 0, abs_items[-1]))
-                    try:
-                        items_id[summ_index * 6:summ_index * 6 + 6] = np.pad(abs_items[-1], (0, 6 - len(abs_items[-1])),
-                                                                              'constant',
-                                                                              constant_values=(
-                                                                                  0, 0))
-                        new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
-                        items_int[summ_index * 6:summ_index * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
-                                                                              'constant',
-                                                                              constant_values=(
-                                                                                  0, 0))
-                        summ_next_item_cass = cass.Item(id=next_items_id, region="KR")
-                    except:
-                        break
+                        abs_items[-1] = list(filter(lambda a: a != 0, abs_items[-1]))
+                        try:
+                            items_id[role * 6:role * 6 + 6] = np.pad(abs_items[-1], (0, 6 - len(abs_items[-1])),
+                                                                                  'constant',
+                                                                                  constant_values=(
+                                                                                      0, 0))
+                            new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
+                            items_int[role * 6:role * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
+                                                                                  'constant',
+                                                                                  constant_values=(
+                                                                                      0, 0))
+                            summ_next_item_cass = cass.Item(id=next_items_id, region="KR")
+                        except:
+                            break
 
 
 

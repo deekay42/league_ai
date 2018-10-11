@@ -29,7 +29,7 @@ class Predictor:
         item_model_path = './best_models/items/my_model'
         spell_model_path = './best_models/spells/my_model'
         self_model_path = './best_models/self/my_model'
-        next_item_model_path = './best_models/next_items/my_model'
+        next_item_model_path = './best_models/next_items/'
 
         self.champ_mapper = utils.Converter().champ_int2string_old
         self.item_mapper = utils.Converter().item_int2string_old
@@ -66,11 +66,22 @@ class Predictor:
             self_network = network.classify_self(network.SELF_IMG_SIZE, train.NUM_SELF, 0.001)
             self.self_model = tflearn.DNN(self_network)
             self.self_model.load(self_model_path)
-        self.next_graph = tf.Graph()
-        # with self.next_graph.as_default():
-        next_network = network.classify_next_item(network.game_config, network.next_network_config)
-        self.next_model = tflearn.DNN(next_network, tensorboard_verbose=0)
-        self.next_model.load(next_item_model_path)
+
+
+        self.next_items_graph = []
+        self.next_model = []
+        for role in ['top', 'jg', 'mid', 'adc', 'sup']:
+            graph = tf.Graph()
+            self.next_items_graph.append(graph)
+            with graph.as_default():
+
+                next_network = network.classify_next_item(network.game_config, network.next_network_config)
+                model = tflearn.DNN(next_network, tensorboard_verbose=0)
+                # tflearn.config.init_training_mode()
+                # tflearn.config.is_training(False)
+                model.load(next_item_model_path+role+'/my_model')
+                self.next_model.append(model)
+
         self.cvt = utils.Converter()
         print("Complete")
 
@@ -124,9 +135,9 @@ class Predictor:
 
         return np.array(champs_int), np.array(champs_id), np.array(items_int), np.array(items_id), self_
 
-    def predict_next_items(self, X):
-        # with next_graph.as_default():
-        y = self.next_model.predict(X)
+    def predict_next_items(self, X, role):
+        with self.next_items_graph[role].as_default():
+            y = self.next_model[role].predict(X)
         y_int = np.argmax(y)
 
         y_str = self.cvt.item_int2string(y_int)
