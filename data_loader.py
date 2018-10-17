@@ -1,8 +1,8 @@
 import numpy as np
 import glob
 import itertools
-import h5py
-import h5py_cache as h5c
+# import h5py
+# import h5py_cache as h5c
 from threading import Lock, Thread
 from queue import Queue
 import time
