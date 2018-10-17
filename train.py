@@ -390,11 +390,13 @@ def train_elements_network():
     # model.load('./models/my_model1')
     print("Loading training data")
     dataloader = data_loader.NextItemsDataLoader()
-    print("Encoding training data")
-    X, Y = dataloader.get_train_data(0)
-
     print("Encoding test data")
-    X_test, Y_test = dataloader.get_test_data(0)
+    X_test, Y_test = dataloader.get_test_data()
+    X, Y = dataloader.get_train_data()
+    # X, Y = np.random.randint(100,size=1000*71).reshape(-1,71), np.arange(1000)
+    # X = np.array(X)
+    # X[:,0] = 0
+    # X_test, Y_test = X,Y
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         tflearn.is_training(True, session=sess)
     # with tf.device('/device:GPU:0'):
@@ -412,19 +414,16 @@ def train_elements_network():
 
             monitorCallback = MonitorCallback()
             for epoch in range(num_epochs):
-                model.fit(X,Y, n_epoch=1, shuffle=True, validation_set=None,
+                # while True:
+                #     X, Y = dataloader.get_next_train_subepoch(1)
+                #     X = np.concatenate(X, axis=0)
+                #     Y = np.concatenate(Y, axis=0)
+                #     if X == []:
+                #         break
+                model.fit(X,Y, shuffle=True, n_epoch=1, validation_set=None,
                           show_metric=True, batch_size=batch_size, run_id='whaddup_glib_globs'+str(epoch), callbacks=monitorCallback)
                 pred1 = model.evaluate(X_test, Y_test, batch_size=batch_size)
                 print("eval is {0:.4f}".format(pred1[0]))
-                # prediction = model.predict(X)
-                # print("Prediction 1 is")
-                # for i,j in zip(prediction[0], Y[0]):
-                #     print("{0:.2f} {1:.2f}".format(i,j))
-                # print("Prediction 2 is")
-                # for i,j in zip(prediction[1], Y[1]):
-                #     print("{0:.2f} {1:.2f}".format(i,j))
-
-
                 model.save('models/my_model' + str(epoch + 1))
                 f.write("Epoch {0} eval accuracy {1:.4f}\n".format(epoch + 1, pred1[0]))
                 f.flush()

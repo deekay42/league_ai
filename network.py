@@ -358,32 +358,39 @@ def classify_next_item(game_config, network_config):
     total_champ_dim = champs_per_game
     total_item_dim = champs_per_game * items_per_champ
 
-    in_vec = input_data(shape=[None, total_champ_dim + total_item_dim], name='input')
-    #  5 elements long
-    # pos = in_vec[:, :champs_per_team]
+    in_vec = input_data(shape=[None, 1 + total_champ_dim + total_item_dim], name='input')
+    #  1 elements long
+    pos = in_vec[:, 0]
+    pos = tf.cast(pos, tf.int32)
+    n = tf.shape(in_vec)[0]
+    batch_index = tf.range(n)
+    pos_index = tf.transpose([batch_index, pos], (1,0))
+
+
+    # Make tensor of indices for the first dimension
+
     #  10 elements long
-    champ_ints = in_vec[:, :champs_per_game]
+    champ_ints = in_vec[:, 1:champs_per_game+1]
     # 60 elements long
-    item_ints = in_vec[:, champs_per_game:]
+    item_ints = in_vec[:, champs_per_game+1:]
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
+    target_summ_champ = tf.gather_nd(champs, pos_index)
+    champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
     #                   scope="item_scope")
 
     items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
     items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
     items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
-    # target_summ_items = items_by_champ_k_hot[:, target_summ]
-    # target_summ_opponent_items = items_by_champ_k_hot[:, target_summ+champs_per_team]
-    items_by_champ_k_hot = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
-    summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot, item_emb_dim, bias=False, activation=None,
+    items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
+    target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+
+    items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+    summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
                                                 reuse=tf.AUTO_REUSE,
                                                 scope="item_sum_scope")
     summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
-
-    items_by_champ_k_hot = tf.reshape(items_by_champ_k_hot, [-1, total_num_items*champs_per_game])
-
-    champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
 
     summed_items_by_team1 = summed_items_by_champ[:, :champs_per_team * item_emb_dim]
     summed_items_by_team2 = summed_items_by_champ[:, champs_per_team * item_emb_dim:]
@@ -401,12 +408,13 @@ def classify_next_item(game_config, network_config):
                                   reuse=tf.AUTO_REUSE,
                                   scope="team_sum_scope")
 
-    final_input_layer = merge([items_by_champ_k_hot, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
-    # net = dropout(final_input_layer, 0.9)
-    net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu', regularizer="L2"))
-    # net = dropout(net, 0.7)
+    pos = tf.one_hot(pos, depth=champs_per_team)
+    final_input_layer = merge([pos, target_summ_champ, target_summ_items, items_by_champ_k_hot_flat, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
+    net = dropout(final_input_layer, 0.9)
+    net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
+    net = dropout(net, 0.7)
     net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
-    # net = dropout(net, 0.6)
+    net = dropout(net, 0.6)
 
     # net = merge([net, pos], mode='concat', axis=1)
 
