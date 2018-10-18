@@ -365,7 +365,7 @@ def classify_next_item(game_config, network_config):
     n = tf.shape(in_vec)[0]
     batch_index = tf.range(n)
     pos_index = tf.transpose([batch_index, pos], (1,0))
-
+    opp_pos_index = tf.transpose([batch_index, pos+champs_per_team], (1,0))
 
     # Make tensor of indices for the first dimension
 
@@ -376,6 +376,7 @@ def classify_next_item(game_config, network_config):
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
     target_summ_champ = tf.gather_nd(champs, pos_index)
+    target_summ_oppo = tf.gather_nd(champs, opp_pos_index)
     champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
     #                   scope="item_scope")
@@ -385,6 +386,7 @@ def classify_next_item(game_config, network_config):
     items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
     items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
     target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+    target_oppo_items = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
 
     items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
     summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
@@ -409,14 +411,15 @@ def classify_next_item(game_config, network_config):
                                   scope="team_sum_scope")
 
     pos = tf.one_hot(pos, depth=champs_per_team)
-    final_input_layer = merge([pos, target_summ_champ, target_summ_items, items_by_champ_k_hot_flat, summed_items_by_champ, champs, team1_score, team2_score], mode='concat', axis=1)
+    final_input_layer = merge([target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score], mode='concat', axis=1)
     net = dropout(final_input_layer, 0.9)
+    net = merge([net, pos], mode='concat', axis=1)
     net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
-    net = dropout(net, 0.7)
+    # net = dropout(net, 0.7)
+    net = merge([net, pos], mode='concat', axis=1)
     net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
-    net = dropout(net, 0.6)
-
-    # net = merge([net, pos], mode='concat', axis=1)
+    # net = dropout(net, 0.6)
+    net = merge([net, pos], mode='concat', axis=1)
 
     net = fully_connected(net, total_num_items, activation='softmax')
 
