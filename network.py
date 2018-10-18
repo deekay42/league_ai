@@ -411,7 +411,7 @@ def classify_next_item(game_config, network_config):
                                   scope="team_sum_scope")
 
     pos = tf.one_hot(pos, depth=champs_per_team)
-    final_input_layer = merge([target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score], mode='concat', axis=1)
+    final_input_layer = merge([target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score, champs], mode='concat', axis=1)
     net = dropout(final_input_layer, 0.9)
     net = merge([net, pos], mode='concat', axis=1)
     net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
