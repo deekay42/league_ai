@@ -379,7 +379,7 @@ def classify_next_item(game_config, network_config):
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
     target_summ_champ = tf.gather_nd(champs, pos_index)
-    target_summ_oppo = tf.gather_nd(champs, opp_pos_index)
+    target_oppo_champ = tf.gather_nd(champs, opp_pos_index)
     champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
     #                   scope="item_scope")
