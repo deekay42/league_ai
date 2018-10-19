@@ -336,8 +336,8 @@ game_config = \
 next_network_config = \
     {
         "learning_rate": 0.00025,
-        "champ_emb_dim": 6,
-        "item_emb_dim": 7,
+        "champ_emb_dim": 4,
+        "item_emb_dim": 6,
         "all_items_emb_dim": 10,
         "champ_all_items_emb_dim": 12,
         "target_summ": 1
@@ -388,17 +388,17 @@ def classify_next_item(game_config, network_config):
     items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
     items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
     items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
-    target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
-    target_oppo_items = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
+    target_summ_items_k_hot = tf.gather_nd(items_by_champ_k_hot, pos_index)
+    target_oppo_items_k_hot = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
 
     items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
     summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
                                                 reuse=tf.AUTO_REUSE,
                                                 scope="item_sum_scope")
     summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
-    # summed_items_by_champ_targeted = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, item_emb_dim))
-    # target_summ_items_emb = tf.gather_nd(summed_items_by_champ_targeted, pos_index)
-    # target_oppo_items_emb = tf.gather_nd(summed_items_by_champ_targeted, opp_pos_index)
+    summed_items_by_champ_targeted = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, item_emb_dim))
+    target_summ_items_emb = tf.gather_nd(summed_items_by_champ_targeted, pos_index)
+    target_oppo_items_emb = tf.gather_nd(summed_items_by_champ_targeted, opp_pos_index)
     summed_items_by_team1 = summed_items_by_champ[:, :champs_per_team * item_emb_dim]
     summed_items_by_team2 = summed_items_by_champ[:, champs_per_team * item_emb_dim:]
 
@@ -417,11 +417,11 @@ def classify_next_item(game_config, network_config):
 
     pos = tf.one_hot(pos, depth=champs_per_team)
 
-    target_summ_items = dropout(target_summ_items, 0.9)
-    target_oppo_items = dropout(target_oppo_items, 0.9)
+    # target_summ_items = dropout(target_summ_items, 0.9)
+    # target_oppo_items = dropout(target_oppo_items, 0.9)
 
     final_input_layer = merge(
-        [target_summ_champ_one_hot, target_summ_items, target_opp_champ_one_hot, target_oppo_items, team1_score, team2_score, champs],
+        [target_summ_champ, target_summ_items_k_hot, target_summ_items_emb, target_oppo_champ, target_oppo_items_k_hot, target_oppo_items_emb, team1_score, team2_score, champs],
         mode='concat', axis=1)
     # net = dropout(final_input_layer, 0.8)
     net = merge([final_input_layer, pos], mode='concat', axis=1)
