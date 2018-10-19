@@ -371,6 +371,9 @@ def classify_next_item(game_config, network_config):
 
     #  10 elements long
     champ_ints = in_vec[:, 1:champs_per_game+1]
+    champ_ints_by_champ = tf.reshape(champ_ints, (-1, champs_per_game, total_num_champs))
+    target_summ_champ_one_hot = tf.gather_nd(champ_ints_by_champ, pos_index)
+    target_opp_champ_one_hot = tf.gather_nd(champ_ints_by_champ, opp_pos_index)
     # 60 elements long
     item_ints = in_vec[:, champs_per_game+1:]
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
@@ -414,11 +417,11 @@ def classify_next_item(game_config, network_config):
 
     pos = tf.one_hot(pos, depth=champs_per_team)
 
-    target_summ_items = dropout(target_summ_items, 0.8)
-    target_oppo_items = dropout(target_oppo_items, 0.8)
+    target_summ_items = dropout(target_summ_items, 0.9)
+    target_oppo_items = dropout(target_oppo_items, 0.9)
 
     final_input_layer = merge(
-        [target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score, champs],
+        [target_summ_champ_one_hot, target_summ_items, target_opp_champ_one_hot, target_oppo_items, team1_score, team2_score, champs],
         mode='concat', axis=1)
     # net = dropout(final_input_layer, 0.8)
     net = merge([final_input_layer, pos], mode='concat', axis=1)
