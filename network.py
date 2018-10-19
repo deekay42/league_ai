@@ -371,7 +371,7 @@ def classify_next_item(game_config, network_config):
 
     #  10 elements long
     champ_ints = in_vec[:, 1:champs_per_game+1]
-    champ_ints_by_champ = tf.reshape(champ_ints, (-1, champs_per_game, total_num_champs))
+    champ_ints_by_champ = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
     target_summ_champ_one_hot = tf.gather_nd(champ_ints_by_champ, pos_index)
     target_opp_champ_one_hot = tf.gather_nd(champ_ints_by_champ, opp_pos_index)
     # 60 elements long
