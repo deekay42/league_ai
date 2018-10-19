@@ -414,8 +414,8 @@ def classify_next_item(game_config, network_config):
 
     pos = tf.one_hot(pos, depth=champs_per_team)
 
-    target_summ_items = dropout(target_summ_items, 0.6)
-    target_oppo_items = dropout(target_oppo_items, 0.6)
+    target_summ_items = dropout(target_summ_items, 0.8)
+    target_oppo_items = dropout(target_oppo_items, 0.8)
 
     final_input_layer = merge(
         [target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score, champs],
