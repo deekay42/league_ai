@@ -336,8 +336,8 @@ game_config = \
 next_network_config = \
     {
         "learning_rate": 0.00025,
-        "champ_emb_dim": 4,
-        "item_emb_dim": 6,
+        "champ_emb_dim": 6,
+        "item_emb_dim": 7,
         "all_items_emb_dim": 10,
         "champ_all_items_emb_dim": 12,
         "target_summ": 1
@@ -371,15 +371,12 @@ def classify_next_item(game_config, network_config):
 
     #  10 elements long
     champ_ints = in_vec[:, 1:champs_per_game+1]
-    champ_ints_by_champ = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
-    target_summ_champ_one_hot = tf.gather_nd(champ_ints_by_champ, pos_index)
-    target_opp_champ_one_hot = tf.gather_nd(champ_ints_by_champ, opp_pos_index)
     # 60 elements long
     item_ints = in_vec[:, champs_per_game+1:]
     champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                        scope="champ_scope")
     target_summ_champ = tf.gather_nd(champs, pos_index)
-    target_oppo_champ = tf.gather_nd(champs, opp_pos_index)
+    target_summ_oppo = tf.gather_nd(champs, opp_pos_index)
     champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
     # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
     #                   scope="item_scope")
@@ -388,17 +385,15 @@ def classify_next_item(game_config, network_config):
     items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
     items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
     items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
-    target_summ_items_k_hot = tf.gather_nd(items_by_champ_k_hot, pos_index)
-    target_oppo_items_k_hot = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
+    target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+    target_oppo_items = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
 
     items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
     summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
                                                 reuse=tf.AUTO_REUSE,
                                                 scope="item_sum_scope")
     summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
-    summed_items_by_champ_targeted = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, item_emb_dim))
-    target_summ_items_emb = tf.gather_nd(summed_items_by_champ_targeted, pos_index)
-    target_oppo_items_emb = tf.gather_nd(summed_items_by_champ_targeted, opp_pos_index)
+
     summed_items_by_team1 = summed_items_by_champ[:, :champs_per_team * item_emb_dim]
     summed_items_by_team2 = summed_items_by_champ[:, champs_per_team * item_emb_dim:]
 
@@ -416,13 +411,7 @@ def classify_next_item(game_config, network_config):
                                   scope="team_sum_scope")
 
     pos = tf.one_hot(pos, depth=champs_per_team)
-
-    # target_summ_items = dropout(target_summ_items, 0.9)
-    # target_oppo_items = dropout(target_oppo_items, 0.9)
-
-    final_input_layer = merge(
-        [target_summ_champ, target_summ_items_k_hot, target_summ_items_emb, target_oppo_champ, target_oppo_items_k_hot, target_oppo_items_emb, team1_score, team2_score, champs],
-        mode='concat', axis=1)
+    final_input_layer = merge([target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score, champs], mode='concat', axis=1)
     # net = dropout(final_input_layer, 0.8)
     net = merge([final_input_layer, pos], mode='concat', axis=1)
     net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
@@ -438,4 +427,3 @@ def classify_next_item(game_config, network_config):
     return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
                       learning_rate=learning_rate,
                       loss='categorical_crossentropy', name='target')
-
