@@ -6,7 +6,6 @@ import tflearn
 import network
 import numpy as np
 import tensorflow as tf
-import train
 from cassiopeia.data import Role
 
 class Predictor:
@@ -48,7 +47,7 @@ class Predictor:
 
         self.champ_graph = tf.Graph()
         with self.champ_graph.as_default():
-            champ_network = network.classify_champs(network.CHAMP_IMG_SIZE, train.NUM_CHAMPS, 0.001)
+            champ_network = network.classify_champs(network.CHAMP_IMG_SIZE, constants.NUM_CHAMPS, 0.001)
             self.champ_model = tflearn.DNN(champ_network)
             self.champ_model.load(champ_model_path)
         self.item_graph = tf.Graph()
@@ -58,12 +57,12 @@ class Predictor:
             self.item_model.load(item_model_path)
         self.spell_graph = tf.Graph()
         with self.spell_graph.as_default():
-            spell_network = network.classify_spells(network.SPELL_IMG_SIZE, train.NUM_SPELLS, 0.001)
+            spell_network = network.classify_spells(network.SPELL_IMG_SIZE, constants.NUM_SPELLS, 0.001)
             self.spell_model = tflearn.DNN(spell_network)
             self.spell_model.load(spell_model_path)
         self.self_graph = tf.Graph()
         with self.self_graph.as_default():
-            self_network = network.classify_self(network.SELF_IMG_SIZE, train.NUM_SELF, 0.001)
+            self_network = network.classify_self(network.SELF_IMG_SIZE, constants.NUM_SELF, 0.001)
             self.self_model = tflearn.DNN(self_network)
             self.self_model.load(self_model_path)
 
@@ -92,6 +91,16 @@ class Predictor:
         self.cvt = utils.Converter()
         print("Complete")
 
+    def showCoords(self, img, champ_coords, champ_size, item_coords, item_size):
+       
+        for coord in champ_coords:
+          
+            cv.rectangle(img, tuple(coord), (coord[0]+champ_size, coord[1]+champ_size), (255,0,0), 2)
+        for coord in item_coords:
+          
+            cv.rectangle(img, tuple(coord), (coord[0]+item_size, coord[1]+item_size), (255,0,0), 2)
+        cv.imshow("lol", img)
+        cv.waitKey(0)
     
             
     def predictElements(self, img, coords, size, model, graph, model_input_size, bw=False, binary=False):
@@ -121,6 +130,8 @@ class Predictor:
 
         # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
         #                               network.SPELL_IMG_SIZE)
+
+        self.showCoords(img, self.champ_coords, self.const.CHAMP_SIZE, self.item_coords, self.const.ITEM_SIZE)
 
         self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_model,
                                      self.self_graph,

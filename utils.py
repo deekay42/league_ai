@@ -282,7 +282,7 @@ def getResolution():
     # TODO:
 
 def summ_names_displayed():
-    return True
+    return False
 
 def chunks(l, n):
     n = max(1, n)

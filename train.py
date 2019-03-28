@@ -16,11 +16,6 @@ num_epochs = 100000
 batch_size = 128
 num_examples = 1024
 
-NUM_SPELLS = 9
-NUM_CHAMPS = 144
-NUM_ITEMS = 203
-NUM_SELF = 1
-
 
 def _load_spell_test():
     _, spells, _ = opencv_detect.getScoreboardStatsImgs()
