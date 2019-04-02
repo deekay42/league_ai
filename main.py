@@ -9,6 +9,7 @@ import time
 import network
 import configparser
 import cassiopeia as cass
+import cassiopeia_championgg
 import utils
 from build_path import build_path
 import copy
@@ -28,8 +29,13 @@ class Main(FileSystemEventHandler):
         self.res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         self.show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         self.flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        self.predict = Predictor(*self.res)
-        # self.predict = Predictor(1440,810)
+        if self.flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error","League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.predict = Predictor(*self.res, self.show_names_in_sb)
+        print(f"Res is {self.res}")
+        #self.predict = Predictor(1440,810, True)
         self.cvt = utils.Converter()
 
 
@@ -42,7 +48,7 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def take_windows_screenshot():
         folder = 'L:\Spiele\lol\Screenshots\*'
-        list_of_files = glob.glob(folder)  # * means all if need specific format then *.csv
+        list_of_files = glob.glob(folder)
         latest_file = max(list_of_files, key=os.path.getctime)
         print(latest_file)
         screenshot = cv.imread(latest_file)
@@ -112,7 +118,7 @@ class Main(FileSystemEventHandler):
             next_items_input = np.concatenate([[role], champs_int, items_int], axis=0)
             next_items_int, next_items_id, next_items_str = self.predict.predict_next_items([next_items_input])
             # print("Next item predicted for role is: ")
-            # print(next_items_str[role])
+            # print(next_items_str)
             summ_curr_items = items_id[role * 6:role * 6 + 6]
             next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=next_items_id, region="KR"))
             result.extend(next_items)
@@ -132,7 +138,7 @@ class Main(FileSystemEventHandler):
                                                                 0, 0))
                 summ_next_item_cass = cass.Item(id=next_items_id, region="KR")
             except:
-                print("Error!!")
+                print("Max items reached!!")
                 break
 
         return result
@@ -186,9 +192,19 @@ class Main(FileSystemEventHandler):
                     except:
                         break
 
-    def on_created(self, event): # when file is created
-        # do something, eg. call your function to process the image
-        print("Got event for file %s" % event.src_path)
+    def on_created(self, event):
+        file_path = event.src_path
+        print("Got event for file %s" % file_path)
+
+        oldsize = -1
+        while True:
+            size = os.path.getsize(file_path)
+            if size == oldsize:
+                break
+            else:
+                oldsize = size
+                time.sleep(0.05)
+                
         try:
             self.processImage(event.src_path)
         except Exception as e:
@@ -282,6 +298,8 @@ class Main(FileSystemEventHandler):
 
                 with open("loldir", "r") as f:
                     loldir = f.read()
+            else:
+                loldir = "C:/Riot Games/League of Legends"
             if not os.path.isdir(loldir + "/RADS"):
                 self.query_lol_dir()
             else: 
@@ -294,6 +312,7 @@ class Main(FileSystemEventHandler):
 if __name__=="__main__":
     print("In the main function")
     tmp = cass.Item(id=2033, region="KR")
+    tmp0 = tmp.builds_from
     m = Main()
     loldir = m.get_lol_dir()
     m.configurePredictor(loldir)

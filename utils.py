@@ -171,14 +171,14 @@ def getChampTemplateDict():
     return dict(zip(champ_names, champ_templates))
 
 
-def generateItemCoordinates(box_size, left_x, right_x, y_diff, top_left_trinket_y):
+def generateItemCoordinates(box_size, left_x, right_x, y_diff, top_left_trinket_y, x_offset, y_offset):
     item_slots_coordinates = np.zeros((2, 5, 7, 2), dtype=np.int64)
-    x_offsets = (left_x, right_x)
-    for x_offset, team in zip(x_offsets, range(2)):
+    total_x_offsets = (left_x + x_offset, right_x+x_offset)
+    for total_x_offset, team in zip(total_x_offsets, range(2)):
         for player in range(5):
             for item in range(7):
                 item_slots_coordinates[team][player][item] = (
-                    int(x_offset + item * box_size), int(top_left_trinket_y + player * y_diff))
+                    round(total_x_offset + item * box_size), round(top_left_trinket_y + y_offset + player * y_diff))
     return item_slots_coordinates
 
 
@@ -210,7 +210,7 @@ def generateChampCoordinates(left_x, right_x, y_diff, top_left_spell_y):
     for x_offset, team in zip(x_offsets, range(2)):
         for player in range(5):
             champ_slots_coordinates[team][player] = (
-                int(x_offset), int(top_left_spell_y + player * y_diff))
+                round(x_offset), round(top_left_spell_y + player * y_diff))
     return champ_slots_coordinates
 
 # spells need to be sorted
@@ -282,7 +282,7 @@ def getResolution():
     # TODO:
 
 def summ_names_displayed():
-    return False
+    return True
 
 def chunks(l, n):
     n = max(1, n)

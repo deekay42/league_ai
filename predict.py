@@ -10,18 +10,10 @@ from cassiopeia.data import Role
 
 class Predictor:
 
-    def __init__(self, img_width, img_height):
+    def __init__(self, img_width, img_height, summ_names_displayed):
         self.const = constants.ResConverter(img_width, img_height)
-        summ_names_displayed = utils.summ_names_displayed()
-        if summ_names_displayed:
-            #16:9 :
-            # item_x_offset = -9
-            # item_y_offset = 11
-            item_x_offset = -6
-            item_y_offset = 9
-        else:
-            item_x_offset = 0
-            item_y_offset = 0
+        
+        
 
         print("Initializing neural networks...")
         champ_model_path = './best_models/champs/my_model'
@@ -38,9 +30,14 @@ class Predictor:
         self.champ_coords = utils.generateChampCoordinates(self.const.CHAMP_LEFT_X_OFFSET, self.const.CHAMP_RIGHT_X_OFFSET, self.const.CHAMP_Y_DIFF, self.const.CHAMP_Y_OFFSET)
         self.champ_coords = np.reshape(self.champ_coords, (-1, 2))
 
-        self.item_coords = utils.generateItemCoordinates(self.const.ITEM_X_DIFF, self.const.ITEM_LEFT_X_OFFSET, self.const.ITEM_RIGHT_X_OFFSET, self.const.ITEM_Y_DIFF, self.const.ITEM_Y_OFFSET)
+        item_x_offset = self.const.ITEM_INNER_OFFSET
+        item_y_offset = self.const.ITEM_INNER_OFFSET
+        if summ_names_displayed:
+            item_x_offset += self.const.SUMM_NAMES_DIS_X_OFFSET
+            item_y_offset += self.const.SUMM_NAMES_DIS_Y_OFFSET
+ 
+        self.item_coords = utils.generateItemCoordinates(self.const.ITEM_X_DIFF, self.const.ITEM_LEFT_X_OFFSET, self.const.ITEM_RIGHT_X_OFFSET, self.const.ITEM_Y_DIFF, self.const.ITEM_Y_OFFSET, item_x_offset, item_y_offset)
         self.item_coords = np.reshape(self.item_coords, (-1, 2))
-        self.item_coords = [(coord[0] + self.const.ITEM_INNER_OFFSET+item_x_offset, coord[1] + self.const.ITEM_INNER_OFFSET+item_y_offset) for coord in self.item_coords]
         
         self.self_coords = utils.generateChampCoordinates(self.const.SELF_INDICATOR_LEFT_X_OFFSET, self.const.SELF_INDICATOR_RIGHT_X_OFFSET, self.const.SELF_INDICATOR_Y_DIFF, self.const.SELF_INDICATOR_Y_OFFSET)
         self.self_coords = np.reshape(self.self_coords, (-1, 2))
@@ -91,19 +88,23 @@ class Predictor:
         self.cvt = utils.Converter()
         print("Complete")
 
-    def showCoords(self, img, champ_coords, champ_size, item_coords, item_size):
-       
+    def showCoords(self, img, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):
+        # print(champ_coords)
+        # print(item_coords)
+        # print(self_coords)
         for coord in champ_coords:
-          
-            cv.rectangle(img, tuple(coord), (coord[0]+champ_size, coord[1]+champ_size), (255,0,0), 2)
+            cv.rectangle(img, tuple(coord), (coord[0]+champ_size, coord[1]+champ_size), (255,0,0), 1)
         for coord in item_coords:
+            cv.rectangle(img, tuple(coord), (coord[0]+item_size, coord[1]+item_size), (255,0,0), 1)
+        for coord in self_coords:
           
-            cv.rectangle(img, tuple(coord), (coord[0]+item_size, coord[1]+item_size), (255,0,0), 2)
+            cv.rectangle(img, tuple(coord), (coord[0]+self_size, coord[1]+self_size), (255,0,0), 1)
         cv.imshow("lol", img)
         cv.waitKey(0)
     
             
     def predictElements(self, img, coords, size, model, graph, model_input_size, bw=False, binary=False):
+        
         X = [img[coord[1]:coord[1] + size, coord[0]:coord[0] + size] for coord in coords]
         X = [cv.resize(img, model_input_size, cv.INTER_AREA) for img in X]
 
@@ -122,6 +123,9 @@ class Predictor:
 
     def predict_sb_elems(self, img):
 
+        self.showCoords(img, self.champ_coords, self.const.CHAMP_SIZE, self.item_coords, self.const.ITEM_SIZE, self.self_coords, self.const.SELF_INDICATOR_SIZE)
+
+
         champs_int = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_model, self.champ_graph,
                                       network.CHAMP_IMG_SIZE, True)
 
@@ -131,8 +135,7 @@ class Predictor:
         # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
         #                               network.SPELL_IMG_SIZE)
 
-        self.showCoords(img, self.champ_coords, self.const.CHAMP_SIZE, self.item_coords, self.const.ITEM_SIZE)
-
+        
         self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_model,
                                      self.self_graph,
                                      network.SELF_IMG_SIZE, True, True)
