@@ -39,20 +39,20 @@ class Main(FileSystemEventHandler):
         self.cvt = utils.Converter()
 
 
-    @staticmethod
-    def take_screenshot():
-        image = pyautogui.screenshot()
-        image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
-        return image
+    # @staticmethod
+    # def take_screenshot():
+    #     image = pyautogui.screenshot()
+    #     image = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
+    #     return image
 
-    @staticmethod
-    def take_windows_screenshot():
-        folder = 'L:\Spiele\lol\Screenshots\*'
-        list_of_files = glob.glob(folder)
-        latest_file = max(list_of_files, key=os.path.getctime)
-        print(latest_file)
-        screenshot = cv.imread(latest_file)
-        return screenshot
+    # @staticmethod
+    # def take_windows_screenshot():
+    #     folder = 'L:\Spiele\lol\Screenshots\*'
+    #     list_of_files = glob.glob(folder)
+    #     latest_file = max(list_of_files, key=os.path.getctime)
+    #     print(latest_file)
+    #     screenshot = cv.imread(latest_file)
+    #     return screenshot
 
     # top, jg, mid, bot, sup
     # to
@@ -193,6 +193,9 @@ class Main(FileSystemEventHandler):
                         break
 
     def on_created(self, event):
+        #prevent keyboard mashing
+        if self.onTimeout:
+            return
         file_path = event.src_path
         print("Got event for file %s" % file_path)
 
@@ -207,9 +210,14 @@ class Main(FileSystemEventHandler):
                 
         try:
             self.processImage(event.src_path)
+            self.timeout()
         except Exception as e:
             print(e)
         
+    def timeout(self):
+        self.onTimeout = True
+        time.sleep(5.0)
+        self.onTimeout = False
 
     def processImage(self, img_path):
 
@@ -270,11 +278,14 @@ class Main(FileSystemEventHandler):
             print(result_id)
             print(result_int)
             
+
+            outString = ""
+            if result_int[0]:
+                    outString += str(result_int[0])
+            for item in result_int[1:]:
+                outString += ","+str(item)
             with open("last", "w") as f:
-                if result_int[0]:
-                    f.write(str(result_int[0]))
-                for item in result_int[1:]:
-                    f.write(","+str(item))
+                f.write(outString)
                     
     def query_lol_dir(self):  
         Tk().withdraw()
@@ -309,22 +320,25 @@ class Main(FileSystemEventHandler):
             
 
 
-if __name__=="__main__":
-    print("In the main function")
-    tmp = cass.Item(id=2033, region="KR")
-    tmp0 = tmp.builds_from
-    m = Main()
-    loldir = m.get_lol_dir()
-    m.configurePredictor(loldir)
-    observer = Observer()
-    observer.schedule(m, path=loldir+"/Screenshots")
-    observer.start()
-    try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        observer.stop()
-    observer.join()
+# if __name__=="__main__":
+print("In the main function")
+tmp = cass.Item(id=2033, region="KR")
+tmp0 = tmp.builds_from
+m = Main()
+m.onTimeout = False
+loldir = m.get_lol_dir()
+m.configurePredictor(loldir)
+observer = Observer()
+observer.schedule(m, path=loldir+"/Screenshots")
+observer.start()
+try:
+    with open("ai_loaded", 'w') as f:
+        f.write("true")
+    while True:
+        time.sleep(1)
+except KeyboardInterrupt:
+    observer.stop()
+observer.join()
 
 
 

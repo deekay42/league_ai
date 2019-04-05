@@ -123,7 +123,7 @@ class Predictor:
 
     def predict_sb_elems(self, img):
 
-        self.showCoords(img, self.champ_coords, self.const.CHAMP_SIZE, self.item_coords, self.const.ITEM_SIZE, self.self_coords, self.const.SELF_INDICATOR_SIZE)
+       # self.showCoords(img, self.champ_coords, self.const.CHAMP_SIZE, self.item_coords, self.const.ITEM_SIZE, self.self_coords, self.const.SELF_INDICATOR_SIZE)
 
 
         champs_int = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_model, self.champ_graph,
