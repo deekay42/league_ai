@@ -1,0 +1,10 @@
+build instructions:
+
+1. python combine.py main.py out.py
+2. python -m PyInstaller -d noarchive out.py
+pyc files cannot open pyd files, so this doesnt work:
+    mv dist/out dist/python
+    cp out.py dist
+    Add sys.path.insert(0, "python")
+
+3. cython out.pyx --embed

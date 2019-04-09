@@ -4,23 +4,29 @@ import cv2 as cv
 import json
 import math
 
+def get_num_champs():
+    with open('res/champ2id') as f:
+        champ2id = json.load(f)
+    #dont do this: return len(champ2id)
+    #some champs have multiple entries, like kayn, rhaast, gnar, megagnar
+    return max([val["int"] for val in champ2id.values()])
+
+def get_num_items():
+    with open('res/item2id') as f:
+        item2id = json.load(f)
+    return max([val["int"] for val in champ2id.values()])
+
 
 def getItemTemplateDict():
     with open('res/item2id') as f:
         item2id = json.load(f)
-    id2item = dict(map(reversed, item2id.items()))
 
-
-    item_paths = glob.glob("res/item/*.png")
-    item_names = [item_name[9:-4] for item_name in item_paths]
-    item_templates = [cv.imread(template_path) for template_path in item_paths]
-    item_template_height = item_templates[0].shape[1]
-
-    item_names = [id2item[int(item)] for item in item_names]
-    result = dict(zip(item_names, item_templates))
+    result = dict(zip(list(item_names), item_imgs))
+    result = {v["name"]:cv.imread(f"../assets/items/{v["id"]}.png") for v in item2id.values()}
+    item_img_height = result[list(result.keys())[0]].shape[1]
 
     # add empty item slot
-    result["Empty"] = np.array([[[7, 13, 12]] * item_template_height] * item_template_height,
+    result["Empty"] = np.array([[[7, 13, 12]] * item_img_height] * item_img_height,
                                dtype=np.uint8)
 
     return result
