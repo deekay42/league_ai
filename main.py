@@ -4,6 +4,8 @@ import cv2 as cv
 #import keyboard
 import glob
 import os
+
+import AssetManager
 from predict import Predictor
 import time
 import network
@@ -36,7 +38,7 @@ class Main(FileSystemEventHandler):
         self.predict = Predictor(*self.res, self.show_names_in_sb)
         print(f"Res is {self.res}")
         #self.predict = Predictor(1440,810, True)
-        self.cvt = utils.Converter()
+        self.cvt = AssetManager.AssetManager()
 
 
     # @staticmethod
@@ -131,7 +133,7 @@ class Main(FileSystemEventHandler):
                                                             'constant',
                                                             constant_values=(
                                                                 0, 0))
-                new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
+                new_summ_items_int = [self.cvt.item_id2item_int(item) for item in abs_items[-1]]
                 items_int[role * 6:role * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
                                                             'constant',
                                                             constant_values=(
@@ -183,7 +185,7 @@ class Main(FileSystemEventHandler):
                                                                  'constant',
                                                                  constant_values=(
                                                                      0, 0))
-                        new_summ_items_int = [self.cvt.item_id2int(item) for item in abs_items[-1]]
+                        new_summ_items_int = [self.cvt.item_id2item_int(item) for item in abs_items[-1]]
                         items_int[role * 6:role * 6 + 6] = np.pad(new_summ_items_int, (0, 6 - len(new_summ_items_int)),
                                                                   'constant',
                                                                   constant_values=(
@@ -273,7 +275,7 @@ class Main(FileSystemEventHandler):
             champs_id_cpy, champs_int_cpy, items_id_cpy, items_int_cpy = copy.deepcopy(champs_id), copy.deepcopy(champs_int), copy.deepcopy(items_id), copy.deepcopy(items_int)
             result = self.analyzeChamp(summ_index, champs_id_cpy, champs_int_cpy, items_id_cpy, items_int_cpy)
             result_id = [item.id for item in result]
-            result_int = [self.cvt.item_id2int(item) for item in result_id]
+            result_int = [self.cvt.item_id2item_int(item) for item in result_id]
             print("This is the result: ")
             print(result_id)
             print(result_int)

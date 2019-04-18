@@ -625,18 +625,17 @@ item_config = \
         "gaussian_rate": 10,
         "gray_rate": 0.3
     }
+#
+# spell_imgs_global = utils.getSpellTemplateDict()
+# champ_imgs_global = utils.getChampTemplateDict()
+# item_imgs_global = utils.getItemTemplateDict()
+#
 
-spell_imgs_global = utils.getSpellTemplateDict()
-champ_imgs_global = utils.getChampTemplateDict()
-item_imgs_global = utils.getItemTemplateDict()
-# spell_imgs_global = list(spell_imgs_global.values())
-# item_imgs_global = list(item_imgs_global.values())
-# champ_imgs_global = list(champ_imgs_global.values())
 
-scoreboard_top_tile_coords = np.nonzero(scoreboard_top_tile_raw[:, :, 2] >= 250)
-scoreboard_top_tile_shifted_coords = tuple(
-    np.transpose(np.transpose(scoreboard_top_tile_coords) + (utils.SCOREBOARD_TOP_TILE_Y_OFFSET, utils.SCOREBOARD_INNER_LEFT_X_OFFSET)))
-scoreboard_top_tile_raw[:] = 0
+# scoreboard_top_tile_coords = np.nonzero(scoreboard_top_tile_raw[:, :, 2] >= 250)
+# scoreboard_top_tile_shifted_coords = tuple(
+#     np.transpose(np.transpose(scoreboard_top_tile_coords) + (utils.SCOREBOARD_TOP_TILE_Y_OFFSET, utils.SCOREBOARD_INNER_LEFT_X_OFFSET)))
+# scoreboard_top_tile_raw[:] = 0
 
 
 def generateRandomScoreboard():
@@ -858,45 +857,38 @@ def getBatch(size, img_size):
 # print(s.getvalue())
 
 
-def _load_data(image_set, epochs, sideImages=None):
+def generate_training_data(imgs, epochs, new_size):
+
+    max_crop_rate = 0.25
     images = []
     classes = []
+    mykey = list(imgs.keys())[0]
+    img_size = imgs[mykey].shape[0]
     global gauss
-    gauss = np.random.normal(0, 10, (*network.SELF_IMG_SIZE, 3))
+    gauss = np.random.normal(0, 10, (*new_size, 3))
     for _ in range(epochs):
-        for key, image in image_set.items():
-            if sideImages == "vertical":
-                image = placeSurroundingImages(image, list(image_set.values()), True)
-            elif sideImages == "horizontal":
-                image = placeSurroundingImages(image, list(image_set.values()), False)
 
-            coord = (0,0)
-            # newsize = size
-            newsize = np.random.randint(11,16)
-            newcoord = embeddedTranslate(coord, 3)
-            # newcoord = coord[0] + np.random.randint(-5,5), coord[1] + np.random.randint(-5,5)
-            image = image[newcoord[0]:newcoord[0] + newsize, newcoord[1]:newcoord[1] + newsize]
-            image = cv.resize(image, network.SELF_IMG_SIZE, interpolation=cv.INTER_AREA)
+        for key, image in imgs.items():
+            #we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
+            new_top_left_x = np.random.randint(0, int(img_size * max_crop_rate))
+            new_top_left_y = np.random.randint(0, int(img_size * max_crop_rate))
+            max_size = img_size - max(new_top_left_x, new_top_left_y)
+            min_size = max_size - max_crop_rate * img_size
+            crop_size = np.random.randint(min_size, max_size)
+
+
+            image = image[new_top_left_x:new_top_left_x + crop_size, new_top_left_y:new_top_left_y + crop_size]
+
             # cv.imshow('ff', image)
             # cv.waitKey(0)
+            image = cv.resize(image, new_size, interpolation=cv.INTER_AREA)
+
             image = messUpItem(image, item_config)
 
-            images += [image]
-            classes += [key]
+            images.append(image)
+            classes.append(key)
 
     return (images, classes)
-
-
-def load_spell_data(epochs, image_size):
-    spell_imgs = utils.getSpellTemplateDict()
-    x, y = _load_data(spell_imgs, epochs, image_size)
-    y = [utils.spell2int(key) for key in y]
-    return x, y
-
-
-def generate_training_data(imgs, epochs, image_size):
-    x,y = _load_data(imgs, epochs, image_size)
-    return x,y
 
 
 # while True:

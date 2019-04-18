@@ -1,0 +1,50 @@
+{
+  "1" : {
+    "spells":["Flash", "Teleport", "Smite", "Flash", "Cleanse", "Flash", "Heal", "Flash", "Flash", "Barrier",
+    "Flash", "Ghost", "Smite", "Flash", "Flash", "Ignite", "Flash", "Heal", "Ignite", "Flash"],
+    "champs":["Ashe", "Caitlyn", "Lucian", "Sivir", "Galio", "Soraka", "Ryze", "Zyra", "Udyr", "Nunu"],
+    "items":["Vampiric Scepter", "Long Sword", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "B. F. Sword", "Doran's Blade", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "B. F. Sword", "Doran's Blade", "Long Sword","Long Sword", "Empty", "Empty", "Warding Totem (Trinket)",
+        "B. F. Sword", "Doran's Blade", "Long Sword","Boots of Speed", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Catalyst of Aeons", "Doran's Ring", "Boots of Speed","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Nomad's Eye", "Ruby Crystal", "Boots of Speed","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Tear of the Goddess", "Ruby Crystal", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Boots of Mobility", "Frostfang", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Sheen", "Ruby Crystal", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Bami's Cinder", "Doran's Ring", "Boots of Speed","Cloth Armor", "Empty", "Empty", "Warding Totem (Trinket)"],
+      "self": 0
+  },
+  "2" : {
+    "spells":["Flash", "Teleport", "Smite", "Flash", "Cleanse", "Flash", "Heal", "Flash", "Flash", "Barrier",
+    "Flash", "Ghost", "Smite", "Flash", "Flash", "Ignite", "Flash", "Heal", "Ignite", "Flash"],
+    "champs":["Evelynn", "Sivir", "Wukong", "Veigar", "Renekton", "Cassiopeia", "Lux", "Taric", "Garen", "Trundle"],
+    "items":["Lich Bane", "Stalker's Blade", "Aether Wisp", "Boots of Speed","Empty","Empty", "Warding Totem (Trinket)",
+        "Essence Reaver", "Phantom Dancer", "B. F. Sword","Ionian Boots of Lucidity", "Doran's Blade", "Long Sword", "Warding Totem (Trinket)",
+        "Ravenous Hydra", "The Black Cleaver", "Youmuu's Ghostblade","Mercury's Treads", "Doran's Blade", "Long Sword", "Warding Totem (Trinket)",
+        "Morellonomicon", "Lost Chapter", "Sorcerer's Shoes","Fiendish Codex", "Blasting Wand", "Doran's Ring", "Warding Totem (Trinket)",
+        "Phage", "Caulfield's Warhammer", "Doran's Blade","Rejuvenation Bead", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Rabadon's Deathcap", "Rylai's Crystal Scepter", "Tear of the Goddess","Amplifying Tome", "Doran's Ring", "Empty", "Warding Totem (Trinket)",
+        "Luden's Echo", "Morellonomicon", "Needlessly Large Rod","Sorcerer's Shoes", "Amplifying Tome", "Doran's Ring", "Warding Totem (Trinket)",
+        "Spirit Visage", "Frozen Heart", "Warden's Mail","Boots of Swiftness", "Targon's Brace", "Empty", "Warding Totem (Trinket)",
+        "The Black Cleaver", "Sunfire Cape", "Jaurim's Fist","Mercury's Treads", "Doran's Shield", "Ruby Crystal", "Warding Totem (Trinket)",
+        "Trinity Force", "Ninja Tabi", "Giant's Belt","Chain Vest", "Empty", "Empty", "Warding Totem (Trinket)"],
+      "self": 0
+  },
+  "3" : {
+    "spells":["Flash", "Teleport", "Smite", "Flash", "Cleanse", "Flash", "Heal", "Flash", "Flash", "Barrier",
+    "Flash", "Ghost", "Smite", "Flash", "Flash", "Ignite", "Flash", "Heal", "Ignite", "Flash"],
+    "champs":["Amumu", "Wukong", "Kayle", "Alistar", "Nasus", "Warwick", "DrMundo", "Ashe", "Fiddlesticks", "Zilean"],
+    "items":["Rabadon's Deathcap", "Luden's Echo", "Liandry's Torment", "Hextech GLP-800","Enchantment: Runic Echoes: Sabre","Twin Shadows", "Warding Totem (Trinket)",
+        "Titanic Hydra", "The Black Cleaver", "Youmuu's Ghostblade","Mercury's Treads", "Doran's Blade", "Long Sword", "Warding Totem (Trinket)",
+        "Rabadon's Deathcap", "Nashor's Tooth", "Sorcerer's Shoes","Recurve Bow", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Frozen Heart", "Locket of the Iron Solari", "Eye of the Aspect","Sheen", "Boots of Mobility", "Glacial Shroud", "Warding Totem (Trinket)",
+        "Frozen Heart", "Phage", "Mercury's Treads","Stinger", "Kindlegem", "Sapphire Crystal", "Warding Totem (Trinket)",
+        "Sterak's Gage", "Sunfire Cape", "Frozen Heart","Mercury's Treads", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Liandry's Torment", "Sunfire Cape", "Spirit Visage","Ninja Tabi", "Doran's Shield", "Ruby Crystal", "Warding Totem (Trinket)",
+        "Infinity Edge", "Rapid Firecannon", "Zeal","Berserker's Greaves", "Doran's Blade", "Dagger", "Warding Totem (Trinket)",
+        "Morellonomicon", "Abyssal Mask", "Zhonya's Hourglass","Sorcerer's Shoes", "Doran's Ring", "Empty", "Warding Totem (Trinket)",
+        "Rabadon's Deathcap", "Rod of Ages", "Lost Chapter","Sorcerer's Shoes", "Tear of the Goddess", "Doran's Ring", "Warding Totem (Trinket)"],
+    "self": 0
+  }
+}

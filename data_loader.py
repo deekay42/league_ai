@@ -19,14 +19,15 @@ class DataLoaderBase:
         self.train_y = []
         self.test_x = []
         self.test_y = []
+        self.readFromNumpyFiles()
 
 class NextItemsDataLoader(DataLoaderBase):
 
     def __init__(self):
-        self.train_x_filenames = sorted(glob.glob('training_data/next_items/processed/*_train_x*.npz'))
-        self.test_x_filenames = sorted(glob.glob('training_data/next_items/processed/*_test_x*.npz'))
-        self.train_y_filenames = sorted(glob.glob('training_data/next_items/processed/*_train_y*.npz'))
-        self.test_y_filenames = sorted(glob.glob('training_data/next_items/processed/*_test_y*.npz'))
+        self.train_x_filenames = sorted(glob.glob('training_data/next_items/processed/train_x*.npz'))
+        self.test_x_filenames = sorted(glob.glob('training_data/next_items/processed/test_x*.npz'))
+        self.train_y_filenames = sorted(glob.glob('training_data/next_items/processed/train_y*.npz'))
+        self.test_y_filenames = sorted(glob.glob('training_data/next_items/processed/test_y*.npz'))
         # h5f = h5py.File('training_data/next_items/hdf5/data.h5', 'r')
         # self.train_x_hdf5 = h5f['train_x']
         # self.train_y_hdf5 = h5f['train_y']
@@ -34,7 +35,7 @@ class NextItemsDataLoader(DataLoaderBase):
         # self.test_y_hdf5 = h5f['test_y']
 
         super().__init__()
-        self.readFromNumpyFiles()
+
 
 
     def _generate_train_test(self, train_test_x, train_test_y):
@@ -178,15 +179,16 @@ class NextItemsDataLoader(DataLoaderBase):
 class PositionsDataLoader(DataLoaderBase):
 
     def __init__(self):
-        self.train_x_filenames = sorted(glob.glob('training_data/positions/processed/*_train_x*.npz'))
-        self.test_x_filenames = sorted(glob.glob('training_data/positions/processed/*_test_x*.npz'))
+        self.train_x_filenames = sorted(glob.glob('training_data/positions/processed/train_x*.npz'))
+        self.test_x_filenames = sorted(glob.glob('training_data/positions/processed/test_x*.npz'))
         super().__init__()
 
     def get_train_data(self):
         result_x, result_y = [], []
         order = [[1,0,0,0,0],[0,1,0,0,0],[0,0,1,0,0],[0,0,0,1,0],[0,0,0,0,1]]
+        progress_counter = 0
         for x in self.train_x:
-
+            progress_counter += 1
             comp_order = ((comp,pos) for comp, pos in zip(x, order))
             for champ_position in itertools.permutations(comp_order, 5):
                 champ_position = np.array(champ_position)
@@ -196,6 +198,7 @@ class PositionsDataLoader(DataLoaderBase):
                     np.concatenate((np.ravel(team_comp[:, 0]), np.ravel(team_comp[:, 1:3]), np.ravel(team_comp[:, 3:])),
                                    axis=0))
                 result_y.append(np.ravel(positions))
+            print("training data {:.2%} generated".format(progress_counter / len(self.train_x)))
         return np.array(result_x), np.array(result_y)
 
 
