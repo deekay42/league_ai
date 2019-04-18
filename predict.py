@@ -1,6 +1,7 @@
 import cv2 as cv
 
-import constants
+import AssetManager
+import ui_constants
 import utils
 import tflearn
 import network
@@ -11,9 +12,7 @@ from cassiopeia.data import Role
 class Predictor:
 
     def __init__(self, img_width, img_height, summ_names_displayed):
-        self.const = constants.ResConverter(img_width, img_height)
-        
-        
+        self.const = ui_constants.ResConverter(img_width, img_height)
 
         print("Initializing neural networks...")
         champ_model_path = './best_models/champs/my_model'
@@ -22,8 +21,8 @@ class Predictor:
         self_model_path = './best_models/self/my_model'
         next_item_model_path = './best_models/next_items/my_model'
 
-        self.champ_mapper = utils.Converter().champ_int2string_old
-        self.item_mapper = utils.Converter().item_int2string_old
+        self.champ_mapper = AssetManager.AssetManager().champ_int2string_old
+        self.item_mapper = AssetManager.AssetManager().item_int2string_old
         self.spell_mapper = utils.int2spell()
         self.self_mapper = [0,1]
         
@@ -44,22 +43,22 @@ class Predictor:
 
         self.champ_graph = tf.Graph()
         with self.champ_graph.as_default():
-            champ_network = network.classify_champs(network.CHAMP_IMG_SIZE, constants.NUM_CHAMPS, 0.001)
+            champ_network = network.classify_champs(ui_constants.CHAMP_IMG_SIZE, constants.NUM_CHAMPS, 0.001)
             self.champ_model = tflearn.DNN(champ_network)
             self.champ_model.load(champ_model_path)
         self.item_graph = tf.Graph()
         with self.item_graph.as_default():
-            item_network = network.classify_items(network.ITEM_IMG_SIZE, 202, 0.001)
+            item_network = network.classify_items(ui_constants.ITEM_IMG_SIZE, 202, 0.001)
             self.item_model = tflearn.DNN(item_network)
             self.item_model.load(item_model_path)
         self.spell_graph = tf.Graph()
         with self.spell_graph.as_default():
-            spell_network = network.classify_spells(network.SPELL_IMG_SIZE, constants.NUM_SPELLS, 0.001)
+            spell_network = network.classify_spells(ui_constants.SPELL_IMG_SIZE, constants.NUM_SPELLS, 0.001)
             self.spell_model = tflearn.DNN(spell_network)
             self.spell_model.load(spell_model_path)
         self.self_graph = tf.Graph()
         with self.self_graph.as_default():
-            self_network = network.classify_self(network.SELF_IMG_SIZE, constants.NUM_SELF, 0.001)
+            self_network = network.classify_self(ui_constants.SELF_IMG_SIZE, constants.NUM_SELF, 0.001)
             self.self_model = tflearn.DNN(self_network)
             self.self_model.load(self_model_path)
 
@@ -85,7 +84,7 @@ class Predictor:
         #         model.load(next_item_model_path+role+'/my_model')
         #         self.next_model.append(model)
 
-        self.cvt = utils.Converter()
+        self.cvt = AssetManager.AssetManager()
         print("Complete")
 
     def showCoords(self, img, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):
@@ -127,10 +126,10 @@ class Predictor:
 
 
         champs_int = self.predictElements(img, self.champ_coords, self.const.CHAMP_SIZE, self.champ_model, self.champ_graph,
-                                      network.CHAMP_IMG_SIZE, True)
+                                      ui_constants.CHAMP_IMG_SIZE, True)
 
         items_int = self.predictElements(img, self.item_coords, self.const.ITEM_SIZE, self.item_model, self.item_graph,
-                                     network.ITEM_IMG_SIZE)
+                                     ui_constants.ITEM_IMG_SIZE)
 
         # spells = self.predictElements(img, self.spell_coords, self.const.SPELL_SIZE, self.spell_mapper, self.spell_model, self.spell_graph,
         #                               network.SPELL_IMG_SIZE)
@@ -138,7 +137,7 @@ class Predictor:
         
         self_ = self.predictElements(img, self.self_coords, self.const.SELF_INDICATOR_SIZE, self.self_model,
                                      self.self_graph,
-                                     network.SELF_IMG_SIZE, True, True)
+                                     ui_constants.SELF_IMG_SIZE, True, True)
 
         champs_str = [self.cvt.champ_int2string_old[np.argmax(champ)] for champ in champs_int]
         items_str = [self.cvt.item_int2string_old[np.argmax(item)] for item in items_int]
@@ -152,7 +151,7 @@ class Predictor:
         items_id = [self.cvt.item_string2id(item) for item in items_str]
         # cnn maps to the wrong ints so we must do this ugly conversion
         champs_int = [self.cvt.champ_id2int(champ) for champ in champs_id]
-        items_int = [self.cvt.item_id2int(item) for item in items_id]
+        items_int = [self.cvt.item_id2item_int(item) for item in items_id]
 
         return np.array(champs_int), np.array(champs_id), np.array(items_int), np.array(items_id), self_
 
@@ -171,14 +170,14 @@ class PredictRoles:
         net = network.classify_positions(network.positions_game_config, network.positions_network_config)
         self.model = tflearn.DNN(net)
         self.model.load("best_models/roles/my_model")
-        self.cvt = utils.Converter()
+        self.cvt = AssetManager.AssetManager()
         keys = [(1,0,0,0,0), (0,1,0,0,0), (0,0,1,0,0), (0,0,0,1,0), (0,0,0,0,1)]
-        vals = [Role.top, Role.jungle, Role.middle, Role.adc, Role.support]
+        vals = ["top", "jq", "mid", "adc", "sup"]
         self.roles = dict(zip(keys, vals))
 
 
     def predict(self, champs, spells, rest):
-        champs = [self.cvt.champ_id2int(champ) for champ in champs]
+        champs = [self.cvt.champ_id2champ_int(champ) for champ in champs]
         spells = [self.cvt.spell_id2int(spell) for spell in spells]
         input = np.concatenate([champs, spells, rest], axis=0)
         pred = self.model.predict([input])
@@ -186,5 +185,6 @@ class PredictRoles:
             final_pred = network.best_permutations_one_hot(pred)
             final_pred = sess.run(final_pred)[0]
         champ_roles = [self.roles[tuple(role)] for role in final_pred]
-        champs = [self.cvt.champ_int2id(champ) for champ in champs]
+        # the champ ids need to be ints, otherwise jq fails
+        champs = [int(self.cvt.champ_int2id(champ)) for champ in champs]
         return dict(zip(champ_roles, champs))
