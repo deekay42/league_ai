@@ -254,6 +254,7 @@ class ProcessNextItemsTrainingData:
             for item_state in game['itemsTimeline']:
                 summ_index = -1
                 for summ_items, prev_summ_items in zip(item_state, prev_state):
+                    assert(0 not in summ_items)
                     summ_index += 1
                     # identical item states get skipped this way
                     if summ_items == prev_summ_items:
@@ -262,7 +263,12 @@ class ProcessNextItemsTrainingData:
                         new_item = ProcessNextItemsTrainingData.list_diff(summ_items, prev_summ_items)
                         if new_item:
                             new_item = cass.Item(id=int(new_item), region="KR")
-                            l = new_item.name
+                            try:
+                                l = new_item.name
+                            except Exception as e:
+                                print(repr(e))
+                                print(f"ERROR: item might have been removed {new_item}")
+
                             insert_item_states = build_path.build_path(prev_state[summ_index], new_item)[2]
                             if len(insert_item_states) > 1:
                                 for summ_item_state in insert_item_states:
