@@ -1,0 +1,4 @@
+[.[] | { "gameId": .gameId,
+        "participants": .participants,
+        "itemsTimeline": (try [.itemsTimeline.frames[] | .events[] | select((.type=="ITEM_PURCHASED" or .type=="ITEM_SOLD" or .type=="ITEM_DESTROYED" or .type=="ITEM_UNDO") and .itemId!=2055 and .itemId!=3340 and .itemId!=3341 and .itemId!=3363 and .itemId!=3364 and .afterId!=3340 and .afterId!=2055 and .afterId!=3341 and .afterId!=3363 and .afterId!=3364 )] catch "ERROR")
+}]

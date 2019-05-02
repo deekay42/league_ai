@@ -1,0 +1,44 @@
+def cumulativelyEverLessThan1:
+  [foreach .[] as $current
+    (0;
+     . + $current;
+     if . <=-1 then true else empty end)] | any;
+
+def undone($n):
+  . as $in
+  | length as $length
+  | .[$n] as $nth
+  | if $nth.type != "ITEM_PURCHASED" and $nth.type != "ITEM_SOLD" then false
+    else [range($n+1; $length) | $in[.] |
+      if .type == "ITEM_UNDO"
+        and .participantId == $nth.participantId
+        and (.beforeId == $nth.itemId or .afterId == $nth.itemId)
+        and .timestamp >= $nth.timestamp
+        then -1
+      elif
+        (.type == "ITEM_PURCHASED" or .type == "ITEM_SOLD")
+        and .participantId == $nth.participantId
+        and .itemId == $nth.itemId
+        and .timestamp >= $nth.timestamp
+        then 1
+      else
+          empty
+      end]  |
+      if index(-1) == null then
+        false
+      elif index(1) == null then
+        true
+      elif cumulativelyEverLessThan1 then
+        true
+      else
+        false
+      end
+    end;
+
+[.[] | { "gameId": .gameId,
+        "participants": .participants,
+        "itemsTimeline": ( try (.itemsTimeline | [ range(0;length) as $i
+          | select( (((.[$i].type == "ITEM_PURCHASED") or (.[$i].type == "ITEM_SOLD")) and (undone($i) | not)) or
+                    (.[$i].type == "ITEM_DESTROYED"))
+          | .[$i] ]) catch "ERROR")
+}]
