@@ -1,0 +1,21 @@
+[
+  .awesome[]? |
+    { "gameId": (try .[0].gameId catch "0000"),
+    "participants": (try .[0].participants catch "ZERO")
+    | (try [[.[] | select(.stats.win==true)], [.[] | select(.stats.win==false)]] catch "FIRST")
+    | (try [
+        (.[0][] | select(.timeline.lane=="TOP")),
+        (.[0][] | select(.timeline.lane=="JUNGLE")),
+        (.[0][] | select(.timeline.lane=="MIDDLE")),
+        ([.[0][] | select(.timeline.lane=="BOTTOM")] | max_by(.stats.totalMinionsKilled)),
+        ([.[0][] | select(.timeline.lane=="BOTTOM")] | min_by(.stats.totalMinionsKilled)),
+        (.[1][] | select(.timeline.lane=="TOP")),
+        (.[1][] | select(.timeline.lane=="JUNGLE")),
+        (.[1][] | select(.timeline.lane=="MIDDLE")),
+        ([.[1][] | select(.timeline.lane=="BOTTOM")] | max_by(.stats.totalMinionsKilled)),
+        ([.[1][] | select(.timeline.lane=="BOTTOM")] | min_by(.stats.totalMinionsKilled))
+      ] catch "SECOND")
+    | (try [.[] | {"participantId":.participantId, "championId":.championId, "spell1Id":.spell1Id, "spell2Id": .spell2Id}] catch "THIRD"),
+    "itemsTimeline":(try .[1] catch "FOURTH")
+    }
+]

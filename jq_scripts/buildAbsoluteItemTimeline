@@ -1,0 +1,65 @@
+[.[] | { "gameId": .gameId,
+        "participants": [.participants[] | .championId],
+        "spells": [.participants[] | [.spell1Id, .spell2Id]],
+        "itemsTimeline": [([.itemsTimeline[]] as $item_transactions |
+          [.participants[]] as $participants |
+          foreach range(0;$item_transactions | length) as $index
+            ([[],[],[],[],[],[],[],[],[],[]];
+              $item_transactions[$index] as $current |
+              ($current.participantId | tonumber) as $participantsIdKey |
+              ([$participants[].participantId] | index($participantsIdKey)) as $key |
+              if $current.type=="ITEM_PURCHASED" then
+                if $current.itemId==2003 and (.[$key] | contains([2003])) then
+                    .
+                elif $current.itemId==2138 or $current.itemId==2139 or $current.itemId==2140 or $current.itemId==3901 or $current.itemId==3902 or $current.itemId==3903 then
+                    .
+                else
+                    .[$key] |= .+ [$current.itemId]
+                end
+              elif $current.type=="ITEM_DESTROYED" then
+                if $current.itemId==3004 or $current.itemId==3003 then
+                    .
+                else
+                    .[$key][[$current.itemId]][0] as $del_index |
+                    if $del_index == null then
+                      .
+                    else
+                      del(.[$key] | .[$del_index])
+                    end
+                end
+              elif $current.type=="ITEM_SOLD" then
+                if $current.itemId==3040 then
+                  .[$key][[3003]][0] as $del_index |
+                  if $del_index == null then
+                    .
+                  else
+                    del(.[$key] | .[$del_index])
+                  end
+                elif $current.itemId==3042 then
+                  .[$key][[3004]][0] as $del_index |
+                  if $del_index == null then
+                    .
+                  else
+                    del(.[$key] | .[$del_index])
+                  end
+                else
+                  .[$key][[$current.itemId]][0] as $del_index |
+                  if $del_index == null then
+                    .
+                  else
+                    del(.[$key] | .[$del_index])
+                  end
+                end
+              else
+                .
+              end;
+              if $index >= (($item_transactions | length)-1) then
+                .
+              elif $item_transactions[$index].timestamp == $item_transactions[$index+1].timestamp and ($item_transactions[$index].type=="ITEM_DESTROYED" or $item_transactions[$index].type=="ITEM_DESTROYED") then
+                empty
+              else
+                .
+              end
+             )
+           )]
+}]

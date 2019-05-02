@@ -1,0 +1,7 @@
+ . - [.[] | select( (.itemsTimeline=="ERROR") or
+                    (.itemsTimeline==null) or
+                    (.participants=="THIRD") or
+                    (.participants==null) or
+                    ([.participants[]] | length != 10) or
+
+                    (.itemsTimeline[]=="ERROR"))]
