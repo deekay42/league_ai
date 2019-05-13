@@ -5,6 +5,7 @@ import traceback
 from collections import Counter
 from multiprocessing import Process
 import arrow
+from train_model import train
 
 import numpy as np
 from jq import jq
@@ -441,6 +442,9 @@ class ProcessNextItemsTrainingData:
 
 
 if __name__ == "__main__":
-    # p = ProcessPositionsTrainingData(100, arrow.Arrow(2019, 4, 25, 0, 0, 0))
-    p = ProcessNextItemsTrainingData()
-    p.start()
+    # p = ProcessPositionsTrainingData(100, arrow.Arrow(2019, 5, 6, 0, 0, 0))
+    # p.start()
+    # l = ProcessNextItemsTrainingData()
+    # l.start()
+    t = train.StaticTrainingDataTrainer()
+    t.build_next_items_model()

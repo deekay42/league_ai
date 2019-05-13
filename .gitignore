@@ -1,0 +1,7 @@
+training_data/
+__pycache__/
+loldir
+ai_loaded
+.idea/
+.DS_Store
+
