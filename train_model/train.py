@@ -55,7 +55,7 @@ class Trainer(ABC):
 
     def save_best_model(self, best_model_index):
         utils.remove_old_files(self.best_path)
-        best_model_files = glob.glob(self.train_path + self.model_name + str(best_model_index) + "*")
+        best_model_files = glob.glob(self.train_path + self.model_name + str(best_model_index) + ".*")
         best_model_files.append(self.train_path + self.acc_file_name)
         for file in best_model_files:
             shutil.copy2(file, self.best_path)
@@ -79,14 +79,21 @@ class Trainer(ABC):
                       show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                       callbacks=self.monitor_callback)
             model.save(self.train_path + self.model_name + str(epoch + 1))
-            # y = model.predict(X_test)
+
+
+            # y = model.predict(self.X_test)
             # y = [np.argmax(y_) for y_ in y]
-            # y_test = [np.argmax(y_) for y_ in Y_test]
+            # y_test = [np.argmax(y_) for y_ in self.Y_test]
             # print("Pred Actual")
             # for i in range(len(y)):
-            #     print(f"{self.cvt.img_int2item_str(y[i])} {self.cvt.img_int2item_str(Y_test[i])}")
+            #     a = self.item_manager.lookup_by('img_int', y[i])['name']
+            #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
+            #     if a != b:
+            #         print(f"----->{i}: {a} {b}")
+            #     print(f"{i}: {a} {b}")
             # print("Raw test data predictions: {0}".format(y))
-            # print("Actual test data  values : {0}".format(Y_test.tolist()))
+            # print("Actual test data  values : {0}".format(self.Y_test.tolist()))
+
             score = self.eval_model(model, epoch)
             scores.append(score)
         return scores
@@ -362,5 +369,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    t = StaticTrainingDataTrainer()
-    t.build_next_items_model()
+    # t = StaticTrainingDataTrainer()
+    # t.build_next_items_model()
+
+    s = DynamicTrainingDataTrainer()
+    s.build_new_item_model()
