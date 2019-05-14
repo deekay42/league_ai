@@ -150,10 +150,13 @@ class Main(FileSystemEventHandler):
 
 
     def process_image(self, img_path):
+
         print('you pressed tab + f12 ' + img_path)
+
         try:
             print("Now trying to predict image")
             screenshot = cv.imread(img_path)
+            # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             print("Trying to predict champ imgs")
             champs = list(self.champ_img_model.predict(screenshot))
             for champ in champs:
@@ -205,8 +208,8 @@ print("In the main function")
 tmp = cass.Item(id=2033, region="KR")
 tmp0 = tmp.builds_from
 m = Main()
-m.run()
-# m.process_image("/Users/DorjeeBaro/code/lol/mock_lol_dir/Screenshots/fd.png")
+# m.run()
+m.process_image("/Users/DorjeeBaro/code/lol/mock_lol_dir/Screenshots/1440x900_summ_names_dis.png")
 
 # res_converter = ui_constants.ResConverter(1440,810)
 #

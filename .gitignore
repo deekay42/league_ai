@@ -4,4 +4,5 @@ loldir
 ai_loaded
 .idea/
 .DS_Store
-
+models/train/
+last
