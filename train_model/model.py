@@ -28,7 +28,7 @@ class Model(ABC):
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
             self.session.run(tf.global_variables_initializer())
-            self.model_path = glob.glob(self.model_path + "*")[0]
+            self.model_path = glob.glob(self.model_path + "my_model*")[0]
             self.model_path = self.model_path.rpartition('.')[0]
             model.load(self.model_path, create_new_session=False)
             self.model = model

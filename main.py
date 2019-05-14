@@ -20,7 +20,7 @@ class Main(FileSystemEventHandler):
         self.onTimeout = False
         self.loldir = utils.get_lol_dir()
         self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + "/Config/game.cfg")
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
             res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
@@ -156,10 +156,12 @@ class Main(FileSystemEventHandler):
             screenshot = cv.imread(img_path)
             print("Trying to predict champ imgs")
             champs = list(self.champ_img_model.predict(screenshot))
-            print(champs)
+            for champ in champs:
+                print(champ)
             print("Trying to predict item imgs")
             items = list(self.item_img_model.predict(screenshot))
-            print(items)
+            for i, item in enumerate(items):
+                print(f"{divmod(i, 7)}: {item}")
             print("Trying to predict self imgs")
             self_index = self.self_img_model.predict(screenshot)
             print(self_index)
@@ -186,7 +188,7 @@ class Main(FileSystemEventHandler):
 
     def run(self):
         observer = Observer()
-        observer.schedule(self, path=self.loldir + "/Screenshots")
+        observer.schedule(self, path=self.loldir  + os.sep + "Screenshots")
         observer.start()
         try:
             with open("ai_loaded", 'w') as f:
