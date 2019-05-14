@@ -3,11 +3,13 @@ import os
 from tkinter import Tk
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
+import copy
 
 import cv2 as cv
 
 
-def show_coords_all(img, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):
+def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):
+    img = copy.deepcopy(img_source)
     for coord in champ_coords:
         cv.rectangle(img, tuple(coord), (coord[0] + champ_size, coord[1] + champ_size), (255, 0, 0), 1)
     for coord in item_coords:
@@ -18,7 +20,8 @@ def show_coords_all(img, champ_coords, champ_size, item_coords, item_size, self_
     cv.waitKey(0)
 
 
-def show_coords(img, coords, size):
+def show_coords(img_source, coords, size):
+    img = copy.deepcopy(img_source)
     for coord in coords:
         cv.rectangle(img, tuple(coord), (coord[0] + size, coord[1] + size), (255, 0, 0), 1)
     cv.imshow("lol", img)

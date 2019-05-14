@@ -373,4 +373,4 @@ if __name__ == "__main__":
     # t.build_next_items_model()
 
     s = DynamicTrainingDataTrainer()
-    s.build_new_item_model()
+    s.build_new_champ_model()
