@@ -7,9 +7,11 @@ from tflearn.layers.embedding_ops import embedding
 from tflearn.layers.estimator import regression
 from tflearn.layers.merge_ops import merge
 from tflearn.layers.normalization import batch_normalization
+from abc import ABC, abstractmethod
 
-from utils.artifact_manager import *
+from utils.artifact_manager import ChampManager, ItemManager, SpellManager
 from constants import ui_constants, game_constants
+
 
 
 class Network(ABC):

@@ -2,10 +2,12 @@ import numpy as np
 import tensorflow as tf
 import tflearn
 import glob
+from abc import ABC, abstractmethod
+import cv2 as cv
 
 from train_model import network
-from utils.artifact_manager import *
-from constants import ui_constants, game_constants
+from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
+from constants import ui_constants, game_constants, app_constants
 import threading
 from utils import utils
 
@@ -28,9 +30,13 @@ class Model(ABC):
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
             self.session.run(tf.global_variables_initializer())
-            self.model_path = glob.glob(self.model_path + "my_model*")[0]
-            self.model_path = self.model_path.rpartition('.')[0]
-            model.load(self.model_path, create_new_session=False)
+            try:        
+                self.model_path = glob.glob(self.model_path + "my_model*")[0]
+                self.model_path = self.model_path.rpartition('.')[0]
+                model.load(self.model_path, create_new_session=False)
+            except Exception as e:
+                print("Unable to open best model files")
+                raise e
             self.model = model
 
 

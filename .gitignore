@@ -6,3 +6,8 @@ ai_loaded
 .DS_Store
 models/train/
 last
+build/out/
+*.pyo
+*.pyc
+dist/
+tmp_build/
