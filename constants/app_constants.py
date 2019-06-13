@@ -1,6 +1,6 @@
 import os
 
-base_asset_path = ".." + os.sep + "assets" + os.sep
+base_asset_path = "assets" + os.sep
 asset_paths = dict()
 asset_paths["champ_imgs"] = base_asset_path + "champ_imgs" + os.sep
 asset_paths["item_imgs"] = base_asset_path + "item_imgs" + os.sep
