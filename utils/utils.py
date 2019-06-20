@@ -52,8 +52,8 @@ def split(a, n):
 
 def get_lol_dir():
     while True:
-        if os.path.exists("loldir"):
-            with open("loldir", "r") as f:
+        if os.path.exists(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir")):
+            with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"), "r") as f:
                 loldir = f.read()
         else:
             loldir = "C:/Riot Games/League of Legends"
@@ -68,14 +68,17 @@ def query_lol_dir():
     messagebox.showinfo("Information",
                         "We were unable to locate your League of Legends installation. Please select your main League of Legends folder.")
     loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
+    
     while not os.path.isdir(loldir + "/RADS"):
         messagebox.showinfo("Information", "That wasn't it. Select the folder that has the RADS folder in it.")
-        loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
+        loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")]
+        if loldir == "":
+            exit()
     print(loldir)
     screenshot_dir = loldir + "/Screenshots"
     try:
         os.makedirs(screenshot_dir)
     except Exception as e:
         print(e)
-    with open("loldir", "w") as f:
+    with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"), "w") as f:
         f.write(loldir)

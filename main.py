@@ -58,6 +58,8 @@ class Main(FileSystemEventHandler):
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.item_img_model = ItemImgModel(self.res_converter, show_names_in_sb)
         self.self_img_model = SelfImgModel(self.res_converter)
+        lol = build_path([], cass.Item(id=3040, region="KR"))
+        print(f"build_path: {lol}")
 
 
     @staticmethod
@@ -187,9 +189,9 @@ class Main(FileSystemEventHandler):
         print(items_to_buy)
         out_string = ""
         if items_to_buy[0]:
-            out_string += str(items_to_buy[0]["int"])
+            out_string += str(items_to_buy[0]["id"])
         for item in items_to_buy[1:]:
-            out_string += "," + str(item["int"])
+            out_string += "," + str(item["id"])
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
             f.write(out_string)
 
@@ -206,18 +208,3 @@ class Main(FileSystemEventHandler):
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
-
-
-# if __name__=="__main__":
-# print("In the main function")
-tmp = cass.Item(id=2033, region="KR")
-tmp0 = tmp.builds_from
-m = Main()
-m.run()
-#m.process_image("/Users/DorjeeBaro/code/lol/mock_lol_dir/Screenshots/1440x900_summ_names_dis.png")
-
-# res_converter = ui_constants.ResConverter(1440,810)
-#
-# i = ItemImgModel(res_converter, False)
-#
-# i.predict2int([cv.imread("myfile.png")])
