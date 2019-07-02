@@ -4,7 +4,7 @@ from tkinter import Tk
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
 import copy
-
+import sys
 import cv2 as cv
 
 
@@ -71,9 +71,9 @@ def query_lol_dir():
     
     while not os.path.isdir(loldir + "/RADS"):
         messagebox.showinfo("Information", "That wasn't it. Select the folder that has the RADS folder in it.")
-        loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")]
+        loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
         if loldir == "":
-            exit()
+            sys.exit()
     print(loldir)
     screenshot_dir = loldir + "/Screenshots"
     try:
