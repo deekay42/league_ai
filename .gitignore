@@ -11,3 +11,6 @@ build/out/
 *.pyc
 dist/
 tmp_build/
+sed*
+build/main/
+main.spec

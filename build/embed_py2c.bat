@@ -36,7 +36,7 @@ echo import os; print("\ncurrent working dir:" + os.getcwd()); import sys; sys.p
 cython cython_main.pyx --embed
 del /Q cython_main.pyx
 
-sed -i "s/int wmain.*/int runCythonCode(){  int argc = 0;  wchar_t** argv = nullptr;/" cython_main.c
+sed -i "s#int wmain.*#int runCythonCode(){  int argc = 0;  wchar_t** argv = nullptr; Py_SetPath(L\"py_libs;py_libs/base_library.zip\");#" cython_main.c
 move cython_main.c "%INIT_DIR%\include\cython.h"
 SET src_folder=tmp_build
 SET tar_folder=%OUT_DIR%
