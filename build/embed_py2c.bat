@@ -32,7 +32,7 @@ del /Q /S .\tmp_build\tmp\*.pyc
 ROBOCOPY /NFL /NDL  tmp_build\tmp tmp_build\main *.* /S /MOVE
 MOVE tmp_build\main tmp_build\py_libs
 echo #cython: language_level=3 >cython_main.pyx
-echo import os; print("\ncurrent working dir:" + os.getcwd()); import sys; sys.path = ["py_libs/base_library.zip", "py_libs"]; print(sys.path); print(f"sys.argv: {sys.argv}"); sys.argv = ["cython_main.pyx"]; import main; m = main.Main(); m.run()>>cython_main.pyx
+echo import os; print(f"os.environ: {os.environ}"); os.environ["TCL_LIBRARY"]="py_libs\\tcl"; os.environ["TK_LIBRARY"]="py_libs\\tk";print(f"os.environ: {os.environ}"); print("\ncurrent working dir:" + os.getcwd()); import sys; sys.path = ["py_libs/base_library.zip", "py_libs"]; print(sys.path); print(f"sys.argv: {sys.argv}"); sys.argv = ["cython_main.pyx"]; import main; m = main.Main(); m.run()>>cython_main.pyx
 cython cython_main.pyx --embed
 del /Q cython_main.pyx
 
