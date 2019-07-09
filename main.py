@@ -58,8 +58,19 @@ class Main(FileSystemEventHandler):
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.item_img_model = ItemImgModel(self.res_converter, show_names_in_sb)
         self.self_img_model = SelfImgModel(self.res_converter)
-        lol = build_path([], cass.Item(id=3040, region="KR"))
-        print(f"build_path: {lol}")
+        Main.test_connection()
+        
+
+    @staticmethod
+    def test_connection(timeout=0):
+        try:
+            lol = build_path([], cass.Item(id=3040, region="KR"))
+        except Exception as e:
+            print(f"Connection error. Retry in {timeout}")
+            time.sleep(timeout)
+            Main.test_connection(5)
+            
+
 
 
     @staticmethod
