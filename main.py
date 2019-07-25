@@ -57,9 +57,17 @@ class Main(FileSystemEventHandler):
         self.res_converter = ui_constants.ResConverter(*res)
         print(f"Res is {res}")
         self.item_manager = ItemManager()
+        if Main.shouldTerminate():
+            return
         self.next_item_model = NextItemsModel()
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter, show_names_in_sb)
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         Main.test_connection()
         
@@ -221,6 +229,9 @@ class Main(FileSystemEventHandler):
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
             f.write(out_string)
 
+    @staticmethod
+    def shouldTerminate():
+        return os.path.isfile(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
 
     def run(self):
         observer = Observer()
@@ -229,8 +240,10 @@ class Main(FileSystemEventHandler):
         try:
             with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
                 f.write("true")
-            while True:
+            while not Main.shouldTerminate():
                 time.sleep(1)
+            observer.stop()
+            os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
