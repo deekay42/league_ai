@@ -6,6 +6,9 @@ from tkinter import Tk
 from tkinter import messagebox
 import cv2 as cv
 import numpy as np
+import cProfile
+import io
+import pstats
 
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
@@ -118,11 +121,15 @@ class Main(FileSystemEventHandler):
         summ_next_item_cass = None
         result = []
         items_ahead = 0
-        while summ_next_item_cass is None or items_ahead <= 4:
+        while True:
             items_ahead += 1
             next_item = self.predict_next_item(role, champs, items)
             next_items, abs_items = self.build_path(items, next_item, role)
+            
             result.extend(next_items)
+            if len(result) > 4:
+                result = result[:4]
+                break
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
             try:
                 items[self.summoner_items_slice(role)] = np.pad(
@@ -130,8 +137,6 @@ class Main(FileSystemEventHandler):
                     'constant',
                     constant_values=(
                         empty_item, empty_item))
-
-                summ_next_item_cass = cass.Item(id=int(next_item["id"]), region="KR")
             except ValueError as e:
                 print("Max items reached!!")
                 print(repr(e))
@@ -141,6 +146,8 @@ class Main(FileSystemEventHandler):
 
 
     def on_created(self, event):
+        # pr.enable()
+        
         # prevent keyboard mashing
         if self.onTimeout:
             return
@@ -157,6 +164,14 @@ class Main(FileSystemEventHandler):
                 time.sleep(0.05)
 
         self.process_image(event.src_path)
+        
+        # pr.disable()
+        # s = io.StringIO()
+        # sortby = 'cumulative'
+        # ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+        # ps.print_stats()
+        # print(s.getvalue())
+
         self.timeout()
 
 
@@ -219,3 +234,5 @@ class Main(FileSystemEventHandler):
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
+
+# pr = cProfile.Profile()
