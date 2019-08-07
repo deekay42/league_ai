@@ -222,3 +222,21 @@ class PositionsModel(Model):
             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
                                                                                          :game_constants.CHAMPS_PER_TEAM]]
             return dict(zip(champ_roles, champ_ids))
+
+
+    def multi_predict(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                pred = self.model.predict(x)
+                with tf.Session() as sess:
+                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+                    final_pred = sess.run(final_pred)
+        result = []
+        for sorted_team, unsorted_team in zip(final_pred, x):
+            champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+            # the champ ids need to be ints, otherwise jq fails
+            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+                                                                                        :game_constants.CHAMPS_PER_TEAM]]
+            result.append(dict(zip(champ_roles, champ_ids)))
+
+        return result

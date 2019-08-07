@@ -14,3 +14,5 @@ tmp_build/
 sed*
 build/main/
 main.spec
+models/train/*
+
