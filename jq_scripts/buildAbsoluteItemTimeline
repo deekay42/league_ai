@@ -1,3 +1,10 @@
+#this script inserts a new itemstate if a potion is consumed(ITEM_DESTROYED) or more than 1 potion is bought
+
+def uniq:
+  [range(0;length) as $i
+   | .[$i] as $x
+   | if $i == 0 or $x != .[$i-1] then $x else empty end];
+
 [.[] | { "gameId": .gameId,
         "participants": [.participants[] | .championId],
         "spells": [.participants[] | [.spell1Id, .spell2Id]],
@@ -55,11 +62,12 @@
               end;
               if $index >= (($item_transactions | length)-1) then
                 .
-              elif $item_transactions[$index].timestamp == $item_transactions[$index+1].timestamp and ($item_transactions[$index].type=="ITEM_DESTROYED" or $item_transactions[$index].type=="ITEM_DESTROYED") then
+              elif $item_transactions[$index].timestamp == $item_transactions[$index+1].timestamp and
+              ($item_transactions[$index].type=="ITEM_DESTROYED" or $item_transactions[$index].type=="ITEM_SOLD") then
                 empty
               else
                 .
               end
              )
-           )]
+           )] | uniq
 }]

@@ -28,6 +28,8 @@ def get_match_ids(summoners, num_games, cut_off_date):
                 summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
                                                          begin_time=cut_off_date)
                 for match in summ_match_hist:
+                    if match_id in match_ids:
+                        continue
                     if num_games <= 0:
                         raise AllGamesCollected()
                     if first:
@@ -35,8 +37,7 @@ def get_match_ids(summoners, num_games, cut_off_date):
                     else:
                         f.write(',')
                     match_id = match.id
-                    if match_id in match_ids:
-                        continue
+
                     match_ids.add(match_id)
                     num_games -= 1
                     f.write(str(match_id) + '\n')
@@ -59,20 +60,20 @@ def get_top_summoners():
     elite_summoners = cass.get_challenger_league(cass.Queue.ranked_solo_fives, 'KR').entries + cass.get_master_league(
         cass.Queue.ranked_solo_fives, 'KR').entries
     summoner_result = [league_entry.summoner for league_entry in elite_summoners]
+
+    with open(app_constants.train_paths["diamond_league_ids"]) as f:
+        leagues = f.readlines()
+    leagues = [x.strip() for x in leagues]
+    high_dia_summoners = []
+    for league in leagues:
+        league = cass.core.league.League(id=league, region="KR")
+        summoners = league.entries.filter(lambda x: x.division == cass.Division.one)
+        high_dia_summoners += summoners
+    high_dia_summoners.sort(key=lambda x: x.league_points, reverse=True)
+    league_entry_result = elite_summoners + high_dia_summoners  # [:min(len(high_dia_summoners), num - len(elite_summoners))]
+    # league_entry_result = league_entry_result[:min(len(league_entry_result), num)]
+    summoner_result = [league_entry.summoner for league_entry in league_entry_result]
     return summoner_result
-    # with open(app_constants.train_paths["diamond_league_ids"]) as f:
-    #     leagues = f.readlines()
-    # leagues = [x.strip() for x in leagues]
-    # high_dia_summoners = []
-    # for league in leagues:
-    #     league = cass.core.league.League(id=league, region="KR")
-    #     summoners = league.entries.filter(lambda x: x.division == cass.Division.one)
-    #     high_dia_summoners += summoners
-    # high_dia_summoners.sort(key=lambda x: x.league_points, reverse=True)
-    # league_entry_result = elite_summoners + high_dia_summoners  # [:min(len(high_dia_summoners), num - len(elite_summoners))]
-    # # league_entry_result = league_entry_result[:min(len(league_entry_result), num)]
-    # summoner_result = [league_entry.summoner for league_entry in league_entry_result]
-    # return summoner_result
 
 
 def sort_if_complete(team):
@@ -117,10 +118,7 @@ def get_matches(match_ids):
 
         for match_id in match_ids:
             try:
-                if first:
-                    first = False
-                else:
-                    f.write(',')
+
                 match = cass.get_match(match_id, region="KR")
                 champ2participant = dict()
                 participants = match.red_team.participants + match.blue_team.participants
@@ -174,6 +172,10 @@ def get_matches(match_ids):
 
                 teams_sorted = "1,2" if winning_team_sorted and losing_team_sorted \
                     else "1" if winning_team_sorted else "2" if losing_team_sorted else "0"
+                if first:
+                    first = False
+                else:
+                    f.write(',')
                 f.write(json.dumps(
                     {"gameId": match_id, "sorted": teams_sorted, "participants": teams, "itemsTimeline": events},
                     separators=(',', ':')))
@@ -186,7 +188,7 @@ def get_matches(match_ids):
                 print('ERROR: There was an error obtaining this match. Skip.')
                 print(repr(e))
                 print(traceback.format_exc())
-        f.write(']')
+        f.write(']\n')
 
 
 def scrape_matches(num_games, cut_off_date):
