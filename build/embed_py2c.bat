@@ -12,6 +12,9 @@ CALL :NORMALIZEPATH %~2
 set OUT_DIR=%RETVAL%
 echo %PYTHONDIR%
 echo %OUT_DIR%
+rmdir /s /q %OUT_DIR%\models\
+rmdir /s /q %OUT_DIR%\assets\
+rmdir /s /q %OUT_DIR%\py_libs\
 REM rmdir /s /q .\dist
 cd %PYTHONDIR%
 rmdir /s /q .\tmp_build

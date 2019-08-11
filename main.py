@@ -109,9 +109,10 @@ class Main(FileSystemEventHandler):
 
 
     def build_path(self, items, next_item, role):
-        items_id = [int(item["id"]) for item in items]
+        items_id = [int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"]) for item in items]
         summ_curr_items = items_id[self.summoner_items_slice(role)]
-        next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=int(next_item["id"]), region="KR"))
+        
+        next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"])), region="KR"))
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
         return next_items, abs_items
@@ -218,24 +219,30 @@ class Main(FileSystemEventHandler):
             return
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
-        items_to_buy = self.analyze_champ(self_index, champs, items)
-        print("This is the result: ")
-        print(items_to_buy)
-        out_string = ""
-        if items_to_buy[0]:
-            out_string += str(items_to_buy[0]["id"])
-        for item in items_to_buy[1:]:
-            out_string += "," + str(item["id"])
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+
+        for summ_index in range(10):
+
+            items_to_buy = self.analyze_champ(summ_index, champs, items)
+            print("This is the result for summ_index {summ_index}: ")
+            print(items_to_buy)
+        # out_string = ""
+        # if items_to_buy[0]:
+        #     out_string += str(items_to_buy[0]["id"])
+        # for item in items_to_buy[1:]:
+        #     out_string += "," + str(item["id"])
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
 
     @staticmethod
     def shouldTerminate():
         return os.path.isfile(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
 
     def run(self):
+        
         observer = Observer()
-        observer.schedule(self, path=self.loldir  + os.sep + "Screenshots")
+        ss_path = os.path.join(self.loldir, "Screenshots")
+        print(f"Now listening for screenshots at: {ss_path}")
+        observer.schedule(self, path=ss_path)
         observer.start()
         try:
             with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
