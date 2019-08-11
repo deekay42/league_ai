@@ -88,7 +88,9 @@ class ChampImgModel(ImgModel):
 
     def __init__(self, res_converter):
         super().__init__(res_converter)
+        
         self.network = network.ChampImgNetwork()
+        print(f"def get_num_elements(self): {self.network.get_num_elements()}")
         self.network_crop = ui_constants.NETWORK_CHAMP_IMG_CROP
         self.img_size = res_converter.CHAMP_SIZE
         self.model_path = app_constants.model_paths["best"]["champ_imgs"]
