@@ -138,7 +138,9 @@ class ProcessNextItemsTrainingData:
         training_data = (jq(self.jq_scripts["buildAbsoluteItemTimeline"]).transform([game]) for game in training_data)
         if log_info is not None:
             print(log_info + " Absolute items complete.\n" + log_info + " Starting Inflate items")
-        training_data = self.inflate_items(matches=training_data, log_info=log_info)
+        # generator must be popped here, otherwise the next_items generator will be defined on this one and and skip
+        # one item when this one advances
+        training_data = list(self.inflate_items(matches=training_data, log_info=log_info))
         if log_info is not None:
             print(log_info + " inflate items complete.\n" + log_info + " Starting jq_next.")
         next_items = (jq(self.jq_scripts["extractNextItemsForWinningTeam"]).transform([game]) for game in training_data)
@@ -488,9 +490,12 @@ class ProcessNextItemsTrainingData:
             f.write(']')
             f.close()
 
+    # chunklen is the total number of games the thread pool(typically 4) are processing together, so chunklen/4 per
+    # thread
 
-    # chunklen should be set so that app doesn't start thrashing
-    def start(self, num_threads=os.cpu_count(), chunklen=1000):
+
+
+    def start(self, num_threads=os.cpu_count(), chunklen=400):
         class ProcessTrainingDataWorker(Process):
 
             def __init__(self, queue, transformations, chunksize, out_dir, thread_index, train_test_split=0.85):
@@ -595,6 +600,7 @@ class ProcessNextItemsTrainingData:
         i = 0
         for game_x, game_y in zip(abs_inf, next_items):
             game_y = game_y[0]
+            assert (game_x["gameId"] == game_y["gameId"])
             team1_team_champs = np.array(game_x['participants'][:5])
             team2_team_champs = np.array(game_x['participants'][5:])
 

@@ -9,6 +9,7 @@ from train_model import generate, data_loader
 from utils import utils
 from train_model.model import *
 from train_model.network import *
+import json
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -113,6 +114,7 @@ class DynamicTrainingDataTrainer(Trainer):
 
     def __init__(self):
         super().__init__()
+        self.num_epochs = 50
         self.queue = JoinableQueue(10)
         self.workers = []
         self.X_preprocessed_test = None
@@ -369,8 +371,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    t = StaticTrainingDataTrainer()
-    t.build_next_items_model()
+    # t = StaticTrainingDataTrainer()
+    # t.build_next_items_model()
 
-    #s = DynamicTrainingDataTrainer()
-    #s.build_new_champ_model()
+    s = DynamicTrainingDataTrainer()
+    s.build_new_champ_model()
