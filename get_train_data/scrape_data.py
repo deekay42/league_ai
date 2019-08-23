@@ -18,40 +18,34 @@ def get_match_ids(summoners, num_games, cut_off_date):
     # match_ids = set(match_ids)
 
     match_ids = set()
+    first = True
+    for summoner in summoners:
 
-    with open(app_constants.train_paths["matchids"], "w") as f:
-        f.write('[\n')
-        first = True
-        for summoner in summoners:
+        try:
+            summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
+                                                     begin_time=cut_off_date)
+            for match in summ_match_hist:
+                if match_id in match_ids:
+                    continue
+                if num_games <= 0:
+                    raise AllGamesCollected()
+                if first:
+                    first = False
+                else:
+                    f.write(',')
+                match_id = match.id
 
-            try:
-                summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
-                                                         begin_time=cut_off_date)
-                for match in summ_match_hist:
-                    if match_id in match_ids:
-                        continue
-                    if num_games <= 0:
-                        raise AllGamesCollected()
-                    if first:
-                        first = False
-                    else:
-                        f.write(',')
-                    match_id = match.id
+                match_ids.add(match_id)
+                num_games -= 1
 
-                    match_ids.add(match_id)
-                    num_games -= 1
-                    f.write(str(match_id) + '\n')
-                f.flush()
+        except HTTPError as h:
+            print('ERROR: There was an error obtaining this summoners match history')
+            print(repr(e))
+            print(traceback.format_exc())
+        except AllGamesCollected as e:
+            #not a real exception, more of a goto
+            break
 
-
-            except HTTPError as h:
-                print('ERROR: There was an error obtaining this summoners match history')
-                print(repr(e))
-                print(traceback.format_exc())
-            except AllGamesCollected as e:
-                #not a real exception, more of a goto
-                break
-        f.write(']\n')
     return match_ids
 
 
@@ -59,7 +53,6 @@ def get_match_ids(summoners, num_games, cut_off_date):
 def get_top_summoners():
     elite_summoners = cass.get_challenger_league(cass.Queue.ranked_solo_fives, 'KR').entries + cass.get_master_league(
         cass.Queue.ranked_solo_fives, 'KR').entries
-    summoner_result = [league_entry.summoner for league_entry in elite_summoners]
 
     with open(app_constants.train_paths["diamond_league_ids"]) as f:
         leagues = f.readlines()

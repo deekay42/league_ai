@@ -29,7 +29,7 @@ class MonitorCallback(tflearn.callbacks.Callback):
 class Trainer(ABC):
 
     def __init__(self):
-        self.num_epochs = 30
+        self.num_epochs = 10
         self.batch_size = 128
         self.model_name = "my_model"
         self.acc_file_name = "accuracies"
@@ -91,9 +91,26 @@ class Trainer(ABC):
             #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
             #     if a != b:
             #         print(f"----->{i}: {a} {b}")
-            #     print(f"{i}: {a} {b}")
+            #     else:
+            #         print(f"{i}: {a} {b}")
             # print("Raw test data predictions: {0}".format(y))
-            # print("Actual test data  values : {0}".format(self.Y_test.tolist()))
+            # print("Actual test data  values : {0}".format(self.Y_test))
+
+            # y = model.predict(self.X_test)
+            # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+            # y = to_categorical(y, 10).flatten()
+            # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+            # y_test = to_categorical(y_test, 10).flatten()
+            # print("Pred Actual")
+            # for i in range(len(y)):
+            #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+            #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+            #     if a != b:
+            #         print(f"----->{i}: {a} {b}")
+            #     else:
+            #         print(f"{i}: {a} {b}")
+            # print("Raw test data predictions: {0}".format(y))
+            # print("Actual test data  values : {0}".format(self.Y_test))
 
             score = self.eval_model(model, epoch)
             scores.append(score)
@@ -105,9 +122,9 @@ class Trainer(ABC):
 
 
     def log_output(self, main_test_eval, epoch_counter):
-        print("Epoch {0}:\nRaw test accuracy {1:.2f} | ".format(epoch_counter + 1, main_test_eval), end='')
+        print("Epoch {0}:\nRaw test accuracy {1:.4f} | ".format(epoch_counter + 1, main_test_eval), end='')
         self.logfile.write(
-            "Raw test accuracy {1:.2f} | ".format(epoch_counter + 1, main_test_eval))
+            "Raw test accuracy {1:.4f} | ".format(epoch_counter + 1, main_test_eval))
 
 
 class DynamicTrainingDataTrainer(Trainer):
@@ -131,67 +148,67 @@ class DynamicTrainingDataTrainer(Trainer):
 
 
     def load_img_test_data(self):
-        image_paths = ['test_data/easy/1.png', 'test_data/easy/2.png', 'test_data/easy/3.png']
+        image_paths = ['test_data/easy/1.png', 'test_data/easy/2.png', 'test_data/easy/3.png', 'test_data/easy/4.png']
         image_paths.sort()
         imgs = [cv.imread(path) for path in image_paths]
         with open('test_data/easy/test_labels.json', "r") as f:
             elems = json.load(f)
 
-        champs_y = [list(v['champs']) for k, v in elems.items()]
-        items_y = [list(v['items']) for k, v in elems.items()]
-        self_y = [v['self'] for k, v in elems.items()]
+        champs_x, items_x, self_x, champs_y, items_y, self_y = [],[],[],[],[],[]
+        for test_image_x, test_image_y in zip(imgs, elems.items()):
+            test_image_y = test_image_y[1]
+            champs_y.extend([self.champ_manager.lookup_by("name", champ_name)["img_int"] for champ_name in
+                             test_image_y["champs"]])
+            items_y.extend([self.item_manager.lookup_by("name", item_name)["img_int"] for item_name in test_image_y["items"]])
+            self_y.extend(to_categorical([test_image_y["self"]], nb_classes=10)[0])
 
-        champs_y = [[self.champ_manager.lookup_by("name", champ_name)["img_int"] for champ_name in champ_list] for \
-                champ_list
-                    in champs_y]
-        items_y = [[self.item_manager.lookup_by("name", item_name)["img_int"] for item_name in items_list] for \
-                items_list in
-                   items_y]
-        champs_y = np.ravel(champs_y)
-        items_y = np.ravel(items_y)
+            res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")))
+            res_cvt.set_res(*(test_image_y["res"].split(",")))
+            champ_coords = ChampImgModel.generate_champ_coords(res_cvt.CHAMP_LEFT_X_OFFSET, res_cvt.CHAMP_RIGHT_X_OFFSET,
+                                                               res_cvt.CHAMP_Y_DIFF,
+                                                               res_cvt.CHAMP_Y_OFFSET)
 
-        res_cvt = ui_constants.ResConverter(1440, 900)
-        champ_coords = ChampImgModel.generate_champ_coords(res_cvt.CHAMP_LEFT_X_OFFSET, res_cvt.CHAMP_RIGHT_X_OFFSET,
-                                                           res_cvt.CHAMP_Y_DIFF,
-                                                           res_cvt.CHAMP_Y_OFFSET)
-        item_coords = ItemImgModel.generate_item_coords(res_cvt.ITEM_X_DIFF, res_cvt.ITEM_LEFT_X_OFFSET,
-                                                        res_cvt.ITEM_RIGHT_X_OFFSET,
-                                                        res_cvt.ITEM_Y_DIFF,
-                                                        res_cvt.ITEM_Y_OFFSET, res_cvt.ITEM_INNER_OFFSET,
-                                                        res_cvt.ITEM_INNER_OFFSET)
-        self_coords = ChampImgModel.generate_champ_coords(res_cvt.SELF_INDICATOR_LEFT_X_OFFSET,
-                                                          res_cvt.SELF_INDICATOR_RIGHT_X_OFFSET,
-                                                          res_cvt.SELF_INDICATOR_Y_DIFF,
-                                                          res_cvt.SELF_INDICATOR_Y_OFFSET)
+            item_x_offset = res_cvt.ITEM_INNER_OFFSET
+            item_y_offset = res_cvt.ITEM_INNER_OFFSET
+            if test_image_y["summ_names_displayed"]:
+                item_x_offset += res_cvt.SUMM_NAMES_DIS_X_OFFSET
+                item_y_offset += res_cvt.SUMM_NAMES_DIS_Y_OFFSET
+            item_coords = ItemImgModel.generate_item_coords(res_cvt.ITEM_X_DIFF,
+                                                     res_cvt.ITEM_LEFT_X_OFFSET,
+                                                     res_cvt.ITEM_RIGHT_X_OFFSET,
+                                                     res_cvt.ITEM_Y_DIFF,
+                                                     res_cvt.ITEM_Y_OFFSET, item_x_offset, item_y_offset)
 
-        champ_coords = np.reshape(champ_coords, (-1, 2))
-        item_coords = np.reshape(item_coords, (-1, 2))
-        self_coords = np.reshape(self_coords, (-1, 2))
-        # item_coords = [(coord[0] + 2, coord[1] + 2) for coord in item_coords]
+            self_coords = ChampImgModel.generate_champ_coords(res_cvt.SELF_INDICATOR_LEFT_X_OFFSET,
+                                                              res_cvt.SELF_INDICATOR_RIGHT_X_OFFSET,
+                                                              res_cvt.SELF_INDICATOR_Y_DIFF,
+                                                              res_cvt.SELF_INDICATOR_Y_OFFSET)
 
-        champs_x = []
-        items_x = []
-        self_x = []
-        for img in imgs:
-            items_x_raw = [img[coord[1]:coord[1] + res_cvt.ITEM_SIZE, coord[0]:coord[0] + res_cvt.ITEM_SIZE] for coord
+            champ_coords = np.reshape(champ_coords, (-1, 2))
+            item_coords = np.reshape(item_coords, (-1, 2))
+            self_coords = np.reshape(self_coords, (-1, 2))
+            # item_coords = [(coord[0] + 2, coord[1] + 2) for coord in item_coords]
+
+            items_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.ITEM_SIZE, coord[0]:coord[0] + res_cvt.ITEM_SIZE] for coord
                            in item_coords]
-            items_x += [cv.resize(img, ui_constants.NETWORK_ITEM_IMG_CROP, cv.INTER_AREA) for img in items_x_raw]
-            champs_x_raw = [img[coord[1]:coord[1] + res_cvt.CHAMP_SIZE, coord[0]:coord[0] + res_cvt.CHAMP_SIZE] for
+            items_x.extend([cv.resize(img, ui_constants.NETWORK_ITEM_IMG_CROP, cv.INTER_AREA) for img in items_x_raw])
+            champs_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.CHAMP_SIZE, coord[0]:coord[0] + res_cvt.CHAMP_SIZE] for
                             coord in champ_coords]
-            champs_x += [cv.resize(img, ui_constants.NETWORK_CHAMP_IMG_CROP, cv.INTER_AREA) for img in champs_x_raw]
+            champs_x.extend([cv.resize(img, ui_constants.NETWORK_CHAMP_IMG_CROP, cv.INTER_AREA) for img in
+                             champs_x_raw])
             self_x_raw = [
-                img[coord[1]:coord[1] + res_cvt.SELF_INDICATOR_SIZE, coord[0]:coord[0] + res_cvt.SELF_INDICATOR_SIZE]
+                test_image_x[coord[1]:coord[1] + res_cvt.SELF_INDICATOR_SIZE, coord[0]:coord[0] + res_cvt.SELF_INDICATOR_SIZE]
                 for coord in self_coords]
-            self_x += [cv.resize(img, ui_constants.NETWORK_SELF_IMG_CROP, cv.INTER_AREA) for img in self_x_raw]
+            self_x.extend([cv.resize(img, ui_constants.NETWORK_SELF_IMG_CROP, cv.INTER_AREA) for img in self_x_raw])
+
+
+
+            # self.show_coords(cv.imread('test_data/easy/1.png'), champ_coords, ui_constants.CHAMP_IMG_SIZE[0], item_coords, ui_constants.ITEM_IMG_SIZE[0], self_coords, ui_constants.SELF_IMG_SIZE[0])
 
         # for i, item in enumerate(items_x):
         #     cv.imshow(str(i), item)
         # cv.waitKey(0)
-
-        # self.show_coords(cv.imread('test_data/easy/1.png'), champ_coords, ui_constants.CHAMP_IMG_SIZE[0], item_coords, ui_constants.ITEM_IMG_SIZE[0], self_coords, ui_constants.SELF_IMG_SIZE[0])
-
-        self_y = to_categorical(self_y, nb_classes=10)
-        self_y = np.reshape(self_y, (-1, 1))
+        self_y = np.array(self_y)[:,np.newaxis]
         return champs_x, items_x, self_x, champs_y, items_y, self_y
 
 
@@ -238,8 +255,8 @@ class DynamicTrainingDataTrainer(Trainer):
             "preprocessed images accuracy")
 
         for eval_ in preprocessed_test_evals:
-            self.logfile.write(" {0:.2f} ".format(eval_))
-            print(" {0:.2f} ".format(eval_), end='')
+            self.logfile.write(" {0:.4f} ".format(eval_))
+            print(" {0:.4f} ".format(eval_), end='')
 
         self.logfile.write("\n\n")
         self.logfile.flush()
@@ -371,8 +388,32 @@ class StaticTrainingDataTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    # t = StaticTrainingDataTrainer()
-    # t.build_next_items_model()
+    t = StaticTrainingDataTrainer()
+    t.build_next_items_model()
 
-    s = DynamicTrainingDataTrainer()
-    s.build_new_champ_model()
+    # s = DynamicTrainingDataTrainer()
+    # s.build_new_self_model()
+
+    # res_cvt = ui_constants.ResConverter(1920, 1080)
+    # model = ItemImgModel(res_cvt, True)
+    #
+    #
+    # _, X_test, _, _, Y_test, _ = s.load_img_test_data()
+    #
+    # y = model.model.predict(X_test)
+    # y = [np.argmax(y_) for y_ in y]
+    # y_test = [np.argmax(y_) for y_ in Y_test]
+    # print("Pred Actual")
+    # for i in range(len(y)):
+    #     a = model.artifact_manager.lookup_by('img_int', y[i])['name']
+    #     b = model.artifact_manager.lookup_by('img_int', Y_test[i])['name']
+    #     if a != b:
+    #         print(f"----->{i}: {a} {b}")
+    #     else:
+    #         print(f"{i}: {a} {b}")
+    # print("Raw test data predictions: {0}".format(y))
+    # print("Actual test data  values : {0}".format(Y_test))
+
+
+    # s = DynamicTrainingDataTrainer()
+    # s.build_new_item_model()

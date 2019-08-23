@@ -27,7 +27,7 @@ def _build_path(prev_avail_items, next_i, abs_items):
 
     # next_i doesn't have any subcomponents
     if not comps:
-        return [next_i], [], [Counter([next_i.id]) + copy.deepcopy(abs_items[-1])], prev_avail_items
+        return [next_i], [], [Counter([next_i.id]) + Counter(abs_items[-1])], prev_avail_items
 
     result_buy_seq, result_ex_i_used, to_remove, result_abs, best_prev_avail_items_result = [], [], [], [], []
     while comps:
@@ -35,7 +35,7 @@ def _build_path(prev_avail_items, next_i, abs_items):
         max_ex_i_used = buy_seq = best_next_cmp = best_abs = prev_avail_items_result = None
 
         for comp in comps.elements():
-            curr_seq, curr_used, curr_abs, prev_avail_items_result = _build_path(copy.deepcopy(prev_avail_items), comp,
+            curr_seq, curr_used, curr_abs, prev_avail_items_result = _build_path(Counter(prev_avail_items), comp,
                                                                                  abs_items)
 
             # is the current component closest to completion?
@@ -57,15 +57,15 @@ def _build_path(prev_avail_items, next_i, abs_items):
             prev_avail_items = prev_avail_items - Counter([best_next_cmp.id])
         else:
             result_abs += best_abs
-            abs_items = copy.deepcopy(result_abs)
+            abs_items = [Counter(i) for i in result_abs]
             prev_avail_items = best_prev_avail_items_result
         comps = comps - Counter([best_next_cmp])
 
     result_buy_seq += [next_i]
     if not result_abs:
-        result_abs += [copy.deepcopy(abs_items[-1])]
+        result_abs += [Counter(abs_items[-1])]
     else:
-        result_abs += [copy.deepcopy(result_abs[-1])]
+        result_abs += [Counter(result_abs[-1])]
     result_abs[-1] = result_abs[-1] + Counter([next_i.id])
     result_abs[-1] = result_abs[-1] - comps_cpy
 
@@ -78,7 +78,7 @@ def build_path(prev_avail_items, next_item):
     if occ:
         del prev_avail_items[next_item.id]
     result_buy_seq, result_ex_i_used, result_abs, prev_avail_items = _build_path(prev_avail_items, next_item, [
-        copy.deepcopy(Counter(prev_avail_items))])
+        Counter(prev_avail_items)])
     prev_avail_items[next_item.id] += occ
     result_abs = [list(item_state.elements()) + [next_item.id] * occ for item_state in result_abs]
     return result_buy_seq, result_ex_i_used, result_abs, prev_avail_items

@@ -9,6 +9,7 @@ import numpy as np
 import cProfile
 import io
 import pstats
+import copy
 
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
@@ -30,6 +31,7 @@ class Main(FileSystemEventHandler):
         self.config = configparser.ConfigParser()
         self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
+            res = 1440,810
             res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
             print(repr(e))
@@ -109,13 +111,18 @@ class Main(FileSystemEventHandler):
 
 
     def build_path(self, items, next_item, role):
-        items_id = [int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"]) for item in items]
+        items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
         summ_curr_items = items_id[self.summoner_items_slice(role)]
-        
+
+        #TODO: this is bad. the item class should know when to return main_img or id
         next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"])), region="KR"))
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
         return next_items, abs_items
+
+
+    def remove_low_value_items(self, items):
+        return list(filter(lambda a: "Potion" not in a["name"] and "Doran" not in a["name"], items))
 
 
     def analyze_champ(self, role, champs, items):
@@ -130,17 +137,28 @@ class Main(FileSystemEventHandler):
         summ_next_item_cass = None
         result = []
         items_ahead = 0
+        containsCompletedItem = False
         while True:
             items_ahead += 1
             next_item = self.predict_next_item(role, champs, items)
             next_items, abs_items = self.build_path(items, next_item, role)
-            
+            cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item[
+                                                                                                          "id"])), region="KR")
+
+            containsCompletedItem = containsCompletedItem or cass_next_item.tier >= 3 or next_item["name"] == \
+                                    "Rabadon's Deathcap" or  next_item["name"] == "Infinity Edge"
             result.extend(next_items)
-            if len(result) > 4:
-                result = result[:4]
+            if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
                 break
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
             try:
+
+                if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
+                    print("too many items:")
+                    print(abs_items[-1])
+                    abs_items[-1] = self.remove_low_value_items(abs_items[-1])
+                    print("removing low value items:")
+                    print(abs_items[-1])
                 items[self.summoner_items_slice(role)] = np.pad(
                     abs_items[-1], (0, game_constants.MAX_ITEMS_PER_CHAMP - len(abs_items[-1])),
                     'constant',
@@ -203,8 +221,12 @@ class Main(FileSystemEventHandler):
             champs = list(self.champ_img_model.predict(screenshot))
             for champ in champs:
                 print(champ)
-            print("Trying to predict item imgs")
+            print("Trying to predict item imgs. \nHere are the raw items: ")
             items = list(self.item_img_model.predict(screenshot))
+            for i, item in enumerate(items):
+                print(f"{divmod(i, 7)}: {item}")
+            items = [self.item_manager.lookup_by("int", item["int"])  for item in items]
+            print("Here are the converted items:")
             for i, item in enumerate(items):
                 print(f"{divmod(i, 7)}: {item}")
             print("Trying to predict self imgs")
@@ -217,21 +239,31 @@ class Main(FileSystemEventHandler):
             print(e)
             traceback.print_exc()
             return
+
+        #remove items that the network is not trained on, such as control wards
+        items = [item if (item["name"] != "Control Ward" and item["name"] != "Warding Totem (Trinket)" and item[
+            "name"] != "Farsight Alteration" and item["name"] != "Oracle Lens") else self.item_manager.lookup_by("int", 0) for item in
+                 items]
+
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
 
-        for summ_index in range(10):
-
-            items_to_buy = self.analyze_champ(summ_index, champs, items)
-            print("This is the result for summ_index {summ_index}: ")
-            print(items_to_buy)
-        # out_string = ""
-        # if items_to_buy[0]:
-        #     out_string += str(items_to_buy[0]["id"])
-        # for item in items_to_buy[1:]:
-        #     out_string += "," + str(item["id"])
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        # for summ_index in range(10):
+        #     champs_copy = copy.deepcopy(champs)
+        #     items_copy = copy.deepcopy(items)
+        #     items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
+        #     print(f"This is the result for summ_index {summ_index}: ")
+        #     print(items_to_buy)
+        items_to_buy = self.analyze_champ(self_index, champs, items)
+        print(f"This is the result for summ_index {self_index}: ")
+        print(items_to_buy)
+        out_string = ""
+        if items_to_buy[0]:
+            out_string += str(items_to_buy[0]["id"])
+        for item in items_to_buy[1:]:
+            out_string += "," + str(item["id"])
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
 
     @staticmethod
     def shouldTerminate():
@@ -254,5 +286,8 @@ class Main(FileSystemEventHandler):
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
+
+# m = Main()
+# m.process_image("lol.png")
 
 # pr = cProfile.Profile()

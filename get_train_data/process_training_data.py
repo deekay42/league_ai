@@ -673,8 +673,8 @@ class ProcessNextItemsTrainingData:
 if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
-    # l = ProcessNextItemsTrainingData()
-    # l.start()
+    l = ProcessNextItemsTrainingData()
+    l.start()
 
     t = train.StaticTrainingDataTrainer()
     t.build_next_items_model()

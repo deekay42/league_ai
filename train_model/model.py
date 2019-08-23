@@ -4,12 +4,17 @@ import tflearn
 import glob
 from abc import ABC, abstractmethod
 import cv2 as cv
-
+from tflearn.layers.core import fully_connected, input_data, dropout
+from tflearn.layers.embedding_ops import embedding
+from tflearn.layers.estimator import regression
+from tflearn.layers.merge_ops import merge
 from train_model import network
 from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
 from constants import ui_constants, game_constants, app_constants
 import threading
 from utils import utils
+from tflearn.layers.embedding_ops import embedding
+import tflearn
 
 
 class Model(ABC):
@@ -39,6 +44,105 @@ class Model(ABC):
                 raise e
             self.model = model
 
+    def output_logs(self, in_vec):
+        game_config = \
+            {
+                "champs_per_game": game_constants.CHAMPS_PER_GAME,
+                "champs_per_team": game_constants.CHAMPS_PER_TEAM,
+                "total_num_champs": ChampManager().get_num("int"),
+                "total_num_items": ItemManager().get_num("int"),
+                "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
+            }
+
+        network_config = \
+            {
+                "learning_rate": 0.00025,
+                "champ_emb_dim": 6,
+                "item_emb_dim": 7,
+                "all_items_emb_dim": 10,
+                "champ_all_items_emb_dim": 12,
+                "target_summ": 1
+            }
+
+
+
+        champs_per_game = game_config["champs_per_game"]
+        total_num_champs = game_config["total_num_champs"]
+        total_num_items = game_config["total_num_items"]
+        items_per_champ = game_config["items_per_champ"]
+        champs_per_team = game_config["champs_per_team"]
+
+        learning_rate = network_config["learning_rate"]
+        champ_emb_dim = network_config["champ_emb_dim"]
+        item_emb_dim = network_config["item_emb_dim"]
+
+
+
+        #  1 elements long
+        pos = in_vec[:, 0]
+        pos = tf.cast(pos, tf.int32)
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+        pos_index = tf.transpose([batch_index, pos], (1, 0))
+        opp_pos_index = tf.transpose([batch_index, pos + champs_per_team], (1, 0))
+
+        # Make tensor of indices for the first dimension
+
+        #  10 elements long
+        champ_ints = in_vec[:, 1:champs_per_game + 1]
+        # 60 elements long
+        item_ints = in_vec[:, champs_per_game + 1:]
+        champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
+                           scope="champ_scope")
+        target_summ_champ = tf.gather_nd(champs, pos_index)
+        target_summ_oppo = tf.gather_nd(champs, opp_pos_index)
+        champs = tf.reshape(champs, [-1, champs_per_game * champ_emb_dim])
+        # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
+        #                   scope="item_scope")
+
+        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
+        items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
+        items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
+
+        # we are deleting the 0 items, i.e. the Empty items. they are required to ensure that each summoner always has
+        # 6 items, but they shouldn't influence the next item calculation
+        # edit: doesn't make a difference in training. might actually be detrimental to determining how many item
+        # slots are left open
+        # items_by_champ_k_hot = items_by_champ_k_hot[:,:,1:]
+        # total_num_items = total_num_items - 1
+        # items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
+        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        target_oppo_items = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
+
+        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
+                                                    reuse=tf.AUTO_REUSE,
+                                                    scope="item_sum_scope")
+        summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
+
+        summed_items_by_team1 = summed_items_by_champ[:, :champs_per_team * item_emb_dim]
+        summed_items_by_team2 = summed_items_by_champ[:, champs_per_team * item_emb_dim:]
+
+        champs_team1 = champs[:, :champs_per_team * champ_emb_dim]
+        champs_team2 = champs[:, champs_per_team * champ_emb_dim:]
+
+        team1 = merge([champs_team1, summed_items_by_team1], mode='concat', axis=1)
+        team2 = merge([champs_team2, summed_items_by_team2], mode='concat', axis=1)
+
+        team1_score = fully_connected(team1, 10, bias=False, activation=None,
+                                      reuse=tf.AUTO_REUSE,
+                                      scope="team_sum_scope")
+        team2_score = fully_connected(team2, 10, bias=False, activation=None,
+                                      reuse=tf.AUTO_REUSE,
+                                      scope="team_sum_scope")
+
+        pos = tf.one_hot(pos, depth=champs_per_team)
+        final_input_layer = merge(
+            [target_summ_champ, target_summ_items, target_summ_oppo, target_oppo_items, team1_score, team2_score,
+             champs], mode='concat', axis=1)
+        # net = dropout(final_input_layer, 0.8)
+        net = merge([final_input_layer, pos], mode='concat', axis=1)
+        return net
 
     def predict2int(self, x):
         with self.graph.as_default():
@@ -192,6 +296,15 @@ class NextItemsModel(Model):
 
 
     def predict(self, x):
+        # with self.graph.as_default(), tf.Session() as sess:
+        #     tflearn.is_training(False, session=sess)
+        #     X = tf.placeholder("float", [None, 71])
+        #     # X = input_data(shape=[None, 71], name='lolol')
+        #     log = self.output_logs(X)
+        #     sess.run(tf.global_variables_initializer())
+        #     log = sess.run(log, feed_dict = {X: np.array(x)})[0]
+        #     for i, _ in enumerate(log):
+        #         print(f"{i}: {log[i]}")
         item_int = self.predict2int(x)
         item = self.artifact_manager.lookup_by("int", item_int[0])
         return item

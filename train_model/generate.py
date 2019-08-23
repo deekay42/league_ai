@@ -222,8 +222,11 @@ def overlayText(img):
     img_width = img.shape[1]
     for i in range(2):
         text = chr(np.random.randint(33, 126))
-        org = np.random.randint(0, int(img_width * 0.5)), np.random.randint(0, int(img_height))
-        img = cv.putText(img, text, org, cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 2, bottomLeftOrigin=False)
+        org = np.random.randint(0, int(img_width)), np.random.randint(0, int(img_height))
+        color = np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255)
+        size = np.random.normal(1,1)
+        thickness = np.random.randint(2,4)
+        img = cv.putText(img, text, org, cv.FONT_HERSHEY_PLAIN, size, color, thickness, bottomLeftOrigin=False)
     return img
 
 
@@ -621,7 +624,7 @@ item_config = \
         "circle_size": 1.0,
         "darkness_rate": 0.4,
         "color_change_rate": 0.05,
-        "blur_rate": 1,
+        "blur_rate": 6,
         "pixelate_rate": 0.4,
         "brightness_rate": 20,
         "line_rate": 2,
@@ -914,3 +917,13 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
 #     imgs,keys = _load_data(self_imgs, 1)
 #     for img in imgs:
 #         pass
+
+if __name__=="__main__":
+    import copy
+    img_orig = cv.imread('../assets/item_imgs_train/3047.png')
+    cv.imshow("original", img_orig)
+    while True:
+        img = copy.deepcopy(img_orig)
+        img = overlayText(img)
+        cv.imshow("text", img)
+        cv.waitKey(0)

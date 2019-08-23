@@ -169,8 +169,10 @@ class ResConverter:
 
     def __init__(self, x, y):
         if not ResConverter.instance:
-            ResConverter.instance = ResConverter.__ResConverter(x, y)
+            ResConverter.instance = ResConverter.__ResConverter(int(x), int(y))
 
+    def set_res(self, x, y):
+        ResConverter.instance = ResConverter.__ResConverter(int(x), int(y))
 
     def __getattr__(self, name):
         return getattr(self.instance, name)
