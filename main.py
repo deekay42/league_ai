@@ -10,7 +10,7 @@ import cProfile
 import io
 import pstats
 import copy
-
+ 
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -31,7 +31,6 @@ class Main(FileSystemEventHandler):
         self.config = configparser.ConfigParser()
         self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
-            res = 1440,810
             res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
             print(repr(e))
@@ -72,7 +71,7 @@ class Main(FileSystemEventHandler):
             return
         self.self_img_model = SelfImgModel(self.res_converter)
         Main.test_connection()
-        
+
 
     @staticmethod
     def test_connection(timeout=0):
