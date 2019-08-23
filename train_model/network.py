@@ -8,6 +8,7 @@ from tflearn.layers.estimator import regression
 from tflearn.layers.merge_ops import merge
 from tflearn.layers.normalization import batch_normalization
 from abc import ABC, abstractmethod
+import numpy as np
 
 from utils.artifact_manager import ChampManager, ItemManager, SpellManager
 from constants import ui_constants, game_constants
@@ -83,14 +84,14 @@ class ItemImgNetwork(ImgNetwork):
         network = input_data(shape=[None, self.img_size[1], self.img_size[0], 3], name='input')
 
         conv1 = relu(batch_normalization(
-            conv_2d(network, 16, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
+            conv_2d(network, 32, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
         maxpool1 = max_pool_2d(conv1, 3)
 
         conv2 = relu(batch_normalization(
-            conv_2d(maxpool1, 32, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
+            conv_2d(maxpool1, 64, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
         maxpool2 = max_pool_2d(conv2, 3)
 
-        net = fully_connected(maxpool2, 64, activation='relu', regularizer="L2")
+        net = fully_connected(maxpool2, 128, activation='relu', regularizer="L2")
         # net = fully_connected(net, 128, activation='relu')
         net = fully_connected(net, self.num_elements, activation='softmax')
 
@@ -298,7 +299,14 @@ class NextItemNetwork(Network):
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
         items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
         items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
-        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
+
+        #we are deleting the 0 items, i.e. the Empty items. they are required to ensure that each summoner always has
+        # 6 items, but they shouldn't influence the next item calculation
+        # edit: doesn't make a difference in training. might actually be detrimental to determining how many item
+        # slots are left open
+        #items_by_champ_k_hot = items_by_champ_k_hot[:,:,1:]
+        #total_num_items = total_num_items - 1
+        #items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         target_oppo_items = tf.gather_nd(items_by_champ_k_hot, opp_pos_index)
 

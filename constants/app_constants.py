@@ -3,8 +3,8 @@ import os
 base_asset_path = "assets" + os.sep
 asset_paths = dict()
 asset_paths["champ_imgs"] = base_asset_path + "champ_imgs" + os.sep
-asset_paths["item_imgs"] = base_asset_path + "item_imgs" + os.sep
-asset_paths["self_imgs"] = base_asset_path + "self_imgs" + os.sep
+asset_paths["item_imgs"] = base_asset_path + "item_imgs_train" + os.sep
+asset_paths["self_imgs"] = base_asset_path + "self_indicator_imgs" + os.sep
 asset_paths["jsons"] = base_asset_path + "data" + os.sep
 asset_paths["champ_json"] = asset_paths["jsons"] + "champ2id.json"
 asset_paths["item_json"] = asset_paths["jsons"] + "item2id.json"

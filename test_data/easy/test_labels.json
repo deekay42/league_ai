@@ -13,7 +13,10 @@
         "Boots of Mobility", "Frostfang", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
         "Sheen", "Ruby Crystal", "Empty","Empty", "Empty", "Empty", "Warding Totem (Trinket)",
         "Bami's Cinder", "Doran's Ring", "Boots of Speed","Cloth Armor", "Empty", "Empty", "Warding Totem (Trinket)"],
-      "self": 0
+      "self": 0,
+      "res": "1440,900",
+      "summ_names_displayed": false
+
   },
   "2" : {
     "spells":["Flash", "Teleport", "Smite", "Flash", "Cleanse", "Flash", "Heal", "Flash", "Flash", "Barrier",
@@ -26,10 +29,12 @@
         "Phage", "Caulfield's Warhammer", "Doran's Blade","Rejuvenation Bead", "Empty", "Empty", "Warding Totem (Trinket)",
         "Rabadon's Deathcap", "Rylai's Crystal Scepter", "Tear of the Goddess","Amplifying Tome", "Doran's Ring", "Empty", "Warding Totem (Trinket)",
         "Luden's Echo", "Morellonomicon", "Needlessly Large Rod","Sorcerer's Shoes", "Amplifying Tome", "Doran's Ring", "Warding Totem (Trinket)",
-        "Spirit Visage", "Frozen Heart", "Warden's Mail","Boots of Swiftness", "Targon's Brace", "Empty", "Warding Totem (Trinket)",
+        "Spirit Visage", "Frozen Heart", "Warden's Mail","Boots of Swiftness", "Celestial Eye", "Empty", "Warding Totem (Trinket)",
         "The Black Cleaver", "Sunfire Cape", "Jaurim's Fist","Mercury's Treads", "Doran's Shield", "Ruby Crystal", "Warding Totem (Trinket)",
         "Trinity Force", "Ninja Tabi", "Giant's Belt","Chain Vest", "Empty", "Empty", "Warding Totem (Trinket)"],
-      "self": 0
+      "self": 0,
+      "res": "1440,900",
+      "summ_names_displayed": false
   },
   "3" : {
     "spells":["Flash", "Teleport", "Smite", "Flash", "Cleanse", "Flash", "Heal", "Flash", "Flash", "Barrier",
@@ -45,6 +50,25 @@
         "Infinity Edge", "Rapid Firecannon", "Zeal","Berserker's Greaves", "Doran's Blade", "Dagger", "Warding Totem (Trinket)",
         "Morellonomicon", "Abyssal Mask", "Zhonya's Hourglass","Sorcerer's Shoes", "Doran's Ring", "Empty", "Warding Totem (Trinket)",
         "Rabadon's Deathcap", "Rod of Ages", "Lost Chapter","Sorcerer's Shoes", "Tear of the Goddess", "Doran's Ring", "Warding Totem (Trinket)"],
-    "self": 0
+    "self": 0,
+    "res": "1440,900",
+    "summ_names_displayed": false
+  },
+  "4" : {
+    "spells": ["f"],
+    "champs":["Garen", "RekSai", "Leblanc", "Ashe", "Soraka", "Renekton", "Khazix", "Ryze", "Kaisa", "Anivia"],
+    "items": ["B. F. Sword", "Doran's Blade", "Long Sword", "Long Sword","Boots of Speed","Cloth Armor", "Warding Totem (Trinket)",
+        "Skirmisher's Sabre: Warrior", "Ninja Tabi", "Ruby Crystal","Long Sword", "Refillable Potion", "Control Ward", "Warding Totem (Trinket)",
+        "Lost Chapter", "Sorcerer's Shoes", "Corrupting Potion","The Dark Seal", "Control Ward", "Empty", "Warding Totem (Trinket)",
+        "Bilgewater Cutlass", "Doran's Blade", "Boots of Speed","Dagger", "Health Potion", "Empty", "Warding Totem (Trinket)",
+        "Frostfang", "Amplifying Tome", "Boots of Speed","Health Potion", "Empty", "Empty", "Warding Totem (Trinket)",
+        "Tiamat", "Caulfield's Warhammer", "Boots of Speed","Control Ward", "Health Potion", "Empty", "Warding Totem (Trinket)",
+        "Skirmisher's Sabre", "Long Sword", "Long Sword","Boots of Speed", "Refillable Potion", "Empty", "Oracle Lens",
+        "Tear of the Goddess", "Corrupting Potion", "Amplifying Tome","Amplifying Tome", "Sapphire Crystal", "Boots of Speed", "Warding Totem (Trinket)",
+        "B. F. Sword", "Berserker's Greaves", "Doran's Shield","Long Sword", "Long Sword", "Refillable Potion", "Warding Totem (Trinket)",
+        "Tear of the Goddess", "Frostfang", "Stopwatch","Ruby Crystal", "Boots of Speed", "Control Ward", "Warding Totem (Trinket)"],
+    "self": 8,
+    "res": "1440,810",
+    "summ_names_displayed": true
   }
 }
