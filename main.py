@@ -27,48 +27,49 @@ class Main(FileSystemEventHandler):
 
     def __init__(self):
         self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+            res = 1440,900
+            # res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
             print(repr(e))
             res = 1366, 768
             print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
 
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
 
 
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
         self.res_converter = ui_constants.ResConverter(*res)
         print(f"Res is {res}")
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model = NextItemsModel()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
-        if Main.shouldTerminate():
-            return
-        self.item_img_model = ItemImgModel(self.res_converter, show_names_in_sb)
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
+        self.item_img_model = ItemImgModel(self.res_converter, False)
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         Main.test_connection()
 
@@ -202,6 +203,8 @@ class Main(FileSystemEventHandler):
 
 
 
+
+
     def timeout(self):
         self.onTimeout = True
         time.sleep(5.0)
@@ -286,7 +289,7 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-# m = Main()
-# m.process_image("lol.png")
+m = Main()
+m.process_image("lol.png")
 
 # pr = cProfile.Profile()

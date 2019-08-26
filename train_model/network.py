@@ -248,6 +248,39 @@ class NextItemNetwork(Network):
                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
             }
 
+    @staticmethod
+    def multi_class_acc(pred, target, input_):
+        pred = tf.reshape(pred, [-1, 5, 204])
+        target = tf.reshape(target, [-1, 5, 204])
+        correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+        # all_labels_true = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 2)
+        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+        return acc
+
+
+    @staticmethod
+    def multi_class_top_k_acc(preds, targets, input_):
+        preds = tf.reshape(preds, [-1, 204])
+        targets = tf.reshape(targets, [-1, 204])
+        targets = tf.cast(targets, tf.int32)
+        correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 4)
+        acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+        return acc
+
+    # def multi_class_acc_positions(pred, target, input):
+    #     pred = tf.reshape(pred, [-1, 5, 5])
+    #     target = tf.reshape(target, [-1, 5, 5])
+    #     correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
+    #     all_correct = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 1)
+    #     acc = tf.reduce_mean(all_correct)
+    #     return acc
+
+
+class NextItemEarlyGameNetwork(NextItemNetwork):
+
+    def __init__(self):
+        super().__init__()
+
         self.network_config = \
             {
                 "learning_rate": 0.00025,
@@ -353,29 +386,99 @@ class NextItemNetwork(Network):
                           loss='categorical_crossentropy', name='target')
 
 
-    @staticmethod
-    def multi_class_acc(pred, target, input_):
-        pred = tf.reshape(pred, [-1, 5, 204])
-        target = tf.reshape(target, [-1, 5, 204])
-        correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
-        # all_labels_true = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 2)
-        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-        return acc
+class NextItemLateGameNetwork(NextItemNetwork):
+
+    def __init__(self):
+        super().__init__()
+        self.network_config = \
+            {
+                "learning_rate": 0.00025,
+                "champ_emb_dim": 2,
+                "item_emb_dim": 4,
+                "champ_all_items_emb_dim": 6,
+                "team_emb_dim": 8
+            }
 
 
-    @staticmethod
-    def multi_class_top_k_acc(preds, targets, input_):
-        preds = tf.reshape(preds, [-1, 204])
-        targets = tf.reshape(targets, [-1, 204])
-        targets = tf.cast(targets, tf.int32)
-        correct_pred = tf.nn.in_top_k(preds, tf.argmax(targets, 1), 4)
-        acc = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
-        return acc
+    def build(self):
+        champs_per_game = self.game_config["champs_per_game"]
+        total_num_champs = self.game_config["total_num_champs"]
+        total_num_items = self.game_config["total_num_items"]
+        items_per_champ = self.game_config["items_per_champ"]
+        champs_per_team = self.game_config["champs_per_team"]
 
-    # def multi_class_acc_positions(pred, target, input):
-    #     pred = tf.reshape(pred, [-1, 5, 5])
-    #     target = tf.reshape(target, [-1, 5, 5])
-    #     correct_prediction = tf.equal(tf.argmax(pred, axis=2), tf.argmax(target, axis=2))
-    #     all_correct = tf.reduce_min(tf.cast(correct_prediction, tf.float32), 1)
-    #     acc = tf.reduce_mean(all_correct)
-    #     return acc
+
+        learning_rate = self.network_config["learning_rate"]
+        champ_emb_dim = self.network_config["champ_emb_dim"]
+        item_emb_dim = self.network_config["item_emb_dim"]
+        champ_all_items_emb_dim = self.network_config["champ_all_items_emb_dim"]
+        team_emb_dim = self.network_config["team_emb_dim"]
+
+        total_champ_dim = champs_per_game
+        total_item_dim = champs_per_game * items_per_champ
+
+        in_vec = input_data(shape=[None, 1 + total_champ_dim + total_item_dim], name='input')
+        #  1 elements long
+        pos = in_vec[:, 0]
+        pos = tf.cast(pos, tf.int32)
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+        pos_index = tf.transpose([batch_index, pos], (1, 0))
+
+        # Make tensor of indices for the first dimension
+
+        #  10 elements long
+        champ_ints = in_vec[:, 1:champs_per_game + 1]
+        # 60 elements long
+        item_ints = in_vec[:, champs_per_game + 1:]
+        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
+                                   reuse=tf.AUTO_REUSE,
+                           scope="champ_scope")
+        target_summ_champ = tf.gather_nd(champs_embedded, pos_index)
+
+
+        champs = tf.reshape(champs_embedded, [-1, champs_per_game * champ_emb_dim])
+        # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
+        #                   scope="item_scope")
+
+        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
+        items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
+        items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
+
+        #we are deleting the 0 items, i.e. the Empty items. they are required to ensure that each summoner always has
+        # 6 items, but they shouldn't influence the next item calculation
+        # edit: doesn't make a difference in training. might actually be detrimental to determining how many item
+        # slots are left open
+        #items_by_champ_k_hot = items_by_champ_k_hot[:,:,1:]
+        #total_num_items = total_num_items - 1
+        #items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
+        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+
+
+        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
+                                                    reuse=tf.AUTO_REUSE,
+                                                    scope="item_sum_scope")
+        summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1,champs_per_game, item_emb_dim))
+
+        summed_items_by_champ_exp = tf.expand_dims(summed_items_by_champ, -1)
+        champs_exp = tf.expand_dims(champs_embedded, -2)
+        champs_with_items = tf.multiply(champs_exp, summed_items_by_champ_exp)
+        champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * item_emb_dim))
+        champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+        champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game* champ_all_items_emb_dim))
+
+
+        final_input_layer = merge(
+            [target_summ_champ, target_summ_items, champs_with_items_emb, champs], mode='concat', axis=1)
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
+
+        net = fully_connected(net, total_num_items, activation='softmax')
+
+        # TODO: consider using item embedding layer as output layer...
+        return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
+                          learning_rate=learning_rate,
+                          loss='categorical_crossentropy', name='target')
