@@ -366,7 +366,7 @@ class StaticTrainingDataTrainer(Trainer):
     def build_next_items_model(self):
         self.train_path = app_constants.model_paths["train"]["next_items"]
         self.best_path = app_constants.model_paths["best"]["next_items"]
-        self.network = NextItemNetwork().build()
+        self.network = NextItemLateGameNetwork().build()
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader()
         self.X, self.Y = dataloader.get_train_data()
