@@ -72,48 +72,49 @@ class Trainer(ABC):
 
 
     def train_neural_network(self):
-        model = tflearn.DNN(self.network)
-        scores = []
-        for epoch in range(self.num_epochs):
-            x, y = self.get_train_data()
-            model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
-                      show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
-                      callbacks=self.monitor_callback)
-            model.save(self.train_path + self.model_name + str(epoch + 1))
+        with tf.device("/gpu:0"):
+            model = tflearn.DNN(self.network)
+            scores = []
+            for epoch in range(self.num_epochs):
+                x, y = self.get_train_data()
+                model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                          show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                          callbacks=self.monitor_callback)
+                model.save(self.train_path + self.model_name + str(epoch + 1))
 
 
-            # y = model.predict(self.X_test)
-            # y = [np.argmax(y_) for y_ in y]
-            # y_test = [np.argmax(y_) for y_ in self.Y_test]
-            # print("Pred Actual")
-            # for i in range(len(y)):
-            #     a = self.item_manager.lookup_by('img_int', y[i])['name']
-            #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
-            #     if a != b:
-            #         print(f"----->{i}: {a} {b}")
-            #     else:
-            #         print(f"{i}: {a} {b}")
-            # print("Raw test data predictions: {0}".format(y))
-            # print("Actual test data  values : {0}".format(self.Y_test))
+                # y = model.predict(self.X_test)
+                # y = [np.argmax(y_) for y_ in y]
+                # y_test = [np.argmax(y_) for y_ in self.Y_test]
+                # print("Pred Actual")
+                # for i in range(len(y)):
+                #     a = self.item_manager.lookup_by('img_int', y[i])['name']
+                #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
+                #     if a != b:
+                #         print(f"----->{i}: {a} {b}")
+                #     else:
+                #         print(f"{i}: {a} {b}")
+                # print("Raw test data predictions: {0}".format(y))
+                # print("Actual test data  values : {0}".format(self.Y_test))
 
-            # y = model.predict(self.X_test)
-            # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
-            # y = to_categorical(y, 10).flatten()
-            # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
-            # y_test = to_categorical(y_test, 10).flatten()
-            # print("Pred Actual")
-            # for i in range(len(y)):
-            #     a = self.self_manager.lookup_by('img_int', y[i])['name']
-            #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
-            #     if a != b:
-            #         print(f"----->{i}: {a} {b}")
-            #     else:
-            #         print(f"{i}: {a} {b}")
-            # print("Raw test data predictions: {0}".format(y))
-            # print("Actual test data  values : {0}".format(self.Y_test))
+                # y = model.predict(self.X_test)
+                # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+                # y = to_categorical(y, 10).flatten()
+                # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+                # y_test = to_categorical(y_test, 10).flatten()
+                # print("Pred Actual")
+                # for i in range(len(y)):
+                #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+                #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+                #     if a != b:
+                #         print(f"----->{i}: {a} {b}")
+                #     else:
+                #         print(f"{i}: {a} {b}")
+                # print("Raw test data predictions: {0}".format(y))
+                # print("Actual test data  values : {0}".format(self.Y_test))
 
-            score = self.eval_model(model, epoch)
-            scores.append(score)
+                score = self.eval_model(model, epoch)
+                scores.append(score)
         return scores
 
 
@@ -366,7 +367,7 @@ class StaticTrainingDataTrainer(Trainer):
     def build_next_items_model(self):
         self.train_path = app_constants.model_paths["train"]["next_items"]
         self.best_path = app_constants.model_paths["best"]["next_items"]
-        self.network = NextItemLateGameNetwork().build()
+        self.network = NextItemEarlyGameNetwork().build()
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader()
         self.X, self.Y = dataloader.get_train_data()
