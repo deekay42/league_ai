@@ -73,14 +73,16 @@ class Trainer(ABC):
 
     def train_neural_network(self):
         with tf.device("/gpu:0"):
-            model = tflearn.DNN(self.network)
-            scores = []
-            for epoch in range(self.num_epochs):
-                x, y = self.get_train_data()
-                model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+            with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+                model = tflearn.DNN(self.network, session=sess)
+                sess.run(tf.global_variables_initializer())
+                scores = []
+                for epoch in range(self.num_epochs):
+                    x, y = self.get_train_data()
+                    model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                           show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                           callbacks=self.monitor_callback)
-                model.save(self.train_path + self.model_name + str(epoch + 1))
+                    model.save(self.train_path + self.model_name + str(epoch + 1))
 
 
                 # y = model.predict(self.X_test)
@@ -113,8 +115,8 @@ class Trainer(ABC):
                 # print("Raw test data predictions: {0}".format(y))
                 # print("Actual test data  values : {0}".format(self.Y_test))
 
-                score = self.eval_model(model, epoch)
-                scores.append(score)
+                    score = self.eval_model(model, epoch)
+                    scores.append(score)
         return scores
 
 
