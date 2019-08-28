@@ -15,6 +15,7 @@ import threading
 from utils import utils
 from tflearn.layers.embedding_ops import embedding
 import tflearn
+from utils import cass_configured as cass
 
 
 class Model(ABC):
@@ -137,6 +138,8 @@ class Model(ABC):
             y = self.model.predict(x)
             y_int = np.argmax(y, axis=len(y.shape) - 1)
             return y_int
+
+
 
 
     @abstractmethod
@@ -277,25 +280,50 @@ class NextItemsModel(Model):
 
     def __init__(self):
         super().__init__()
-        self.network = network.NextItemEarlyGameNetwork()
+        self.network = network.NextItemLateGameNetwork()
         self.model_path = app_constants.model_paths["best"]["next_items"]
         self.artifact_manager = ItemManager()
         self.load_model()
 
+    def get_1st_tier_item_indices(self):
+        num_items = self.artifact_manager.get_num("int")
+        for i in range(1,num_items):
+            if cass.Item(id=int(self.artifact_manager.lookup_by("int", i)["id"]), region="KR").tier == 1:
+                yield i
 
-    def predict(self, x):
-        with self.graph.as_default(), tf.Session() as sess:
-            tflearn.is_training(False, session=sess)
-            X = tf.placeholder("float", [None, 71])
-            # X = input_data(shape=[None, 71], name='lolol')
-            log = self.output_logs(X)
-            sess.run(tf.global_variables_initializer())
-            log = sess.run(log, feed_dict = {X: np.array(x)})
-            for i, _ in enumerate(log):
-                print(f"{i}: {log[i]}")
-        item_int = self.predict2int(x)
+    def predict(self, x, req_item_tier):
+        # with self.graph.as_default(), tf.Session() as sess:
+        #     tflearn.is_training(False, session=sess)
+        #     X = tf.placeholder("float", [None, 71])
+        #     # X = input_data(shape=[None, 71], name='lolol')
+        #     log = self.output_logs(X)
+        #     sess.run(tf.global_variables_initializer())
+        #     log = sess.run(log, feed_dict = {X: np.array(x)})
+        #     for i, _ in enumerate(log):
+        #         print(f"{i}: {log[i]}")
+        print(f"req_item_tier: {req_item_tier}")
+        if req_item_tier == 0:
+            item_int = self.predict2int(x)
+        elif req_item_tier >= 1:
+            first_tier_indices = self.get_1st_tier_item_indices()
+            item_int = self.predict2int_2nd_tier_and_up_only(x, first_tier_indices)
+        # elif req_item_tier == 2:
+        #     pass
         item = self.artifact_manager.lookup_by("int", item_int[0])
         return item
+
+
+    def predict2int_2nd_tier_and_up_only(self, x, first_tier_indices):
+        with self.graph.as_default():
+            y = self.model.predict(x)[0]
+            y = np.array(list(zip(y, range(len(y)))))
+            first_tier_indices = list(first_tier_indices)
+            y = np.delete(y, first_tier_indices, axis=0)
+            logits = y[:,0]
+            old_indices = y[:,1]
+            y_int = np.argmax(logits, axis=0)
+            y_int = old_indices[y_int]
+            return [int(y_int)]
 
 
 class PositionsModel(Model):

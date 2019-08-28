@@ -20,6 +20,7 @@ from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextIte
 from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
+import functools
 
 
 
@@ -82,8 +83,6 @@ class Main(FileSystemEventHandler):
             print(f"Connection error. Retry in {timeout}")
             time.sleep(timeout)
             Main.test_connection(5)
-            
-
 
 
     @staticmethod
@@ -102,11 +101,11 @@ class Main(FileSystemEventHandler):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
 
 
-    def predict_next_item(self, role, champs, items):
+    def predict_next_item(self, role, champs, items, req_item_tier):
         champs_int = [champ["int"] for champ in champs]
         items_int = [item["int"] for item in items]
         next_items_input = np.concatenate([[role], champs_int, items_int], axis=0)
-        next_item = self.next_item_model.predict([next_items_input])
+        next_item = self.next_item_model.predict([next_items_input], req_item_tier)
         return next_item
 
 
@@ -122,7 +121,77 @@ class Main(FileSystemEventHandler):
 
 
     def remove_low_value_items(self, items):
-        return list(filter(lambda a: "Potion" not in a["name"] and "Doran" not in a["name"], items))
+        return list(filter(lambda a: "Potion" not in a["name"] and "Doran" not in a["name"] and "Dark Seal" not in a[
+            "name"] and "Soul" not in a["name"], items))
+
+    def simulate_game(self, items, champs):
+        count = 0
+        while count != 10:
+            count = 0
+            for summ_index in range(10):
+                if summ_index == 5:
+                    print("Switching teams!")
+                    champs, items = self.swap_teams(champs, items)
+                count += int(self.next_item_for_champ(summ_index % 5, champs, items))
+
+            champs, items = self.swap_teams(champs, items)
+            for i, item in enumerate(items):
+                print(f"{divmod(i, 6)}: {item}")
+            pass
+
+
+    def next_item_for_champ(self, role, champs, items):
+        assert (len(champs) == 10)
+        assert (len(items) == 60)
+
+        empty_item = self.item_manager.lookup_by("int", 0)
+
+        summ_next_item_cass = None
+        result = []
+
+        containsCompletedItem = False
+        req_item_tier = 0
+
+
+        while True:
+            completes = sum([(1 if "completed" in item and item["completed"] else 0) for item in
+                             items[self.summoner_items_slice(role)]])
+            if completes >= 6:
+                return True
+
+            next_item = self.predict_next_item(role, champs, items, req_item_tier)
+            next_items, abs_items = self.build_path(items, next_item, role)
+
+            abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
+
+
+
+
+            try:
+
+                if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
+                    print("too many items:")
+                    print(abs_items[-1])
+                    abs_items[-1] = self.remove_low_value_items(abs_items[-1])
+                    print("removing low value items:")
+                    print(abs_items[-1])
+                items[self.summoner_items_slice(role)] = np.pad(
+                    abs_items[-1], (0, game_constants.MAX_ITEMS_PER_CHAMP - len(abs_items[-1])),
+                    'constant',
+                    constant_values=(
+                        empty_item, empty_item))
+                return False
+            except ValueError as e:
+                print("Max items reached!!")
+                print(repr(e))
+
+                if req_item_tier == 2:
+                    return True
+                else:
+                    req_item_tier += 1
+
+
+
 
 
     def analyze_champ(self, role, champs, items):
@@ -138,19 +207,30 @@ class Main(FileSystemEventHandler):
         result = []
         items_ahead = 0
         containsCompletedItem = False
+        req_item_tier = 0
         while True:
             items_ahead += 1
-            next_item = self.predict_next_item(role, champs, items)
+            next_item = self.predict_next_item(role, champs, items, req_item_tier)
             next_items, abs_items = self.build_path(items, next_item, role)
-            cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item[
-                                                                                                          "id"])), region="KR")
 
-            containsCompletedItem = containsCompletedItem or cass_next_item.tier >= 3 or next_item["name"] == \
-                                    "Rabadon's Deathcap" or  next_item["name"] == "Infinity Edge"
-            result.extend(next_items)
-            if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
-                break
+
+            containsCompletedItem = containsCompletedItem or ("completed" in next_item and next_item["completed"])
+
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
+            completes = sum([(1 if "completed" in item and item["completed"] else 0) for item in abs_items[-1]])
+            result.extend(next_items)
+
+            if completes >= 6:
+                break
+
+
+
+
+
+
+
+            # if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
+            #     break
             try:
 
                 if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
@@ -167,7 +247,11 @@ class Main(FileSystemEventHandler):
             except ValueError as e:
                 print("Max items reached!!")
                 print(repr(e))
-                break
+
+                if req_item_tier != 2:
+                    req_item_tier += 1
+                else:
+                    break
 
         return result
 
@@ -250,22 +334,27 @@ class Main(FileSystemEventHandler):
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
 
+        self.simulate_game(items, champs)
+
         # for summ_index in range(10):
         #     champs_copy = copy.deepcopy(champs)
         #     items_copy = copy.deepcopy(items)
         #     items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
         #     print(f"This is the result for summ_index {summ_index}: ")
         #     print(items_to_buy)
-        items_to_buy = self.analyze_champ(self_index, champs, items)
-        print(f"This is the result for summ_index {self_index}: ")
-        print(items_to_buy)
-        out_string = ""
-        if items_to_buy[0]:
-            out_string += str(items_to_buy[0]["id"])
-        for item in items_to_buy[1:]:
-            out_string += "," + str(item["id"])
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+
+
+
+        # items_to_buy = self.analyze_champ(self_index, champs, items)
+        # print(f"This is the result for summ_index {self_index}: ")
+        # print(items_to_buy)
+        # out_string = ""
+        # if items_to_buy[0]:
+        #     out_string += str(items_to_buy[0]["id"])
+        # for item in items_to_buy[1:]:
+        #     out_string += "," + str(item["id"])
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
 
     @staticmethod
     def shouldTerminate():
