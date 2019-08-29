@@ -366,12 +366,24 @@ class StaticTrainingDataTrainer(Trainer):
         return best_model_index + 1
 
 
-    def build_next_items_model(self):
-        self.train_path = app_constants.model_paths["train"]["next_items"]
-        self.best_path = app_constants.model_paths["best"]["next_items"]
+
+    def build_next_items_early_game_model(self, type):
+        self.train_path = app_constants.model_paths["train"]["next_items_early"]
+        self.best_path = app_constants.model_paths["best"]["next_items_early"]
         self.network = NextItemEarlyGameNetwork().build()
         print("Loading training data")
-        dataloader = data_loader.NextItemsDataLoader()
+        dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
+        self.X, self.Y = dataloader.get_train_data()
+        print("Loading test data")
+        self.X_test, self.Y_test = dataloader.get_test_data()
+        self.build_new_model()
+
+    def build_next_items_late_game_model(self):
+        self.train_path = app_constants.model_paths["train"]["next_items_late"]
+        self.best_path = app_constants.model_paths["best"]["next_items_late"]
+        self.network = NextItemLateGameNetwork().build()
+        print("Loading training data")
+        dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_late_processed"])
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
@@ -392,7 +404,7 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    t.build_next_items_model()
+    t.build_next_items_late_game_model()
 
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()

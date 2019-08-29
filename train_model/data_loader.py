@@ -33,11 +33,11 @@ class DataLoaderBase(ABC):
 
 class NextItemsDataLoader(DataLoaderBase):
 
-    def __init__(self):
-        self.train_x_filenames = sorted(glob.glob(app_constants.train_paths["next_items_processed"] + 'train_x*.npz'))
-        self.test_x_filenames = sorted(glob.glob(app_constants.train_paths["next_items_processed"] + 'test_x*.npz'))
-        self.train_y_filenames = sorted(glob.glob(app_constants.train_paths["next_items_processed"] + 'train_y*.npz'))
-        self.test_y_filenames = sorted(glob.glob(app_constants.train_paths["next_items_processed"] + 'test_y*.npz'))
+    def __init__(self, path):
+        self.train_x_filenames = sorted(glob.glob(path + 'train_x*.npz'))
+        self.test_x_filenames = sorted(glob.glob(path + 'test_x*.npz'))
+        self.train_y_filenames = sorted(glob.glob(path + 'train_y*.npz'))
+        self.test_y_filenames = sorted(glob.glob(path + 'test_y*.npz'))
         super().__init__()
 
 

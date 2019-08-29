@@ -48,7 +48,7 @@ class Main(FileSystemEventHandler):
         # try:
         #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         # except KeyError as e:
-        #     print(repr(e))
+        #     print(repr(e))re
         #     flipped_sb = False
 
 
@@ -101,11 +101,11 @@ class Main(FileSystemEventHandler):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
 
 
-    def predict_next_item(self, role, champs, items, req_item_tier):
+    def predict_next_item(self, role, champs, items):
         champs_int = [champ["int"] for champ in champs]
         items_int = [item["int"] for item in items]
         next_items_input = np.concatenate([[role], champs_int, items_int], axis=0)
-        next_item = self.next_item_model.predict([next_items_input], req_item_tier)
+        next_item = self.next_item_model.predict([next_items_input], items_int)
         return next_item
 
 
@@ -154,7 +154,7 @@ class Main(FileSystemEventHandler):
 
 
         while True:
-            completes = sum([(1 if "completed" in item and item["completed"] else 0) for item in
+            completes = sum([(1 if "completion" in item and item["completion"]=="completed" else 0) for item in
                              items[self.summoner_items_slice(role)]])
             if completes >= 6:
                 return True
@@ -208,29 +208,28 @@ class Main(FileSystemEventHandler):
         items_ahead = 0
         containsCompletedItem = False
         req_item_tier = 0
-        while True:
+        while items_ahead < 20:
+
+            completes = sum([(1 if "completion" in item and item["completion"]=="completed" else 0) for item in
+                             items[self.summoner_items_slice(role)]])
+            if completes >= 6:
+                break
+
             items_ahead += 1
             next_item = self.predict_next_item(role, champs, items, req_item_tier)
             next_items, abs_items = self.build_path(items, next_item, role)
-
+            cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item[
+                                                                                                              "id"])),
+                                       region="KR")
 
             containsCompletedItem = containsCompletedItem or ("completed" in next_item and next_item["completed"])
 
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
-            completes = sum([(1 if "completed" in item and item["completed"] else 0) for item in abs_items[-1]])
+
             result.extend(next_items)
 
-            if completes >= 6:
+            if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
                 break
-
-
-
-
-
-
-
-            # if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
-            #     break
             try:
 
                 if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
@@ -334,14 +333,14 @@ class Main(FileSystemEventHandler):
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
 
-        self.simulate_game(items, champs)
+        #self.simulate_game(items, champs)
 
-        # for summ_index in range(10):
-        #     champs_copy = copy.deepcopy(champs)
-        #     items_copy = copy.deepcopy(items)
-        #     items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
-        #     print(f"This is the result for summ_index {summ_index}: ")
-        #     print(items_to_buy)
+        for summ_index in range(10):
+            champs_copy = copy.deepcopy(champs)
+            items_copy = copy.deepcopy(items)
+            items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
+            print(f"This is the result for summ_index {summ_index}: ")
+            print(items_to_buy)
 
 
 

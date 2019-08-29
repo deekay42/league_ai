@@ -141,14 +141,20 @@ class ProcessNextItemsTrainingData:
         # generator must be popped here, otherwise the next_items generator will be defined on this one and and skip
         # one item when this one advances
         training_data = list(self.inflate_items(matches=training_data, log_info=log_info))
+
         if log_info is not None:
             print(log_info + " inflate items complete.\n" + log_info + " Starting jq_next.")
-        next_items = (jq(self.jq_scripts["extractNextItemsForWinningTeam"]).transform([game]) for game in training_data)
+        next_items_early_game = list((jq(self.jq_scripts["extractNextItemsForWinningTeam"]).transform([game])[0] for
+                                      game in
+                       training_data))
+
+        next_items_late_game = list(self.deflate_next_items(matches=next_items_early_game, log_info=log_info))
         if log_info is not None:
             print(log_info + " jq_next complete.\n" + log_info + " Starting build_db")
-        training_data = self.build_np_db_for_next_items(training_data, next_items, log_info=log_info)
+        training_data_early_game = self.build_np_db_for_next_items(training_data, next_items_early_game, log_info=log_info)
+        training_data_late_game = self.build_np_db_for_next_items(training_data, next_items_late_game, log_info=log_info)
 
-        return training_data
+        return training_data_early_game, training_data_late_game
 
 
     def build_absolute_item_timeline(self, matches, log_info):
@@ -490,11 +496,32 @@ class ProcessNextItemsTrainingData:
             f.write(']')
             f.close()
 
+
+
+    def deflate_next_items(self, matches, log_info, out_file_name=None):
+        for i, game in enumerate(matches):
+            next_full_item_state = [[],[],[],[],[]]
+            deflated_next_items = []
+            for item_state in game["winningTeamNextItems"][::-1]:
+                new_full_item_state = []
+                for summ_next_item, summ_next_completed in zip(item_state, next_full_item_state):
+                    if summ_next_item == []:
+                        new_full_item_state.append([])
+                        continue
+                    completion_state = self.item_manager.lookup_by("id", str(summ_next_item))
+                    completion_state = completion_state["completion"] if "completion" in completion_state else ""
+                    if completion_state == "complete" or completion_state == "semi":
+                        new_full_item_state.append(summ_next_item)
+                    else:
+                        new_full_item_state.append(summ_next_completed)
+                deflated_next_items.append(new_full_item_state)
+                next_full_item_state = new_full_item_state
+            yield {"gameId": game['gameId'], "winningTeamNextItems":deflated_next_items[::-1]}
+
+
+
     # chunklen is the total number of games the thread pool(typically 4) are processing together, so chunklen/4 per
     # thread
-
-
-
     def start(self, num_threads=os.cpu_count(), chunklen=400):
         class ProcessTrainingDataWorker(Process):
 
@@ -510,11 +537,11 @@ class ProcessNextItemsTrainingData:
                 self.train_test_split = train_test_split
 
 
-            def write_next_item_chunk_to_numpy_file(self, data_dict):
-                x_train_filename = self.out_dir + f"train_x_thread_{self.thread_index}.npz"
-                y_train_filename = self.out_dir + f"train_y_thread_{self.thread_index}.npz"
-                x_test_filename = self.out_dir + f"test_x_thread_{self.thread_index}.npz"
-                y_test_filename = self.out_dir + f"test_y_thread_{self.thread_index}.npz"
+            def write_next_item_chunk_to_numpy_file(self, data_dict, out_dir_postfix):
+                x_train_filename = self.out_dir + out_dir_postfix + f"train_x_thread_{self.thread_index}.npz"
+                y_train_filename = self.out_dir + out_dir_postfix + f"train_y_thread_{self.thread_index}.npz"
+                x_test_filename = self.out_dir + out_dir_postfix + f"test_x_thread_{self.thread_index}.npz"
+                y_test_filename = self.out_dir + out_dir_postfix + f"test_y_thread_{self.thread_index}.npz"
 
                 train_test_split_point = int(len(data_dict) * self.train_test_split)
                 train_dict = dict(list(data_dict.items())[:train_test_split_point])
@@ -534,8 +561,9 @@ class ProcessNextItemsTrainingData:
             def run(self):
                 try:
                     games = self.queue.get()
-                    train_dict = self.run_transformations(games)
-                    self.write_next_item_chunk_to_numpy_file(train_dict)
+                    training_data_early_game, training_data_late_game = self.run_transformations(games)
+                    self.write_next_item_chunk_to_numpy_file(training_data_early_game, "/early/")
+                    self.write_next_item_chunk_to_numpy_file(training_data_late_game, "/late/")
                     print(f"Thread {self.thread_index} complete")
                 except Exception as e:
                     print(f"ERROR: There was an error transforming these matches!!")
@@ -544,7 +572,7 @@ class ProcessNextItemsTrainingData:
                     raise e
 
 
-        utils.remove_old_files(app_constants.train_paths["next_items_processed"])
+
         queue = Queue()
         thread_pool = [ProcessTrainingDataWorker(queue, lambda input_,
                                                                thread_index=i: self.run_all_transformations(input_,
@@ -599,7 +627,7 @@ class ProcessNextItemsTrainingData:
         result = dict()
         i = 0
         for game_x, game_y in zip(abs_inf, next_items):
-            game_y = game_y[0]
+
             assert (game_x["gameId"] == game_y["gameId"])
             team1_team_champs = np.array(game_x['participants'][:5])
             team2_team_champs = np.array(game_x['participants'][5:])
@@ -675,6 +703,6 @@ if __name__ == "__main__":
     # p.start()
     l = ProcessNextItemsTrainingData()
     l.start()
-
-    t = train.StaticTrainingDataTrainer()
-    t.build_next_items_model()
+    #
+    # t = train.StaticTrainingDataTrainer()
+    # t.build_next_items_model()
