@@ -367,7 +367,7 @@ class StaticTrainingDataTrainer(Trainer):
 
 
 
-    def build_next_items_early_game_model(self, type):
+    def build_next_items_early_game_model(self):
         self.train_path = app_constants.model_paths["train"]["next_items_early"]
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
         self.network = NextItemEarlyGameNetwork().build()
@@ -404,7 +404,7 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    t.build_next_items_late_game_model()
+    t.build_next_items_early_game_model()
 
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()
