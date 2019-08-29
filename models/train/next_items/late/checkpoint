@@ -1,0 +1,2 @@
+model_checkpoint_path: "/home/DorjeeBaro/generate_scoreboard/models/train/next_items/late/my_model1"
+all_model_checkpoint_paths: "/home/DorjeeBaro/generate_scoreboard/models/train/next_items/late/my_model1"
