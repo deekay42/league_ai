@@ -470,8 +470,10 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         final_input_layer = merge(
             [pos, target_summ_champ, target_summ_items, champs_with_items_emb, champs],
             mode='concat', axis=1)
+        final_input_layer = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
 
         net = fully_connected(net, total_num_items, activation='softmax')
@@ -568,8 +570,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
             [target_summ_champ, target_summ_items, champs_with_items_emb, champs], mode='concat', axis=1)
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
-
+        net = dropout(net, 0.9)
         net = fully_connected(net, total_num_items, activation='softmax')
 
         # TODO: consider using item embedding layer as output layer...
