@@ -173,6 +173,11 @@ class ItemManager:
                     self._by["img_int"].values()}
 
 
+        def get_num_completes(self):
+            return sum([1 if "completion" in artifact and artifact["completion"]=="complete" or artifact[
+                "completion"]=="semi" else 0 for artifact in self._by["int"].values()])
+
+
 class SelfManager:
     instance = None
 

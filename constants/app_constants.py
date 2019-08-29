@@ -15,7 +15,8 @@ base_train_path = "training_data" + os.sep
 train_paths = dict()
 train_paths["next_items"] = base_train_path + "next_items" + os.sep
 train_paths["positions"] = base_train_path + "positions" + os.sep
-train_paths["next_items_processed"] = train_paths["next_items"] + "processed" + os.sep
+train_paths["next_items_early_processed"] = train_paths["next_items"] + "processed" + os.sep + "early" + os.sep
+train_paths["next_items_late_processed"] = train_paths["next_items"] + "processed" + os.sep + "late" + os.sep
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
 
 train_paths["matchids"] = train_paths["next_items"] + "matchids"
@@ -34,7 +35,8 @@ model_paths = dict()
 for label in ["train", "best"]:
     paths = {"base": base_model_path + label + os.sep}
     paths.update({
-        "next_items": paths["base"] + "next_items" + os.sep,
+        "next_items_early": paths["base"] + "next_items" + os.sep + "early" + os.sep,
+        "next_items_late": paths["base"] + "next_items" + os.sep + "late" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
     paths.update({"champ_imgs": paths["imgs"] + "champs" + os.sep,
