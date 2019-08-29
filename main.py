@@ -16,7 +16,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from utils import utils
-from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemsModel
+from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel
 from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
@@ -32,7 +32,7 @@ class Main(FileSystemEventHandler):
         # self.config = configparser.ConfigParser()
         # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
-            res = 1440,900
+            res = 1440,810
             # res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
             print(repr(e))
@@ -62,13 +62,13 @@ class Main(FileSystemEventHandler):
         self.item_manager = ItemManager()
         # if Main.shouldTerminate():
         #     return
-        self.next_item_model = NextItemsModel()
+        self.next_item_model = NextItemEarlyGameModel()
         # if Main.shouldTerminate():
         #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         # if Main.shouldTerminate():
         #     return
-        self.item_img_model = ItemImgModel(self.res_converter, False)
+        self.item_img_model = ItemImgModel(self.res_converter, True)
         # if Main.shouldTerminate():
         #     return
         self.self_img_model = SelfImgModel(self.res_converter)
@@ -105,7 +105,7 @@ class Main(FileSystemEventHandler):
         champs_int = [champ["int"] for champ in champs]
         items_int = [item["int"] for item in items]
         next_items_input = np.concatenate([[role], champs_int, items_int], axis=0)
-        next_item = self.next_item_model.predict([next_items_input], items_int)
+        next_item = self.next_item_model.predict([next_items_input])
         return next_item
 
 
@@ -130,7 +130,7 @@ class Main(FileSystemEventHandler):
             count = 0
             for summ_index in range(10):
                 if summ_index == 5:
-                    print("Switching teams!")
+
                     champs, items = self.swap_teams(champs, items)
                 count += int(self.next_item_for_champ(summ_index % 5, champs, items))
 
@@ -154,12 +154,12 @@ class Main(FileSystemEventHandler):
 
 
         while True:
-            completes = sum([(1 if "completion" in item and item["completion"]=="completed" else 0) for item in
+            completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
                              items[self.summoner_items_slice(role)]])
             if completes >= 6:
                 return True
 
-            next_item = self.predict_next_item(role, champs, items, req_item_tier)
+            next_item = self.predict_next_item(role, champs, items)
             next_items, abs_items = self.build_path(items, next_item, role)
 
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
@@ -206,29 +206,30 @@ class Main(FileSystemEventHandler):
         summ_next_item_cass = None
         result = []
         items_ahead = 0
-        containsCompletedItem = False
+        new_completes = 0
         req_item_tier = 0
         while items_ahead < 20:
 
-            completes = sum([(1 if "completion" in item and item["completion"]=="completed" else 0) for item in
+            completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
                              items[self.summoner_items_slice(role)]])
             if completes >= 6:
                 break
 
             items_ahead += 1
-            next_item = self.predict_next_item(role, champs, items, req_item_tier)
+            next_item = self.predict_next_item(role, champs, items)
             next_items, abs_items = self.build_path(items, next_item, role)
             cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item[
                                                                                                               "id"])),
                                        region="KR")
 
-            containsCompletedItem = containsCompletedItem or ("completed" in next_item and next_item["completed"])
+            new_completes += int("completion" in next_item and next_item[
+                "completion"]=="complete")
 
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
 
             result.extend(next_items)
 
-            if containsCompletedItem and cass_next_item.tier >= 2 and len(result) > 1:
+            if new_completes >= 2 and cass_next_item.tier >= 2 and len(result) > 1:
                 break
             try:
 
@@ -333,7 +334,8 @@ class Main(FileSystemEventHandler):
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
 
-        #self.simulate_game(items, champs)
+        items = [self.item_manager.lookup_by('int', 0)] * 60
+        # self.simulate_game(items, champs)
 
         for summ_index in range(10):
             champs_copy = copy.deepcopy(champs)
