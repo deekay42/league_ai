@@ -436,12 +436,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             [pos, champs_one_hot_flat, items_by_champ_k_hot_flat],
             mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 2048, bias=False, activation='relu',
-                                                  regularizer="L2"))
-
-        net = batch_normalization(fully_connected(net, 1024, bias=False, activation='relu', regularizer="L2"))
-
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
+        net = fully_connected(final_input_layer, 1500, activation='relu')
 
         net = fully_connected(net, total_num_items, activation='softmax')
 
