@@ -244,6 +244,7 @@ class NextItemNetwork(Network):
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
                 "total_num_champs": ChampManager().get_num("int"),
+                #first item is the empty item... don't want to include that
                 "total_num_items": ItemManager().get_num("int"),
                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
             }
@@ -276,7 +277,7 @@ class NextItemNetwork(Network):
     #     return acc
 
 
-class NextItemEarlyGameNetwork_executionersdontwork(NextItemNetwork):
+class NextItemEarlyGameNetwork(NextItemNetwork):
 
     def __init__(self):
         super().__init__()
@@ -375,75 +376,75 @@ class NextItemEarlyGameNetwork_executionersdontwork(NextItemNetwork):
                           loss='categorical_crossentropy', name='target')
 
 
-
-class NextItemEarlyGameNetwork(NextItemNetwork):
-
-    def __init__(self):
-        super().__init__()
-
-        self.network_config = \
-            {
-                "learning_rate": 0.00025,
-                "champ_emb_dim": 3,
-                "all_items_emb_dim": 6,
-                "champ_all_items_emb_dim": 8
-            }
-
-
-    def build(self):
-        champs_per_game = self.game_config["champs_per_game"]
-        total_num_champs = self.game_config["total_num_champs"]
-        total_num_items = self.game_config["total_num_items"]
-        items_per_champ = self.game_config["items_per_champ"]
-        champs_per_team = self.game_config["champs_per_team"]
-
-        learning_rate = self.network_config["learning_rate"]
-        champ_emb_dim = self.network_config["champ_emb_dim"]
-
-        all_items_emb_dim = self.network_config["all_items_emb_dim"]
-        champ_all_items_emb_dim = self.network_config["champ_all_items_emb_dim"]
-
-        total_champ_dim = champs_per_game
-        total_item_dim = champs_per_game * items_per_champ
-
-        in_vec = input_data(shape=[None, 1 + total_champ_dim + total_item_dim], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
-        n = tf.shape(in_vec)[0]
-        batch_index = tf.range(n)
-        pos_index = tf.transpose([batch_index, pos], (1, 0))
-
-
-        # Make tensor of indices for the first dimension
-
-        #  10 elements long
-        champ_ints = in_vec[:, 1:champs_per_game + 1]
-        # 60 elements long
-        item_ints = in_vec[:, champs_per_game + 1:]
-
-        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
-        champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
-
-        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
-        items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
-        items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
-        items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
-
-        pos = tf.one_hot(pos, depth=champs_per_team)
-        final_input_layer = merge(
-            [pos, champs_one_hot_flat, items_by_champ_k_hot_flat],
-            mode='concat', axis=1)
-
-        net = fully_connected(final_input_layer, 1500, activation='relu')
-
-        net = fully_connected(net, total_num_items, activation='softmax')
-
-        # TODO: consider using item embedding layer as output layer...
-        return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
-                          learning_rate=learning_rate,
-                          loss='categorical_crossentropy', name='target')
+#
+# class NextItemEarlyGameNetwork(NextItemNetwork):
+#
+#     def __init__(self):
+#         super().__init__()
+#
+#         self.network_config = \
+#             {
+#                 "learning_rate": 0.00025,
+#                 "champ_emb_dim": 3,
+#                 "all_items_emb_dim": 6,
+#                 "champ_all_items_emb_dim": 8
+#             }
+#
+#
+#     def build(self):
+#         champs_per_game = self.game_config["champs_per_game"]
+#         total_num_champs = self.game_config["total_num_champs"]
+#         total_num_items = self.game_config["total_num_items"]
+#         items_per_champ = self.game_config["items_per_champ"]
+#         champs_per_team = self.game_config["champs_per_team"]
+#
+#         learning_rate = self.network_config["learning_rate"]
+#         champ_emb_dim = self.network_config["champ_emb_dim"]
+#
+#         all_items_emb_dim = self.network_config["all_items_emb_dim"]
+#         champ_all_items_emb_dim = self.network_config["champ_all_items_emb_dim"]
+#
+#         total_champ_dim = champs_per_game
+#         total_item_dim = champs_per_game * items_per_champ
+#
+#         in_vec = input_data(shape=[None, 1 + total_champ_dim + total_item_dim], name='input')
+#         #  1 elements long
+#         pos = in_vec[:, 0]
+#         pos = tf.cast(pos, tf.int32)
+#
+#         n = tf.shape(in_vec)[0]
+#         batch_index = tf.range(n)
+#         pos_index = tf.transpose([batch_index, pos], (1, 0))
+#
+#
+#         # Make tensor of indices for the first dimension
+#
+#         #  10 elements long
+#         champ_ints = in_vec[:, 1:champs_per_game + 1]
+#         # 60 elements long
+#         item_ints = in_vec[:, champs_per_game + 1:]
+#
+#         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
+#         champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
+#
+#         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
+#         items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
+#         items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
+#         items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
+#
+#         pos = tf.one_hot(pos, depth=champs_per_team)
+#         final_input_layer = merge(
+#             [pos, champs_one_hot_flat, items_by_champ_k_hot_flat],
+#             mode='concat', axis=1)
+#
+#         net = fully_connected(final_input_layer, 1500, activation='relu')
+#
+#         net = fully_connected(net, total_num_items, activation='softmax')
+#
+#         # TODO: consider using item embedding layer as output layer...
+#         return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
+#                           learning_rate=learning_rate,
+#                           loss='categorical_crossentropy', name='target')
 
 
 
