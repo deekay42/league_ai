@@ -10,6 +10,7 @@ import cProfile
 import io
 import pstats
 import copy
+import glob
  
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
@@ -333,16 +334,30 @@ class Main(FileSystemEventHandler):
 
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
-
+        #
         items = [self.item_manager.lookup_by('int', 0)] * 60
-        # self.simulate_game(items, champs)
+        items[30:] = [self.item_manager.lookup_by('int', 0)]*30
+        champs[0] = ChampManager().lookup_by('name', 'Aatrox')
+        champs[2] = ChampManager().lookup_by('name', 'Vladimir')
+        champs[4] = ChampManager().lookup_by('name', 'Soraka')
 
-        for summ_index in range(10):
-            champs_copy = copy.deepcopy(champs)
-            items_copy = copy.deepcopy(items)
-            items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
-            print(f"This is the result for summ_index {summ_index}: ")
-            print(items_to_buy)
+
+        # x = np.load(sorted(glob.glob(app_constants.train_paths[
+        #                                  "next_items_early_processed"] + 'train_x*.npz'))[0])['arr_0']
+        #
+        # y = np.load(sorted(glob.glob(app_constants.train_paths[
+        #                                  "next_items_early_processed"] + 'train_y*.npz'))[0])['arr_0']
+        #
+        # items = [ItemManager().lookup_by("int", item) for item in x[25][10:]]
+        # champs = [ChampManager().lookup_by("int", champ) for champ in x[0][:10]]
+        self.simulate_game(items, champs)
+
+        # for summ_index in range(10):
+        #     champs_copy = copy.deepcopy(champs)
+        #     items_copy = copy.deepcopy(items)
+        #     items_to_buy = self.analyze_champ(summ_index, champs_copy, items_copy)
+        #     print(f"This is the result for summ_index {summ_index}: ")
+        #     print(items_to_buy)
 
 
 

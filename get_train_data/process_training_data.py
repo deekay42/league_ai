@@ -148,6 +148,14 @@ class ProcessNextItemsTrainingData:
                                       game in
                        training_data))
 
+        with open("output_inf", "w") as f:
+            f.write(json.dumps(training_data))
+
+
+        with open("output_next", "w") as f:
+            f.write(json.dumps(next_items_early_game))
+
+
         next_items_late_game = list(self.deflate_next_items(matches=next_items_early_game, log_info=log_info))
         if log_info is not None:
             print(log_info + " jq_next complete.\n" + log_info + " Starting build_db")
@@ -238,10 +246,7 @@ class ProcessNextItemsTrainingData:
         for match in matches:
             events = match["itemsTimeline"]
             events.sort(key=ProcessNextItemsTrainingData.keyFunc)
-            if match["gameId"] == 3776579595:
-                with open("output", "w") as f:
-                    f.write(json.dumps({"gameId": match['gameId'], "participants": match['participants'],
-                                        "itemsTimeline": events}))
+
             yield {"gameId": match['gameId'], "participants": match['participants'],
                    "itemsTimeline": events}
 
@@ -352,6 +357,8 @@ class ProcessNextItemsTrainingData:
         if not self.role_predictor:
             from train_model import model
             self.role_predictor = model.PositionsModel()
+        if unsorted_teams == []:
+            return
 
         sorted_teams = self.role_predictor.multi_predict(unsorted_teams)
         team_index = 0
@@ -525,23 +532,23 @@ class ProcessNextItemsTrainingData:
     def start(self, num_threads=os.cpu_count(), chunklen=400):
         class ProcessTrainingDataWorker(Process):
 
-            def __init__(self, queue, transformations, chunksize, out_dir, thread_index, train_test_split=0.85):
+            def __init__(self, queue, transformations, chunksize, out_dir_early, out_dir_late, thread_index, train_test_split=0.85):
                 super().__init__()
                 self.queue = queue
                 # ?? what is this for??
                 self.chunksize = chunksize
-                self.out_dir = out_dir
+                self.out_dir_early = out_dir_early
+                self.out_dir_late = out_dir_late
                 self.thread_index = thread_index
-                self.out_path = out_dir + str(thread_index)
                 self.run_transformations = transformations
                 self.train_test_split = train_test_split
 
 
-            def write_next_item_chunk_to_numpy_file(self, data_dict, out_dir_postfix):
-                x_train_filename = self.out_dir + out_dir_postfix + f"train_x_thread_{self.thread_index}.npz"
-                y_train_filename = self.out_dir + out_dir_postfix + f"train_y_thread_{self.thread_index}.npz"
-                x_test_filename = self.out_dir + out_dir_postfix + f"test_x_thread_{self.thread_index}.npz"
-                y_test_filename = self.out_dir + out_dir_postfix + f"test_y_thread_{self.thread_index}.npz"
+            def write_next_item_chunk_to_numpy_file(self, data_dict, out_dir):
+                x_train_filename = out_dir + f"train_x_thread_{self.thread_index}.npz"
+                y_train_filename = out_dir + f"train_y_thread_{self.thread_index}.npz"
+                x_test_filename = out_dir + f"test_x_thread_{self.thread_index}.npz"
+                y_test_filename = out_dir + f"test_y_thread_{self.thread_index}.npz"
 
                 train_test_split_point = int(len(data_dict) * self.train_test_split)
                 train_dict = dict(list(data_dict.items())[:train_test_split_point])
@@ -562,8 +569,8 @@ class ProcessNextItemsTrainingData:
                 try:
                     games = self.queue.get()
                     training_data_early_game, training_data_late_game = self.run_transformations(games)
-                    self.write_next_item_chunk_to_numpy_file(training_data_early_game, "/early/")
-                    self.write_next_item_chunk_to_numpy_file(training_data_late_game, "/late/")
+                    self.write_next_item_chunk_to_numpy_file(training_data_early_game, self.out_dir_early)
+                    self.write_next_item_chunk_to_numpy_file(training_data_late_game, self.out_dir_late)
                     print(f"Thread {self.thread_index} complete")
                 except Exception as e:
                     print(f"ERROR: There was an error transforming these matches!!")
@@ -579,7 +586,9 @@ class ProcessNextItemsTrainingData:
                                                                                                             "   Thread "
                                                                                                             "" + str(
                                                                                                                 thread_index)),
-                                                 10, app_constants.train_paths["next_items_processed"], i) for i in
+                                                 10, app_constants.train_paths["next_items_early_processed"],
+                                                 app_constants.train_paths["next_items_late_processed"],
+                                                 i) for i in
                        range(1000)]
 
         with open(app_constants.train_paths["presorted_matches_path"], "r") as psorted:
