@@ -365,8 +365,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         final_input_layer = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-        net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
+        # net = dropout(net, 0.9)
+        # net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
 
         net = fully_connected(net, total_num_items, activation='softmax')
 
