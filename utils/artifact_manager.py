@@ -72,6 +72,10 @@ class ArtifactManager(ABC):
                 self._by["img_int"].values()}
 
 
+    def get_ints(self):
+        return self._by["int"]
+
+
 class ChampManager:
     instance = None
 
