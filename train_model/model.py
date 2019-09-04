@@ -139,6 +139,13 @@ class Model(ABC):
             y_int = np.argmax(y, axis=len(y.shape) - 1)
             return y_int
 
+    def predict_with_prior(self, x, prior):
+        with self.graph.as_default():
+            y = self.model.predict(x)
+            y_priored = y / prior
+            y_int = np.argmax(y_priored, axis=len(y.shape) - 1)
+            return y_int
+
 
 
 
@@ -295,8 +302,8 @@ class NextItemEarlyGameModel(Model):
         #     log = sess.run(log, feed_dict = {X: np.array(x)})
         #     for i, _ in enumerate(log):
         #         print(f"{i}: {log[i]}")
-        x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
-              0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
+        # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
+        #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
         item_int = self.predict2int(x)
         item = self.artifact_manager.lookup_by("int", item_int[0])
         return item

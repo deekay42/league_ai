@@ -1,7 +1,8 @@
 import glob
 import itertools
 from abc import ABC, abstractmethod
-
+from collections import Counter
+import os
 import numpy as np
 
 from constants import app_constants
@@ -38,6 +39,13 @@ class NextItemsDataLoader(DataLoaderBase):
         self.test_x_filenames = sorted(glob.glob(path + 'test_x*.npz'))
         self.train_y_filenames = sorted(glob.glob(path + 'train_y*.npz'))
         self.test_y_filenames = sorted(glob.glob(path + 'test_y*.npz'))
+        # if os.path.exists(path + 'y_distrib.json'):
+        #     with open(path + 'y_distrib.json', 'r') as f:
+        #         self.y_distribution = json.load(f)
+        # else:
+        #     y_distrib = self.get_y_distribution()
+        #     with open(path + 'y_distrib.json', 'w') as f:
+        #         f.write(json.dumps(y_distrib))
         super().__init__()
 
 
@@ -51,6 +59,10 @@ class NextItemsDataLoader(DataLoaderBase):
         result_y = y[valid_ind]
         result_x = x[valid_ind]
         return result_x, result_y
+
+    def get_y_distribution(self):
+        _, y_results = self._generate_train_test(self.train_x, self.train_y)
+        return Counter(y_results)
 
 
     def get_test_data(self):

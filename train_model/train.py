@@ -1,15 +1,19 @@
-import glob
+import multiprocessing
+import json
+import math
 import multiprocessing
 import shutil
+import sys
 from multiprocessing import Process, JoinableQueue
 
+from sklearn.metrics import auc, \
+    classification_report, precision_recall_curve, precision_recall_fscore_support
 from tflearn.data_utils import to_categorical
 
 from train_model import generate, data_loader
-from utils import utils
 from train_model.model import *
 from train_model.network import *
-import json
+from collections import Counter
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -80,40 +84,39 @@ class Trainer(ABC):
                 for epoch in range(self.num_epochs):
                     x, y = self.get_train_data()
                     model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
-                          show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
-                          callbacks=self.monitor_callback)
+                              show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                              callbacks=self.monitor_callback)
                     model.save(self.train_path + self.model_name + str(epoch + 1))
 
+                    # y = model.predict(self.X_test)
+                    # y = [np.argmax(y_) for y_ in y]
+                    # y_test = [np.argmax(y_) for y_ in self.Y_test]
+                    # print("Pred Actual")
+                    # for i in range(len(y)):
+                    #     a = self.item_manager.lookup_by('img_int', y[i])['name']
+                    #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
+                    #     if a != b:
+                    #         print(f"----->{i}: {a} {b}")
+                    #     else:
+                    #         print(f"{i}: {a} {b}")
+                    # print("Raw test data predictions: {0}".format(y))
+                    # print("Actual test data  values : {0}".format(self.Y_test))
 
-                # y = model.predict(self.X_test)
-                # y = [np.argmax(y_) for y_ in y]
-                # y_test = [np.argmax(y_) for y_ in self.Y_test]
-                # print("Pred Actual")
-                # for i in range(len(y)):
-                #     a = self.item_manager.lookup_by('img_int', y[i])['name']
-                #     b = self.item_manager.lookup_by('img_int', self.Y_test[i])['name']
-                #     if a != b:
-                #         print(f"----->{i}: {a} {b}")
-                #     else:
-                #         print(f"{i}: {a} {b}")
-                # print("Raw test data predictions: {0}".format(y))
-                # print("Actual test data  values : {0}".format(self.Y_test))
-
-                # y = model.predict(self.X_test)
-                # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
-                # y = to_categorical(y, 10).flatten()
-                # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
-                # y_test = to_categorical(y_test, 10).flatten()
-                # print("Pred Actual")
-                # for i in range(len(y)):
-                #     a = self.self_manager.lookup_by('img_int', y[i])['name']
-                #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
-                #     if a != b:
-                #         print(f"----->{i}: {a} {b}")
-                #     else:
-                #         print(f"{i}: {a} {b}")
-                # print("Raw test data predictions: {0}".format(y))
-                # print("Actual test data  values : {0}".format(self.Y_test))
+                    # y = model.predict(self.X_test)
+                    # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+                    # y = to_categorical(y, 10).flatten()
+                    # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+                    # y_test = to_categorical(y_test, 10).flatten()
+                    # print("Pred Actual")
+                    # for i in range(len(y)):
+                    #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+                    #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+                    #     if a != b:
+                    #         print(f"----->{i}: {a} {b}")
+                    #     else:
+                    #         print(f"{i}: {a} {b}")
+                    # print("Raw test data predictions: {0}".format(y))
+                    # print("Actual test data  values : {0}".format(self.Y_test))
 
                     score = self.eval_model(model, epoch)
                     scores.append(score)
@@ -157,17 +160,19 @@ class DynamicTrainingDataTrainer(Trainer):
         with open('test_data/easy/test_labels.json', "r") as f:
             elems = json.load(f)
 
-        champs_x, items_x, self_x, champs_y, items_y, self_y = [],[],[],[],[],[]
+        champs_x, items_x, self_x, champs_y, items_y, self_y = [], [], [], [], [], []
         for test_image_x, test_image_y in zip(imgs, elems.items()):
             test_image_y = test_image_y[1]
             champs_y.extend([self.champ_manager.lookup_by("name", champ_name)["img_int"] for champ_name in
                              test_image_y["champs"]])
-            items_y.extend([self.item_manager.lookup_by("name", item_name)["img_int"] for item_name in test_image_y["items"]])
+            items_y.extend(
+                [self.item_manager.lookup_by("name", item_name)["img_int"] for item_name in test_image_y["items"]])
             self_y.extend(to_categorical([test_image_y["self"]], nb_classes=10)[0])
 
             res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")))
             res_cvt.set_res(*(test_image_y["res"].split(",")))
-            champ_coords = ChampImgModel.generate_champ_coords(res_cvt.CHAMP_LEFT_X_OFFSET, res_cvt.CHAMP_RIGHT_X_OFFSET,
+            champ_coords = ChampImgModel.generate_champ_coords(res_cvt.CHAMP_LEFT_X_OFFSET,
+                                                               res_cvt.CHAMP_RIGHT_X_OFFSET,
                                                                res_cvt.CHAMP_Y_DIFF,
                                                                res_cvt.CHAMP_Y_OFFSET)
 
@@ -177,10 +182,10 @@ class DynamicTrainingDataTrainer(Trainer):
                 item_x_offset += res_cvt.SUMM_NAMES_DIS_X_OFFSET
                 item_y_offset += res_cvt.SUMM_NAMES_DIS_Y_OFFSET
             item_coords = ItemImgModel.generate_item_coords(res_cvt.ITEM_X_DIFF,
-                                                     res_cvt.ITEM_LEFT_X_OFFSET,
-                                                     res_cvt.ITEM_RIGHT_X_OFFSET,
-                                                     res_cvt.ITEM_Y_DIFF,
-                                                     res_cvt.ITEM_Y_OFFSET, item_x_offset, item_y_offset)
+                                                            res_cvt.ITEM_LEFT_X_OFFSET,
+                                                            res_cvt.ITEM_RIGHT_X_OFFSET,
+                                                            res_cvt.ITEM_Y_DIFF,
+                                                            res_cvt.ITEM_Y_OFFSET, item_x_offset, item_y_offset)
 
             self_coords = ChampImgModel.generate_champ_coords(res_cvt.SELF_INDICATOR_LEFT_X_OFFSET,
                                                               res_cvt.SELF_INDICATOR_RIGHT_X_OFFSET,
@@ -192,26 +197,27 @@ class DynamicTrainingDataTrainer(Trainer):
             self_coords = np.reshape(self_coords, (-1, 2))
             # item_coords = [(coord[0] + 2, coord[1] + 2) for coord in item_coords]
 
-            items_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.ITEM_SIZE, coord[0]:coord[0] + res_cvt.ITEM_SIZE] for coord
+            items_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.ITEM_SIZE, coord[0]:coord[0] + res_cvt.ITEM_SIZE]
+                           for coord
                            in item_coords]
             items_x.extend([cv.resize(img, ui_constants.NETWORK_ITEM_IMG_CROP, cv.INTER_AREA) for img in items_x_raw])
-            champs_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.CHAMP_SIZE, coord[0]:coord[0] + res_cvt.CHAMP_SIZE] for
+            champs_x_raw = [test_image_x[coord[1]:coord[1] + res_cvt.CHAMP_SIZE, coord[0]:coord[0] + res_cvt.CHAMP_SIZE]
+                            for
                             coord in champ_coords]
             champs_x.extend([cv.resize(img, ui_constants.NETWORK_CHAMP_IMG_CROP, cv.INTER_AREA) for img in
                              champs_x_raw])
             self_x_raw = [
-                test_image_x[coord[1]:coord[1] + res_cvt.SELF_INDICATOR_SIZE, coord[0]:coord[0] + res_cvt.SELF_INDICATOR_SIZE]
+                test_image_x[coord[1]:coord[1] + res_cvt.SELF_INDICATOR_SIZE,
+                coord[0]:coord[0] + res_cvt.SELF_INDICATOR_SIZE]
                 for coord in self_coords]
             self_x.extend([cv.resize(img, ui_constants.NETWORK_SELF_IMG_CROP, cv.INTER_AREA) for img in self_x_raw])
-
-
 
             # self.show_coords(cv.imread('test_data/easy/1.png'), champ_coords, ui_constants.CHAMP_IMG_SIZE[0], item_coords, ui_constants.ITEM_IMG_SIZE[0], self_coords, ui_constants.SELF_IMG_SIZE[0])
 
         # for i, item in enumerate(items_x):
         #     cv.imshow(str(i), item)
         # cv.waitKey(0)
-        self_y = np.array(self_y)[:,np.newaxis]
+        self_y = np.array(self_y)[:, np.newaxis]
         return champs_x, items_x, self_x, champs_y, items_y, self_y
 
 
@@ -343,16 +349,100 @@ class DynamicTrainingDataTrainer(Trainer):
 
 class StaticTrainingDataTrainer(Trainer):
 
-    def eval_model(self, model, epoch):
-        main_eval = model.evaluate(np.array(self.X_test), np.array(self.Y_test), batch_size=self.batch_size)[0]
-        self.log_output(main_eval, epoch)
-        return main_eval
 
 
-    def log_output(self, main_test_eval, epoch_counter):
-        super().log_output(main_test_eval, epoch_counter)
-        self.logfile.write("\n\n")
-        self.logfile.flush()
+    def determine_best_eval(self, scores):
+        # epoch counter is 1 based
+        return np.argmax(scores[:,0]) + 1
+
+
+    def eval_model(self, model, epoch, prior=None):
+
+        y_pred_prob = model.predict(np.array(self.X_test))
+        if prior:
+            y_pred_prob = y_pred_prob / prior
+
+
+        y_pred = np.argmax(y_pred_prob, axis=1)
+
+        acc = sum(np.equal(y_pred, self.Y_test)) / len(self.Y_test)
+        precision, recall, f1, support = precision_recall_fscore_support(self.Y_test, y_pred, average='macro')
+
+        report = classification_report(self.Y_test, y_pred, labels=range(len(self.target_names)),
+                                       target_names=self.target_names)
+        # confusion = confusion_matrix(self.Y_test, y_pred)
+        avg_binary_auc, avg_binary_f1, thresholds = self.get_cum_scores(self.Y_test, y_pred_prob)
+
+        self.log_output(acc, f1, precision, recall, avg_binary_f1, avg_binary_auc,
+                        report, thresholds, epoch)
+
+        return avg_binary_f1, avg_binary_auc, acc, precision, recall, f1
+
+    def standalone_eval(self):
+
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+        self.network = NextItemEarlyGameNetwork().build()
+        print("Loading test data")
+        self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"]).get_test_data()
+        model = tflearn.DNN(self.network)
+        model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
+        model_path = model_path.rpartition('.')[0]
+        model.load(model_path)
+
+        with open("lololo", "w") as self.logfile:
+            self.eval_model(model, 0, target_names)
+
+
+    def get_cum_scores(self, Y_true, Y_pred_prob):
+        num = Y_pred_prob.shape[1]
+        scores = np.array([self.calc_metrics_for_one_class((Y_true == i).astype(int), Y_pred_prob[:,
+                                                                                      i], i) for i in range(num)])
+        zero_counts = Counter(range(num)) - self.test_y_distrib
+        zero_count_indices = list(zero_counts.keys())
+        num_nonzeros = num - len(zero_count_indices)
+        scores = np.delete(scores, zero_count_indices, axis=0)
+        avg_auc = sum(scores[:, 0]) / num_nonzeros
+        avg_f1 = sum(scores[:, 1]) / num_nonzeros
+        thresholds = scores[:, 2]
+        return avg_auc, avg_f1, thresholds
+
+
+    def calc_metrics_for_one_class(self, Y_true, Y_pred_prob, j):
+        precision, recall, thresholds = precision_recall_curve(Y_true, Y_pred_prob)
+        precision = np.nan_to_num(precision)
+        recall = np.nan_to_num(recall)
+        auc_score = auc(recall, precision)
+        auc_score = np.nan_to_num(auc_score)
+        precision = precision[:-1]
+        recall = recall[:-1]
+        f1_scores = 2*precision*recall
+        non_zero_f1_scores = f1_scores != 0
+        f1_scores[non_zero_f1_scores] /= precision[non_zero_f1_scores] + recall[non_zero_f1_scores]
+        max_f1_index = np.argmax(f1_scores)
+        return auc_score, f1_scores[max_f1_index], thresholds[max_f1_index]
+
+
+    def log_output(self, main_test_eval, f1, precision, recall, avg_binary_f1, avg_binary_auc, classification,
+                   thresholds,
+                   epoch_counter):
+
+        for output in [sys.stdout, self.logfile]:
+            output.write("Epoch {0}\n".format(epoch_counter + 1))
+            output.write("1. Acc {0:.4f}\n".format(main_test_eval))
+            output.write('2. F-1 {0:.4f}\n'.format(f1))
+            output.write('3. Precision {0:.4f}\n'.format(precision))
+            output.write('4. Recall {0:.4f}\n'.format(recall))
+            output.write('5. Avg binary F1 {0:.4f}\n'.format(avg_binary_f1))
+            output.write('6. Avg binary auc {0:.4f}\n'.format(avg_binary_auc))
+            output.write('7. Classification report \n {} \n'.format(classification))
+            output.write("\n\n")
+            output.flush()
+
+        with open(self.train_path + self.model_name + str(epoch_counter + 1) + "_thresholds.json", "w") as f:
+            f.write(json.dumps(thresholds.tolist()))
 
 
     def determine_best_eval(self, scores):
@@ -366,8 +456,9 @@ class StaticTrainingDataTrainer(Trainer):
         return best_model_index + 1
 
 
-
     def build_next_items_early_game_model(self):
+        self.target_names = [target["name"]  for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+                x: x["int"])]
         self.train_path = app_constants.model_paths["train"]["next_items_early"]
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
         self.network = NextItemEarlyGameNetwork().build()
@@ -376,7 +467,10 @@ class StaticTrainingDataTrainer(Trainer):
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
         self.build_new_model()
+
 
     def build_next_items_late_game_model(self):
         self.train_path = app_constants.model_paths["train"]["next_items_late"]
@@ -405,6 +499,18 @@ class StaticTrainingDataTrainer(Trainer):
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
     t.build_next_items_early_game_model()
+    # t.best_path = app_constants.model_paths["best"]["next_items_early"]
+    # t.network = NextItemEarlyGameNetwork().build()
+    # dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
+    # print("Loading test data")
+    # t.X_test, t.Y_test = dataloader.get_test_data()
+    # model = tflearn.DNN(t.network)
+    # model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
+    # model_path = model_path.rpartition('.')[0]
+    # model.load(model_path)
+    # target_names = [item['name'] for item in list(ItemManager().get_ints().values())]
+    # with open("lololo", "w") as t.logfile:
+    #     t.eval_model(model, 0, target_names)
 
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()
@@ -428,7 +534,6 @@ if __name__ == "__main__":
     #         print(f"{i}: {a} {b}")
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
-
 
     # s = DynamicTrainingDataTrainer()
     # s.build_new_item_model()
