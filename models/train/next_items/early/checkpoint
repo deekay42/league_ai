@@ -1,2 +1,2 @@
-model_checkpoint_path: "/home/DorjeeBaro/generate_scoreboard/models/train/next_items/early/my_model1"
-all_model_checkpoint_paths: "/home/DorjeeBaro/generate_scoreboard/models/train/next_items/early/my_model1"
+model_checkpoint_path: "/Users/DorjeeBaro/code/lol/python/models/train/next_items/early/my_model3"
+all_model_checkpoint_paths: "/Users/DorjeeBaro/code/lol/python/models/train/next_items/early/my_model3"

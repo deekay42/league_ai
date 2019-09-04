@@ -1,3 +1,585 @@
-Epoch 1 accuracy 0.60 | loss 1.26
-Raw test accuracy 0.6401 | 
+Epoch 1 accuracy 0.42 | loss 2.01
+Epoch 1
+1. Acc 0.1857
+2. F-1 0.0558
+3. Precision 0.0847
+4. Recall 0.0667
+5. Avg binary F1 0.2343
+6. Avg binary auc 0.1582
+7. Classification report 
+                                        precision    recall  f1-score   support
+
+                                Empty       0.00      0.00      0.00         0
+                       Boots of Speed       0.13      0.12      0.13      1004
+                         Faerie Charm       0.42      0.55      0.48       438
+                    Rejuvenation Bead       0.42      0.25      0.31       475
+                         Giant's Belt       0.00      0.00      0.00        22
+                     Cloak of Agility       0.39      0.31      0.35       160
+                        Blasting Wand       0.10      0.02      0.04       402
+                     Sapphire Crystal       0.14      0.19      0.16       549
+                         Ruby Crystal       0.09      0.24      0.14       874
+                          Cloth Armor       0.17      0.17      0.17       570
+                           Chain Vest       0.00      0.00      0.00        21
+                    Null-Magic Mantle       0.15      0.28      0.19       474
+                           Long Sword       0.12      0.30      0.17       932
+                              Pickaxe       0.24      0.10      0.14       459
+                          B. F. Sword       0.16      0.28      0.21       457
+                    Hunter's Talisman       0.42      0.73      0.53       269
+                     Hunter's Machete       0.50      0.93      0.65       227
+                               Dagger       0.11      0.14      0.12       528
+                          Recurve Bow       0.07      0.03      0.05        86
+                     Brawler's Gloves       0.30      0.11      0.16       156
+                      Amplifying Tome       0.08      0.18      0.11       790
+                     Vampiric Scepter       0.00      0.00      0.00       211
+                       Doran's Shield       0.14      0.11      0.13        88
+                        Doran's Blade       0.42      0.42      0.42       325
+                         Doran's Ring       0.22      0.73      0.34        63
+                       Negatron Cloak       0.00      0.00      0.00         1
+                 Needlessly Large Rod       0.00      0.00      0.00       216
+                        The Dark Seal       0.00      0.00      0.00       151
+                                 Cull       0.00      0.00      0.00        54
+             Stalker's Blade: Warrior       1.00      0.03      0.06        32
+          Stalker's Blade: Cinderhulk       0.00      0.00      0.00        53
+        Stalker's Blade: Runic Echoes       0.00      0.00      0.00         1
+          Skirmisher's Sabre: Warrior       0.00      0.00      0.00        14
+       Skirmisher's Sabre: Cinderhulk       0.00      0.00      0.00        30
+     Skirmisher's Sabre: Runic Echoes       0.00      0.00      0.00         4
+          Stalker's Blade: Bloodrazor       0.00      0.00      0.00         0
+Skirmisher's Sabre: Bloodrazor: Sabre       0.00      0.00      0.00         0
+                        Health Potion       0.00      0.00      0.00       157
+                       Kircheis Shard       0.00      0.00      0.00         0
+                    Refillable Potion       0.00      0.00      0.00         0
+                    Corrupting Potion       0.00      0.00      0.00         8
+                         Raptor Cloak       0.33      0.03      0.06       329
+                   Shurelya's Reverie       0.00      0.00      0.00        12
+                            Stopwatch       0.00      0.00      0.00         0
+                         Abyssal Mask       0.00      0.00      0.00         0
+                    Archangel's Staff       0.00      0.00      0.00         0
+                             Manamune       0.00      0.00      0.00         0
+                  Berserker's Greaves       0.00      0.00      0.00         0
+                   Boots of Swiftness       0.00      0.00      0.00         0
+                    Catalyst of Aeons       0.10      0.04      0.06       366
+                     Sorcerer's Shoes       0.00      0.00      0.00         0
+                        Frozen Mallet       0.00      0.00      0.00        32
+                       Glacial Shroud       0.00      0.00      0.00        42
+                     Iceborn Gauntlet       0.00      0.00      0.00        47
+                       Guardian Angel       0.00      0.00      0.00         0
+                          Rod of Ages       0.00      0.00      0.00        42
+                   Chalice of Harmony       0.00      0.00      0.00       291
+                      Hextech GLP-800       0.00      0.00      0.00         0
+                        Infinity Edge       0.00      0.00      0.00        58
+                      Mortal Reminder       0.00      0.00      0.00         3
+                         Last Whisper       0.00      0.00      0.00        17
+               Lord Dominik's Regards       0.00      0.00      0.00        42
+                  Mejai's Soulstealer       0.00      0.00      0.00        25
+                                Phage       0.00      0.00      0.00         0
+                       Phantom Dancer       0.00      0.00      0.00        72
+                           Ninja Tabi       0.00      0.00      0.00         0
+                   Zeke's Convergence       0.00      0.00      0.00         0
+                        Jaurim's Fist       0.00      0.00      0.00         0
+                        Sterak's Gage       0.00      0.00      0.00        56
+                           Ohmwrecker       0.00      0.00      0.00       141
+                                Sheen       0.00      0.00      0.00        46
+                        Spirit Visage       0.00      0.00      0.00        26
+                            Kindlegem       0.00      0.00      0.00        32
+                         Sunfire Cape       0.00      0.00      0.00        67
+              Remnant of the Ascended       0.00      0.00      0.00        50
+                  Tear of the Goddess       0.00      0.00      0.00         0
+                    The Black Cleaver       0.00      0.00      0.00        48
+                    The Bloodthirster       0.00      0.00      0.00        38
+                       Ravenous Hydra       0.00      0.00      0.00        22
+                            Thornmail       0.00      0.00      0.00         0
+                         Bramble Vest       0.00      0.00      0.00        15
+                               Tiamat       0.00      0.00      0.00        16
+                        Trinity Force       0.00      0.00      0.00        86
+                        Warden's Mail       0.00      0.00      0.00         1
+                       Warmog's Armor       0.00      0.00      0.00         3
+                   Runaan's Hurricane       0.00      0.00      0.00         1
+                                 Zeal       0.00      0.00      0.00         0
+                         Statikk Shiv       1.00      0.01      0.02        89
+                   Rabadon's Deathcap       0.00      0.00      0.00        26
+                            Wit's End       0.00      0.00      0.00         3
+              Remnant of the Watchers       0.00      0.00      0.00         0
+                     Rapid Firecannon       0.00      0.00      0.00        10
+                           Stormrazor       0.00      0.00      0.00        77
+                    Nomad's Medallion       0.00      0.00      0.00        31
+                       Targon's Brace       0.00      0.00      0.00       102
+                            Frostfang       0.00      0.00      0.00         0
+                            Lich Bane       0.00      0.00      0.00        47
+                              Stinger       0.00      0.00      0.00         2
+                       Banshee's Veil       0.00      0.00      0.00         2
+                  Aegis of the Legion       0.00      0.00      0.00         2
+                           Redemption       0.00      0.00      0.00        22
+                       Fiendish Codex       0.00      0.00      0.00        63
+                         Knight's Vow       0.00      0.00      0.00         1
+                         Frozen Heart       1.00      0.05      0.10        96
+                     Mercury's Treads       0.00      0.00      0.00         0
+                          Aether Wisp       0.00      0.00      0.00         8
+                       Forbidden Idol       0.00      0.00      0.00        10
+                       Nashor's Tooth       0.00      0.00      0.00        85
+              Rylai's Crystal Scepter       0.00      0.00      0.00         2
+                    Boots of Mobility       0.00      0.00      0.00         0
+                Executioner's Calling       0.00      0.00      0.00        76
+                  Guinsoo's Rageblade       0.00      0.00      0.00       107
+                Caulfield's Warhammer       1.00      0.02      0.04        54
+                        Serrated Dirk       0.00      0.00      0.00         2
+                           Void Staff       0.00      0.00      0.00         0
+                       Haunting Guise       0.38      0.80      0.52       267
+                   Mercurial Scimitar       0.00      0.00      0.00         1
+                     Quicksilver Sash       0.00      0.00      0.00        23
+                  Youmuu's Ghostblade       0.26      0.32      0.29       276
+                       Randuin's Omen       0.22      0.14      0.17       148
+                   Bilgewater Cutlass       0.00      0.00      0.00        73
+                     Hextech Revolver       0.00      0.00      0.00         0
+                     Hextech Gunblade       0.00      0.00      0.00        16
+               Duskblade of Draktharr       0.00      0.00      0.00        29
+                    Liandry's Torment       0.00      0.00      0.00        23
+                 Hextech Protobelt-01       0.00      0.00      0.00         0
+             Blade of the Ruined King       0.00      0.00      0.00         4
+                           Hexdrinker       0.00      0.00      0.00        63
+                    Maw of Malmortius       0.00      0.00      0.00        53
+                   Zhonya's Hourglass       0.00      0.00      0.00        62
+             Ionian Boots of Lucidity       0.00      0.00      0.00         0
+                      Spear of Shojin       0.00      0.00      0.00         2
+                       Morellonomicon       0.00      0.00      0.00         1
+                Athene's Unholy Grail       0.00      0.00      0.00         3
+            Locket of the Iron Solari       0.00      0.00      0.00        23
+                    Seeker's Armguard       0.00      0.00      0.00        35
+                  Gargoyle Stoneplate       0.00      0.00      0.00         2
+                        Adaptive Helm       0.00      0.00      0.00         1
+                    The Hex Core mk-1       0.00      0.00      0.00        27
+                    The Hex Core mk-2       0.00      0.00      0.00        17
+                     Perfect Hex Core       0.00      0.00      0.00        39
+                       Spectre's Cowl       0.00      0.00      0.00        38
+                    Mikael's Crucible       0.00      0.00      0.00        24
+                         Luden's Echo       0.00      0.00      0.00         0
+                         Ancient Coin       0.00      0.00      0.00         0
+                         Relic Shield       0.00      0.00      0.00         0
+                    Spellthief's Edge       0.00      0.00      0.00         0
+                          Molten Edge       0.00      0.00      0.00         3
+                       Forgefire Cape       0.00      0.00      0.00         0
+                 Rabadon's Deathcrown       0.00      0.00      0.00        69
+                        Infernal Mask       0.00      0.00      0.00         9
+                 The Obsidian Cleaver       0.00      0.00      0.00        24
+                            Salvation       0.39      0.74      0.51        69
+           Circlet of the Iron Solari       0.00      0.00      0.00         0
+                       Trinity Fusion       0.00      0.00      0.00         0
+                     Zhonya's Paradox       0.00      0.00      0.00         0
+                          Frozen Fist       0.00      0.00      0.00         0
+                 Youmuu's Wraithblade       0.00      0.00      0.00         0
+             Might of the Ruined King       0.00      0.00      0.00         0
+                        Luden's Pulse       0.00      0.00      0.00         0
+                Remnant of the Aspect       0.00      0.00      0.00         0
+                        Ardent Censer       0.00      0.00      0.00         0
+                       Essence Reaver       0.00      0.00      0.00         0
+                        Zz'Rot Portal       0.00      0.00      0.00         0
+                      Stalker's Blade       0.00      0.00      0.00         0
+                   Skirmisher's Sabre       0.00      0.00      0.00         0
+                     Dead Man's Plate       0.85      0.53      0.65        32
+                        Titanic Hydra       0.00      0.00      0.00        31
+                        Bami's Cinder       0.00      0.00      0.00        30
+                      Righteous Glory       0.00      0.00      0.00         0
+                   Crystalline Bracer       0.00      0.00      0.00         9
+                         Lost Chapter       0.00      0.00      0.00        50
+                        Death's Dance       0.00      0.00      0.00        14
+                        Edge of Night       0.00      0.00      0.00         1
+                         Twin Shadows       0.00      0.00      0.00        42
+                          Spellbinder       0.00      0.00      0.00        35
+                         Oblivion Orb       0.00      0.00      0.00         8
+
+                            micro avg       0.19      0.19      0.19     14920
+                            macro avg       0.06      0.05      0.04     14920
+                         weighted avg       0.17      0.19      0.15     14920
+ 
+
+
+Epoch 2 accuracy 0.54 | loss 1.55
+Epoch 2
+1. Acc 0.1888
+2. F-1 0.0746
+3. Precision 0.1273
+4. Recall 0.0781
+5. Avg binary F1 0.2823
+6. Avg binary auc 0.1977
+7. Classification report 
+                                        precision    recall  f1-score   support
+
+                                Empty       0.00      0.00      0.00         0
+                       Boots of Speed       0.15      0.11      0.12      1004
+                         Faerie Charm       0.38      0.58      0.46       438
+                    Rejuvenation Bead       0.37      0.24      0.30       475
+                         Giant's Belt       0.00      0.00      0.00        22
+                     Cloak of Agility       0.44      0.29      0.35       160
+                        Blasting Wand       0.11      0.02      0.03       402
+                     Sapphire Crystal       0.15      0.17      0.16       549
+                         Ruby Crystal       0.10      0.20      0.13       874
+                          Cloth Armor       0.19      0.29      0.23       570
+                           Chain Vest       0.00      0.00      0.00        21
+                    Null-Magic Mantle       0.09      0.11      0.10       474
+                           Long Sword       0.12      0.33      0.18       932
+                              Pickaxe       0.15      0.15      0.15       459
+                          B. F. Sword       0.13      0.19      0.15       457
+                    Hunter's Talisman       0.37      0.90      0.53       269
+                     Hunter's Machete       0.63      0.74      0.68       227
+                               Dagger       0.11      0.13      0.12       528
+                          Recurve Bow       0.06      0.06      0.06        86
+                     Brawler's Gloves       0.23      0.12      0.16       156
+                      Amplifying Tome       0.09      0.17      0.11       790
+                     Vampiric Scepter       0.00      0.00      0.00       211
+                       Doran's Shield       0.10      0.11      0.11        88
+                        Doran's Blade       0.41      0.43      0.42       325
+                         Doran's Ring       0.38      0.32      0.34        63
+                       Negatron Cloak       0.00      0.00      0.00         1
+                 Needlessly Large Rod       0.00      0.00      0.00       216
+                        The Dark Seal       0.00      0.00      0.00       151
+                                 Cull       0.00      0.00      0.00        54
+             Stalker's Blade: Warrior       1.00      0.03      0.06        32
+          Stalker's Blade: Cinderhulk       0.00      0.00      0.00        53
+        Stalker's Blade: Runic Echoes       0.00      0.00      0.00         1
+          Skirmisher's Sabre: Warrior       0.17      0.07      0.10        14
+       Skirmisher's Sabre: Cinderhulk       0.00      0.00      0.00        30
+     Skirmisher's Sabre: Runic Echoes       0.00      0.00      0.00         4
+          Stalker's Blade: Bloodrazor       0.00      0.00      0.00         0
+Skirmisher's Sabre: Bloodrazor: Sabre       0.00      0.00      0.00         0
+                        Health Potion       0.13      0.06      0.08       157
+                       Kircheis Shard       0.00      0.00      0.00         0
+                    Refillable Potion       0.00      0.00      0.00         0
+                    Corrupting Potion       0.00      0.00      0.00         8
+                         Raptor Cloak       0.26      0.12      0.17       329
+                   Shurelya's Reverie       0.00      0.00      0.00        12
+                            Stopwatch       0.00      0.00      0.00         0
+                         Abyssal Mask       0.00      0.00      0.00         0
+                    Archangel's Staff       0.00      0.00      0.00         0
+                             Manamune       0.00      0.00      0.00         0
+                  Berserker's Greaves       0.00      0.00      0.00         0
+                   Boots of Swiftness       0.00      0.00      0.00         0
+                    Catalyst of Aeons       0.13      0.06      0.08       366
+                     Sorcerer's Shoes       0.00      0.00      0.00         0
+                        Frozen Mallet       0.00      0.00      0.00        32
+                       Glacial Shroud       0.00      0.00      0.00        42
+                     Iceborn Gauntlet       0.00      0.00      0.00        47
+                       Guardian Angel       0.00      0.00      0.00         0
+                          Rod of Ages       0.00      0.00      0.00        42
+                   Chalice of Harmony       0.41      0.10      0.16       291
+                      Hextech GLP-800       0.00      0.00      0.00         0
+                        Infinity Edge       0.00      0.00      0.00        58
+                      Mortal Reminder       0.00      0.00      0.00         3
+                         Last Whisper       0.00      0.00      0.00        17
+               Lord Dominik's Regards       0.00      0.00      0.00        42
+                  Mejai's Soulstealer       0.00      0.00      0.00        25
+                                Phage       0.00      0.00      0.00         0
+                       Phantom Dancer       1.00      0.06      0.11        72
+                           Ninja Tabi       0.00      0.00      0.00         0
+                   Zeke's Convergence       0.00      0.00      0.00         0
+                        Jaurim's Fist       0.00      0.00      0.00         0
+                        Sterak's Gage       0.00      0.00      0.00        56
+                           Ohmwrecker       0.08      0.03      0.04       141
+                                Sheen       0.00      0.00      0.00        46
+                        Spirit Visage       0.00      0.00      0.00        26
+                            Kindlegem       0.00      0.00      0.00        32
+                         Sunfire Cape       0.00      0.00      0.00        67
+              Remnant of the Ascended       0.00      0.00      0.00        50
+                  Tear of the Goddess       0.00      0.00      0.00         0
+                    The Black Cleaver       0.00      0.00      0.00        48
+                    The Bloodthirster       0.00      0.00      0.00        38
+                       Ravenous Hydra       0.02      0.05      0.02        22
+                            Thornmail       0.00      0.00      0.00         0
+                         Bramble Vest       0.00      0.00      0.00        15
+                               Tiamat       0.58      0.44      0.50        16
+                        Trinity Force       0.00      0.00      0.00        86
+                        Warden's Mail       0.00      0.00      0.00         1
+                       Warmog's Armor       0.00      0.00      0.00         3
+                   Runaan's Hurricane       0.00      0.00      0.00         1
+                                 Zeal       0.00      0.00      0.00         0
+                         Statikk Shiv       0.40      0.02      0.04        89
+                   Rabadon's Deathcap       0.17      0.04      0.06        26
+                            Wit's End       0.00      0.00      0.00         3
+              Remnant of the Watchers       0.00      0.00      0.00         0
+                     Rapid Firecannon       0.00      0.00      0.00        10
+                           Stormrazor       0.00      0.00      0.00        77
+                    Nomad's Medallion       1.00      0.29      0.45        31
+                       Targon's Brace       0.25      0.01      0.02       102
+                            Frostfang       0.00      0.00      0.00         0
+                            Lich Bane       0.00      0.00      0.00        47
+                              Stinger       0.00      0.00      0.00         2
+                       Banshee's Veil       0.00      0.00      0.00         2
+                  Aegis of the Legion       0.00      0.00      0.00         2
+                           Redemption       0.00      0.00      0.00        22
+                       Fiendish Codex       0.00      0.00      0.00        63
+                         Knight's Vow       0.00      0.00      0.00         1
+                         Frozen Heart       1.00      0.04      0.08        96
+                     Mercury's Treads       0.00      0.00      0.00         0
+                          Aether Wisp       1.00      0.25      0.40         8
+                       Forbidden Idol       0.00      0.00      0.00        10
+                       Nashor's Tooth       0.00      0.00      0.00        85
+              Rylai's Crystal Scepter       0.00      0.00      0.00         2
+                    Boots of Mobility       0.00      0.00      0.00         0
+                Executioner's Calling       0.00      0.00      0.00        76
+                  Guinsoo's Rageblade       0.50      0.02      0.04       107
+                Caulfield's Warhammer       1.00      0.20      0.34        54
+                        Serrated Dirk       0.00      0.00      0.00         2
+                           Void Staff       0.00      0.00      0.00         0
+                       Haunting Guise       0.44      0.52      0.48       267
+                   Mercurial Scimitar       0.00      0.00      0.00         1
+                     Quicksilver Sash       0.33      0.04      0.08        23
+                  Youmuu's Ghostblade       0.23      0.50      0.32       276
+                       Randuin's Omen       0.24      0.30      0.26       148
+                   Bilgewater Cutlass       0.00      0.00      0.00        73
+                     Hextech Revolver       0.00      0.00      0.00         0
+                     Hextech Gunblade       0.00      0.00      0.00        16
+               Duskblade of Draktharr       0.00      0.00      0.00        29
+                    Liandry's Torment       0.00      0.00      0.00        23
+                 Hextech Protobelt-01       0.00      0.00      0.00         0
+             Blade of the Ruined King       0.00      0.00      0.00         4
+                           Hexdrinker       0.50      0.02      0.03        63
+                    Maw of Malmortius       0.00      0.00      0.00        53
+                   Zhonya's Hourglass       0.50      0.02      0.03        62
+             Ionian Boots of Lucidity       0.00      0.00      0.00         0
+                      Spear of Shojin       0.00      0.00      0.00         2
+                       Morellonomicon       0.00      0.00      0.00         1
+                Athene's Unholy Grail       0.00      0.00      0.00         3
+            Locket of the Iron Solari       0.00      0.00      0.00        23
+                    Seeker's Armguard       0.00      0.00      0.00        35
+                  Gargoyle Stoneplate       0.00      0.00      0.00         2
+                        Adaptive Helm       0.00      0.00      0.00         1
+                    The Hex Core mk-1       0.00      0.00      0.00        27
+                    The Hex Core mk-2       0.00      0.00      0.00        17
+                     Perfect Hex Core       0.00      0.00      0.00        39
+                       Spectre's Cowl       0.00      0.00      0.00        38
+                    Mikael's Crucible       0.00      0.00      0.00        24
+                         Luden's Echo       0.00      0.00      0.00         0
+                         Ancient Coin       0.00      0.00      0.00         0
+                         Relic Shield       0.00      0.00      0.00         0
+                    Spellthief's Edge       0.00      0.00      0.00         0
+                          Molten Edge       0.00      0.00      0.00         3
+                       Forgefire Cape       0.00      0.00      0.00         0
+                 Rabadon's Deathcrown       0.00      0.00      0.00        69
+                        Infernal Mask       0.00      0.00      0.00         9
+                 The Obsidian Cleaver       0.00      0.00      0.00        24
+                            Salvation       0.44      0.96      0.61        69
+           Circlet of the Iron Solari       0.00      0.00      0.00         0
+                       Trinity Fusion       0.00      0.00      0.00         0
+                     Zhonya's Paradox       0.00      0.00      0.00         0
+                          Frozen Fist       0.00      0.00      0.00         0
+                 Youmuu's Wraithblade       0.00      0.00      0.00         0
+             Might of the Ruined King       0.00      0.00      0.00         0
+                        Luden's Pulse       0.00      0.00      0.00         0
+                Remnant of the Aspect       0.00      0.00      0.00         0
+                        Ardent Censer       0.00      0.00      0.00         0
+                       Essence Reaver       0.00      0.00      0.00         0
+                        Zz'Rot Portal       0.00      0.00      0.00         0
+                      Stalker's Blade       0.00      0.00      0.00         0
+                   Skirmisher's Sabre       0.00      0.00      0.00         0
+                     Dead Man's Plate       0.53      0.56      0.55        32
+                        Titanic Hydra       0.00      0.00      0.00        31
+                        Bami's Cinder       0.00      0.00      0.00        30
+                      Righteous Glory       0.00      0.00      0.00         0
+                   Crystalline Bracer       0.00      0.00      0.00         9
+                         Lost Chapter       0.00      0.00      0.00        50
+                        Death's Dance       0.00      0.00      0.00        14
+                        Edge of Night       0.00      0.00      0.00         1
+                         Twin Shadows       0.00      0.00      0.00        42
+                          Spellbinder       0.00      0.00      0.00        35
+                         Oblivion Orb       0.00      0.00      0.00         8
+
+                            micro avg       0.19      0.19      0.19     14920
+                            macro avg       0.10      0.06      0.06     14920
+                         weighted avg       0.19      0.19      0.16     14920
+ 
+
+
+Epoch 3 accuracy 0.61 | loss 1.32
+Epoch 3
+1. Acc 0.1908
+2. F-1 0.0987
+3. Precision 0.1714
+4. Recall 0.0992
+5. Avg binary F1 0.3075
+6. Avg binary auc 0.2248
+7. Classification report 
+                                        precision    recall  f1-score   support
+
+                                Empty       0.00      0.00      0.00         0
+                       Boots of Speed       0.15      0.12      0.13      1004
+                         Faerie Charm       0.41      0.60      0.48       438
+                    Rejuvenation Bead       0.32      0.28      0.30       475
+                         Giant's Belt       0.00      0.00      0.00        22
+                     Cloak of Agility       0.48      0.31      0.38       160
+                        Blasting Wand       0.11      0.03      0.05       402
+                     Sapphire Crystal       0.13      0.15      0.14       549
+                         Ruby Crystal       0.07      0.08      0.07       874
+                          Cloth Armor       0.23      0.21      0.22       570
+                           Chain Vest       0.00      0.00      0.00        21
+                    Null-Magic Mantle       0.09      0.18      0.12       474
+                           Long Sword       0.11      0.32      0.17       932
+                              Pickaxe       0.14      0.15      0.15       459
+                          B. F. Sword       0.15      0.19      0.17       457
+                    Hunter's Talisman       0.42      0.67      0.52       269
+                     Hunter's Machete       0.60      0.89      0.72       227
+                               Dagger       0.12      0.09      0.10       528
+                          Recurve Bow       0.12      0.07      0.09        86
+                     Brawler's Gloves       0.21      0.14      0.17       156
+                      Amplifying Tome       0.09      0.21      0.13       790
+                     Vampiric Scepter       0.00      0.00      0.00       211
+                       Doran's Shield       0.16      0.35      0.22        88
+                        Doran's Blade       0.59      0.26      0.36       325
+                         Doran's Ring       0.22      0.73      0.34        63
+                       Negatron Cloak       0.00      0.00      0.00         1
+                 Needlessly Large Rod       0.00      0.00      0.00       216
+                        The Dark Seal       0.00      0.00      0.00       151
+                                 Cull       0.00      0.00      0.00        54
+             Stalker's Blade: Warrior       1.00      0.22      0.36        32
+          Stalker's Blade: Cinderhulk       0.00      0.00      0.00        53
+        Stalker's Blade: Runic Echoes       0.00      0.00      0.00         1
+          Skirmisher's Sabre: Warrior       0.05      0.07      0.06        14
+       Skirmisher's Sabre: Cinderhulk       0.00      0.00      0.00        30
+     Skirmisher's Sabre: Runic Echoes       0.00      0.00      0.00         4
+          Stalker's Blade: Bloodrazor       0.00      0.00      0.00         0
+Skirmisher's Sabre: Bloodrazor: Sabre       0.00      0.00      0.00         0
+                        Health Potion       0.19      0.19      0.19       157
+                       Kircheis Shard       0.00      0.00      0.00         0
+                    Refillable Potion       0.00      0.00      0.00         0
+                    Corrupting Potion       0.00      0.00      0.00         8
+                         Raptor Cloak       0.17      0.05      0.08       329
+                   Shurelya's Reverie       0.00      0.00      0.00        12
+                            Stopwatch       0.00      0.00      0.00         0
+                         Abyssal Mask       0.00      0.00      0.00         0
+                    Archangel's Staff       0.00      0.00      0.00         0
+                             Manamune       0.00      0.00      0.00         0
+                  Berserker's Greaves       0.00      0.00      0.00         0
+                   Boots of Swiftness       0.00      0.00      0.00         0
+                    Catalyst of Aeons       0.17      0.14      0.15       366
+                     Sorcerer's Shoes       0.00      0.00      0.00         0
+                        Frozen Mallet       0.00      0.00      0.00        32
+                       Glacial Shroud       0.33      0.12      0.18        42
+                     Iceborn Gauntlet       1.00      0.02      0.04        47
+                       Guardian Angel       0.00      0.00      0.00         0
+                          Rod of Ages       0.00      0.00      0.00        42
+                   Chalice of Harmony       0.46      0.15      0.22       291
+                      Hextech GLP-800       0.00      0.00      0.00         0
+                        Infinity Edge       0.00      0.00      0.00        58
+                      Mortal Reminder       0.00      0.00      0.00         3
+                         Last Whisper       0.00      0.00      0.00        17
+               Lord Dominik's Regards       0.00      0.00      0.00        42
+                  Mejai's Soulstealer       0.00      0.00      0.00        25
+                                Phage       0.00      0.00      0.00         0
+                       Phantom Dancer       1.00      0.12      0.22        72
+                           Ninja Tabi       0.00      0.00      0.00         0
+                   Zeke's Convergence       0.00      0.00      0.00         0
+                        Jaurim's Fist       0.00      0.00      0.00         0
+                        Sterak's Gage       0.00      0.00      0.00        56
+                           Ohmwrecker       0.03      0.01      0.02       141
+                                Sheen       0.00      0.00      0.00        46
+                        Spirit Visage       0.00      0.00      0.00        26
+                            Kindlegem       0.00      0.00      0.00        32
+                         Sunfire Cape       0.25      0.01      0.03        67
+              Remnant of the Ascended       0.00      0.00      0.00        50
+                  Tear of the Goddess       0.00      0.00      0.00         0
+                    The Black Cleaver       0.00      0.00      0.00        48
+                    The Bloodthirster       0.00      0.00      0.00        38
+                       Ravenous Hydra       0.02      0.09      0.03        22
+                            Thornmail       0.00      0.00      0.00         0
+                         Bramble Vest       0.00      0.00      0.00        15
+                               Tiamat       1.00      0.56      0.72        16
+                        Trinity Force       0.00      0.00      0.00        86
+                        Warden's Mail       0.00      0.00      0.00         1
+                       Warmog's Armor       0.00      0.00      0.00         3
+                   Runaan's Hurricane       0.00      0.00      0.00         1
+                                 Zeal       0.00      0.00      0.00         0
+                         Statikk Shiv       0.21      0.06      0.09        89
+                   Rabadon's Deathcap       1.00      0.04      0.07        26
+                            Wit's End       0.00      0.00      0.00         3
+              Remnant of the Watchers       0.00      0.00      0.00         0
+                     Rapid Firecannon       0.00      0.00      0.00        10
+                           Stormrazor       0.80      0.05      0.10        77
+                    Nomad's Medallion       1.00      0.26      0.41        31
+                       Targon's Brace       0.64      0.07      0.12       102
+                            Frostfang       0.00      0.00      0.00         0
+                            Lich Bane       0.00      0.00      0.00        47
+                              Stinger       0.00      0.00      0.00         2
+                       Banshee's Veil       0.00      0.00      0.00         2
+                  Aegis of the Legion       0.00      0.00      0.00         2
+                           Redemption       0.00      0.00      0.00        22
+                       Fiendish Codex       0.00      0.00      0.00        63
+                         Knight's Vow       0.00      0.00      0.00         1
+                         Frozen Heart       0.00      0.00      0.00        96
+                     Mercury's Treads       0.00      0.00      0.00         0
+                          Aether Wisp       1.00      0.38      0.55         8
+                       Forbidden Idol       0.00      0.00      0.00        10
+                       Nashor's Tooth       0.17      0.12      0.14        85
+              Rylai's Crystal Scepter       0.00      0.00      0.00         2
+                    Boots of Mobility       0.00      0.00      0.00         0
+                Executioner's Calling       0.00      0.00      0.00        76
+                  Guinsoo's Rageblade       0.00      0.00      0.00       107
+                Caulfield's Warhammer       0.95      0.37      0.53        54
+                        Serrated Dirk       0.00      0.00      0.00         2
+                           Void Staff       0.00      0.00      0.00         0
+                       Haunting Guise       0.45      0.60      0.52       267
+                   Mercurial Scimitar       0.00      0.00      0.00         1
+                     Quicksilver Sash       0.15      0.09      0.11        23
+                  Youmuu's Ghostblade       0.28      0.50      0.36       276
+                       Randuin's Omen       0.19      0.36      0.25       148
+                   Bilgewater Cutlass       0.00      0.00      0.00        73
+                     Hextech Revolver       0.00      0.00      0.00         0
+                     Hextech Gunblade       0.00      0.00      0.00        16
+               Duskblade of Draktharr       0.00      0.00      0.00        29
+                    Liandry's Torment       1.00      0.39      0.56        23
+                 Hextech Protobelt-01       0.00      0.00      0.00         0
+             Blade of the Ruined King       0.00      0.00      0.00         4
+                           Hexdrinker       0.50      0.02      0.03        63
+                    Maw of Malmortius       0.00      0.00      0.00        53
+                   Zhonya's Hourglass       1.00      0.02      0.03        62
+             Ionian Boots of Lucidity       0.00      0.00      0.00         0
+                      Spear of Shojin       0.00      0.00      0.00         2
+                       Morellonomicon       0.00      0.00      0.00         1
+                Athene's Unholy Grail       0.00      0.00      0.00         3
+            Locket of the Iron Solari       0.00      0.00      0.00        23
+                    Seeker's Armguard       0.00      0.00      0.00        35
+                  Gargoyle Stoneplate       0.00      0.00      0.00         2
+                        Adaptive Helm       0.00      0.00      0.00         1
+                    The Hex Core mk-1       0.00      0.00      0.00        27
+                    The Hex Core mk-2       0.00      0.00      0.00        17
+                     Perfect Hex Core       0.00      0.00      0.00        39
+                       Spectre's Cowl       0.00      0.00      0.00        38
+                    Mikael's Crucible       0.00      0.00      0.00        24
+                         Luden's Echo       0.00      0.00      0.00         0
+                         Ancient Coin       0.00      0.00      0.00         0
+                         Relic Shield       0.00      0.00      0.00         0
+                    Spellthief's Edge       0.00      0.00      0.00         0
+                          Molten Edge       0.00      0.00      0.00         3
+                       Forgefire Cape       0.00      0.00      0.00         0
+                 Rabadon's Deathcrown       0.00      0.00      0.00        69
+                        Infernal Mask       1.00      0.44      0.62         9
+                 The Obsidian Cleaver       0.20      0.17      0.18        24
+                            Salvation       0.63      0.91      0.75        69
+           Circlet of the Iron Solari       0.00      0.00      0.00         0
+                       Trinity Fusion       0.00      0.00      0.00         0
+                     Zhonya's Paradox       0.00      0.00      0.00         0
+                          Frozen Fist       0.00      0.00      0.00         0
+                 Youmuu's Wraithblade       0.00      0.00      0.00         0
+             Might of the Ruined King       0.00      0.00      0.00         0
+                        Luden's Pulse       0.00      0.00      0.00         0
+                Remnant of the Aspect       0.00      0.00      0.00         0
+                        Ardent Censer       0.00      0.00      0.00         0
+                       Essence Reaver       0.00      0.00      0.00         0
+                        Zz'Rot Portal       0.00      0.00      0.00         0
+                      Stalker's Blade       0.00      0.00      0.00         0
+                   Skirmisher's Sabre       0.00      0.00      0.00         0
+                     Dead Man's Plate       0.53      0.81      0.64        32
+                        Titanic Hydra       0.00      0.00      0.00        31
+                        Bami's Cinder       0.00      0.00      0.00        30
+                      Righteous Glory       0.00      0.00      0.00         0
+                   Crystalline Bracer       0.00      0.00      0.00         9
+                         Lost Chapter       1.00      0.02      0.04        50
+                        Death's Dance       0.00      0.00      0.00        14
+                        Edge of Night       0.00      0.00      0.00         1
+                         Twin Shadows       0.00      0.00      0.00        42
+                          Spellbinder       0.00      0.00      0.00        35
+                         Oblivion Orb       0.00      0.00      0.00         8
+
+                            micro avg       0.19      0.19      0.19     14920
+                            macro avg       0.13      0.08      0.08     14920
+                         weighted avg       0.20      0.19      0.17     14920
+ 
+
 
