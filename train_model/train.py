@@ -376,13 +376,12 @@ class StaticTrainingDataTrainer(Trainer):
         self.log_output(acc, f1, precision, recall, avg_binary_f1, avg_binary_auc,
                         report, thresholds, epoch)
 
-        return avg_binary_f1, avg_binary_auc, acc, precision, recall, f1
+        return avg_binary_f1, avg_binary_auc, acc, precision, recall, f1, thresholds
 
     def standalone_eval(self):
 
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
-        self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
         self.network = NextItemEarlyGameNetwork().build()
         print("Loading test data")
@@ -393,7 +392,8 @@ class StaticTrainingDataTrainer(Trainer):
         model.load(model_path)
 
         with open("lololo", "w") as self.logfile:
-            self.eval_model(model, 0, target_names)
+            thresholds = self.eval_model(model, 0)[-1]
+            self.eval_model(model, 0, prior=thresholds)[-1]
 
 
     def get_cum_scores(self, Y_true, Y_pred_prob):
