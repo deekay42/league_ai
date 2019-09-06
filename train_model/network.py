@@ -287,7 +287,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 "learning_rate": 0.00025,
                 "champ_emb_dim": 3,
                 "all_items_emb_dim": 6,
-                "champ_all_items_emb_dim": 8
+                "champ_all_items_emb_dim": 8,
+                "class_weights": 1
             }
 
 
@@ -368,13 +369,21 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # net = dropout(net, 0.9)
         # net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
 
-        net = fully_connected(net, total_num_items, activation='softmax')
+        is_training = tflearn.get_training_mode()
+        net = fully_connected(net, total_num_items, activation='linear' if is_training else 'softmax')
 
         # TODO: consider using item embedding layer as output layer...
         return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
                           learning_rate=learning_rate,
-                          loss='categorical_crossentropy', name='target')
+                          loss=NextItemEarlyGameNetwork.class_weighted_sm_ce_loss,
+                          name='target')
 
+@staticmethod
+def class_weighted_sm_ce_loss(y_pred, y_true):
+
+    class_weights = tf.reduce_sum(tf.multiply(labels_one_hot, tf.reshape(self.network_config[
+                                        "class_weights"], (-1, 1))), 1)
+    return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
 
 #
 # class NextItemEarlyGameNetwork(NextItemNetwork):
