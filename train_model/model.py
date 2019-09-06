@@ -16,6 +16,7 @@ from utils import utils
 from tflearn.layers.embedding_ops import embedding
 import tflearn
 from utils import cass_configured as cass
+import json
 
 
 class Model(ABC):
@@ -138,15 +139,6 @@ class Model(ABC):
             y = self.model.predict(x)
             y_int = np.argmax(y, axis=len(y.shape) - 1)
             return y_int
-
-    def predict_with_prior(self, x, prior):
-        with self.graph.as_default():
-            y = self.model.predict(x)
-            y_priored = y / prior
-            y_int = np.argmax(y_priored, axis=len(y.shape) - 1)
-            return y_int
-
-
 
 
     @abstractmethod
@@ -292,6 +284,10 @@ class NextItemEarlyGameModel(Model):
         self.artifact_manager = ItemManager()
         self.load_model()
 
+        with open(glob.glob(self.model_path + "*thresholds*")[0]) as f:
+            self.thresholds = json.load(f)
+
+
     def predict(self, x):
         # with self.graph.as_default(), tf.Session() as sess:
         #     tflearn.is_training(False, session=sess)
@@ -304,9 +300,17 @@ class NextItemEarlyGameModel(Model):
         #         print(f"{i}: {log[i]}")
         # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
-        item_int = self.predict2int(x)
+        item_int = self.predict_with_prior(x)
         item = self.artifact_manager.lookup_by("int", item_int[0])
         return item
+
+
+    def predict_with_prior(self, x):
+        with self.graph.as_default():
+            y = self.model.predict(x)
+            y_priored = y / self.thresholds
+            y_int = np.argmax(y_priored, axis=len(y.shape) - 1)
+            return y_int
 
 
 

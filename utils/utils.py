@@ -68,7 +68,7 @@ def query_lol_dir():
     messagebox.showinfo("Information",
                         "We were unable to locate your League of Legends installation. Please select your main League of Legends folder.")
     loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
-    
+
     while not os.path.isdir(loldir + "/Game"):
         messagebox.showinfo("Information", "That wasn't it. Select the folder that has the Game folder in it.")
         loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")

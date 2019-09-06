@@ -118,45 +118,51 @@ class ProcessNextItemsTrainingData:
 
 
     # input is a list of games
-    def run_all_transformations(self, training_data, log_info):
+    def run_all_transformations(self, training_data, log_info, thread_index):
+
 
         if log_info is not None:
             print(log_info + " Starting determine roles")
         training_data = self.determine_roles(matches=training_data, log_info=log_info)
 
+
+
         if log_info is not None:
             print(log_info + " Determine roles complete.\n" + log_info + " Starting item undos roles")
         training_data = self.remove_undone_items(training_data, log_info)
+
+
         if log_info is not None:
             print(log_info + " Item undos complete.\n" + log_info + " Starting sort equal timestamp")
         training_data = self.sort_equal_timestamps(training_data, log_info)
+
+
+
         if log_info is not None:
             print(log_info + " Sort equal timestamp complete.\n" + log_info + " Starting absolute items")
         # with open("output", "w") as f:
         #     f.write(json.dumps(training_data))
         # absolute_items = self.build_absolute_item_timeline(matches_set, log_info)
-        training_data = (jq(self.jq_scripts["buildAbsoluteItemTimeline"]).transform([game]) for game in training_data)
+        training_data = (jq(self.jq_scripts["buildAbsoluteItemTimeline"]).transform([game]) for game in
+                            training_data)
+
+
         if log_info is not None:
             print(log_info + " Absolute items complete.\n" + log_info + " Starting Inflate items")
         # generator must be popped here, otherwise the next_items generator will be defined on this one and and skip
         # one item when this one advances
         training_data = list(self.inflate_items(matches=training_data, log_info=log_info))
 
+
         if log_info is not None:
             print(log_info + " inflate items complete.\n" + log_info + " Starting jq_next.")
-        next_items_early_game = list((jq(self.jq_scripts["extractNextItemsForWinningTeam"]).transform([game])[0] for
+        next_items_early_game = (jq(self.jq_scripts["extractNextItemsForWinningTeam"]).transform([game])[0] for
                                       game in
-                       training_data))
-
-        with open("output_inf", "w") as f:
-            f.write(json.dumps(training_data))
+                       training_data)
 
 
-        with open("output_next", "w") as f:
-            f.write(json.dumps(next_items_early_game))
 
-
-        next_items_late_game = list(self.deflate_next_items(matches=next_items_early_game, log_info=log_info))
+        next_items_late_game = self.deflate_next_items(matches=next_items_early_game, log_info=log_info)
         if log_info is not None:
             print(log_info + " jq_next complete.\n" + log_info + " Starting build_db")
         training_data_early_game = self.build_np_db_for_next_items(training_data, next_items_early_game, log_info=log_info)
@@ -457,6 +463,7 @@ class ProcessNextItemsTrainingData:
             f.write('[')
         for i, game in enumerate(matches):
             game = game[0]
+
             # print(log_info + " inflate_items {0:.0%} complete".format(i / len(matches)))
             out_itemsTimeline = []
             if i > 0 and out_file_name:
@@ -585,7 +592,7 @@ class ProcessNextItemsTrainingData:
                                                                thread_index=i: self.run_all_transformations(input_,
                                                                                                             "   Thread "
                                                                                                             "" + str(
-                                                                                                                thread_index)),
+                                                                                                                thread_index), thread_index),
                                                  10, app_constants.train_paths["next_items_early_processed"],
                                                  app_constants.train_paths["next_items_late_processed"],
                                                  i) for i in
@@ -666,7 +673,7 @@ class ProcessNextItemsTrainingData:
                 except ValueError as e:
                     print("ERROR: Probably more than 6 items for summoner: GameId: " + str(game_x['gameId']))
                     print(repr(e))
-                    raise e
+                    break
 
                 try:
                     team1_team_items_at_time_x = [self.item_manager.lookup_by("id", str(item))["int"] for item in
@@ -674,7 +681,9 @@ class ProcessNextItemsTrainingData:
                     team2_team_items_at_time_x = [self.item_manager.lookup_by("id", str(item))["int"] for item in
                                                   team2_team_items_at_time_x]
                 except KeyError as e:
+                    print("Error: KeyError")
                     print(e)
+                    break
 
                 x = tuple(np.concatenate([team1_team_champs,
                                           team2_team_champs,
@@ -686,11 +695,15 @@ class ProcessNextItemsTrainingData:
                 try:
                     y = [self.item_manager.lookup_by("id", str(item))["int"] for item in y]
                 except KeyError as e:
+                    print("Error: KeyError")
                     print(e)
+                    break
 
                 # don't include dupes. happens when someone buys a potion and consumes it
                 if x not in result:
                     result[x] = y
+            else:
+                continue
             # print(log_info + " build_db {0:.0%} complete".format(i / len(abs_inf)))
             i += 1
 
@@ -711,7 +724,7 @@ if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
     l = ProcessNextItemsTrainingData()
-    l.start()
+    l.start(num_threads=1)
     #
     # t = train.StaticTrainingDataTrainer()
     # t.build_next_items_model()

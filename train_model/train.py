@@ -46,6 +46,7 @@ class Trainer(ABC):
         self.logfile = None
         self.monitor_callback = None
         self.network = None
+        self.class_weights = 1
 
 
     @abstractmethod
@@ -78,6 +79,9 @@ class Trainer(ABC):
     def train_neural_network(self):
         with tf.device("/gpu:0"):
             with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+                tflearn.is_training(True)
+                self.network.network_config["class_weights"] = self.class_weights
+                self.network = self.network.build()
                 model = tflearn.DNN(self.network, session=sess)
                 sess.run(tf.global_variables_initializer())
                 scores = []
@@ -316,7 +320,7 @@ class DynamicTrainingDataTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["champ_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.champ_manager.get_imgs(), 100,
                                                                                ui_constants.NETWORK_CHAMP_IMG_CROP)
-        self.network = ChampImgNetwork().build()
+        self.network = ChampImgNetwork()
         self.X_test, _, _, self.Y_test, _, _ = self.load_img_test_data()
         self._build_new_img_model()
 
@@ -326,7 +330,7 @@ class DynamicTrainingDataTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["item_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.item_manager.get_imgs(), 100,
                                                                                ui_constants.NETWORK_ITEM_IMG_CROP)
-        self.network = ItemImgNetwork().build()
+        self.network = ItemImgNetwork()
         _, self.X_test, _, _, self.Y_test, _ = self.load_img_test_data()
         self._build_new_img_model()
 
@@ -336,7 +340,7 @@ class DynamicTrainingDataTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["self_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.self_manager.get_imgs(), 1024,
                                                                                ui_constants.NETWORK_SELF_IMG_CROP, True)
-        self.network = SelfImgNetwork().build()
+        self.network = SelfImgNetwork()
         _, _, self.X_test, _, _, self.Y_test = self.load_img_test_data()
         self._build_new_img_model()
 
@@ -380,12 +384,19 @@ class StaticTrainingDataTrainer(Trainer):
 
     def standalone_eval(self):
 
+        self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths[
+                                                                       "next_items_early_processed"]).get_train_data()
+        self.network = NextItemEarlyGameNetwork().build()
+        print("Loading test data")
+
+
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
         self.test_y_distrib = Counter(self.Y_test)
-        self.network = NextItemEarlyGameNetwork().build()
-        print("Loading test data")
-        self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"]).get_test_data()
+        lul = Counter(list(range(len(self.target_names)))) - self.test_y_distrib
+        for i in range(len(self.target_names)):
+            print(f"{self.test_y_distrib[i]}: {self.target_names[i]}:")
+
         model = tflearn.DNN(self.network)
         model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
         model_path = model_path.rpartition('.')[0]
@@ -457,11 +468,14 @@ class StaticTrainingDataTrainer(Trainer):
 
 
     def build_next_items_early_game_model(self):
-        self.target_names = [target["name"]  for target in sorted(list(ItemManager().get_ints().values()), key=lambda
-                x: x["int"])]
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+
+
+
         self.train_path = app_constants.model_paths["train"]["next_items_early"]
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
-        self.network = NextItemEarlyGameNetwork().build()
+
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
         self.X, self.Y = dataloader.get_train_data()
@@ -469,13 +483,18 @@ class StaticTrainingDataTrainer(Trainer):
         self.X_test, self.Y_test = dataloader.get_test_data()
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
+        total_y_distrib = self.train_y_distrib + self.test_y_distrib
+        missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
+        assert(missing_items == Counter([0]))
+        total_y = sum(list(total_y_distrib.values()))
+        self.class_weights = total_y / total_y_distrib
         self.build_new_model()
 
 
     def build_next_items_late_game_model(self):
         self.train_path = app_constants.model_paths["train"]["next_items_late"]
         self.best_path = app_constants.model_paths["best"]["next_items_late"]
-        self.network = NextItemLateGameNetwork().build()
+        self.network = NextItemLateGameNetwork()
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_late_processed"])
         self.X, self.Y = dataloader.get_train_data()
@@ -487,7 +506,7 @@ class StaticTrainingDataTrainer(Trainer):
     def build_positions_model(self):
         self.train_path = app_constants.model_paths["train"]["positions"]
         self.best_path = app_constants.model_paths["best"]["positions"]
-        self.network = PositionsNetwork().build()
+        self.network = PositionsNetwork()
         print("Loading training data")
         dataloader = data_loader.PositionsDataLoader()
         self.X, self.Y = dataloader.get_train_data()
@@ -499,18 +518,6 @@ class StaticTrainingDataTrainer(Trainer):
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
     t.build_next_items_early_game_model()
-    # t.best_path = app_constants.model_paths["best"]["next_items_early"]
-    # t.network = NextItemEarlyGameNetwork().build()
-    # dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
-    # print("Loading test data")
-    # t.X_test, t.Y_test = dataloader.get_test_data()
-    # model = tflearn.DNN(t.network)
-    # model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
-    # model_path = model_path.rpartition('.')[0]
-    # model.load(model_path)
-    # target_names = [item['name'] for item in list(ItemManager().get_ints().values())]
-    # with open("lololo", "w") as t.logfile:
-    #     t.eval_model(model, 0, target_names)
 
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()

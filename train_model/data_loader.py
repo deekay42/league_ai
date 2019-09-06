@@ -15,12 +15,14 @@ class DataLoaderBase(ABC):
         self.train_y = []
         self.test_x = []
         self.test_y = []
-        self.read_from_np_files()
-
 
     @abstractmethod
-    def read_from_np_files(self):
+    def read_test_from_np_files(self):
         pass
+
+    @abstractmethod
+    def read_train_from_np_files(self):
+       pass
 
     @abstractmethod
     def get_train_data(self):
@@ -66,17 +68,32 @@ class NextItemsDataLoader(DataLoaderBase):
 
 
     def get_test_data(self):
+        if not self.test_x:
+            self.read_test_from_np_files()
         return self._generate_train_test(self.test_x, self.test_y)
 
 
     def get_train_data(self):
+        if not self.train_x:
+            self.read_train_from_np_files()
         return self._generate_train_test(self.train_x, self.train_y)
 
 
-    def read_from_np_files(self):
-        if not self.train_x_filenames or not self.train_y_filenames \
-                or not self.test_x_filenames or not self.test_y_filenames:
-            raise FileNotFoundError("No train or test numpy files in that location")
+
+    def read_test_from_np_files(self):
+        if not self.test_x_filenames or not self.test_y_filenames:
+            raise FileNotFoundError("No test numpy files in that location")
+
+        for i in self.test_x_filenames:
+            data = np.load(i)['arr_0']
+            self.test_x += list(data)
+        for i in self.test_y_filenames:
+            data = np.load(i)['arr_0']
+            self.test_y += list(data)
+
+    def read_train_from_np_files(self):
+        if not self.train_x_filenames or not self.train_y_filenames:
+            raise FileNotFoundError("No train numpy files in that location")
 
         for i in self.train_x_filenames:
             data = np.load(i)['arr_0']
@@ -84,12 +101,6 @@ class NextItemsDataLoader(DataLoaderBase):
         for i in self.train_y_filenames:
             data = np.load(i)['arr_0']
             self.train_y += list(data)
-        for i in self.test_x_filenames:
-            data = np.load(i)['arr_0']
-            self.test_x += list(data)
-        for i in self.test_y_filenames:
-            data = np.load(i)['arr_0']
-            self.test_y += list(data)
 
 
 class PositionsDataLoader(DataLoaderBase):
@@ -101,6 +112,8 @@ class PositionsDataLoader(DataLoaderBase):
 
 
     def get_train_data(self):
+        if not self.train_x:
+            self.read_train_from_np_files()
         result_x, result_y = [], []
         order = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
         progress_counter = 0
@@ -120,6 +133,8 @@ class PositionsDataLoader(DataLoaderBase):
 
 
     def get_test_data(self):
+        if not self.test_x:
+            self.read_test_from_np_files()
         result_x, result_y = [], []
         order = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
         for x in self.test_x:
@@ -135,14 +150,19 @@ class PositionsDataLoader(DataLoaderBase):
                 result_y.append(np.ravel(positions))
         return np.array(result_x), np.array(result_y)
 
+    def read_test_from_np_files(self):
+        if not self.test_x_filenames or not self.test_y_filenames:
+            raise FileNotFoundError("No test numpy files in that location")
 
-    def read_from_np_files(self):
-        if not self.train_x_filenames or not self.test_x_filenames:
-            raise FileNotFoundError("No train or test numpy files in that location")
+        for i in self.test_x_filenames:
+            data = np.load(i)['arr_0']
+            self.test_x += list(data)
+
+
+    def read_train_from_np_files(self):
+        if not self.train_x_filenames or not self.train_y_filenames:
+            raise FileNotFoundError("No train numpy files in that location")
 
         for i in self.train_x_filenames:
             data = np.load(i)['arr_0']
             self.train_x += list(data)
-        for i in self.test_x_filenames:
-            data = np.load(i)['arr_0']
-            self.test_x += list(data)
