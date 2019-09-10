@@ -305,6 +305,9 @@ class NextItemEarlyGameModel(Model):
         return item
 
 
+    # first item is the empty item... don't want to include that
+
+
     def predict_with_prior(self, x):
         with self.graph.as_default():
             y = self.model.predict(x)

@@ -362,7 +362,10 @@ class StaticTrainingDataTrainer(Trainer):
 
     def eval_model(self, model, epoch, prior=None):
 
-        y_pred_prob = model.predict(np.array(self.X_test))
+        y_pred_prob = []
+        for chunk in utils.chunks(self.X_test, 1024):
+            y_pred_prob.extend(model.predict(np.array(chunk)))
+        y_pred_prob = np.array(y_pred_prob)
         if prior:
             y_pred_prob = y_pred_prob / prior
 
@@ -384,26 +387,28 @@ class StaticTrainingDataTrainer(Trainer):
 
     def standalone_eval(self):
 
+        with open(app_constants.model_paths["best"]["next_items_early"] + "my_model1_thresholds.json") as f:
+
+            thresholds = json.load(f)
         self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths[
-                                                                       "next_items_early_processed"]).get_train_data()
+                                                                       "next_items_early_processed"]).get_test_data()
         self.network = NextItemEarlyGameNetwork().build()
+        self.test_y_distrib = Counter(self.Y_test)
         print("Loading test data")
 
 
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
-        self.test_y_distrib = Counter(self.Y_test)
-        lul = Counter(list(range(len(self.target_names)))) - self.test_y_distrib
-        for i in range(len(self.target_names)):
-            print(f"{self.test_y_distrib[i]}: {self.target_names[i]}:")
+
 
         model = tflearn.DNN(self.network)
         model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
         model_path = model_path.rpartition('.')[0]
         model.load(model_path)
 
+
         with open("lololo", "w") as self.logfile:
-            thresholds = self.eval_model(model, 0)[-1]
+            # thresholds = self.eval_model(model, 0)[-1]
             self.eval_model(model, 0, prior=thresholds)[-1]
 
 
@@ -412,12 +417,16 @@ class StaticTrainingDataTrainer(Trainer):
         scores = np.array([self.calc_metrics_for_one_class((Y_true == i).astype(int), Y_pred_prob[:,
                                                                                       i], i) for i in range(num)])
         zero_counts = Counter(range(num)) - self.test_y_distrib
+        nonzero_counts = Counter(range(num)) - zero_counts
         zero_count_indices = list(zero_counts.keys())
+        nonzero_count_indices = list(nonzero_counts.keys())
         num_nonzeros = num - len(zero_count_indices)
-        scores = np.delete(scores, zero_count_indices, axis=0)
         avg_auc = sum(scores[:, 0]) / num_nonzeros
         avg_f1 = sum(scores[:, 1]) / num_nonzeros
         thresholds = scores[:, 2]
+        thresholds[zero_count_indices] = min(thresholds[nonzero_count_indices])
+        #make sure empty item never appears
+        thresholds[0] = 1000
         return avg_auc, avg_f1, thresholds
 
 
@@ -470,24 +479,30 @@ class StaticTrainingDataTrainer(Trainer):
     def build_next_items_early_game_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
-
-
-
+        self.network = NextItemEarlyGameNetwork()
         self.train_path = app_constants.model_paths["train"]["next_items_early"]
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
 
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
-        self.X, self.Y = dataloader.get_train_data()
+        # self.X, self.Y = dataloader.get_train_data()
+        self.X, self.Y = dataloader.get_test_data()
         print("Loading test data")
-        self.X_test, self.Y_test = dataloader.get_test_data()
-        self.train_y_distrib = Counter(self.Y)
-        self.test_y_distrib = Counter(self.Y_test)
-        total_y_distrib = self.train_y_distrib + self.test_y_distrib
+        self.X_test, self.Y_test = self.X, self.Y
+        # self.train_y_distrib = Counter(self.Y_test)
+        self.test_y_distrib = Counter(self.Y)
+        total_y_distrib = self.test_y_distrib
+        # total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
-        assert(missing_items == Counter([0]))
+        # assert(missing_items == Counter([0]))
         total_y = sum(list(total_y_distrib.values()))
-        self.class_weights = total_y / total_y_distrib
+        total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
+                                                                               missing_items).items()),
+                                                                      key=lambda x: x[0]))[:,1]])
+
+        self.class_weights = total_y / total_y_distrib_sorted
+        #don't include weights for empty item
+        self.class_weights[0] = 0
         self.build_new_model()
 
 
@@ -517,8 +532,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    t.build_next_items_early_game_model()
-
+    #t.build_next_items_early_game_model()
+    t.standalone_eval()
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()
 
