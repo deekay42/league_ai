@@ -123,6 +123,8 @@ class Trainer(ABC):
                     # print("Actual test data  values : {0}".format(self.Y_test))
 
                     score = self.eval_model(model, epoch)
+
+                    self.eval_model(model, epoch, prior=score[-1])
                     scores.append(score)
         return scores
 
@@ -361,7 +363,6 @@ class StaticTrainingDataTrainer(Trainer):
 
 
     def eval_model(self, model, epoch, prior=None):
-
         y_pred_prob = []
         for chunk in utils.chunks(self.X_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
@@ -485,15 +486,15 @@ class StaticTrainingDataTrainer(Trainer):
 
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
-        # self.X, self.Y = dataloader.get_train_data()
-        self.X, self.Y = dataloader.get_test_data()
+        self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
-        self.X_test, self.Y_test = self.X, self.Y
-        # self.train_y_distrib = Counter(self.Y_test)
+        self.X_test, self.Y_test = dataloader.get_test_data()
+        self.train_y_distrib = Counter(self.Y_test)
         self.test_y_distrib = Counter(self.Y)
-        total_y_distrib = self.test_y_distrib
-        # total_y_distrib = self.train_y_distrib + self.test_y_distrib
+
+        total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
+        print(f"missing items are: {missing_items}")
         # assert(missing_items == Counter([0]))
         total_y = sum(list(total_y_distrib.values()))
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
@@ -532,8 +533,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    #t.build_next_items_early_game_model()
-    t.standalone_eval()
+    t.build_next_items_early_game_model()
+    #t.standalone_eval()
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()
 
