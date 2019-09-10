@@ -79,7 +79,6 @@ class NextItemsDataLoader(DataLoaderBase):
         return self._generate_train_test(self.train_x, self.train_y)
 
 
-
     def read_test_from_np_files(self):
         if not self.test_x_filenames or not self.test_y_filenames:
             raise FileNotFoundError("No test numpy files in that location")
@@ -90,6 +89,8 @@ class NextItemsDataLoader(DataLoaderBase):
         for i in self.test_y_filenames:
             data = np.load(i)['arr_0']
             self.test_y += list(data)
+            if np.argmax(np.ravel(self.test_y) == 185) != 0:
+                pass
 
     def read_train_from_np_files(self):
         if not self.train_x_filenames or not self.train_y_filenames:

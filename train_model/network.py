@@ -244,7 +244,7 @@ class NextItemNetwork(Network):
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
                 "total_num_champs": ChampManager().get_num("int"),
-                #first item is the empty item... don't want to include that
+
                 "total_num_items": ItemManager().get_num("int"),
                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
             }
@@ -363,27 +363,31 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         final_input_layer = merge(
             [pos, target_summ_champ, target_summ_items, champs_with_items_emb, champs],
             mode='concat', axis=1)
-        final_input_layer = dropout(final_input_layer, 0.9)
+        # final_input_layer = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.9)
         # net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
 
+
+        net = fully_connected(net, total_num_items, activation='linear')
+
         is_training = tflearn.get_training_mode()
-        net = fully_connected(net, total_num_items, activation='linear' if is_training else 'softmax')
+        inference_output = tf.nn.softmax(net)
+
+        net = tf.cond(is_training, lambda: net, lambda: inference_output)
 
         # TODO: consider using item embedding layer as output layer...
         return regression(net, optimizer='adam', to_one_hot=True, n_classes=total_num_items, shuffle_batches=True,
                           learning_rate=learning_rate,
-                          loss=NextItemEarlyGameNetwork.class_weighted_sm_ce_loss,
+                          loss=self.class_weighted_sm_ce_loss,
                           name='target')
 
-@staticmethod
-def class_weighted_sm_ce_loss(y_pred, y_true):
 
-    class_weights = tf.reduce_sum(tf.multiply(labels_one_hot, tf.reshape(self.network_config[
-                                        "class_weights"], (-1, 1))), 1)
-    return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
+    def class_weighted_sm_ce_loss(self, y_pred, y_true):
+        class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
+                                            "class_weights"], dtype=tf.float32)), 1)
+        return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
 
 #
 # class NextItemEarlyGameNetwork(NextItemNetwork):
