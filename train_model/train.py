@@ -389,7 +389,6 @@ class StaticTrainingDataTrainer(Trainer):
     def standalone_eval(self):
 
         with open(app_constants.model_paths["best"]["next_items_early"] + "my_model1_thresholds.json") as f:
-
             thresholds = json.load(f)
         self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths[
                                                                        "next_items_early_processed"]).get_test_data()
@@ -489,8 +488,8 @@ class StaticTrainingDataTrainer(Trainer):
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
-        self.train_y_distrib = Counter(self.Y_test)
-        self.test_y_distrib = Counter(self.Y)
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
 
         total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
@@ -533,8 +532,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    t.build_next_items_early_game_model()
-    #t.standalone_eval()
+    # t.build_next_items_early_game_model()
+    t.standalone_eval()
     # s = DynamicTrainingDataTrainer()
     # s.build_new_self_model()
 

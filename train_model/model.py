@@ -284,7 +284,7 @@ class NextItemEarlyGameModel(Model):
         self.artifact_manager = ItemManager()
         self.load_model()
 
-        with open(glob.glob(self.model_path + "*thresholds*")[0]) as f:
+        with open(glob.glob('models/best/next_items/early/thresholds*')[0]) as f:
             self.thresholds = json.load(f)
 
 
