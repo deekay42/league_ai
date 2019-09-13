@@ -80,7 +80,6 @@ class Trainer(ABC):
         with tf.device("/gpu:0"):
             with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
                 tflearn.is_training(True)
-                self.network.network_config["class_weights"] = self.class_weights
                 self.network = self.network.build()
                 model = tflearn.DNN(self.network, session=sess)
                 sess.run(tf.global_variables_initializer())
@@ -377,7 +376,7 @@ class StaticTrainingDataTrainer(Trainer):
         y_pred = np.argmax(y_pred_prob, axis=1)
 
         acc = sum(np.equal(y_pred, self.Y_test)) / len(self.Y_test)
-        weighted_acc = self.network.weighted_accuracy(y_pred, self.Y_test, None)
+        weighted_acc = NextItemEarlyGameNetwork.weighted_accuracy(y_pred, self.Y_test, None)
         precision, recall, f1, support = precision_recall_fscore_support(self.Y_test, y_pred, average='macro')
 
         report = classification_report(self.Y_test, y_pred, labels=range(len(self.target_names)),
@@ -392,13 +391,34 @@ class StaticTrainingDataTrainer(Trainer):
 
     def standalone_eval(self):
 
-        with open(app_constants.model_paths["best"]["next_items_early"] + "my_model1_thresholds.json") as f:
-            thresholds = json.load(f)
-        self.X_test, self.Y_test = data_loader.NextItemsDataLoader(app_constants.train_paths[
-                                                                       "next_items_early_processed"]).get_test_data()
-        self.network = NextItemEarlyGameNetwork().build()
-        self.test_y_distrib = Counter(self.Y_test)
+        # with open(app_constants.model_paths["best"]["next_items_early"] + "my_model1_thresholds.json") as f:
+        #     thresholds = json.load(f)
+        thresholds = 1
+        print("Loading training data")
+        dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
+        self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
+        self.X_test, self.Y_test = dataloader.get_test_data()
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+
+        total_y_distrib = self.train_y_distrib + self.test_y_distrib
+        missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
+        print(f"missing items are: {missing_items}")
+        # assert(missing_items == Counter([0]))
+        total_y = sum(list(total_y_distrib.values()))
+        total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
+                                                                                    missing_items).items()),
+                                                                              key=lambda x: x[0]))[:, 1]])
+        self.class_weights = total_y / total_y_distrib_sorted
+        # don't include weights for empty item
+        self.class_weights[0] = 0
+        self.network.network_config["class_weights"] = self.class_weights
+
+
+        self.network = NextItemEarlyGameNetwork().build()
+
+
 
 
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
@@ -413,7 +433,7 @@ class StaticTrainingDataTrainer(Trainer):
 
         with open("lololo", "w") as self.logfile:
             # thresholds = self.eval_model(model, 0)[-1]
-            self.eval_model(model, 0, prior=thresholds)[-1]
+            self.eval_model(model, 0)[-1]
 
 
     def get_cum_scores(self, Y_true, Y_pred_prob):
@@ -506,8 +526,10 @@ class StaticTrainingDataTrainer(Trainer):
                                                                                missing_items).items()),
                                                                       key=lambda x: x[0]))[:,1]])
         self.class_weights = total_y / total_y_distrib_sorted
+
         #don't include weights for empty item
         self.class_weights[0] = 0
+        self.network.network_config["class_weights"] = self.class_weights
         self.build_new_model()
 
 
