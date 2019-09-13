@@ -124,7 +124,7 @@ class Trainer(ABC):
 
                     score = self.eval_model(model, epoch)
 
-                    self.eval_model(model, epoch, prior=score[-1])
+                    # self.eval_model(model, epoch, prior=score[-1])
                     scores.append(score)
         return scores
 
@@ -318,6 +318,7 @@ class DynamicTrainingDataTrainer(Trainer):
 
 
     def build_new_champ_model(self):
+        self.class_weights = 1
         self.train_path = app_constants.model_paths["train"]["champ_imgs"]
         self.best_path = app_constants.model_paths["best"]["champ_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.champ_manager.get_imgs(), 100,
@@ -328,6 +329,7 @@ class DynamicTrainingDataTrainer(Trainer):
 
 
     def build_new_item_model(self):
+        self.class_weights = 1
         self.train_path = app_constants.model_paths["train"]["item_imgs"]
         self.best_path = app_constants.model_paths["best"]["item_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.item_manager.get_imgs(), 100,
@@ -338,6 +340,7 @@ class DynamicTrainingDataTrainer(Trainer):
 
 
     def build_new_self_model(self):
+        self.class_weights = 1
         self.train_path = app_constants.model_paths["train"]["self_imgs"]
         self.best_path = app_constants.model_paths["best"]["self_imgs"]
         self.training_data_generator = lambda: generate.generate_training_data(self.self_manager.get_imgs(), 1024,
@@ -374,6 +377,7 @@ class StaticTrainingDataTrainer(Trainer):
         y_pred = np.argmax(y_pred_prob, axis=1)
 
         acc = sum(np.equal(y_pred, self.Y_test)) / len(self.Y_test)
+        weighted_acc = self.network.weighted_accuracy(y_pred, self.Y_test, None)
         precision, recall, f1, support = precision_recall_fscore_support(self.Y_test, y_pred, average='macro')
 
         report = classification_report(self.Y_test, y_pred, labels=range(len(self.target_names)),
@@ -381,7 +385,7 @@ class StaticTrainingDataTrainer(Trainer):
         # confusion = confusion_matrix(self.Y_test, y_pred)
         avg_binary_auc, avg_binary_f1, thresholds = self.get_cum_scores(self.Y_test, y_pred_prob)
 
-        self.log_output(acc, f1, precision, recall, avg_binary_f1, avg_binary_auc,
+        self.log_output(acc, weighted_acc, f1, precision, recall, avg_binary_f1, avg_binary_auc,
                         report, thresholds, epoch)
 
         return avg_binary_f1, avg_binary_auc, acc, precision, recall, f1, thresholds
@@ -445,19 +449,21 @@ class StaticTrainingDataTrainer(Trainer):
         return auc_score, f1_scores[max_f1_index], thresholds[max_f1_index]
 
 
-    def log_output(self, main_test_eval, f1, precision, recall, avg_binary_f1, avg_binary_auc, classification,
+    def log_output(self, main_test_eval, weighted_acc, f1, precision, recall, avg_binary_f1, avg_binary_auc, \
+                                                    classification,
                    thresholds,
                    epoch_counter):
 
         for output in [sys.stdout, self.logfile]:
             output.write("Epoch {0}\n".format(epoch_counter + 1))
             output.write("1. Acc {0:.4f}\n".format(main_test_eval))
-            output.write('2. F-1 {0:.4f}\n'.format(f1))
-            output.write('3. Precision {0:.4f}\n'.format(precision))
-            output.write('4. Recall {0:.4f}\n'.format(recall))
-            output.write('5. Avg binary F1 {0:.4f}\n'.format(avg_binary_f1))
-            output.write('6. Avg binary auc {0:.4f}\n'.format(avg_binary_auc))
-            output.write('7. Classification report \n {} \n'.format(classification))
+            output.write("2. Weighted Acc {0:.4f}\n".format(weighted_acc))
+            output.write('3. F-1 {0:.4f}\n'.format(f1))
+            output.write('4. Precision {0:.4f}\n'.format(precision))
+            output.write('5. Recall {0:.4f}\n'.format(recall))
+            output.write('6. Avg binary F1 {0:.4f}\n'.format(avg_binary_f1))
+            output.write('7. Avg binary auc {0:.4f}\n'.format(avg_binary_auc))
+            output.write('8. Classification report \n {} \n'.format(classification))
             output.write("\n\n")
             output.flush()
 
@@ -499,7 +505,6 @@ class StaticTrainingDataTrainer(Trainer):
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
                                                                                missing_items).items()),
                                                                       key=lambda x: x[0]))[:,1]])
-
         self.class_weights = total_y / total_y_distrib_sorted
         #don't include weights for empty item
         self.class_weights[0] = 0
@@ -532,10 +537,10 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    # t.build_next_items_early_game_model()
-    t.standalone_eval()
+    t.build_next_items_early_game_model()
+    # t.standalone_eval()
     # s = DynamicTrainingDataTrainer()
-    # s.build_new_self_model()
+    # s.build_new_item_model()
 
     # res_cvt = ui_constants.ResConverter(1920, 1080)
     # model = ItemImgModel(res_cvt, True)
