@@ -401,6 +401,8 @@ class StaticTrainingDataTrainer(Trainer):
         self.X_test, self.Y_test = dataloader.get_test_data()
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
 
         total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
@@ -417,13 +419,6 @@ class StaticTrainingDataTrainer(Trainer):
 
 
         self.network = NextItemEarlyGameNetwork().build()
-
-
-
-
-        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
-            x: x["int"])]
-
 
         model = tflearn.DNN(self.network)
         model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
