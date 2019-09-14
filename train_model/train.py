@@ -559,8 +559,8 @@ class StaticTrainingDataTrainer(Trainer):
 
 if __name__ == "__main__":
     t = StaticTrainingDataTrainer()
-    #t.build_next_items_early_game_model()
-    t.standalone_eval()
+    t.build_next_items_early_game_model()
+    #t.standalone_eval()
     # s = DynamicTrainingDataTrainer()
     # s.build_new_item_model()
 

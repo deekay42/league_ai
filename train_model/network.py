@@ -452,6 +452,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         item_ints = in_vec[:, champs_per_game + 1:]
 
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
+        opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
+        opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
         target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
@@ -464,14 +466,16 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
-        # pos = tf.one_hot(pos, depth=champs_per_team)
+        pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [target_summ_champ, target_summ_items, opp_summ_champ, opp_summ_items],
+            [pos, target_summ_champ, target_summ_items, opp_summ_champ, opp_summ_items, opp_champs_k_hot],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
-        net = fully_connected(final_input_layer, 512, activation='relu')
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
+                                                regularizer="L2"))
         # net = dropout(net, 0.9)
-        net = fully_connected(net, 256, activation='relu')
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)
