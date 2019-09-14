@@ -490,13 +490,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
 
     def weighted_accuracy(self, preds, targets, input_):
-        return weighted_accuracy(preds, targets, self.network_config["class_weights"])
+        targets_sparse = tf.argmax(targets, axis=-1)
+        preds_sparse = tf.argmax(preds, axis=-1)
+        return weighted_accuracy(preds_sparse, targets_sparse, self.network_config["class_weights"])
 
 
-def weighted_accuracy(preds, targets, class_weights):
-    targets_sparse = tf.argmax(targets, axis=-1)
+def weighted_accuracy(preds_sparse, targets_sparse, class_weights):
     max_achievable_score = tf.reduce_sum(tf.gather(class_weights, targets_sparse))
-    preds_sparse = tf.argmax(preds, axis=-1)
     matching_preds_sparse = tf.boolean_mask(targets_sparse, tf.equal(targets_sparse, preds_sparse))
     actually_achieved_score = tf.reduce_sum(tf.gather(class_weights, matching_preds_sparse))
     return actually_achieved_score / max_achievable_score
