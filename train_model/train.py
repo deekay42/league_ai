@@ -376,7 +376,7 @@ class StaticTrainingDataTrainer(Trainer):
         y_pred = np.argmax(y_pred_prob, axis=1)
 
         acc = sum(np.equal(y_pred, self.Y_test)) / len(self.Y_test)
-        weighted_acc = NextItemEarlyGameNetwork.weighted_accuracy(y_pred, self.Y_test, None)
+        weighted_acc = weighted_accuracy(y_pred, self.Y_test, self.class_weights)
         precision, recall, f1, support = precision_recall_fscore_support(self.Y_test, y_pred, average='macro')
 
         report = classification_report(self.Y_test, y_pred, labels=range(len(self.target_names)),
