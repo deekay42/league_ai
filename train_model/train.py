@@ -415,10 +415,12 @@ class StaticTrainingDataTrainer(Trainer):
         self.class_weights = total_y / total_y_distrib_sorted
         # don't include weights for empty item
         self.class_weights[0] = 0
+
+        self.network = NextItemEarlyGameNetwork()
         self.network.network_config["class_weights"] = self.class_weights
+        self.network = self.network.build()
 
 
-        self.network = NextItemEarlyGameNetwork().build()
 
         model = tflearn.DNN(self.network)
         model_path = glob.glob(app_constants.model_paths["best"]["next_items_early"] + "my_model*")[0]
