@@ -414,7 +414,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 "learning_rate": 0.00025,
                 "champ_emb_dim": 3,
                 "all_items_emb_dim": 6,
-                "champ_all_items_emb_dim": 8
+                "champ_all_items_emb_dim": 8,
+                "class_weights": [1]
             }
 
 
@@ -451,6 +452,10 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # 60 elements long
         item_ints = in_vec[:, champs_per_game + 1:]
 
+        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
+                                                                       reuse=tf.AUTO_REUSE,
+                                                               scope="champ_scope")
+
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
@@ -463,12 +468,27 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
         items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
+        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False, activation=None,
+                                                    reuse=tf.AUTO_REUSE,
+                                                    scope="item_sum_scope")
+        summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
+
+        summed_items_by_champ_exp = tf.expand_dims(summed_items_by_champ, -1)
+        champs_exp = tf.expand_dims(champs_embedded, -2)
+        champs_with_items = tf.multiply(champs_exp, summed_items_by_champ_exp)
+        champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * all_items_emb_dim))
+        champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+        champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game * champ_all_items_emb_dim))
+
+
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_items, opp_summ_champ, opp_summ_items, opp_champs_k_hot],
+            [pos, target_summ_champ, target_summ_items, opp_summ_champ, opp_summ_items, opp_champs_k_hot, champs_with_items_emb],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
