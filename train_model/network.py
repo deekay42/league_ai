@@ -463,6 +463,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
 
+        target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
+        opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
+
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
         items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
         items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
@@ -488,7 +491,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_items, opp_summ_champ, opp_summ_items, opp_champs_k_hot, champs_with_items_emb],
+            [pos, target_summ_champ_emb, target_summ_items, opp_summ_champ_emb, opp_summ_items, opp_champs_k_hot,
+             champs_with_items_emb],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
