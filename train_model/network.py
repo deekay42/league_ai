@@ -550,7 +550,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                     items_by_int_list_sorted]
         items_by_int_list_sorted_unique = np.array(list(itertools.zip_longest(*items_by_int_list_sorted_unique,
                                                                               fillvalue=-1))).T
-        items_by_int = tf.constant(items_by_int_list_sorted_unique)
+        items_by_int = tf.constant(items_by_int_list_sorted_unique, dtype=tf.int32)
         target_summ_items_sparse_flat = tf.reshape(target_summ_items_sparse, (-1,))
         target_summ_item_effects = tf.gather(items_by_int, tf.cast(target_summ_items_sparse_flat, tf.int32))
         pred_item_effects = tf.gather(items_by_int, tf.cast(sparse_pred, tf.int32))
