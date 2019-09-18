@@ -553,7 +553,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         items_by_int = tf.constant(items_by_int_list_sorted_unique)
         target_summ_items_sparse_flat = tf.reshape(target_summ_items_sparse, (-1,))
         target_summ_item_effects = tf.gather(items_by_int, tf.cast(target_summ_items_sparse_flat, tf.int32))
-        pred_item_effects = tf.gather(items_by_int, sparse_pred)
+        pred_item_effects = tf.gather(items_by_int, tf.cast(sparse_pred, tf.int32))
         pred_item_effects_one_hot = tf.one_hot(pred_item_effects, depth=self.game_config["total_num_items"])
         pred_item_effects_k_hot = tf.reduce_sum(pred_item_effects_one_hot, axis=-2)
 
