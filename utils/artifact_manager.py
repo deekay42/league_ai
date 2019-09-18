@@ -178,8 +178,14 @@ class ItemManager:
 
 
         def get_num_completes(self):
-            return sum([1 if "completion" in artifact and artifact["completion"]=="complete" or artifact[
-                "completion"]=="semi" else 0 for artifact in self._by["int"].values()])
+            return sum([1 if "completion" in artifact and (artifact["completion"]=="complete" or artifact[
+                "completion"]=="semi") else 0 for artifact in self._by["int"].values()])
+
+
+        def get_completes(self):
+            return [artifact for artifact in self._by["int"].values() if "completion" in artifact and (artifact[
+                                                                                                           "completion"] == "complete" or artifact[
+                "completion"] == "semi")]
 
 
 class SelfManager:
