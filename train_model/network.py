@@ -502,6 +502,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
+        net = merge([net, target_summ_items], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)
