@@ -544,50 +544,50 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
                                             "class_weights"], dtype=tf.float32)), 1)
-        sparse_pred = tf.argmax(y_pred, axis=1)
-        items_by_int_list_sorted = sorted([artifact for artifact in ItemManager().get_ints().values()], key=lambda
-            artifact: artifact["int"])
-        items_by_int_list_sorted_unique = [artifact["unique"] if "unique" in artifact else [] for artifact in
-                                    items_by_int_list_sorted]
-        items_by_int_list_sorted_unique = np.array(list(itertools.zip_longest(*items_by_int_list_sorted_unique,
-                                                                              fillvalue=-1))).T
-        items_by_int = tf.constant(items_by_int_list_sorted_unique, dtype=tf.int32)
-        target_summ_items_sparse_flat = tf.reshape(target_summ_items_sparse, (-1,))
-        target_summ_item_effects = tf.gather(items_by_int, tf.cast(target_summ_items_sparse_flat, tf.int32))
-        pred_item_effects = tf.gather(items_by_int, tf.cast(sparse_pred, tf.int32))
-        pred_item_effects_one_hot = tf.one_hot(pred_item_effects, depth=self.game_config["total_num_items"])
-        pred_item_effects_k_hot = tf.reduce_sum(pred_item_effects_one_hot, axis=-2)
-
-
-        target_summ_item_effects_k_hot = tf.reduce_sum(tf.one_hot(target_summ_item_effects, depth=self.game_config[
-            "total_num_items"]), axis=-2)
-        target_summ_item_effects_k_hot = tf.reshape(target_summ_item_effects_k_hot, (-1,self.game_config[
-            "items_per_champ"], self.game_config["total_num_items"]))
-        pred_item_effects_k_hot = tf.tile(pred_item_effects_k_hot, multiples=[1,self.game_config["items_per_champ"]])
-        pred_item_effects_k_hot = tf.reshape(pred_item_effects_k_hot, (-1,self.game_config["items_per_champ"], self.game_config["total_num_items"]))
-
-        # penalize if intersection and (not superset or is_equal)
-        # == (intersection and not superset) or (intersection and is_equal)
-
-        new_and_old_item_has_effect_overlap = tf.math.logical_and(tf.cast(target_summ_item_effects_k_hot, tf.bool),
-                                           tf.cast(pred_item_effects_k_hot, tf.bool))
-
-        new_and_old_item_has_effect_overlap_sparse = tf.math.reduce_any(new_and_old_item_has_effect_overlap, axis=-1)
-
-        new_item_is_superset = tf.equal(new_and_old_item_has_effect_overlap, tf.cast(target_summ_item_effects_k_hot, tf.bool))
-        new_item_is_superset_sparse = tf.math.reduce_all(new_item_is_superset, axis=-1)
-
-        new_item_equal_old_item = tf.equal(tf.cast(target_summ_item_effects_k_hot, tf.bool),
-                                           tf.cast(pred_item_effects_k_hot, tf.bool))
-        new_item_equal_old_item_sparse = tf.math.reduce_all(new_item_equal_old_item, axis=-1)
-
-        bad_predictions_by_batch_index_by_item = tf.math.logical_or(tf.math.logical_and(
-            new_and_old_item_has_effect_overlap_sparse, tf.math.logical_not(
-            new_item_is_superset_sparse)), tf.math.logical_and(new_and_old_item_has_effect_overlap_sparse, new_item_equal_old_item_sparse))
-        bad_predictions_by_batch_index = tf.math.reduce_any(bad_predictions_by_batch_index_by_item, axis = -1)
-
-
-        class_weights = class_weights + tf.cast(bad_predictions_by_batch_index, tf.float32) * max(self.network_config["class_weights"])
+        # sparse_pred = tf.argmax(y_pred, axis=1)
+        # items_by_int_list_sorted = sorted([artifact for artifact in ItemManager().get_ints().values()], key=lambda
+        #     artifact: artifact["int"])
+        # items_by_int_list_sorted_unique = [artifact["unique"] if "unique" in artifact else [] for artifact in
+        #                             items_by_int_list_sorted]
+        # items_by_int_list_sorted_unique = np.array(list(itertools.zip_longest(*items_by_int_list_sorted_unique,
+        #                                                                       fillvalue=-1))).T
+        # items_by_int = tf.constant(items_by_int_list_sorted_unique, dtype=tf.int32)
+        # target_summ_items_sparse_flat = tf.reshape(target_summ_items_sparse, (-1,))
+        # target_summ_item_effects = tf.gather(items_by_int, tf.cast(target_summ_items_sparse_flat, tf.int32))
+        # pred_item_effects = tf.gather(items_by_int, tf.cast(sparse_pred, tf.int32))
+        # pred_item_effects_one_hot = tf.one_hot(pred_item_effects, depth=self.game_config["total_num_items"])
+        # pred_item_effects_k_hot = tf.reduce_sum(pred_item_effects_one_hot, axis=-2)
+        #
+        #
+        # target_summ_item_effects_k_hot = tf.reduce_sum(tf.one_hot(target_summ_item_effects, depth=self.game_config[
+        #     "total_num_items"]), axis=-2)
+        # target_summ_item_effects_k_hot = tf.reshape(target_summ_item_effects_k_hot, (-1,self.game_config[
+        #     "items_per_champ"], self.game_config["total_num_items"]))
+        # pred_item_effects_k_hot = tf.tile(pred_item_effects_k_hot, multiples=[1,self.game_config["items_per_champ"]])
+        # pred_item_effects_k_hot = tf.reshape(pred_item_effects_k_hot, (-1,self.game_config["items_per_champ"], self.game_config["total_num_items"]))
+        #
+        # # penalize if intersection and (not superset or is_equal)
+        # # == (intersection and not superset) or (intersection and is_equal)
+        #
+        # new_and_old_item_has_effect_overlap = tf.math.logical_and(tf.cast(target_summ_item_effects_k_hot, tf.bool),
+        #                                    tf.cast(pred_item_effects_k_hot, tf.bool))
+        #
+        # new_and_old_item_has_effect_overlap_sparse = tf.math.reduce_any(new_and_old_item_has_effect_overlap, axis=-1)
+        #
+        # new_item_is_superset = tf.equal(new_and_old_item_has_effect_overlap, tf.cast(target_summ_item_effects_k_hot, tf.bool))
+        # new_item_is_superset_sparse = tf.math.reduce_all(new_item_is_superset, axis=-1)
+        #
+        # new_item_equal_old_item = tf.equal(tf.cast(target_summ_item_effects_k_hot, tf.bool),
+        #                                    tf.cast(pred_item_effects_k_hot, tf.bool))
+        # new_item_equal_old_item_sparse = tf.math.reduce_all(new_item_equal_old_item, axis=-1)
+        #
+        # bad_predictions_by_batch_index_by_item = tf.math.logical_or(tf.math.logical_and(
+        #     new_and_old_item_has_effect_overlap_sparse, tf.math.logical_not(
+        #     new_item_is_superset_sparse)), tf.math.logical_and(new_and_old_item_has_effect_overlap_sparse, new_item_equal_old_item_sparse))
+        # bad_predictions_by_batch_index = tf.math.reduce_any(bad_predictions_by_batch_index_by_item, axis = -1)
+        #
+        #
+        # class_weights = class_weights + tf.cast(bad_predictions_by_batch_index, tf.float32) * max(self.network_config["class_weights"])
 
         return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
 
