@@ -1,22 +1,17 @@
+import glob
+import threading
+from abc import ABC, abstractmethod
+
+import cv2 as cv
 import numpy as np
 import tensorflow as tf
 import tflearn
-import glob
-from abc import ABC, abstractmethod
-import cv2 as cv
-from tflearn.layers.core import fully_connected, input_data, dropout
-from tflearn.layers.embedding_ops import embedding
-from tflearn.layers.estimator import regression
 from tflearn.layers.merge_ops import merge
-from train_model import network
-from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
+
 from constants import ui_constants, game_constants, app_constants
-import threading
-from utils import utils
-from tflearn.layers.embedding_ops import embedding
-import tflearn
-from utils import cass_configured as cass
-import json
+from train_model import network
+from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager, CurrentGoldManager, \
+    KDAManager, CSManager, LvlManager
 
 
 class Model(ABC):
@@ -37,7 +32,7 @@ class Model(ABC):
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
             self.session.run(tf.global_variables_initializer())
-            try:        
+            try:
                 self.model_path = glob.glob(self.model_path + "my_model*")[0]
                 self.model_path = self.model_path.rpartition('.')[0]
                 model.load(self.model_path, create_new_session=False)
@@ -46,7 +41,9 @@ class Model(ABC):
                 raise e
             self.model = model
 
+
     def output_logs(self, in_vec):
+        sess = tf.InteractiveSession()
         game_config = \
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
@@ -66,8 +63,6 @@ class Model(ABC):
                 "target_summ": 1
             }
 
-
-
         champs_per_game = game_config["champs_per_game"]
         total_num_champs = game_config["total_num_champs"]
         total_num_items = game_config["total_num_items"]
@@ -81,58 +76,92 @@ class Model(ABC):
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
 
+        pos_start = 0
+        pos_end = pos_start + 1
+        champs_start = pos_end
+        champs_end = champs_start + champs_per_game
+        items_start = champs_end
+        items_end = items_start + items_per_champ * 2 * champs_per_game
+        total_gold_start = items_end
+        total_gold_end = total_gold_start + champs_per_game
+        cs_start = total_gold_end
+        cs_end = cs_start + champs_per_game
+        neutral_cs_start = cs_end
+        neutral_cs_end = neutral_cs_start + champs_per_game
+        xp_start = neutral_cs_end
+        xp_end = xp_start + champs_per_game
+        lvl_start = xp_end
+        lvl_end = lvl_start + champs_per_game
+        kda_start = lvl_end
+        kda_end = kda_start + champs_per_game * 3
+        current_gold_start = kda_end
+        current_gold_end = current_gold_start + champs_per_game
 
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
+
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
         pos_index = tf.transpose([batch_index, pos], (1, 0))
+        opp_index = tf.transpose([batch_index, pos + champs_per_team], (1, 0))
 
         # Make tensor of indices for the first dimension
 
         #  10 elements long
-        champ_ints = in_vec[:, 1:champs_per_game + 1]
+        champ_ints = in_vec[:, champs_start:champs_end]
         # 60 elements long
-        item_ints = in_vec[:, champs_per_game + 1:]
-        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
-                                    reuse=tf.AUTO_REUSE,
-                                    scope="champ_scope")
-        target_summ_champ = tf.gather_nd(champs_embedded, pos_index)
+        item_ints = in_vec[:, items_start:items_end]
+        cs = in_vec[:, cs_start:cs_end]
+        neutral_cs = in_vec[:, neutral_cs_start:neutral_cs_end]
+        lvl = in_vec[:, lvl_start:lvl_end]
+        kda = in_vec[:, kda_start:kda_end]
+        current_gold = in_vec[:, current_gold_start:current_gold_end]
+        total_cs = cs + neutral_cs
 
-        champs = tf.reshape(champs_embedded, [-1, champs_per_game * champ_emb_dim])
-        # items = embedding(item_ids, input_dim=total_num_items, output_dim=item_emb_dim, reuse=tf.AUTO_REUSE,
-        #                   scope="item_scope")
+        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
+        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), pos_index)
+        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
-        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
-        items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
-        items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
+        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
+        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
 
-        # we are deleting the 0 items, i.e. the Empty items. they are required to ensure that each summoner always has
-        # 6 items, but they shouldn't influence the next item calculation
-        # edit: doesn't make a difference in training. might actually be detrimental to determining how many item
-        # slots are left open
-        # items_by_champ_k_hot = items_by_champ_k_hot[:,:,1:]
-        # total_num_items = total_num_items - 1
-        # items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, total_num_items * champs_per_game])
-        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, champs_per_game * items_per_champ]),
+                                   (-1,))
+        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(champs_per_game), 1), [1,
+                                                                                                  items_per_champ]),
+                                           [n, 1]),
+                                   (-1,))
+
+        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
+
+        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
+                                       tf.int64)
+
+        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
+                                dense_shape=(n, champs_per_game, total_num_items + 1))
+        items = tf.sparse.to_dense(items, validate_indices=False)
+        items_by_champ_k_hot = items[:, :, 1:]
+
+        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
         items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
-        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, item_emb_dim, bias=False, activation=None,
-                                                    reuse=tf.AUTO_REUSE,
-                                                    scope="item_sum_scope")
-        # summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, item_emb_dim * champs_per_game))
 
-        summed_items_by_champ = tf.expand_dims(summed_items_by_champ_emb, -1)
-        champs = tf.expand_dims(champs_embedded, -2)
-        champs_with_items = tf.multiply(champs, summed_items_by_champ)
-        champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * item_emb_dim))
-        champs_with_items_emb = fully_connected(champs_with_items, 7, bias=False, activation=None,
-                                                reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+        target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
+        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
-        champs_mult_items = tf.multiply(summed_items_by_champ, champs)
+        pos = tf.one_hot(pos, depth=champs_per_team)
+        pos = tf.cast(pos, tf.int64)
+        final_input_layer = merge(
+            [pos, target_summ_items, target_summ_current_gold,
+             target_summ_cs, target_summ_lvl, target_summ_kda,
+             lvl, kda, total_cs],
+            mode='concat', axis=1)
 
-        return champs_mult_items, summed_items_by_champ, champs
+        return items
+
 
     def predict2int(self, x):
         with self.graph.as_default():
@@ -178,18 +207,248 @@ class ImgModel(Model):
         pass
 
 
+class SlideImgModel(ImgModel):
+
+    def __init__(self, res_converter):
+        super().__init__(res_converter)
+        self.slide_img_height =
+        self.slide_img_width
+        self.sub_img_height
+        self.sub_img_width
+        self.x_crop res_cvt.KDA_X_CROP,
+        self.y_crop res_cvt.KDA_Y_CROP
+        self.network_size_x ui_constants.NETWORK_KDA_IMG_CROP[1],
+                                 ui_constants.NETWORK_KDA_IMG_CROP[0]
+        self.network_size_y
+
+
+    def classify_img(self, img):
+        # utils.show_coords(img, self.coords, self.img_size)
+        x = [img[coord[1]:coord[1] + self.img_height, coord[0]:coord[0] + self.img_width] for coord in self.coords]
+        x = [cv.resize(img, self.network_crop, cv.INTER_AREA) for img in x]
+        return self.predict2int(np.array(x))
+
+
+    def predict(self, x):
+        img = x
+        predicted_artifact_ints = self.classify_img(img)
+        # 10 is the blank element
+        for blank_index, element in enumerate(predicted_artifact_ints):
+            if element == 10:
+                break
+        # cutoff the trailing empty digits
+        predicted_artifact_ints = predicted_artifact_ints[:blank_index]
+
+        result = 0
+        for power_ten, artifact in enumerate(predicted_artifact_ints[::-1]):
+            result += artifact * 10 ** power_ten
+        return result
+
+
+    def generate_coords(self, x_diff, y_diff, x_start, y_start):
+        for team_offset in [0, x_diff]:
+            for row in range(5):
+                yield x_start + team_offset, row * y_diff + y_start
+
+
+    def break_into_sub_imgs(self, slide_img):
+        self.break_up_into_sub_imgs(slide_img, self.x_crop, self.y_crop)
+
+
+    @staticmethod
+    def break_up_into_sub_imgs(slide_img, X_CROP, Y_CROP):
+
+        x_pad = y_pad = 20
+        img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
+
+        gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
+        cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU, gray)
+        contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+
+        for c in contours[::-1]:
+            # get the bounding rect
+            x, y, w, h = cv.boundingRect(c)
+            cv.rectangle(slide_img, (x, y), (x + w, y + h), (0, 0, 255), 1)
+
+            cv.imshow('g', slide_img)
+            cv.waitKey(0)
+
+            center_x = x + w / 2
+            center_y = y + h/2
+            crop_start_x = round(center_x - X_CROP/2)
+            crop_start_y = round(center_y - Y_CROP/2)
+            if crop_start_x < 0 or crop_start_y < 0:
+                print("less than 0")
+            sub_image = img_bordered[crop_start_y:crop_start_y + Y_CROP,
+                        crop_start_x:crop_start_x + X_CROP]
+            yield sub_image
+
+
+    def extract_digit_imgs(self, whole_img):
+
+        coords = list(self.generate_coords(res_cvt))
+
+        coords = np.reshape(coords, (-1, 2))
+
+        slide_imgs = [
+            whole_img[coord[1]:coord[1] + self.slide_img_height,
+            coord[0]:coord[0] + self.slide_img_width]
+            for coord in coords]
+
+        sub_imgs = []
+        for img in slide_imgs:
+            sub_imgs.extend(list(KDAImgModel.break_up_into_sub_imgs(img, self.x_crop, self.y_crop)))
+
+        sub_imgs = [cv.resize(img, (self.network_size_x, self.network_size_y ),
+                           cv.INTER_AREA) for img in sub_imgs]
+        return sub_imgs
+
+
+
+
+class CSImgModel(SlideImgModel):
+
+    def __init__(self, res_converter):
+        super().__init__(res_converter)
+
+        self.network = network.DigitRecognitionNetwork(lambda: CSManager().get_num("img_int"),
+                                                       ui_constants.NETWORK_CS_IMG_CROP)
+        self.network_crop = ui_constants.NETWORK_CS_IMG_CROP
+        self.img_height = res_converter.CS_HEIGHT
+        self.img_width = res_converter.CS_WIDTH
+        self.x_crop = res_converter.CS_X_CROP
+        self.y_crop = res_converter.CS_Y_CROP
+
+        self.model_path = app_constants.model_paths["best"]["cs_imgs"]
+        self.artifact_manager = CSManager()
+
+
+
+    def generate_coords(self, res_converter):
+        return self.generate_coords(res_converter.CS_X_DIFF, res_converter.CS_Y_DIFF, res_converter.CS_X_START,
+                                       res_converter.CS_Y_START)
+
+
+class LvlImgModel(SlideImgModel):
+
+    def __init__(self, res_converter):
+        super().__init__(res_converter)
+
+        self.network = network.DigitRecognitionNetwork(lambda: LvlManager().get_num("img_int"),
+                                                       ui_constants.NETWORK_LVL_IMG_CROP)
+        self.network_crop = ui_constants.NETWORK_LVL_IMG_CROP
+        self.img_height = res_converter.LVL_HEIGHT
+        self.img_width = res_converter.LVL_WIDTH
+        self.x_crop = res_converter.LVL_X_CROP
+        self.y_crop = res_converter.LVL_Y_CROP
+
+        self.model_path = app_constants.model_paths["best"]["lvl_imgs"]
+        self.artifact_manager = LvlManager()
+
+
+
+    def generate_coords(self, res_converter):
+        return SlideImgModel.generate_coords(res_converter.LVL_X_DIFF, res_converter.LVL_Y_DIFF,
+                                             res_converter.LVL_X_START,
+                                       res_converter.LVL_Y_START)
+
+
+class KDAImgModel(SlideImgModel):
+
+    def __init__(self, res_converter):
+        super().__init__(res_converter)
+
+        self.network = network.DigitRecognitionNetwork(lambda: KDAManager().get_num("img_int"),
+                                                       ui_constants.NETWORK_KDA_IMG_CROP)
+        self.network_crop = ui_constants.NETWORK_KDA_IMG_CROP
+        self.img_height = res_converter.KDA_HEIGHT
+        self.img_width = res_converter.KDA_WIDTH
+        self.x_crop = res_converter.KDA_X_CROP
+        self.y_crop = res_converter.KDA_Y_CROP
+
+        self.model_path = app_constants.model_paths["best"]["kda_imgs"]
+        self.artifact_manager = KDAManager()
+
+
+    def generate_coords(self, res_converter):
+        return self.generate_coords(res_converter.KDA_X_DIFF, res_converter.KDA_Y_DIFF, res_converter.KDA_X_START,
+                                 res_converter.KDA_Y_START)
+
+
+
+    def classify_img(self, img):
+        # utils.show_coords(img, self.coords, self.img_size)
+        x = [img[coord[1]:coord[1] + self.img_height, coord[0]:coord[0] + self.img_width] for coord in self.coords]
+        x = [cv.resize(img, self.network_crop, cv.INTER_AREA) for img in x]
+        return self.predict2int(np.array(x))
+
+
+    def predict(self, x):
+        img = x
+        predicted_artifact_ints = self.classify_img(img)
+        # 10 is the blank element
+        for blank_index, element in enumerate(predicted_artifact_ints):
+            if element == 10:
+                break
+        # cutoff the trailing empty digits
+        predicted_artifact_ints = predicted_artifact_ints[:blank_index]
+
+        result = 0
+        for power_ten, artifact in enumerate(predicted_artifact_ints[::-1]):
+            result += artifact * 10 ** power_ten
+        return result
+
+
+class CurrentGoldImgModel(ImgModel):
+
+    def __init__(self, res_converter):
+        super().__init__(res_converter)
+
+        self.network = network.DigitRecognitionNetwork(lambda: CurrentGoldManager().get_num("img_int"),
+                                                       ui_constants.NETWORK_CURRENT_GOLD_IMG_CROP)
+        print(f"def get_num_elements(self): {self.network.get_num_elements()}")
+        self.network_crop = ui_constants.NETWORK_CURRENT_GOLD_IMG_CROP
+        self.img_size = res_converter.CURRENT_GOLD_DIGIT_SIZE
+        self.model_path = app_constants.model_paths["best"]["current_gold_imgs"]
+        self.artifact_manager = CurrentGoldManager()
+
+
+
+    def predict(self, x):
+        img = x
+        predicted_artifact_ints = self.classify_img(img)
+        # 10 is the blank element
+        for blank_index, element in enumerate(predicted_artifact_ints):
+            if element == 10:
+                break
+        # cutoff the trailing empty digits
+        predicted_artifact_ints = predicted_artifact_ints[:blank_index]
+
+        result = 0
+        for power_ten, artifact in enumerate(predicted_artifact_ints[::-1]):
+            result += artifact * 10 ** power_ten
+        return result
+
+
+    def generate_coords(self):
+        return [(self.res_converter.CURRENT_GOLD_LEFT_X + self.res_converter.CURRENT_GOLD_DIGIT_WIDTH * i +
+                 self.res_converter.CURRENT_GOLD_X_OFFSET,
+                 self.res_converter.CURRENT_GOLD_TOP_Y + self.res_converter.CURRENT_GOLD_Y_OFFSET) for i in range(4)]
+
+
+
 class ChampImgModel(ImgModel):
 
     def __init__(self, res_converter):
         super().__init__(res_converter)
-        
+
         self.network = network.ChampImgNetwork()
         print(f"def get_num_elements(self): {self.network.get_num_elements()}")
         self.network_crop = ui_constants.NETWORK_CHAMP_IMG_CROP
         self.img_size = res_converter.CHAMP_SIZE
         self.model_path = app_constants.model_paths["best"]["champ_imgs"]
         self.artifact_manager = ChampManager()
-        self.load_model()
+
 
 
     def generate_coords(self):
@@ -210,7 +469,6 @@ class ChampImgModel(ImgModel):
         return champ_slots_coordinates
 
 
-
 class ItemImgModel(ImgModel):
 
     def __init__(self, res_converter, summ_names_displayed):
@@ -221,7 +479,7 @@ class ItemImgModel(ImgModel):
         self.img_size = res_converter.ITEM_SIZE
         self.model_path = app_constants.model_paths["best"]["item_imgs"]
         self.artifact_manager = ItemManager()
-        self.load_model()
+
 
 
     def generate_coords(self):
@@ -256,7 +514,7 @@ class SelfImgModel(ImgModel):
         self.img_size = res_converter.SELF_INDICATOR_SIZE
         self.model_path = app_constants.model_paths["best"]["self_imgs"]
         self.artifact_manager = SelfManager()
-        self.load_model()
+
 
 
     def generate_coords(self):
@@ -282,7 +540,7 @@ class NextItemEarlyGameModel(Model):
         self.network = network.NextItemEarlyGameNetwork()
         self.model_path = app_constants.model_paths["best"]["next_items_early"]
         self.artifact_manager = ItemManager()
-        self.load_model()
+        # self.load_model()
 
         # with open(glob.glob('models/best/next_items/early/thresholds*')[0]) as f:
         #     self.thresholds = json.load(f)
@@ -308,15 +566,12 @@ class NextItemEarlyGameModel(Model):
 
     # first item is the empty item... don't want to include that
 
-
     def predict_with_prior(self, x):
         with self.graph.as_default():
             y = self.model.predict(x)
             y_priored = y / self.thresholds
             y_int = np.argmax(y_priored, axis=len(y.shape) - 1)
             return y_int
-
-
 
 
 class NextItemLateGameModel(Model):
@@ -326,7 +581,8 @@ class NextItemLateGameModel(Model):
         self.network = network.NextItemLateGameNetwork()
         self.model_path = app_constants.model_paths["best"]["next_items_late"]
         self.artifact_manager = ItemManager()
-        self.load_model()
+
+
 
     def predict2int_blackouts(self, x, blackout_indices):
         with self.graph.as_default():
@@ -334,11 +590,12 @@ class NextItemLateGameModel(Model):
             y = np.array(list(zip(y, range(len(y)))))
             blackout_indices = list(blackout_indices)
             y = np.delete(y, blackout_indices, axis=0)
-            logits = y[:,0]
-            old_indices = y[:,1]
+            logits = y[:, 0]
+            old_indices = y[:, 1]
             y_int = np.argmax(logits, axis=0)
             y_int = old_indices[y_int]
             return [int(y_int)]
+
 
     def predict(self, x, blackout_indices):
         # with self.graph.as_default(), tf.Session() as sess:
@@ -363,6 +620,7 @@ class PositionsModel(Model):
         self.model_path = app_constants.model_paths["best"]["positions"]
         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
         self.champ_manager = ChampManager()
         self.spell_manager = SpellManager()
         self.load_model()
@@ -380,7 +638,7 @@ class PositionsModel(Model):
 
             # the champ ids need to be ints, otherwise jq fails
             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-                                                                                         :game_constants.CHAMPS_PER_TEAM]]
+                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
             return dict(zip(champ_roles, champ_ids))
 
 
@@ -393,10 +651,17 @@ class PositionsModel(Model):
                     final_pred = sess.run(final_pred)
         result = []
         for sorted_team, unsorted_team in zip(final_pred, x):
-            champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+
             # the champ ids need to be ints, otherwise jq fails
-            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-                                                                                        :game_constants.CHAMPS_PER_TEAM]]
-            result.append(dict(zip(champ_roles, champ_ids)))
+            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+            # result.append(dict(zip(champ_roles, champ_ids)))
 
         return result
+
+

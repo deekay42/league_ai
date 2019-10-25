@@ -313,6 +313,32 @@ def randResize(img, rate):
                                        value=(0, 0, 0))
         return result
 
+def mess_up_current_gold(img, config):
+    color_change_rate = config["color_change_rate"]
+
+    blur_rate = config["blur_rate"]
+
+    pixelate_rate = config["pixelate_rate"]
+    brightness_rate = config["brightness_rate"]
+
+    contrast_rate = config["contrast_rate"]
+
+    gaussian_rate = config["gaussian_rate"]
+    gray_rate = config["gray_rate"]
+
+    img = skewColor(img, color_change_rate)
+    img = changeBrightness(img, brightness_rate)
+    img = changeContrast(img, contrast_rate)
+
+    img = grayOut(img, gray_rate)
+
+    img = pixelate(img, pixelate_rate)
+    img = blur(img, blur_rate)
+
+    img = noisy(img, "gauss", gaussian_rate)
+
+    return img
+
 
 def messUpItem(img, config):
     angle = config["angle"]
@@ -635,6 +661,38 @@ item_config = \
         "gray_rate": 0.3
     }
 
+current_gold_config = \
+    {
+        "angle": 360,
+        "num_circles": 0,
+        "circle_size": 1.0,
+        "darkness_rate": 0.4,
+        "color_change_rate": 0.05,
+        "blur_rate": 6,
+        "pixelate_rate": 0.4,
+        "brightness_rate": 20,
+        "line_rate": 0,
+        "contrast_rate": 20,
+        "translate_rate": 0.3,
+        "resize_rate": 0.2,
+        "gaussian_rate": 10,
+        "gray_rate": 0.3
+    }
+
+
+kda_config = \
+    {
+        "darkness_rate": 0.4,
+        "color_change_rate": 0.05,
+        "blur_rate": 1,
+        "pixelate_rate": 0.2,
+        "brightness_rate": 20,
+        "contrast_rate": 20,
+        "translate_rate": 0.3,
+        "gaussian_rate": 10,
+        "gray_rate": 0.3
+    }
+
 
 #
 # spell_imgs_global = utils.getSpellTemplateDict()
@@ -911,6 +969,98 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
 
     return (images, classes)
 
+def generate_training_data_nonsquare(imgs, epochs, new_size):
+
+    images = []
+    classes = []
+    mykey = list(imgs.keys())[0]
+    img_size_y, img_size_x = imgs[mykey].shape[:2]
+    global gauss
+    gauss = np.random.normal(0, 10, (*new_size, 3))
+    for _ in range(epochs):
+
+        for key, image in imgs.items():
+            # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
+            a_min = min(img_size_x/2, img_size_y/2)
+            a_max = min(img_size_x, img_size_y)
+
+            crop_size = np.random.randint(a_min, a_max)
+
+            top_left_x_min = 0
+            top_left_x_max = img_size_x - crop_size
+            top_left_y_min = 0
+            top_left_y_max = img_size_y - crop_size
+
+            top_left_x = np.random.randint(top_left_x_min, top_left_x_max)
+            top_left_y = np.random.randint(top_left_y_min, top_left_y_max)
+
+            gauss = np.random.normal(0, 10, (*new_size, 3))
+
+            # cv.imshow('original', image)
+            # cv.imshow('gray', grayimg)
+            # cv.imshow('mod', mod)
+            # cv.waitKey(0)
+
+            image = image[top_left_y:top_left_y + crop_size, top_left_x:top_left_x + crop_size]
+
+            image = cv.resize(image, new_size, interpolation=cv.INTER_AREA)
+
+            image = mess_up_current_gold(image, current_gold_config)
+
+            images.append(image)
+            classes.append(key)
+
+    return images, classes
+
+
+
+def generate_training_data_rect(imgs, epochs, new_size):
+
+    images = []
+    classes = []
+    mykey = list(imgs.keys())[0]
+    img_size_y, img_size_x = imgs[mykey].shape[:2]
+    global gauss
+    gauss = np.random.normal(0, 10, (*new_size, 3))
+    for _ in range(epochs):
+
+        for key, image in imgs.items():
+            # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
+            a_min = img_size_x/2
+            a_max = img_size_x
+            b_min = img_size_y / 2
+            b_max = img_size_y
+
+            crop_size_a = np.random.randint(a_min, a_max+1)
+            crop_size_b = np.random.randint(b_min, b_max+1)
+
+            top_left_x_min = 0
+            top_left_x_max = img_size_x - crop_size_a
+            top_left_y_min = 0
+            top_left_y_max = img_size_y - crop_size_b
+
+
+            top_left_x = np.random.randint(top_left_x_min, top_left_x_max) if top_left_x_min < top_left_x_max else 0
+            top_left_y = np.random.randint(top_left_y_min, top_left_y_max) if top_left_y_min < top_left_y_max else 0
+
+            gauss = np.random.normal(0, 10, (*new_size, 3))
+
+            # cv.imshow('original', image)
+            # cv.imshow('gray', grayimg)
+            # cv.imshow('mod', mod)
+            # cv.waitKey(0)
+
+            image = image[top_left_y:top_left_y + crop_size_b, top_left_x:top_left_x + crop_size_a]
+
+            image = cv.resize(image, (new_size[1], new_size[0]), interpolation=cv.INTER_AREA)
+
+            image = mess_up_current_gold(image, kda_config)
+
+            images.append(image)
+            classes.append(key)
+
+    return images, classes
+
 # while True:
 #     self_imgs = utils.init_self_data_for_training()
 #     self_imgs = dict(zip([1],[self_imgs[1]]))
@@ -920,10 +1070,10 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
 
 if __name__=="__main__":
     import copy
-    img_orig = cv.imread('../assets/item_imgs_train/3047.png')
+    img_orig = cv.imread('../assets/kda_imgs/5.png')
     cv.imshow("original", img_orig)
     while True:
         img = copy.deepcopy(img_orig)
-        img = overlayText(img)
+        img = generate_training_data_rect({"lol":img}, 1, (14,10))[0][0]
         cv.imshow("text", img)
         cv.waitKey(0)

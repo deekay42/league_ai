@@ -20,11 +20,14 @@ def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size
     cv.waitKey(0)
 
 
-def show_coords(img_source, coords, size):
+
+def show_coords(img_source, coords, size_x, size_y):
     img = copy.deepcopy(img_source)
     for coord in coords:
-        cv.rectangle(img, tuple(coord), (coord[0] + size, coord[1] + size), (255, 0, 0), 1)
-    cv.imshow("lol", img)
+        cv.rectangle(img, tuple(coord), (coord[0] + size_x, coord[1] + size_y), (255, 0, 0), 1)
+    cv.namedWindow('image', cv.WINDOW_NORMAL)
+    cv.resizeWindow('image', 800, 450)
+    cv.imshow("image", img)
     cv.waitKey(0)
 
 

@@ -187,6 +187,27 @@ class ItemManager:
                                                                                                            "completion"] == "complete" or artifact[
                 "completion"] == "semi")]
 
+        def get_early_game_items(self):
+            return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
+                                                                                                           "starting"]
+                                                                                                     == "0,1" or
+                                                                                                       artifact[
+                                                                                                           "starting"]
+                                                                                                     == "0")]
+
+        def num_early_game_items(self):
+            return len(self.get_early_game_items())
+
+        def get_late_game_items(self):
+            return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
+                                                                                                           "starting"]
+                                                                                                     == "0,1" or
+                                                                                                       artifact[
+                                                                                                           "starting"]
+                                                                                                     == "1")]
+        def num_late_game_items(self):
+            return len(self.get_late_game_items())
+
 
 class SelfManager:
     instance = None
@@ -225,3 +246,83 @@ class SpellManager:
 
         def __init__(self):
             super().__init__(data_path=app_constants.asset_paths["spell_json"])
+
+
+class CurrentGoldManager:
+    instance = None
+
+
+    def __init__(self):
+        if not CurrentGoldManager.instance:
+            CurrentGoldManager.instance = CurrentGoldManager.__CurrentGoldManager()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __CurrentGoldManager(ArtifactManager):
+
+        def __init__(self):
+            super().__init__(data_path=app_constants.asset_paths["current_gold_json"],
+                             assets_path=app_constants.asset_paths["current_gold_imgs"])
+
+
+class KDAManager:
+    instance = None
+
+
+    def __init__(self):
+        if not KDAManager.instance:
+            KDAManager.instance = KDAManager.__KDAManager()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __KDAManager(ArtifactManager):
+
+        def __init__(self):
+            super().__init__(data_path=app_constants.asset_paths["kda_json"],
+                             assets_path=app_constants.asset_paths["kda_imgs"])
+
+
+class CSManager:
+    instance = None
+
+
+    def __init__(self):
+        if not CSManager.instance:
+            CSManager.instance = CSManager.__CSManager()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __CSManager(ArtifactManager):
+
+        def __init__(self):
+            super().__init__(data_path=app_constants.asset_paths["cs_json"],
+                             assets_path=app_constants.asset_paths["cs_imgs"])
+
+
+class LvlManager:
+    instance = None
+
+
+    def __init__(self):
+        if not LvlManager.instance:
+            LvlManager.instance = LvlManager.__LvlManager()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __LvlManager(ArtifactManager):
+
+        def __init__(self):
+            super().__init__(data_path=app_constants.asset_paths["lvl_json"],
+                             assets_path=app_constants.asset_paths["lvl_imgs"])

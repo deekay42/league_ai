@@ -11,6 +11,7 @@ import io
 import pstats
 import copy
 import glob
+import json
  
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
@@ -22,6 +23,8 @@ from utils.artifact_manager import ChampManager, ItemManager, SelfManager, Spell
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
 import functools
+from train_model import data_loader
+
 
 
 
@@ -122,11 +125,14 @@ class Main(FileSystemEventHandler):
 
 
     def remove_low_value_items(self, items):
-        return list(filter(lambda a: "Potion" not in a["name"] and "Doran" not in a["name"] and "Dark Seal" not in a[
+        return list(filter(lambda a: "Potion" not in a["name"] and "Cull" not in a["name"] and "Doran" not in a[
+            "name"] and "Dark Seal" not in a[
             "name"] and "Soul" not in a["name"], items))
 
     def simulate_game(self, items, champs):
         count = 0
+        at_same_number = 0
+        last_number = 0
         while count != 10:
             count = 0
             for summ_index in range(10):
@@ -135,6 +141,13 @@ class Main(FileSystemEventHandler):
                     champs, items = self.swap_teams(champs, items)
                 count += int(self.next_item_for_champ(summ_index % 5, champs, items))
 
+            if count == last_number:
+                at_same_number += 1
+                if count > 6 and at_same_number >= 10:
+                    break
+            else:
+                at_same_number = 0
+                last_number = count
             champs, items = self.swap_teams(champs, items)
             for i, item in enumerate(items):
                 print(f"{divmod(i, 6)}: {item}")
@@ -152,9 +165,11 @@ class Main(FileSystemEventHandler):
 
         containsCompletedItem = False
         req_item_tier = 0
+        items_ahead = 0
 
 
-        while True:
+        while items_ahead < 20:
+            items_ahead += 1
             completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
                              items[self.summoner_items_slice(role)]])
             if completes >= 6:
@@ -190,6 +205,7 @@ class Main(FileSystemEventHandler):
                     return True
                 else:
                     req_item_tier += 1
+        return True
 
 
 
@@ -286,7 +302,20 @@ class Main(FileSystemEventHandler):
 
         self.timeout()
 
+    def run_test_games(self):
+        with open('test_data/items_test/setups.json', "r") as f:
+            games = json.load(f)
+        for key in games:
+            champs = games[key]["champs"]
+            items = games[key]["items"]
 
+            champs = [ChampManager().lookup_by('name', champ) for champ in champs]
+            items = [ItemManager().lookup_by('name', item) for item in items]
+            items = np.delete(items, np.arange(6, len(items), 7))
+            print(f"----------- SIMULATING {key}--------------------------")
+            print(champs)
+            print(items)
+            self.simulate_game(items, champs)
 
 
 
@@ -335,7 +364,7 @@ class Main(FileSystemEventHandler):
         #we don't care about the trinkets
         items = np.delete(items, np.arange(6, len(items), 7))
         #
-        items = [self.item_manager.lookup_by('int', 0)] * 60
+        # items = [self.item_manager.lookup_by('int', 0)] * 60
         items[30:] = [self.item_manager.lookup_by('int', 0)]*30
         champs[0] = ChampManager().lookup_by('name', 'Aatrox')
         champs[2] = ChampManager().lookup_by('name', 'Vladimir')
@@ -394,7 +423,13 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-m = Main()
-m.process_image("lol.png")
+# m = Main()
+# m.run_test_games()
 
 # pr = cProfile.Profile()
+
+
+dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
+X, _ = dataloader.get_train_data()
+m = NextItemEarlyGameModel()
+m.output_logs(X)

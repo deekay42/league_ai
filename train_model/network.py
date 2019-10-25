@@ -10,7 +10,7 @@ from tflearn.layers.normalization import batch_normalization
 from abc import ABC, abstractmethod
 import numpy as np
 import itertools
-from utils.artifact_manager import ChampManager, ItemManager, SpellManager
+from utils.artifact_manager import ChampManager, ItemManager, SpellManager, CurrentGoldManager, KDAManager
 from constants import ui_constants, game_constants
 
 
@@ -35,6 +35,37 @@ class ImgNetwork(Network):
     @abstractmethod
     def get_num_elements(self):
         pass
+
+
+
+class DigitRecognitionNetwork(ImgNetwork):
+    def __init__(self, num_func, img_size):
+        self.num_func = num_func
+        self.img_size = img_size
+        super().__init__()
+
+    def get_num_elements(self):
+        return self.num_func()
+
+    def build(self):
+        is_training = tflearn.get_training_mode()
+        # input
+        network = input_data(shape=[None, self.img_size[0], self.img_size[1], 3], name='input')
+
+        conv1 = relu(batch_normalization(
+            conv_2d(network, 16, 3, bias=False, activation=None, regularizer="L2"), trainable=is_training))
+        maxpool1 = max_pool_2d(conv1, 3)
+
+        conv2 = relu(batch_normalization(
+            conv_2d(maxpool1, 32, 3, bias=False, activation=None, regularizer="L2"), trainable=is_training))
+        maxpool2 = max_pool_2d(conv2, 3)
+
+        net = fully_connected(maxpool2, 64, activation='relu', regularizer="L2")
+        net = fully_connected(net, self.num_elements, activation='softmax')
+
+        return regression(net, optimizer='adam', learning_rate=self.network_config["learning_rate"], to_one_hot=True,
+                          n_classes=self.num_elements, shuffle_batches=True,
+                          loss='categorical_crossentropy', name='target')
 
 
 class ChampImgNetwork(ImgNetwork):
@@ -435,7 +466,28 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
 
-        in_vec = input_data(shape=[None, 1 + total_champ_dim + total_item_dim], name='input')
+        pos_start = 0
+        pos_end = pos_start + 1
+        champs_start = pos_end
+        champs_end = champs_start + champs_per_game
+        items_start = champs_end
+        items_end = items_start + items_per_champ*2*champs_per_game
+        total_gold_start = items_end
+        total_gold_end = total_gold_start + champs_per_game
+        cs_start = total_gold_end
+        cs_end = cs_start + champs_per_game
+        neutral_cs_start = cs_end
+        neutral_cs_end = neutral_cs_start + champs_per_game
+        xp_start = neutral_cs_end
+        xp_end = xp_start + champs_per_game
+        lvl_start = xp_end
+        lvl_end = lvl_start + champs_per_game
+        kda_start = lvl_end
+        kda_end = kda_start + champs_per_game*3
+        current_gold_start = kda_end
+        current_gold_end = current_gold_start + champs_per_game
+
+        in_vec = input_data(shape=[None, 221], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -448,9 +500,22 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # Make tensor of indices for the first dimension
 
         #  10 elements long
-        champ_ints = in_vec[:, 1:champs_per_game + 1]
+        champ_ints = in_vec[:, champs_start:champs_end]
         # 60 elements long
-        item_ints = in_vec[:, champs_per_game + 1:]
+        item_ints = in_vec[:, items_start:items_end]
+        cs = in_vec[:, cs_start:cs_end]
+        neutral_cs = in_vec[:, neutral_cs_start:neutral_cs_end]
+        lvl = in_vec[:, lvl_start:lvl_end]
+        kda = in_vec[:, kda_start:kda_end]
+        current_gold = in_vec[:, current_gold_start:current_gold_end]
+        total_cs = cs + neutral_cs
+
+        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
+        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda,(-1,champs_per_game, 3)), pos_index)
+        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
+
+
 
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                                                        reuse=tf.AUTO_REUSE,
@@ -466,9 +531,26 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
         opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
 
-        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ])
-        items_by_champ_one_hot = tf.one_hot(tf.cast(items_by_champ, tf.int32), depth=total_num_items)
-        items_by_champ_k_hot = tf.reduce_sum(items_by_champ_one_hot, axis=2)
+        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
+        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
+
+        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, champs_per_game * items_per_champ]),
+                                   (-1,))
+        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(champs_per_game),1), [1,
+                                                                                                 items_per_champ]),
+                                           [n, 1]),
+                                   (-1,))
+
+        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
+
+        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
+                                       tf.int64)
+
+        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
+                                dense_shape=(n, champs_per_game, total_num_items + 1))
+        items = tf.sparse.to_dense(items, validate_indices=False)
+        items_by_champ_k_hot = items[:, :, 1:]
+
         items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
         items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
@@ -491,10 +573,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items, opp_summ_champ, opp_summ_champ_emb,
+            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items, target_summ_current_gold,
+             target_summ_cs, target_summ_lvl, target_summ_kda,
+            opp_summ_champ,
+             opp_summ_champ_emb,
              opp_summ_items,
              opp_champs_k_hot,
-             champs_with_items_emb],
+             champs_with_items_emb, lvl, kda, total_cs],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',

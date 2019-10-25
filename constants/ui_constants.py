@@ -32,9 +32,83 @@ SPELL_MAX_SIZE = 40
 NETWORK_ITEM_IMG_CROP = (24, 24)
 NETWORK_CHAMP_IMG_CROP = (20, 20)
 NETWORK_SELF_IMG_CROP = (20, 20)
+NETWORK_CURRENT_GOLD_IMG_CROP = (8,8)
+NETWORK_KDA_IMG_CROP = (14,9)
+NETWORK_CS_IMG_CROP = (14,9)
+NETWORK_LVL_IMG_CROP = (11,7)
 
 
 # different resolutions
+
+
+class Res_16_9:
+    CHAMP_LEFT_X_OFFSET = 497
+    CHAMP_RIGHT_X_OFFSET = 1071
+    CHAMP_Y_OFFSET = 331
+    CHAMP_Y_DIFF = 76
+    CHAMP_SIZE = 28
+
+    ITEM_LEFT_X_OFFSET = 715
+    ITEM_RIGHT_X_OFFSET = 1286
+    ITEM_Y_DIFF = 76
+    ITEM_Y_OFFSET = 332
+    ITEM_X_DIFF = 34
+    ITEM_SIZE = 29
+    ITEM_INNER_OFFSET = 2
+
+    SUMM_NAMES_DIS_X_OFFSET = -9
+    SUMM_NAMES_DIS_Y_OFFSET = 10
+
+    SPELL_LEFT_X_OFFSET = 356
+    SPELL_RIGHT_X_OFFSET = 834
+    SPELL_Y_DIFF = 41
+    SPELL_Y_DIFF_LARGE = 64
+    SPELL_Y_OFFSET = 267
+    SPELL_SIZE = 22
+
+    SELF_INDICATOR_LEFT_X_OFFSET = 392
+    SELF_INDICATOR_RIGHT_X_OFFSET = 963
+    SELF_INDICATOR_Y_DIFF = 76
+    SELF_INDICATOR_Y_OFFSET = 360
+    SELF_INDICATOR_SIZE = 17
+
+    STD_WIDTH = 1920
+    STD_HEIGHT = 1080
+
+    CURRENT_GOLD_LEFT_X = 1140
+    CURRENT_GOLD_TOP_Y = 1057.5
+    CURRENT_GOLD_X_OFFSET = 0
+    CURRENT_GOLD_Y_OFFSET = 2
+    CURRENT_GOLD_DIGIT_WIDTH = 9
+    CURRENT_GOLD_SIZE = 8
+
+    KDA_X_START = 610
+    KDA_Y_START = 335
+    KDA_HEIGHT = 24
+    KDA_WIDTH = 90
+    KDA_X_DIFF = 574
+    KDA_Y_DIFF = 76
+    KDA_X_CROP = 9
+    KDA_Y_CROP = 14
+
+    CS_X_START = 556
+    CS_Y_START = KDA_Y_START
+    CS_HEIGHT = KDA_HEIGHT
+    CS_WIDTH = 50
+    CS_X_DIFF = KDA_X_DIFF
+    CS_Y_DIFF = KDA_Y_DIFF
+    CS_X_CROP = KDA_X_CROP
+    CS_Y_CROP = KDA_Y_CROP
+
+    LVL_X_START = 523
+    LVL_Y_START = 363
+    LVL_HEIGHT = 11
+    LVL_WIDTH = 14
+    LVL_X_DIFF = KDA_X_DIFF
+    LVL_Y_DIFF = KDA_Y_DIFF
+    LVL_X_CROP = 7
+    LVL_Y_CROP = 11
+
 
 # 1440x900
 class Res_8_5:
@@ -73,40 +147,101 @@ class Res_8_5:
     STD_WIDTH = 1440
     STD_HEIGHT = 900
 
+    CURRENT_GOLD_LEFT_X = 870
+    CURRENT_GOLD_TOP_Y = 881
+    CURRENT_GOLD_X_OFFSET = 0
+    CURRENT_GOLD_Y_OFFSET = 1
+    CURRENT_GOLD_DIGIT_WIDTH = 8
+    CURRENT_GOLD_SIZE = 7
 
-class Res_16_9:
-    CHAMP_LEFT_X_OFFSET = 497
-    CHAMP_RIGHT_X_OFFSET = 1071
-    CHAMP_Y_OFFSET = 331
-    CHAMP_Y_DIFF = 76
-    CHAMP_SIZE = 28
+    KDA_X_START = 430
+    KDA_Y_START = 278
+    KDA_HEIGHT = 22
+    KDA_WIDTH = 70
+    KDA_X_DIFF = 479
+    KDA_Y_DIFF = 64
+    KDA_X_CROP = 7
+    KDA_Y_CROP = 10
 
-    ITEM_LEFT_X_OFFSET = 715
-    ITEM_RIGHT_X_OFFSET = 1286
-    ITEM_Y_DIFF = 76
-    ITEM_Y_OFFSET = 332
-    ITEM_X_DIFF = 34
-    ITEM_SIZE = 29
+    CS_X_START = 382
+    CS_Y_START = KDA_Y_START
+    CS_HEIGHT = KDA_HEIGHT
+    CS_WIDTH = 44
+    CS_X_DIFF = KDA_X_DIFF
+    CS_Y_DIFF = KDA_Y_DIFF
+    CS_X_CROP = KDA_X_CROP
+    CS_Y_CROP = KDA_Y_CROP
+
+    LVL_X_START = 355
+    LVL_Y_START = 302
+    LVL_HEIGHT = 10
+    LVL_WIDTH = 13
+    LVL_X_DIFF = 480
+    LVL_Y_DIFF = KDA_Y_DIFF
+    LVL_X_CROP = 5
+    LVL_Y_CROP = 10
+
+
+
+class Res_1366_768:
+    CHAMP_LEFT_X_OFFSET = 352
+    CHAMP_RIGHT_X_OFFSET = 761
+    CHAMP_Y_OFFSET = 234
+    CHAMP_Y_DIFF = 55
+    CHAMP_SIZE = 21
+
+    ITEM_LEFT_X_OFFSET = 508
+    ITEM_RIGHT_X_OFFSET = 915
+    ITEM_Y_DIFF = 55
+    ITEM_Y_OFFSET = 236
+    ITEM_X_DIFF = 24
+    ITEM_SIZE = 19
     ITEM_INNER_OFFSET = 2
+    SUMM_NAMES_DIS_X_OFFSET = -6
+    SUMM_NAMES_DIS_Y_OFFSET = 7
 
-    SUMM_NAMES_DIS_X_OFFSET = -9
-    SUMM_NAMES_DIS_Y_OFFSET = 10
+    SELF_INDICATOR_LEFT_X_OFFSET = 278
+    SELF_INDICATOR_RIGHT_X_OFFSET = 686
+    SELF_INDICATOR_Y_DIFF = 55
+    SELF_INDICATOR_Y_OFFSET = 254
+    SELF_INDICATOR_SIZE = 13
 
-    SPELL_LEFT_X_OFFSET = 356
-    SPELL_RIGHT_X_OFFSET = 834
-    SPELL_Y_DIFF = 41
-    SPELL_Y_DIFF_LARGE = 64
-    SPELL_Y_OFFSET = 267
-    SPELL_SIZE = 22
+    STD_WIDTH = 1366
+    STD_HEIGHT = 768
 
-    SELF_INDICATOR_LEFT_X_OFFSET = 392
-    SELF_INDICATOR_RIGHT_X_OFFSET = 963
-    SELF_INDICATOR_Y_DIFF = 76
-    SELF_INDICATOR_Y_OFFSET = 360
-    SELF_INDICATOR_SIZE = 17
+    CURRENT_GOLD_LEFT_X = 811
+    CURRENT_GOLD_TOP_Y = 752
+    CURRENT_GOLD_X_OFFSET = 0
+    CURRENT_GOLD_Y_OFFSET = 1
+    CURRENT_GOLD_DIGIT_WIDTH = 6
+    CURRENT_GOLD_SIZE = 5
 
-    STD_WIDTH = 1920
-    STD_HEIGHT = 1080
+    KDA_X_START = 436
+    KDA_Y_START = 236
+    KDA_HEIGHT = 20
+    KDA_WIDTH = 58
+    KDA_X_DIFF = 408
+    KDA_Y_DIFF = 55
+    KDA_X_CROP = 5
+    KDA_Y_CROP = 8
+
+    CS_X_START = 396
+    CS_Y_START = KDA_Y_START
+    CS_HEIGHT = KDA_HEIGHT
+    CS_WIDTH = 30
+    CS_X_DIFF = KDA_X_DIFF
+    CS_Y_DIFF = KDA_Y_DIFF
+    CS_X_CROP = KDA_X_CROP
+    CS_Y_CROP = KDA_Y_CROP
+
+    LVL_X_START = 372
+    LVL_Y_START = 258
+    LVL_HEIGHT = 9
+    LVL_WIDTH = 10
+    LVL_X_DIFF = KDA_X_DIFF
+    LVL_Y_DIFF = KDA_Y_DIFF
+    LVL_X_CROP = 4
+    LVL_Y_CROP = 7
 
 
 class Res_4_3:
@@ -135,32 +270,39 @@ class Res_4_3:
     STD_WIDTH = 1024
     STD_HEIGHT = 768
 
+    CURRENT_GOLD_LEFT_X = 640
+    CURRENT_GOLD_TOP_Y = 752
+    CURRENT_GOLD_X_OFFSET = 0
+    CURRENT_GOLD_Y_OFFSET = 1
+    CURRENT_GOLD_DIGIT_WIDTH = 6
+    CURRENT_GOLD_SIZE = 5
 
-class Res_1366_768:
-    CHAMP_LEFT_X_OFFSET = 352
-    CHAMP_RIGHT_X_OFFSET = 761
-    CHAMP_Y_OFFSET = 234
-    CHAMP_Y_DIFF = 55
-    CHAMP_SIZE = 21
+    KDA_X_START = 267
+    KDA_Y_START = 236
+    KDA_HEIGHT = 22
+    KDA_WIDTH = 56
+    KDA_X_DIFF = 409
+    KDA_Y_DIFF = 55
+    KDA_X_CROP = 5
+    KDA_Y_CROP = 8
 
-    ITEM_LEFT_X_OFFSET = 508
-    ITEM_RIGHT_X_OFFSET = 915
-    ITEM_Y_DIFF = 55
-    ITEM_Y_OFFSET = 236
-    ITEM_X_DIFF = 24
-    ITEM_SIZE = 19
-    ITEM_INNER_OFFSET = 2
-    SUMM_NAMES_DIS_X_OFFSET = -6
-    SUMM_NAMES_DIS_Y_OFFSET = 7
+    CS_X_START = 230
+    CS_Y_START = KDA_Y_START
+    CS_HEIGHT = KDA_HEIGHT
+    CS_WIDTH = 26
+    CS_X_DIFF = KDA_X_DIFF
+    CS_Y_DIFF = KDA_Y_DIFF
+    CS_X_CROP = KDA_X_CROP
+    CS_Y_CROP = KDA_Y_CROP
 
-    SELF_INDICATOR_LEFT_X_OFFSET = 278
-    SELF_INDICATOR_RIGHT_X_OFFSET = 686
-    SELF_INDICATOR_Y_DIFF = 55
-    SELF_INDICATOR_Y_OFFSET = 254
-    SELF_INDICATOR_SIZE = 13
-
-    STD_WIDTH = 1366
-    STD_HEIGHT = 768
+    LVL_X_START = 200
+    LVL_Y_START = 259
+    LVL_HEIGHT = 7
+    LVL_WIDTH = 12
+    LVL_X_DIFF = KDA_X_DIFF
+    LVL_Y_DIFF = KDA_Y_DIFF
+    LVL_X_CROP = 5
+    LVL_Y_CROP = 7
 
 
 class ResConverter:
@@ -234,3 +376,68 @@ class ResConverter:
             self.SELF_INDICATOR_Y_DIFF = (y * self.selected_res.SELF_INDICATOR_Y_DIFF / self.selected_res.STD_HEIGHT)
 
             self.SELF_INDICATOR_SIZE = round(x * self.selected_res.SELF_INDICATOR_SIZE / self.selected_res.STD_WIDTH)
+
+            self.CURRENT_GOLD_LEFT_X = round(x * self.selected_res.CURRENT_GOLD_LEFT_X / self.selected_res.STD_WIDTH)
+
+            self.CURRENT_GOLD_TOP_Y = round(y * self.selected_res.CURRENT_GOLD_TOP_Y / self.selected_res.STD_HEIGHT)
+
+            self.CURRENT_GOLD_X_OFFSET = round(x * self.selected_res.CURRENT_GOLD_X_OFFSET / self.selected_res.STD_WIDTH)
+
+            self.CURRENT_GOLD_Y_OFFSET = round(y * self.selected_res.CURRENT_GOLD_Y_OFFSET /
+                                               self.selected_res.STD_HEIGHT)
+
+            self.CURRENT_GOLD_DIGIT_WIDTH = round(
+                x * self.selected_res.CURRENT_GOLD_DIGIT_WIDTH / self.selected_res.STD_WIDTH)
+
+            self.CURRENT_GOLD_SIZE = round(
+                x * self.selected_res.CURRENT_GOLD_SIZE / self.selected_res.STD_WIDTH)
+
+            self.KDA_X_START = round(
+                x * self.selected_res.KDA_X_START / self.selected_res.STD_WIDTH)
+
+            self.KDA_Y_START = round(y * self.selected_res.KDA_Y_START /
+                                     self.selected_res.STD_HEIGHT)
+
+            self.KDA_HEIGHT = round(y * self.selected_res.KDA_HEIGHT /
+                                               self.selected_res.STD_HEIGHT)
+
+            self.KDA_WIDTH = round(
+                x * self.selected_res.KDA_WIDTH / self.selected_res.STD_WIDTH)
+
+            self.KDA_X_DIFF = round(
+                x * self.selected_res.KDA_X_DIFF / self.selected_res.STD_WIDTH)
+
+            self.KDA_Y_DIFF = round(y * self.selected_res.KDA_Y_DIFF /
+                               self.selected_res.STD_HEIGHT)
+
+            self.KDA_X_CROP = round(
+                x * self.selected_res.KDA_X_CROP / self.selected_res.STD_WIDTH)
+
+            self.KDA_Y_CROP = round(y * self.selected_res.KDA_Y_CROP /
+                                    self.selected_res.STD_HEIGHT)
+
+
+            self.CS_X_START = round(
+                x * self.selected_res.CS_X_START / self.selected_res.STD_WIDTH)
+
+            self.CS_Y_START = round(y * self.selected_res.CS_Y_START /
+                                     self.selected_res.STD_HEIGHT)
+
+            self.CS_HEIGHT = round(y * self.selected_res.CS_HEIGHT /
+                                    self.selected_res.STD_HEIGHT)
+
+            self.CS_WIDTH = round(
+                x * self.selected_res.CS_WIDTH / self.selected_res.STD_WIDTH)
+
+            self.CS_X_DIFF = round(
+                x * self.selected_res.CS_X_DIFF / self.selected_res.STD_WIDTH)
+
+            self.CS_Y_DIFF = round(y * self.selected_res.CS_Y_DIFF /
+                                    self.selected_res.STD_HEIGHT)
+
+            self.CS_X_CROP = round(
+                x * self.selected_res.CS_X_CROP / self.selected_res.STD_WIDTH)
+
+            self.CS_Y_CROP = round(y * self.selected_res.CS_Y_CROP /
+                                    self.selected_res.STD_HEIGHT)
+

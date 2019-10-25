@@ -6,6 +6,7 @@ import numpy as np
 from utils import cass_configured as cass
 from constants import game_constants, app_constants
 from urllib.error import HTTPError
+from range_key_dict import RangeKeyDict
 
 
 class AllGamesCollected(Exception): pass
@@ -19,33 +20,39 @@ def get_match_ids(summoners, num_games, cut_off_date):
 
     match_ids = set()
     first = True
-    for summoner in summoners:
+    with open(app_constants.train_paths["matchids"], "w") as f:
+        f.write("[\n")
+        for summoner in summoners:
 
-        try:
-            summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
-                                                     begin_time=cut_off_date)
-            for match in summ_match_hist:
-                if match_id in match_ids:
-                    continue
-                if num_games <= 0:
-                    raise AllGamesCollected()
-                if first:
-                    first = False
-                else:
-                    f.write(',')
-                match_id = match.id
+            try:
+                summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
+                                                         begin_time=cut_off_date)
+                for match in summ_match_hist:
+                    match_id = match.id
+                    if match_id in match_ids:
+                        continue
+                    if num_games <= 0:
+                        raise AllGamesCollected()
+                    if first:
+                        first = False
+                    else:
+                        f.write(',')
+                    f.write(str(match_id))
+                    match_ids.add(match_id)
+                    num_games -= 1
 
-                match_ids.add(match_id)
-                num_games -= 1
-
-        except HTTPError as h:
-            print('ERROR: There was an error obtaining this summoners match history')
-            print(repr(e))
-            print(traceback.format_exc())
-        except AllGamesCollected as e:
-            #not a real exception, more of a goto
-            break
-
+            except AllGamesCollected as e:
+                #not a real exception, more of a goto
+                break
+            except HTTPError as h:
+                print('ERROR: There was an error obtaining this summoners match history')
+                print(repr(h))
+                print(traceback.format_exc())
+            except Exception as e:
+                print('ERROR: There was an error obtaining this match history. Skip.')
+                print(repr(e))
+                print(traceback.format_exc())
+        f.write(']\n')
     return match_ids
 
 
@@ -54,7 +61,7 @@ def get_top_summoners():
     elite_summoners = cass.get_challenger_league(cass.Queue.ranked_solo_fives, 'KR').entries + cass.get_master_league(
         cass.Queue.ranked_solo_fives, 'KR').entries
 
-    with open(app_constants.train_paths["diamond_league_ids"]) as f:
+    with open(app_constants.asset_paths["diamond_league_ids"]) as f:
         leagues = f.readlines()
     leagues = [x.strip() for x in leagues]
     high_dia_summoners = []
@@ -104,6 +111,18 @@ def sort_if_complete(team):
 def get_matches(match_ids):
     lane2str = {cass.Lane.bot_lane: "bot", cass.Lane.jungle: "jg", cass.Lane.mid_lane: "mid",
                 cass.Lane.top_lane: "top", None: "None"}
+    with open(app_constants.asset_paths["xp_table"]) as f:
+        xp_table = json.load(f)
+        xp_table_dict = dict()
+
+        for i in range(len(xp_table)):
+            if i == len(xp_table) - 1:
+                xp_table_dict[(xp_table[i][1], 20*xp_table[i][1])] = int(xp_table[i][0])
+            else:
+                xp_table_dict[(xp_table[i][1], xp_table[i+1][1])] = int(xp_table[i][0])
+        xp2lvl = RangeKeyDict(xp_table_dict)
+
+
 
     first = True
     with open(app_constants.train_paths["presorted_matches_path"], "w") as f:
@@ -111,7 +130,6 @@ def get_matches(match_ids):
 
         for match_id in match_ids:
             try:
-
                 match = cass.get_match(match_id, region="KR")
                 champ2participant = dict()
                 participants = match.red_team.participants + match.blue_team.participants
@@ -145,24 +163,130 @@ def get_matches(match_ids):
                 losing_team, losing_team_sorted = sort_if_complete(teams[1])
                 teams = np.ravel([winning_team, losing_team]).tolist()
 
+
                 events = []
-                for frame in match.timeline.frames:
+                prev_frame = match.timeline.frames[0]
+                prev_participant_frames = prev_frame.participant_frames
+
+                participant_id2header_participants_index = {participant["participantId"]:index for index, participant
+                                                            in
+                                                  enumerate(teams)}
+                kda = np.zeros((10,3), dtype=np.int32)
+
+                event_counter = 0
+                for frame_index, frame in enumerate(match.timeline.frames[1:]):
+                    participant_frames = frame.participant_frames
+                    #last interval might be shorter
+                    if frame_index >= len(match.timeline.frames) - 2:
+                        interval =  match.duration.seconds-1 % 60 + 1
+                    else:
+                        interval = frame.timestamp.seconds - prev_frame.timestamp.seconds
+
+                    gold_slope = [0]*10
+                    cs_slope = [0]*10
+                    neutral_cs_slope = [0]*10
+                    xp_slope = [0] * 10
+
+                    for i in range(10):
+                        current_participant = participant_frames[i+1]
+                        current_participant_before = prev_participant_frames[i + 1]
+                        current_participant_header_index = participant_id2header_participants_index[
+                            current_participant.participant_id]
+
+
+                        gold_slope[current_participant_header_index] = (current_participant.gold_earned - current_participant_before.gold_earned) / \
+                                        interval
+                        cs_slope[current_participant_header_index] = (
+                                                    current_participant.creep_score -
+                                                    current_participant_before.creep_score) / interval
+                        neutral_cs_slope[current_participant_header_index] = (
+                                                    current_participant.neutral_minions_killed -
+                                                    current_participant_before.neutral_minions_killed) / interval
+                        xp_slope[current_participant_header_index] = (
+                                                    current_participant.experience -
+                                                    current_participant_before.experience) / interval
+
+                    event_current_gold = [0] * 10
+                    event_total_gold = [0] * 10
+                    event_cs = [0] * 10
+                    event_neutral_cs = [0] * 10
+                    event_xp = [0] * 10
+                    event_lvl = [0] * 10
+
+
                     for event in frame.events:
                         event_type = event.type
-                        if event_type == "ITEM_DESTROYED" or event_type == "ITEM_PURCHASED" or event_type == "ITEM_SOLD":
-                            if event.item_id != 2055 and event.item_id != 3340 and event.item_id != 3341 \
-                                    and event.item_id != 3363 and event.item_id != 3364:
+
+
+                        if event_type == "CHAMPION_KILL":
+                            for assister in event.assisting_participants:
+                                kda[participant_id2header_participants_index[assister]][2] += 1
+                            victim_kda = kda[participant_id2header_participants_index[event.victim_id]]
+                            victim_kda[1] += 1
+                            #champ died to turret or jg, etc.
+                            if event.killer_id == 0:
+                                continue
+
+                            killer_kda = kda[participant_id2header_participants_index[event.killer_id]]
+                            killer_kda[0] += 1
+
+
+                        elif event_type == "ITEM_DESTROYED" or event_type == "ITEM_PURCHASED" or event_type == \
+                            "ITEM_SOLD":
+                            if  event.item_id != 3340 and event.item_id != 3363 and event.item_id != 3364:
+
+                                event_timestamp = event.timestamp
+                                interval = (event_timestamp.seconds - prev_frame.timestamp.seconds)
+
+                                for i in range(10):
+
+                                    current_participant_before = prev_participant_frames[i + 1]
+                                    current_participant_header_index = participant_id2header_participants_index[
+                                        current_participant_before.participant_id]
+
+
+
+                                    event_current_gold[current_participant_header_index] = current_participant_before.current_gold
+                                    event_current_gold[current_participant_header_index] += interval * gold_slope[current_participant_header_index]
+
+
+                                    event_total_gold[current_participant_header_index] = current_participant_before.gold_earned + \
+                                                       interval * \
+                                                       gold_slope[current_participant_header_index]
+
+                                    event_cs[current_participant_header_index] = \
+                                        current_participant_before.creep_score + interval * cs_slope[current_participant_header_index]
+                                    event_neutral_cs[current_participant_header_index] = current_participant_before.neutral_minions_killed + \
+                                                       interval * neutral_cs_slope[current_participant_header_index]
+                                    event_xp[current_participant_header_index] = current_participant_before.experience + \
+                                               interval * xp_slope[current_participant_header_index]
+                                    event_lvl[current_participant_header_index] = xp2lvl[event_xp[current_participant_header_index]]
+
                                 events.append(
-                                    {"participantId": event.participant_id, "itemId": event.item_id, "type": event_type,
-                                     "timestamp": int(event.timestamp.total_seconds() * 1000)})
+                                    {"participantId": event.participant_id,
+                                     "itemId": event.item_id,
+                                     "type": event_type,
+                                     "timestamp": int(event.timestamp.total_seconds() * 1000),
+                                     "total_gold": event_total_gold.copy(),
+                                     "current_gold_sloped": event_current_gold.copy(),
+                                     "cs": event_cs.copy(),
+                                     "neutral_cs": event_neutral_cs.copy(),
+                                     "xp": event_xp.copy(),
+                                     "lvl": event_lvl.copy(),
+                                     "kda": kda.tolist().copy(),
+                                     "frame_index": frame_index+1
+                                     })
+
+
                         elif event_type == "ITEM_UNDO":
-                            if event.after_id != 3340 and event.after_id != 2055 and event.after_id != 3341 \
-                                    and event.after_id != 3363 and event.after_id != 3364:
+                            if event.after_id != 3340 and event.after_id != 3363 and event.after_id != 3364:
                                 events.append(
                                     {"participantId": event.participant_id, "beforeId": event.before_id,
                                      "afterId": event.after_id, "type": event_type,
                                      "timestamp": int(event.timestamp.total_seconds() * 1000)})
-
+                        event_counter += 1
+                    prev_participant_frames = participant_frames
+                    prev_frame = frame
                 teams_sorted = "1,2" if winning_team_sorted and losing_team_sorted \
                     else "1" if winning_team_sorted else "2" if losing_team_sorted else "0"
                 if first:
@@ -170,9 +294,12 @@ def get_matches(match_ids):
                 else:
                     f.write(',')
                 f.write(json.dumps(
-                    {"gameId": match_id, "sorted": teams_sorted, "participants": teams, "itemsTimeline": events},
+                    {"gameId": match_id, "sorted": teams_sorted, "participants": teams,
+                    "itemsTimeline": events},
                     separators=(',', ':')))
                 f.flush()
+                yield {"gameId": match_id, "sorted": teams_sorted, "participants": teams,
+                       "itemsTimeline": events}
             except HTTPError as e:
                 print('HTTP ERROR: There was an error obtaining this match. Skip.')
                 print(repr(e))
@@ -185,6 +312,10 @@ def get_matches(match_ids):
 
 
 def scrape_matches(num_games, cut_off_date):
-    summoners = get_top_summoners()
-    match_ids = get_match_ids(summoners, num_games, cut_off_date)
-    get_matches(match_ids)
+    # summoners = get_top_summoners()
+    # match_ids = get_match_ids(summoners, num_games, cut_off_date)
+
+    with open(app_constants.train_paths["matchids"], "r") as f:
+        match_ids = json.load(f)
+    return get_matches(match_ids)
+    # return get_matches([3855490507])
