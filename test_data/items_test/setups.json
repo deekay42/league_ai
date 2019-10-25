@@ -1,0 +1,97 @@
+{
+  "AP vs AD(ninja tabi vs mercs + last whisper + void staff)" : {
+    "champs":["Jayce", "LeeSin", "Talon", "Jhin", "Pyke", "Rumble", "Elise", "Diana", "Ziggs", "Brand"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+
+  },
+  "AD vs Tank(last whisper and armor items) " : {
+    "champs":["Jayce", "LeeSin", "Talon", "Jhin", "Pyke", "Sion", "Rammus", "Chogath", "Sivir", "Malphite"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+
+  },
+  "AD vs heavy CC(qss)" : {
+    "champs":["Jayce", "LeeSin", "Talon", "Jhin", "Pyke", "Poppy", "Sejuani", "Malzahar", "Sivir", "Morgana"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+
+  },
+  "AP vs Tank(void staff and MR items) " : {
+    "champs":["Rumble", "Elise", "Diana", "Ziggs", "Brand", "Sion", "Rammus", "Chogath", "Sivir", "Malphite"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+
+  },
+  "AD vs Healing(executioners)" : {
+    "champs":["Jayce", "LeeSin", "Talon", "Jhin", "Pyke", "Aatrox", "Kindred", "Fiora", "Draven", "Soraka"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+  },
+  "AP vs Healing(orb)" : {
+    "champs":["Rumble", "Elise", "Diana", "Ziggs", "Brand", "Aatrox", "Kindred", "Fiora", "Draven", "Soraka"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+  },
+  "Tank vs Healing(bramble)" : {
+    "champs":["Sion", "Rammus", "Chogath", "Sivir", "Malphite", "Aatrox", "Kindred", "Fiora", "Draven", "Soraka"],
+    "items":["Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)",
+        "Empty", "Empty", "Empty", "Empty","Empty","Empty", "Warding Totem (Trinket)"]
+  }
+}

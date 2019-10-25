@@ -18,34 +18,34 @@ config['pipeline']['RiotAPI'] = {
                 "strategy": "exponential_backoff",
                 "initial_backoff": 1.0,
                 "backoff_factor": 2.0,
-                "max_attempts": 4
+                "max_attempts": 6
             },
             "method": {
                 "strategy": "retry_from_headers",
-                "max_attempts": 5
+                "max_attempts": 6
             },
             "application": {
                 "strategy": "retry_from_headers",
-                "max_attempts": 5
+                "max_attempts": 6
             }
         },
         "500": {
             "strategy": "exponential_backoff",
             "initial_backoff": 1.0,
             "backoff_factor": 2.0,
-            "max_attempts": 4
+            "max_attempts": 6
         },
         "503": {
             "strategy": "exponential_backoff",
             "initial_backoff": 1.0,
             "backoff_factor": 2.0,
-            "max_attempts": 4
+            "max_attempts": 6
         },
         "timeout": {
             "strategy": "exponential_backoff",
             "initial_backoff": 1.0,
             "backoff_factor": 2.0,
-            "max_attempts": 4
+            "max_attempts": 6
         },
         "403": {
             "strategy": "throw"
