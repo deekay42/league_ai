@@ -1,8 +1,10 @@
-import numpy as np
-from utils import utils
-import cv2 as cv
-import random
 import glob
+import random
+
+import cv2 as cv
+import numpy as np
+
+from utils import utils
 
 #
 #
@@ -224,8 +226,8 @@ def overlayText(img):
         text = chr(np.random.randint(33, 126))
         org = np.random.randint(0, int(img_width)), np.random.randint(0, int(img_height))
         color = np.random.randint(0, 255), np.random.randint(0, 255), np.random.randint(0, 255)
-        size = np.random.normal(1,1)
-        thickness = np.random.randint(2,4)
+        size = np.random.normal(1, 1)
+        thickness = np.random.randint(2, 4)
         img = cv.putText(img, text, org, cv.FONT_HERSHEY_PLAIN, size, color, thickness, bottomLeftOrigin=False)
     return img
 
@@ -312,6 +314,7 @@ def randResize(img, rate):
             result = cv.copyMakeBorder(result, v_border, v_border, h_border, h_border, cv.BORDER_CONSTANT,
                                        value=(0, 0, 0))
         return result
+
 
 def mess_up_current_gold(img, config):
     color_change_rate = config["color_change_rate"]
@@ -679,7 +682,6 @@ current_gold_config = \
         "gray_rate": 0.3
     }
 
-
 kda_config = \
     {
         "darkness_rate": 0.4,
@@ -969,8 +971,8 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
 
     return (images, classes)
 
-def generate_training_data_nonsquare(imgs, epochs, new_size):
 
+def generate_training_data_nonsquare(imgs, epochs, new_size):
     images = []
     classes = []
     mykey = list(imgs.keys())[0]
@@ -981,7 +983,7 @@ def generate_training_data_nonsquare(imgs, epochs, new_size):
 
         for key, image in imgs.items():
             # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
-            a_min = min(img_size_x/2, img_size_y/2)
+            a_min = min(img_size_x / 2, img_size_y / 2)
             a_max = min(img_size_x, img_size_y)
 
             crop_size = np.random.randint(a_min, a_max)
@@ -1013,32 +1015,38 @@ def generate_training_data_nonsquare(imgs, epochs, new_size):
     return images, classes
 
 
-
 def generate_training_data_rect(imgs, epochs, new_size):
-
     images = []
     classes = []
+    x_pad = 3
+    y_pad = 1
+    imgs = {key: cv.copyMakeBorder(imgs[key], y_pad, y_pad, x_pad, x_pad, cv.BORDER_CONSTANT, value=(0, 0,
+                                                                                                     0)) for key in
+            imgs}
     mykey = list(imgs.keys())[0]
     img_size_y, img_size_x = imgs[mykey].shape[:2]
     global gauss
     gauss = np.random.normal(0, 10, (*new_size, 3))
+
+
+
+
     for _ in range(epochs):
 
         for key, image in imgs.items():
             # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
-            a_min = img_size_x/2
+            a_min = img_size_x / 2
             a_max = img_size_x
             b_min = img_size_y / 2
             b_max = img_size_y
 
-            crop_size_a = np.random.randint(a_min, a_max+1)
-            crop_size_b = np.random.randint(b_min, b_max+1)
+            crop_size_a = np.random.randint(a_min, a_max + 1)
+            crop_size_b = np.random.randint(b_min, b_max + 1)
 
             top_left_x_min = 0
             top_left_x_max = img_size_x - crop_size_a
             top_left_y_min = 0
             top_left_y_max = img_size_y - crop_size_b
-
 
             top_left_x = np.random.randint(top_left_x_min, top_left_x_max) if top_left_x_min < top_left_x_max else 0
             top_left_y = np.random.randint(top_left_y_min, top_left_y_max) if top_left_y_min < top_left_y_max else 0
@@ -1061,6 +1069,7 @@ def generate_training_data_rect(imgs, epochs, new_size):
 
     return images, classes
 
+
 # while True:
 #     self_imgs = utils.init_self_data_for_training()
 #     self_imgs = dict(zip([1],[self_imgs[1]]))
@@ -1068,12 +1077,13 @@ def generate_training_data_rect(imgs, epochs, new_size):
 #     for img in imgs:
 #         pass
 
-if __name__=="__main__":
+if __name__ == "__main__":
     import copy
-    img_orig = cv.imread('../assets/kda_imgs/5.png')
+
+    img_orig = cv.imread('../assets/train_imgs/cs/5.png')
     cv.imshow("original", img_orig)
     while True:
         img = copy.deepcopy(img_orig)
-        img = generate_training_data_rect({"lol":img}, 1, (14,10))[0][0]
+        img = generate_training_data_rect({"lol": img}, 1, (14, 10))[0][0]
         cv.imshow("text", img)
         cv.waitKey(0)

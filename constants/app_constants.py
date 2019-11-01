@@ -1,25 +1,31 @@
 import os
 
 base_asset_path = "assets" + os.sep
+train_imgs_path = base_asset_path + "train_imgs" + os.sep
 asset_paths = dict()
-asset_paths["champ_imgs"] = base_asset_path + "champ_imgs" + os.sep
-asset_paths["item_imgs"] = base_asset_path + "item_imgs_train" + os.sep
-asset_paths["self_imgs"] = base_asset_path + "self_indicator_imgs" + os.sep
-asset_paths["current_gold_imgs"] = base_asset_path + "current_gold_imgs" + os.sep
-asset_paths["kda_imgs"] = base_asset_path + "kda_imgs" + os.sep
-asset_paths["cs_imgs"] = base_asset_path + "kda_imgs" + os.sep
-asset_paths["lvl_imgs"] = base_asset_path + "kda_imgs" + os.sep
+
+asset_paths["champs"] = train_imgs_path + "champs" + os.sep
+asset_paths["items"] = train_imgs_path + "items" + os.sep
+asset_paths["spells"] = train_imgs_path + "self" + os.sep
+asset_paths["self"] = train_imgs_path + "self" + os.sep
+asset_paths["current_gold"] = train_imgs_path + "current_gold" + os.sep
+asset_paths["kda"] = train_imgs_path + "kda" + os.sep
+asset_paths["cs"] = train_imgs_path + "cs" + os.sep
+asset_paths["lvl"] = train_imgs_path + "lvl" + os.sep
 asset_paths["jsons"] = base_asset_path + "data" + os.sep
-asset_paths["champ_json"] = asset_paths["jsons"] + "champ2id.json"
-asset_paths["item_json"] = asset_paths["jsons"] + "item2id.json"
+asset_paths["champs_json"] = asset_paths["jsons"] + "champ2id.json"
+asset_paths["items_json"] = asset_paths["jsons"] + "item2id.json"
 asset_paths["self_json"] = asset_paths["jsons"] + "self2id.json"
-asset_paths["spell_json"] = asset_paths["jsons"] + "spell2id.json"
+asset_paths["spells_json"] = asset_paths["jsons"] + "spell2id.json"
 asset_paths["current_gold_json"] = asset_paths["jsons"] + "current_gold2id.json"
 asset_paths["kda_json"] = asset_paths["jsons"] + "kda2id.json"
 asset_paths["cs_json"] = asset_paths["jsons"] + "cs2id.json"
 asset_paths["lvl_json"] = asset_paths["jsons"] + "lvl2id.json"
 asset_paths["xp_table"] = asset_paths["jsons"] + "xp_table.json"
 asset_paths["diamond_league_ids"] = asset_paths["jsons"] + os.sep + "diamond_league_ids"
+asset_paths["tesseract_separator"] = base_asset_path + "tesseract/sep.png"
+asset_paths["tesseract_list_file"] = base_asset_path + "tesseract/list.txt"
+asset_paths["tesseract_tmp_files"] = base_asset_path + "tesseract/"
 
 base_train_path = "training_data" + os.sep
 train_paths = dict()
@@ -49,12 +55,12 @@ for label in ["train", "best"]:
         "next_items_late": paths["base"] + "next_items" + os.sep + "late" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
-    paths.update({"champ_imgs": paths["imgs"] + "champs" + os.sep,
-                  "item_imgs": paths["imgs"] + "items" + os.sep,
-                  "self_imgs": paths["imgs"] + "self" + os.sep,
-                  "kda_imgs": paths["imgs"] + "kda" + os.sep,
-                  "cs_imgs": paths["imgs"] + "cs" + os.sep,
-                  "lvl_imgs": paths["imgs"] + "lvl" + os.sep,
-                  "current_gold_imgs": paths["imgs"] + "current_gold" + os.sep})
+    paths.update({"champs": paths["imgs"] + "champs" + os.sep,
+                  "items": paths["imgs"] + "items" + os.sep,
+                  "self": paths["imgs"] + "self" + os.sep,
+                  "kda": paths["imgs"] + "kda" + os.sep,
+                  "cs": paths["imgs"] + "cs" + os.sep,
+                  "lvl": paths["imgs"] + "lvl" + os.sep,
+                  "current_gold": paths["imgs"] + "current_gold" + os.sep})
     model_paths[label] = paths
 

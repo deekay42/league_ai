@@ -19,7 +19,7 @@ from watchdog.observers import Observer
 
 from utils import utils
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel
-from utils.artifact_manager import ChampManager, ItemManager, SelfManager, SpellManager
+from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
 import functools
@@ -428,8 +428,29 @@ class Main(FileSystemEventHandler):
 
 # pr = cProfile.Profile()
 
+#
+# dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
+# X, _ = dataloader.get_train_data()
+# m = NextItemEarlyGameModel()
+# m.output_logs(X)
 
-dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
-X, _ = dataloader.get_train_data()
-m = NextItemEarlyGameModel()
-m.output_logs(X)
+
+
+from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
+with open('test_data/easy/test_labels.json', "r") as f:
+    elems = json.load(f)
+
+base_path = "test_data/easy/"
+
+for key in elems:
+    test_image_y = elems[key]
+    test_image_x = cv.imread(base_path + test_image_y["filename"])
+    res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")))
+
+
+    models = [CurrentGoldImgModel(res_cvt), CSImgModel(res_cvt), LvlImgModel(res_cvt)]
+    model = MultiTesseractModel(models)
+    result = list(model.predict(test_image_x))
+    print(result)
+
+        # KDAImgModel(res_cvt).predict(test_image_x)
