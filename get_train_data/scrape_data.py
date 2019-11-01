@@ -1,12 +1,12 @@
 import json
 import traceback
+from urllib.error import HTTPError
 
 import numpy as np
-
-from utils import cass_configured as cass
-from constants import game_constants, app_constants
-from urllib.error import HTTPError
 from range_key_dict import RangeKeyDict
+
+from constants import game_constants, app_constants
+from utils import cass_configured as cass
 
 
 class AllGamesCollected(Exception): pass
@@ -42,7 +42,7 @@ def get_match_ids(summoners, num_games, cut_off_date):
                     num_games -= 1
 
             except AllGamesCollected as e:
-                #not a real exception, more of a goto
+                # not a real exception, more of a goto
                 break
             except HTTPError as h:
                 print('ERROR: There was an error obtaining this summoners match history')
@@ -117,12 +117,10 @@ def get_matches(match_ids):
 
         for i in range(len(xp_table)):
             if i == len(xp_table) - 1:
-                xp_table_dict[(xp_table[i][1], 20*xp_table[i][1])] = int(xp_table[i][0])
+                xp_table_dict[(xp_table[i][1], 20 * xp_table[i][1])] = int(xp_table[i][0])
             else:
-                xp_table_dict[(xp_table[i][1], xp_table[i+1][1])] = int(xp_table[i][0])
+                xp_table_dict[(xp_table[i][1], xp_table[i + 1][1])] = int(xp_table[i][0])
         xp2lvl = RangeKeyDict(xp_table_dict)
-
-
 
     first = True
     with open(app_constants.train_paths["presorted_matches_path"], "w") as f:
@@ -163,48 +161,47 @@ def get_matches(match_ids):
                 losing_team, losing_team_sorted = sort_if_complete(teams[1])
                 teams = np.ravel([winning_team, losing_team]).tolist()
 
-
                 events = []
                 prev_frame = match.timeline.frames[0]
                 prev_participant_frames = prev_frame.participant_frames
 
-                participant_id2header_participants_index = {participant["participantId"]:index for index, participant
+                participant_id2header_participants_index = {participant["participantId"]: index for index, participant
                                                             in
-                                                  enumerate(teams)}
-                kda = np.zeros((10,3), dtype=np.int32)
+                                                            enumerate(teams)}
+                kda = np.zeros((10, 3), dtype=np.int32)
 
                 event_counter = 0
                 for frame_index, frame in enumerate(match.timeline.frames[1:]):
                     participant_frames = frame.participant_frames
-                    #last interval might be shorter
+                    # last interval might be shorter
                     if frame_index >= len(match.timeline.frames) - 2:
-                        interval =  match.duration.seconds-1 % 60 + 1
+                        interval = match.duration.seconds - 1 % 60 + 1
                     else:
                         interval = frame.timestamp.seconds - prev_frame.timestamp.seconds
 
-                    gold_slope = [0]*10
-                    cs_slope = [0]*10
-                    neutral_cs_slope = [0]*10
+                    gold_slope = [0] * 10
+                    cs_slope = [0] * 10
+                    neutral_cs_slope = [0] * 10
                     xp_slope = [0] * 10
 
                     for i in range(10):
-                        current_participant = participant_frames[i+1]
+                        current_participant = participant_frames[i + 1]
                         current_participant_before = prev_participant_frames[i + 1]
                         current_participant_header_index = participant_id2header_participants_index[
                             current_participant.participant_id]
 
-
-                        gold_slope[current_participant_header_index] = (current_participant.gold_earned - current_participant_before.gold_earned) / \
-                                        interval
+                        gold_slope[current_participant_header_index] = (
+                                                                                   current_participant.gold_earned - current_participant_before.gold_earned) / \
+                                                                       interval
                         cs_slope[current_participant_header_index] = (
-                                                    current_participant.creep_score -
-                                                    current_participant_before.creep_score) / interval
+                                                                             current_participant.creep_score -
+                                                                             current_participant_before.creep_score) / interval
                         neutral_cs_slope[current_participant_header_index] = (
-                                                    current_participant.neutral_minions_killed -
-                                                    current_participant_before.neutral_minions_killed) / interval
+                                                                                     current_participant.neutral_minions_killed -
+                                                                                     current_participant_before.neutral_minions_killed) / interval
                         xp_slope[current_participant_header_index] = (
-                                                    current_participant.experience -
-                                                    current_participant_before.experience) / interval
+                                                                             current_participant.experience -
+                                                                             current_participant_before.experience) / interval
 
                     event_current_gold = [0] * 10
                     event_total_gold = [0] * 10
@@ -213,17 +210,15 @@ def get_matches(match_ids):
                     event_xp = [0] * 10
                     event_lvl = [0] * 10
 
-
                     for event in frame.events:
                         event_type = event.type
-
 
                         if event_type == "CHAMPION_KILL":
                             for assister in event.assisting_participants:
                                 kda[participant_id2header_participants_index[assister]][2] += 1
                             victim_kda = kda[participant_id2header_participants_index[event.victim_id]]
                             victim_kda[1] += 1
-                            #champ died to turret or jg, etc.
+                            # champ died to turret or jg, etc.
                             if event.killer_id == 0:
                                 continue
 
@@ -232,35 +227,39 @@ def get_matches(match_ids):
 
 
                         elif event_type == "ITEM_DESTROYED" or event_type == "ITEM_PURCHASED" or event_type == \
-                            "ITEM_SOLD":
-                            if  event.item_id != 3340 and event.item_id != 3363 and event.item_id != 3364:
+                                "ITEM_SOLD":
+                            if event.item_id != 3340 and event.item_id != 3363 and event.item_id != 3364:
 
                                 event_timestamp = event.timestamp
                                 interval = (event_timestamp.seconds - prev_frame.timestamp.seconds)
 
                                 for i in range(10):
-
                                     current_participant_before = prev_participant_frames[i + 1]
                                     current_participant_header_index = participant_id2header_participants_index[
                                         current_participant_before.participant_id]
 
+                                    event_current_gold[
+                                        current_participant_header_index] = current_participant_before.current_gold
+                                    event_current_gold[current_participant_header_index] += interval * gold_slope[
+                                        current_participant_header_index]
 
-
-                                    event_current_gold[current_participant_header_index] = current_participant_before.current_gold
-                                    event_current_gold[current_participant_header_index] += interval * gold_slope[current_participant_header_index]
-
-
-                                    event_total_gold[current_participant_header_index] = current_participant_before.gold_earned + \
-                                                       interval * \
-                                                       gold_slope[current_participant_header_index]
+                                    event_total_gold[
+                                        current_participant_header_index] = current_participant_before.gold_earned + \
+                                                                            interval * \
+                                                                            gold_slope[current_participant_header_index]
 
                                     event_cs[current_participant_header_index] = \
-                                        current_participant_before.creep_score + interval * cs_slope[current_participant_header_index]
-                                    event_neutral_cs[current_participant_header_index] = current_participant_before.neutral_minions_killed + \
-                                                       interval * neutral_cs_slope[current_participant_header_index]
+                                        current_participant_before.creep_score + interval * cs_slope[
+                                            current_participant_header_index]
+                                    event_neutral_cs[
+                                        current_participant_header_index] = current_participant_before.neutral_minions_killed + \
+                                                                            interval * neutral_cs_slope[
+                                                                                current_participant_header_index]
                                     event_xp[current_participant_header_index] = current_participant_before.experience + \
-                                               interval * xp_slope[current_participant_header_index]
-                                    event_lvl[current_participant_header_index] = xp2lvl[event_xp[current_participant_header_index]]
+                                                                                 interval * xp_slope[
+                                                                                     current_participant_header_index]
+                                    event_lvl[current_participant_header_index] = xp2lvl[
+                                        event_xp[current_participant_header_index]]
 
                                 events.append(
                                     {"participantId": event.participant_id,
@@ -274,7 +273,7 @@ def get_matches(match_ids):
                                      "xp": event_xp.copy(),
                                      "lvl": event_lvl.copy(),
                                      "kda": kda.tolist().copy(),
-                                     "frame_index": frame_index+1
+                                     "frame_index": frame_index + 1
                                      })
 
 
@@ -295,7 +294,7 @@ def get_matches(match_ids):
                     f.write(',')
                 f.write(json.dumps(
                     {"gameId": match_id, "sorted": teams_sorted, "participants": teams,
-                    "itemsTimeline": events},
+                     "itemsTimeline": events},
                     separators=(',', ':')))
                 f.flush()
                 yield {"gameId": match_id, "sorted": teams_sorted, "participants": teams,

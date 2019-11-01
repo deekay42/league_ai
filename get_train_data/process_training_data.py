@@ -1,26 +1,21 @@
 import glob
 import os
+import time
 from collections import Counter
 from functools import reduce
 from itertools import compress
 from multiprocessing import Process, Queue
 
+import arrow
 import numpy as np
 from jq import jq
-import scipy.sparse
-from tflearn.data_utils import to_categorical
 
 from constants import game_constants
 from get_train_data import scrape_data
+from train_model import data_loader
 from train_model import train
 from utils import utils, build_path, cass_configured as cass
 from utils.artifact_manager import *
-import arrow
-import cProfile
-import io
-import pstats
-import time
-from train_model import data_loader
 
 
 class DuplicateTimestampException(Exception):
@@ -34,7 +29,7 @@ class ProcessPositionsTrainingData:
         self.cut_off_date = cut_off_date
         self.data_x = []
         self.champ_manager = ChampManager()
-        self.spell_manager = SpellManager()
+        self.spell_manager = SimpleManager("spells")
 
 
     def start(self):
@@ -115,7 +110,7 @@ class ProcessNextItemsTrainingData:
         super().__init__()
         self.champ_manager = ChampManager()
         self.item_manager = ItemManager()
-        self.spell_manager = SpellManager()
+        self.spell_manager = SimpleManager("spells")
         self.role_predictor = None
 
         self.data_x = None
@@ -125,7 +120,7 @@ class ProcessNextItemsTrainingData:
                 self.jq_scripts[name] = f.read()
         self.jq_scripts["merged"] = self.jq_scripts[
                                         "sortEqualTimestamps.jq"] + ' | ' + self.jq_scripts[
-            "buildAbsoluteItemTimeline.jq"]
+                                        "buildAbsoluteItemTimeline.jq"]
 
 
     # input is a list of games
@@ -226,9 +221,9 @@ class ProcessNextItemsTrainingData:
         progress_counter = 0
         for match in matches:
             events = match["itemsTimeline"]
-            #some matches have ITEM_PURCHASE events by the same summoner at the same timestamp.
-            #since the order of these events is nondeterministic, they cannot be reliable parsed
-            #skip
+            # some matches have ITEM_PURCHASE events by the same summoner at the same timestamp.
+            # since the order of these events is nondeterministic, they cannot be reliable parsed
+            # skip
             events_per_timestamp = Counter()
             for event in events:
                 if event["type"] != "ITEM_PURCHASED":
@@ -245,20 +240,19 @@ class ProcessNextItemsTrainingData:
                        "itemsTimeline": events}
 
 
-
     @staticmethod
     def keyFunc(elem):
         if elem["type"] == "ITEM_PURCHASED":
-            return elem["timestamp"] + elem["participantId"]/10 + 0.01
+            return elem["timestamp"] + elem["participantId"] / 10 + 0.01
         elif elem["type"] == "ITEM_DESTROYED":
             if elem["itemId"] == 2420 or elem["itemId"] == 2421:
-                return elem["timestamp"] + elem["participantId"]/10 + 0.019
+                return elem["timestamp"] + elem["participantId"] / 10 + 0.019
             else:
-                return elem["timestamp"] + elem["participantId"]/10 + 0.02
+                return elem["timestamp"] + elem["participantId"] / 10 + 0.02
         elif elem["type"] == "ITEM_SOLD":
-            return elem["timestamp"] + elem["participantId"]/10 + 0.03
+            return elem["timestamp"] + elem["participantId"] / 10 + 0.03
         elif elem["type"] == "ITEM_UNDO":
-            return elem["timestamp"] + elem["participantId"]/10 + 0.04
+            return elem["timestamp"] + elem["participantId"] / 10 + 0.04
         else:
             print(elem)
             1 / 0
@@ -275,16 +269,17 @@ class ProcessNextItemsTrainingData:
 
                     for j in range(i - 1, -1, -1):
                         if (included[j]
-                            and events[j]["participantId"] == events[i]["participantId"]
-                            and (events[j]['type']=="ITEM_PURCHASED" or events[j]['type']=="ITEM_SOLD")
-                            and (events[i]["beforeId"] == events[j]["itemId"] or events[i]["afterId"] == events[j]["itemId"])
-                            and events[i]["timestamp"] >= events[j]["timestamp"]):
+                                and events[j]["participantId"] == events[i]["participantId"]
+                                and (events[j]['type'] == "ITEM_PURCHASED" or events[j]['type'] == "ITEM_SOLD")
+                                and (events[i]["beforeId"] == events[j]["itemId"] or events[i]["afterId"] == events[j][
+                                    "itemId"])
+                                and events[i]["timestamp"] >= events[j]["timestamp"]):
                             included[j] = 0
-                            k = j+1
+                            k = j + 1
                             while events[j]["timestamp"] == events[k]["timestamp"] and events[j]["participantId"] == \
-                                    events[k]["participantId"] and events[k]["type"]=="ITEM_DESTROYED":
+                                    events[k]["participantId"] and events[k]["type"] == "ITEM_DESTROYED":
                                 included[k] = 0
-                                k+=1
+                                k += 1
                             break
 
             events = list(compress(events, included))
@@ -371,23 +366,23 @@ class ProcessNextItemsTrainingData:
 
         sorted_teams = self.role_predictor.multi_predict(unsorted_teams)
 
+
         def gameId2roles(gameId):
             sorted, index = unsorted_matches_gameId2Index[gameId]
             if sorted == 0:
-                return sorted_teams[index] + (np.array(sorted_teams[index+1]) + 5).tolist()
+                return sorted_teams[index] + (np.array(sorted_teams[index + 1]) + 5).tolist()
             elif sorted == 1:
-                return [0,1,2,3,4] + (np.array(sorted_teams[index]) + 5).tolist()
+                return [0, 1, 2, 3, 4] + (np.array(sorted_teams[index]) + 5).tolist()
             elif sorted == 2:
-                return sorted_teams[index] + [5,6,7,8,9]
+                return sorted_teams[index] + [5, 6, 7, 8, 9]
+
 
         return gameId2roles
-
 
 
     def apply_roles_to_unsorted_processed(self, gameId2roles, unsorted_processed):
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
-
 
         pos_start = 0
         pos_end = pos_start + 1
@@ -415,21 +410,23 @@ class ProcessNextItemsTrainingData:
                 current_game = unsorted_processed[gameId]
                 permutation = gameId2roles(int(gameId))
 
-                reordered_result = np.concatenate([current_game[:,pos_start:pos_end],
-                                    current_game[:,champs_start:champs_end][:,permutation],
-                                    current_game[:,items_start:items_end].reshape((-1, champs_per_game,
-                                                                                   items_per_champ*2))[:,
-                                        permutation].reshape(-1, champs_per_game*items_per_champ*2),
-                                    current_game[:, total_gold_start:total_gold_end][:, permutation],
-                                    current_game[:,cs_start:cs_end][:,permutation],
-                                    current_game[:,neutral_cs_start:neutral_cs_end][:,permutation],
-                                    current_game[:,xp_start:xp_end][:,permutation],
-                                    current_game[:,lvl_start:lvl_end][:,permutation],
-                                    current_game[:,kda_start:kda_end].reshape((-1, champs_per_game,
-                                                                               3))[:,permutation].reshape((-1,
-                                                                                                         champs_per_game*3)),
-                                    current_game[:, current_gold_start:current_gold_end][:,permutation],
-                                                   current_game[:,-1:]], axis=1)
+                reordered_result = np.concatenate([current_game[:, pos_start:pos_end],
+                                                   current_game[:, champs_start:champs_end][:, permutation],
+                                                   current_game[:, items_start:items_end].reshape((-1, champs_per_game,
+                                                                                                   items_per_champ * 2))[
+                                                   :,
+                                                   permutation].reshape(-1, champs_per_game * items_per_champ * 2),
+                                                   current_game[:, total_gold_start:total_gold_end][:, permutation],
+                                                   current_game[:, cs_start:cs_end][:, permutation],
+                                                   current_game[:, neutral_cs_start:neutral_cs_end][:, permutation],
+                                                   current_game[:, xp_start:xp_end][:, permutation],
+                                                   current_game[:, lvl_start:lvl_end][:, permutation],
+                                                   current_game[:, kda_start:kda_end].reshape((-1, champs_per_game,
+                                                                                               3))[:,
+                                                   permutation].reshape((-1,
+                                                                         champs_per_game * 3)),
+                                                   current_game[:, current_gold_start:current_gold_end][:, permutation],
+                                                   current_game[:, -1:]], axis=1)
                 yield reordered_result
             except KeyError as e:
                 yield current_game
@@ -562,7 +559,6 @@ class ProcessNextItemsTrainingData:
     #         fsorted.write(']')
     #         fsorted.close()
 
-
     def team2role_predictor_input(self, team):
         data = np.array([[participant['championId'], participant['spell1Id'], participant['spell2Id'],
                           participant['kills'], participant['deaths'], participant['assists'],
@@ -590,19 +586,19 @@ class ProcessNextItemsTrainingData:
                 # these items can fit multiple instances into one item slot
                 if item == 2055 or item == 2003:
                     added_item = [self.item_manager.lookup_by('id', str(item))['int'],
-                                                                               player_items_dict[
-                        item]]
+                                  player_items_dict[
+                                      item]]
                     processed_player_items.append(added_item)
                     player_items_dict_items.append(added_item)
                 elif item == 2138 or item == 2139 or item == 2140:
                     continue
                 else:
                     added_item = self.item_manager.lookup_by('id', str(item))['int']
-                    processed_player_items.extend([[added_item,1]] * player_items_dict[item])
+                    processed_player_items.extend([[added_item, 1]] * player_items_dict[item])
                     player_items_dict_items.append((added_item, player_items_dict[item]))
 
             if processed_player_items == []:
-                processed_player_items = [[0,6],[-1,-1],[-1,-1],[-1,-1],[-1,-1],[-1,-1]]
+                processed_player_items = [[0, 6], [-1, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
             else:
                 empties_length = game_constants.MAX_ITEMS_PER_CHAMP - len(processed_player_items)
                 padding_length = game_constants.MAX_ITEMS_PER_CHAMP - len(player_items_dict_items)
@@ -616,10 +612,10 @@ class ProcessNextItemsTrainingData:
                         padding = np.array([]).reshape((0, 2)).astype(int)
                     if padding_length == 1:
                         empties = [[0, empties_length]]
-                        padding = np.array([]).reshape((0,2)).astype(int)
+                        padding = np.array([]).reshape((0, 2)).astype(int)
                     elif padding_length > 1:
                         empties = [[0, empties_length]]
-                        padding = [[-1,-1]] * (padding_length - 1)
+                        padding = [[-1, -1]] * (padding_length - 1)
 
 
                 except ValueError as e:
@@ -627,7 +623,7 @@ class ProcessNextItemsTrainingData:
                     print(items)
                     raise e
 
-                processed_player_items = np.concatenate([player_items_dict_items,empties, padding],
+                processed_player_items = np.concatenate([player_items_dict_items, empties, padding],
                                                         axis=0).tolist()
 
             items_at_time_x.append(processed_player_items)
@@ -664,7 +660,6 @@ class ProcessNextItemsTrainingData:
             return delta_update
 
 
-
     def post_process(self, matches):
 
         for i, game in enumerate(matches):
@@ -689,7 +684,6 @@ class ProcessNextItemsTrainingData:
                 if not delta_update:
                     continue
 
-
                 delta_current_gold[pos] += delta_update
 
                 if pos > 4:
@@ -706,18 +700,17 @@ class ProcessNextItemsTrainingData:
                 y = self.item_manager.lookup_by("id", str(event['itemId']))["int"]
 
                 out.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
-                                          np.around(event['total_gold']).astype(int),
-                                          np.around(event['cs']).astype(int),
-                                          np.around(event['neutral_cs']).astype(int),
-                                          np.around(event['xp']).astype(int),
-                                          np.around(event['lvl']).astype(int),
-                                          np.ravel(event['kda']).tolist(),
-                                          np.around(event['current_gold']).astype(int),
-                                          [y]
-                                          ], 0))
+                                           np.around(event['total_gold']).astype(int),
+                                           np.around(event['cs']).astype(int),
+                                           np.around(event['neutral_cs']).astype(int),
+                                           np.around(event['xp']).astype(int),
+                                           np.around(event['lvl']).astype(int),
+                                           np.ravel(event['kda']).tolist(),
+                                           np.around(event['current_gold']).astype(int),
+                                           [y]
+                                           ], 0))
             else:
                 yield {str(game['gameId']): out}
-
 
 
     def deflate_next_items(self, matches, log_info, out_file_name=None):
@@ -784,12 +777,13 @@ class ProcessNextItemsTrainingData:
     def start(self, num_threads=os.cpu_count(), chunklen=400):
         class ProcessTrainingDataWorker(Process):
 
-            def __init__(self, in_queue, out_queue, thread_index,  transformations):
+            def __init__(self, in_queue, out_queue, thread_index, transformations):
                 super().__init__()
                 self.in_queue = in_queue
                 self.out_queue = out_queue
                 self.run_transformations = transformations
                 self.thread_index = thread_index
+
 
             def run(self):
                 try:
@@ -819,6 +813,7 @@ class ProcessNextItemsTrainingData:
 
 
         class WriteResultWorker(Process):
+
             def __init__(self, out_queue, chunksize, out_dir):
                 super().__init__()
                 self.in_queue = in_queue
@@ -966,10 +961,6 @@ class ProcessNextItemsTrainingData:
 
         return result
 
-
-
-
-
         return result_x, result_y
 
 
@@ -984,14 +975,12 @@ class ProcessNextItemsTrainingData:
 
 
 if __name__ == "__main__":
-
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
 
     l = ProcessNextItemsTrainingData()
     l.start()
     # l.update_roles()
-
 
     #
     # t = train.StaticTrainingDataTrainer()

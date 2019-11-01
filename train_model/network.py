@@ -10,8 +10,9 @@ from tflearn.layers.normalization import batch_normalization
 from abc import ABC, abstractmethod
 import numpy as np
 import itertools
-from utils.artifact_manager import ChampManager, ItemManager, SpellManager, CurrentGoldManager, KDAManager
+from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 from constants import ui_constants, game_constants
+from constants.ui_constants import ResConverter
 
 
 
@@ -72,7 +73,7 @@ class ChampImgNetwork(ImgNetwork):
 
     def __init__(self):
         super().__init__()
-        self.img_size = ui_constants.NETWORK_CHAMP_IMG_CROP
+        self.img_size = ResConverter.network_crop["champs"]
 
 
     def get_num_elements(self):
@@ -82,7 +83,7 @@ class ChampImgNetwork(ImgNetwork):
     def build(self):
         is_training = tflearn.get_training_mode()
         # input
-        network = input_data(shape=[None, self.img_size[1], self.img_size[0], 3], name='input')
+        network = input_data(shape=[None, self.img_size[0], self.img_size[1], 3], name='input')
 
         conv1 = relu(batch_normalization(
             conv_2d(network, 16, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
@@ -105,7 +106,7 @@ class ItemImgNetwork(ImgNetwork):
 
     def __init__(self):
         super().__init__()
-        self.img_size = ui_constants.NETWORK_ITEM_IMG_CROP
+        self.img_size = ResConverter.network_crop["items"]
 
 
     def get_num_elements(self):
@@ -115,7 +116,7 @@ class ItemImgNetwork(ImgNetwork):
     def build(self):
         is_training = tflearn.get_training_mode()
         # input
-        network = input_data(shape=[None, self.img_size[1], self.img_size[0], 3], name='input')
+        network = input_data(shape=[None, self.img_size[0], self.img_size[1], 3], name='input')
 
         conv1 = relu(batch_normalization(
             conv_2d(network, 32, 5, bias=False, activation=None, regularizer="L2"), trainable=is_training))
@@ -138,7 +139,7 @@ class SelfImgNetwork(ImgNetwork):
 
     def __init__(self):
         super().__init__()
-        self.img_size = ui_constants.NETWORK_SELF_IMG_CROP
+        self.img_size = ResConverter.network_crop["self"]
 
 
     def get_num_elements(self):
@@ -184,7 +185,7 @@ class PositionsNetwork(Network):
                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
                 "total_num_champs": ChampManager().get_num("int"),
                 "spells_per_summ": game_constants.SPELLS_PER_CHAMP,
-                "total_num_spells": SpellManager().get_num("int"),
+                "total_num_spells": SimpleManager("spells").get_num("int"),
                 "rest_dim": 8
             }
 
