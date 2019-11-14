@@ -575,14 +575,12 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items, target_summ_current_gold,
-             target_summ_cs, target_summ_lvl, target_summ_kda,
+            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items,
             opp_summ_champ,
              opp_summ_champ_emb,
              opp_summ_items,
              champs_embedded_flat,
-             opp_champs_k_hot,
-             champs_with_items_emb, lvl, kda, total_cs],
+             champs_with_items_emb],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
