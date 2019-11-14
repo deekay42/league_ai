@@ -207,18 +207,39 @@ class PositionsNetwork(Network):
                 a[l], a[i] = a[i], a[l]
 
 
+
     @staticmethod
     def best_permutations_one_hot(pred):
         pred_5x5 = tf.reshape(pred, [-1, 5, 5])
         pred_5x5_T = tf.transpose(pred_5x5, (1, 2, 0))
         all_perms = tf.constant(list(PositionsNetwork.permute([0, 1, 2, 3, 4], 0, 4)))
-        selected_elemens_per_example = tf.gather_nd(pred_5x5_T, all_perms)
-        sums_per_example = tf.reduce_sum(selected_elemens_per_example, axis=1)
+        selected_elements_per_example = tf.gather_nd(pred_5x5_T, all_perms)
+        sums_per_example = tf.reduce_sum(selected_elements_per_example, axis=1)
         best_perm_per_example_index = tf.argmax(sums_per_example, axis=0)
         best_perms = tf.gather_nd(all_perms, best_perm_per_example_index[:, tf.newaxis])[:, :, 1]
         pred_5x5_one_hot = tf.reshape(tf.one_hot(best_perms, depth=5), (-1, 5, 5))
         return pred_5x5_one_hot
 
+
+    @staticmethod
+    def best_permutations_one_hot_permutated(pred):
+        pred_5x5 = tf.reshape(pred, [-1, 5, 5])
+        pred_5x5_T = tf.transpose(pred_5x5, (1, 2, 0))
+        all_perms = tf.constant(list(PositionsNetwork.permute([0, 1, 2, 3, 4], 0, 4)))
+        selected_elements_per_example = tf.gather_nd(pred_5x5_T, all_perms)
+        sums_per_example = tf.reduce_sum(selected_elements_per_example, axis=1)
+        best_perm_per_example_index = tf.argmax(sums_per_example, axis=0)
+        best_perms = tf.gather_nd(all_perms, best_perm_per_example_index[:, tf.newaxis])[:, :, 1]
+        pred_5x5_one_hot = tf.reshape(tf.one_hot(best_perms, depth=5), (-1, 5, 5))
+        pred_5x5_one_hot_by_permed_example = tf.reshape(pred_5x5_one_hot, (-1, len(all_perms), 5, 5))
+        # tf.range(len(all_perms))
+        # np.concatenate([, all_perms[:,:,0], all_perms[:,:,1]], )
+        # tf.tile(tf.range(len(all_perms)), 5*2)
+        # tf.concatenate([, tf.reshape(all_perms, (-1,2))])
+
+        x_perms_inv = tf.gather(pred_5x5_one_hot_by_permed_example, all_perms, axis=1)
+        x_perms_inv_summed = tf.reduce_sum(x_perms_inv, axis=1)
+        return best_perm_per_example_index(x_perms_inv_summed)
 
     @staticmethod
     def multi_class_acc_positions(pred, target, input_):
@@ -243,26 +264,32 @@ class PositionsNetwork(Network):
         in_vec = input_data(shape=[None, champs_per_team + champs_per_team * (spells_per_summ + rest_dim)],
                             name='input')
 
-        champ_ints = in_vec[:, 0:champs_per_team]
+        champ_ints = in_vec[:, ::1+spells_per_summ+rest_dim]
         champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                            scope="champ_scope")
         champs = tf.reshape(champs, [-1, champs_per_team * champ_emb_dim])
 
-        spell_ints = in_vec[:, champs_per_team:champs_per_team + spells_per_summ * champs_per_team]
+        spell_ints = [in_vec[:,i*champs_per_team+1:i*champs_per_team+1+spells_per_summ] for i in range(\
+                champs_per_team)]
+
         spell_ints = tf.reshape(spell_ints, [-1, champs_per_team, spells_per_summ])
 
         spells_one_hot_i = tf.one_hot(tf.cast(spell_ints, tf.int32), depth=total_num_spells)
         spells_one_hot = tf.reduce_sum(spells_one_hot_i, axis=2)
         spells_one_hot = tf.reshape(spells_one_hot, [-1, champs_per_team * total_num_spells])
-        rest = in_vec[:, champs_per_team + spells_per_summ * champs_per_team:]
+
+        rest = [in_vec[:,i*champs_per_team+1+spells_per_summ:i*champs_per_team+1+spells_per_summ+rest_dim] for i in
+                range(\
+                champs_per_team)]
+        rest = tf.reshape(rest, [-1, rest_dim])
 
         final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 
-        # net = dropout(final_input_layer, 0.8)
-        net = final_input_layer
+        net = dropout(final_input_layer, 0.8)
+        # net = final_input_layer
         net = relu(
             batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
-        # net = dropout(net, 0.6)
+        net = dropout(net, 0.6)
 
         net = fully_connected(net, champs_per_team * champs_per_team, activation=None)
 
