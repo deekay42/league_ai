@@ -34,7 +34,7 @@ class MonitorCallback(tflearn.callbacks.Callback):
 class Trainer(ABC):
 
     def __init__(self):
-        self.num_epochs = 10
+        self.num_epochs = 50
         self.batch_size = 128
         self.model_name = "my_model"
         self.acc_file_name = "accuracies"
@@ -79,7 +79,7 @@ class Trainer(ABC):
 
     def train_neural_network(self):
         with tf.device("/gpu:0"):
-            with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+            with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
                 tflearn.is_training(True)
                 self.network = self.network.build()
                 model = tflearn.DNN(self.network, session=sess)
@@ -97,18 +97,22 @@ class Trainer(ABC):
                     #     cv.imshow(str(i), img)
                     # cv.waitKey(0)
                     # y = model.predict(self.X_test)
-                    # y = [np.argmax(y_) for y_ in y]
+                    # # y = [np.argmax(y_) for y_ in y]
+                    # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+                    # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
                     #
                     # print("Pred Actual")
-                    # for i in range(len(self.Y_test)):
-                    #     a = self.manager.lookup_by('img_int', y[i])['name']
-                    #     b = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-                    #     if a != b:
+                    # for i in range(len(y_actual)):
+                    #     # a = self.manager.lookup_by('img_int', y[i])['name']
+                    #     # b = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+                    #     a = y[i]
+                    #     b = y_actual[i]
+                    #     if not np.all(np.equal(a,b)):
                     #         print(f"----->{i}: {a} {b}")
                     #     else:
                     #         print(f"{i}: {a} {b}")
                     # print("Raw test data predictions: {0}".format(y))
-                    # print("Actual test data  values : {0}".format(self.Y_test))
+                    # print("Actual test data  values : {0}".format(y_actual))
 
                     # y = model.predict(self.X_test)
                     # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
@@ -161,7 +165,7 @@ class DynamicTrainingDataTrainer(Trainer):
                                                                                     self.epoch_size,
                                                                                     self.network_crop)
         self.network = DigitRecognitionNetwork(lambda: self.manager.get_num("img_int"), self.network_crop)
-        self.X_test, self.Y_test = self.load_test_data()
+
 
 
     def get_train_data(self):
@@ -180,11 +184,12 @@ class DynamicTrainingDataTrainer(Trainer):
         for key in elems:
             test_image_y = elems[key]
             test_image_x = cv.imread(base_path + test_image_y["filename"])
-            res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")))
+            res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")), test_image_y["hud_scale"],
+                                                test_image_y["summ_names_displayed"])
 
-            if test_image_y[self.elements] != None:
+            if test_image_y[self.elements] is not None:
                 result_y.extend(self.extract_y_data(test_image_y[self.elements]))
-                result_x.extend(self.model(res_cvt).extract_imgs(test_image_x)[0])
+                result_x.extend(self.model(res_cvt).extract_imgs(test_image_x))
 
         return result_x, result_y
 
@@ -298,6 +303,7 @@ class KDATrainer(DynamicTrainingDataTrainer):
         self.elements = "kda"
         self.epoch_size = 500
         super().__init__()
+        self.X_test, self.Y_test = self.load_test_data()
 
 
     def extract_y_data(self, data):
@@ -307,46 +313,46 @@ class KDATrainer(DynamicTrainingDataTrainer):
                     yield self.manager.lookup_by("name", digit)["img_int"]
                 if i != 2:
                     yield self.manager.lookup_by("name", "slash")["img_int"]
-
-
-class CSTrainer(DynamicTrainingDataTrainer):
-
-    def __init__(self):
-        self.model = CSImgModel
-        self.elements = "cs"
-        self.epoch_size = 500
-        super().__init__()
-
-
-    def extract_y_data(self, data):
-        for number in data:
-            for digit in str(number):
-                yield self.manager.lookup_by("name", str(digit))["img_int"]
-
-
-class LvlTrainer(DynamicTrainingDataTrainer):
-
-    def __init__(self):
-        self.model = LvlImgModel
-        self.element = "lvl"
-        self.epoch_size = 500
-        super().__init__()
-
-    def extract_y_data(self, data):
-        for number in data:
-            for digit in str(number):
-                yield self.manager.lookup_by("name", str(digit))["img_int"]
-
-
-
-class CurrentGoldTrainer(DynamicTrainingDataTrainer):
-
-    def __init__(self):
-        self.model = CurrentGoldImgModel
-        self.element = "current_gold"
-        self.epoch_size = 1000
-        super().__init__()
-
+#
+#
+# class CSTrainer(DynamicTrainingDataTrainer):
+#
+#     def __init__(self):
+#         self.model = CSImgModel
+#         self.elements = "cs"
+#         self.epoch_size = 500
+#         super().__init__()
+#
+#
+#     def extract_y_data(self, data):
+#         for number in data:
+#             for digit in str(number):
+#                 yield self.manager.lookup_by("name", str(digit))["img_int"]
+#
+#
+# class LvlTrainer(DynamicTrainingDataTrainer):
+#
+#     def __init__(self):
+#         self.model = LvlImgModel
+#         self.element = "lvl"
+#         self.epoch_size = 500
+#         super().__init__()
+#
+#     def extract_y_data(self, data):
+#         for number in data:
+#             for digit in str(number):
+#                 yield self.manager.lookup_by("name", str(digit))["img_int"]
+#
+#
+#
+# class CurrentGoldTrainer(DynamicTrainingDataTrainer):
+#
+#     def __init__(self):
+#         self.model = CurrentGoldImgModel
+#         self.element = "current_gold"
+#         self.epoch_size = 1000
+#         super().__init__()
+#
 
 class ChampImgTrainer(DynamicTrainingDataTrainer):
 
@@ -359,6 +365,7 @@ class ChampImgTrainer(DynamicTrainingDataTrainer):
         self.training_data_generator = lambda: generate.generate_training_data(self.manager.get_imgs(), self.epoch_size,
                                                                                self.network_crop)
         self.network = ChampImgNetwork()
+        self.X_test, self.Y_test = self.load_test_data()
 
 
 class ItemImgTrainer(DynamicTrainingDataTrainer):
@@ -373,6 +380,7 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
         self.training_data_generator = lambda: generate.generate_training_data(self.manager.get_imgs(), self.epoch_size,
                                                                                self.network_crop)
         self.network = ItemImgNetwork()
+        self.X_test, self.Y_test = self.load_test_data()
 
 
 class SelfTrainer(DynamicTrainingDataTrainer):
@@ -388,7 +396,58 @@ class SelfTrainer(DynamicTrainingDataTrainer):
                                                                                self.network_crop, True)
 
 
-class StaticTrainingDataTrainer(Trainer):
+class PositionsTrainer(Trainer):
+
+    def __init__(self):
+        super().__init__()
+        self.num_epochs = 10
+
+
+    def eval_model(self, model, epoch):
+        # pred = model.predict(np.array(self.X_test))
+        # acc = PositionsNetwork.multi_class_acc_positions(pred, self.Y_test, None)
+        # with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+        #     acc = sess.run(acc)
+        acc = model.evaluate(np.array(self.X_test), np.array(self.Y_test), batch_size=self.batch_size)[0]
+        self.log_output(acc, epoch)
+        return acc
+
+
+    def log_output(self, main_test_eval, epoch_counter):
+        super().log_output(main_test_eval, epoch_counter)
+        self.logfile.write("\n\n")
+        self.logfile.flush()
+
+
+    def determine_best_eval(self, scores):
+        max_main = -1
+        best_model_index = -1
+        for i, main in enumerate(scores):
+            if main >= max_main:
+                max_main = main
+                best_model_index = i
+        # epoch counter is 1 based
+        return best_model_index + 1
+
+
+    def train(self):
+        self.train_path = app_constants.model_paths["train"]["positions"]
+        self.best_path = app_constants.model_paths["best"]["positions"]
+        self.network = PositionsNetwork()
+        print("Loading training data")
+        dataloader = data_loader.PositionsDataLoader()
+        self.X, self.Y = dataloader.get_train_data()
+        print("Loading test data")
+        self.X_test, self.Y_test = dataloader.get_test_data()
+        self.build_new_model()
+
+
+
+class NextItemsTrainer(Trainer):
+
+    def __init__(self):
+        super().__init__()
+        self.manager = ItemManager()
 
     def determine_best_eval(self, scores):
         # epoch counter is 1 based
@@ -584,25 +643,15 @@ class StaticTrainingDataTrainer(Trainer):
         self.build_new_model()
 
 
-    def build_positions_model(self):
-        self.train_path = app_constants.model_paths["train"]["positions"]
-        self.best_path = app_constants.model_paths["best"]["positions"]
-        self.network = PositionsNetwork()
-        print("Loading training data")
-        dataloader = data_loader.PositionsDataLoader()
-        self.X, self.Y = dataloader.get_train_data()
-        print("Loading test data")
-        self.X_test, self.Y_test = dataloader.get_test_data()
-        self.build_new_model()
 
 
 if __name__ == "__main__":
-    # t = StaticTrainingDataTrainer()
-    # t.build_next_items_early_game_model()
+    t = NextItemsTrainer()
+    t.build_next_items_early_game_model()
     # t.standalone_eval()
 
-    s = KDATrainer()
-    s.build_new_img_model()
+    # s = PositionsTrainer()
+    # s.train()
 
     # res_cvt = ui_constants.ResConverter(1920, 1080)
     # model = ItemImgModel(res_cvt, True)

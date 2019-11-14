@@ -258,11 +258,11 @@ class PositionsNetwork(Network):
 
         final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 
-        net = dropout(final_input_layer, 0.8)
-
+        # net = dropout(final_input_layer, 0.8)
+        net = final_input_layer
         net = relu(
             batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
-        net = dropout(net, 0.6)
+        # net = dropout(net, 0.6)
 
         net = fully_connected(net, champs_per_team * champs_per_team, activation=None)
 
@@ -579,7 +579,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             opp_summ_champ,
              opp_summ_champ_emb,
              opp_summ_items,
-             opp_champs_k_hot,
+             champs_embedded,
              champs_with_items_emb, lvl, kda, total_cs],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)

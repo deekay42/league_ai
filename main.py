@@ -18,7 +18,8 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from utils import utils
-from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel
+from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel, CSImgModel, \
+    KDAImgModel, CurrentGoldImgModel, LvlImgModel
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
@@ -70,14 +71,31 @@ class Main(FileSystemEventHandler):
         # if Main.shouldTerminate():
         #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
+        self.champ_img_model.load_model()
         # if Main.shouldTerminate():
         #     return
-        self.item_img_model = ItemImgModel(self.res_converter, True)
+        self.item_img_model = ItemImgModel(self.res_converter)
+        self.item_img_model.load_model()
         # if Main.shouldTerminate():
         #     return
         self.self_img_model = SelfImgModel(self.res_converter)
+        self.self_img_model.load_model()
+
+
+        self.kda_img_model = KDAImgModel(self.res_converter)
+        self.kda_img_model.load_model()
+        self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter), CSImgModel(self.res_converter), CurrentGoldImgModel(self.res_converter)])
+
         Main.test_connection()
 
+    def set_res_converter(self, res_cvt):
+        self.res_converter = res_cvt
+        self.champ_img_model.res_converter = res_cvt
+        self.item_img_model.res_converter = res_cvt
+        self.self_img_model.res_converter = res_cvt
+        self.kda_img_model.res_converter = res_cvt
+        for model in self.tesseract_models.tesseractmodels:
+            model.res_converter = res_cvt
 
     @staticmethod
     def test_connection(timeout=0):
@@ -335,8 +353,13 @@ class Main(FileSystemEventHandler):
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             print("Trying to predict champ imgs")
             champs = list(self.champ_img_model.predict(screenshot))
-            for champ in champs:
-                print(champ)
+            print(f"Champs: {champs}\n")
+            kda = list(self.kda_img_model.predict(screenshot))
+            print(f"KDA:\n {kda}\n")
+            tesseract_result = self.tesseract_models.predict(screenshot)
+            print(f"Lvl:\n {next(tesseract_result)}\n")
+            print(f"CS:\n {next(tesseract_result)}\n")
+            print(f"Current Gold:\n {next(tesseract_result)}\n")
             print("Trying to predict item imgs. \nHere are the raw items: ")
             items = list(self.item_img_model.predict(screenshot))
             for i, item in enumerate(items):
@@ -348,6 +371,7 @@ class Main(FileSystemEventHandler):
             print("Trying to predict self imgs")
             self_index = self.self_img_model.predict(screenshot)
             print(self_index)
+            return
         except FileNotFoundError as e:
             print(e)
             return
@@ -357,7 +381,7 @@ class Main(FileSystemEventHandler):
             return
 
         #remove items that the network is not trained on, such as control wards
-        items = [item if (item["name"] != "Control Ward" and item["name"] != "Warding Totem (Trinket)" and item[
+        items = [item if (item["name"] != "Warding Totem (Trinket)" and item[
             "name"] != "Farsight Alteration" and item["name"] != "Oracle Lens") else self.item_manager.lookup_by("int", 0) for item in
                  items]
 
@@ -434,23 +458,32 @@ class Main(FileSystemEventHandler):
 # m = NextItemEarlyGameModel()
 # m.output_logs(X)
 
+#
+# blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
+# cv.imshow("blob", blob)
+# cv.waitKey(0)
+# ret, thresholded = cv.threshold(blob, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+# cv.imshow("thresholded", thresholded)
+# cv.waitKey(0)
+#
+# from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
+# with open('test_data/easy/test_labels.json', "r") as f:
+#     elems = json.load(f)
+#
+# base_path = "test_data/easy/"
+# m = Main()
+#
+#
+# for key in elems:
+#
+#
+#     if elems[key]["hud_scale"] != None:
+#         test_image_y = elems[key]
+#
+#         m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"]))
+#
+#         m.process_image(base_path + test_image_y["filename"])
+#
+#             # KDAImgModel(res_cvt).predict(test_image_x)
 
-
-from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
-with open('test_data/easy/test_labels.json', "r") as f:
-    elems = json.load(f)
-
-base_path = "test_data/easy/"
-
-for key in elems:
-    test_image_y = elems[key]
-    test_image_x = cv.imread(base_path + test_image_y["filename"])
-    res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")))
-
-
-    models = [CurrentGoldImgModel(res_cvt), CSImgModel(res_cvt), LvlImgModel(res_cvt)]
-    model = MultiTesseractModel(models)
-    result = list(model.predict(test_image_x))
-    print(result)
-
-        # KDAImgModel(res_cvt).predict(test_image_x)
+cass.Item(id=2055, region="KR")
