@@ -522,6 +522,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                                                        reuse=tf.AUTO_REUSE,
                                                                scope="champ_scope")
 
+        champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim*champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
@@ -579,7 +580,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             opp_summ_champ,
              opp_summ_champ_emb,
              opp_summ_items,
-             champs_embedded,
+             champs_embedded_flat,
+             opp_champs_k_hot,
              champs_with_items_emb, lvl, kda, total_cs],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
