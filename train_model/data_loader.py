@@ -65,9 +65,6 @@ class UnsortedNextItemsDataLoader:
             self.train.update(data)
 
 
-
-
-
 class SortedNextItemsDataLoader(DataLoaderBase):
 
     def __init__(self, path):
@@ -144,12 +141,28 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         return np.array(result)
 
 
+class PositionsToBePredDataLoader:
+
+    def __init__(self):
+        self.train_x_filenames = sorted(glob.glob(app_constants.train_paths["positions_to_be_pred"] + 'train*.npz'))
+        super().__init__()
+
+
+    def read(self):
+        if not self.train_x_filenames:
+            raise FileNotFoundError("No numpy files in that location")
+        result = dict()
+        for i in self.train_x_filenames:
+            data = dict(np.load(i))
+            result.update(data)
+        return result
+
 
 class PositionsDataLoader(DataLoaderBase):
 
     def __init__(self):
-        self.train_x_filenames = sorted(glob.glob(app_constants.train_paths["positions_processed"] + 'train_x*.npz'))
-        self.test_x_filenames = sorted(glob.glob(app_constants.train_paths["positions_processed"] + 'test_x*.npz'))
+        self.train_x_filenames = sorted(glob.glob(app_constants.train_paths["positions_processed"] + 'train*.npz'))
+        self.test_x_filenames = sorted(glob.glob(app_constants.train_paths["positions_processed"] + 'test*.npz'))
         super().__init__()
 
 
@@ -192,19 +205,22 @@ class PositionsDataLoader(DataLoaderBase):
                 result_y.append(np.ravel(positions))
         return np.array(result_x), np.array(result_y)
 
+
     def read_test_from_np_files(self):
-        if not self.test_x_filenames or not self.test_y_filenames:
+        if not self.test_x_filenames:
             raise FileNotFoundError("No test numpy files in that location")
 
         for i in self.test_x_filenames:
-            data = np.load(i)['arr_0']
-            self.test_x += list(data)
+            data = list(dict(np.load(i)).values())
+            self.test_x += data
+
 
 
     def read_train_from_np_files(self):
-        if not self.train_x_filenames or not self.train_y_filenames:
+        if not self.train_x_filenames:
             raise FileNotFoundError("No train numpy files in that location")
 
         for i in self.train_x_filenames:
-            data = np.load(i)['arr_0']
-            self.train_x += list(data)
+            data = list(dict(np.load(i)).values())
+            self.train_x += data
+

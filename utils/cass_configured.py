@@ -53,5 +53,5 @@ config['pipeline']['RiotAPI'] = {
     }
 }
 
-set_default_region("KR")
+set_default_region("EUW")
 apply_settings(config)

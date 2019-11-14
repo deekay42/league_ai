@@ -34,6 +34,7 @@ train_paths["positions"] = base_train_path + "positions" + os.sep
 train_paths["next_items_processed_unsorted"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + os.sep
 train_paths["next_items_processed_sorted"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + os.sep
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
+train_paths["positions_to_be_pred"] = train_paths["positions"] + "to_be_pred" + os.sep
 
 train_paths["matchids"] = train_paths["next_items"] + "matchids.json"
 

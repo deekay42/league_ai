@@ -84,18 +84,23 @@ def uniq:
                 $item_transactions[0] + {"absolute_items":[[],[],[],[],[],[],[],[],[],[]]},
                 $item_transactions[1] + {"absolute_items":.}
               elif $item_transactions[$index].timestamp == $item_transactions[$index+1].timestamp and
-              $item_transactions[$index].participantId == $item_transactions[$index+1].participantId
+                $item_transactions[$index].participantId == $item_transactions[$index+1].participantId and
+                $item_transactions[$index+1].type=="ITEM_DESTROYED"
               then
                 empty
               else
                 if $index < $transactions_len - 2 and $item_transactions[$index+1].timestamp ==
                 $item_transactions[$index+2].timestamp and
-              $item_transactions[$index+1].participantId == $item_transactions[$index+2].participantId and
+                    $item_transactions[$index+1].participantId == $item_transactions[$index+2].participantId and
                     $item_transactions[$index+2].type=="ITEM_DESTROYED" then
                      if $item_transactions[$index+2].itemId==2422 then
-                        .[([$participants[].participantId] | index(($item_transactions[$index+2].participantId | tonumber)))
-                            ] |= .+ [2422] |
-                        $item_transactions[$index+1] + {"absolute_items":.}
+                        .[([$participants[].participantId] | index(($item_transactions[$index+2].participantId | tonumber)))][[2422]][0] as $item_index |
+                        if $item_index == null then
+                            .[([$participants[].participantId] | index(($item_transactions[$index+2].participantId | tonumber)))] |= .+ [2422] |
+                            $item_transactions[$index+1] + {"absolute_items":.}
+                        else
+                            $item_transactions[$index+1] + {"absolute_items":.}
+                        end
                      elif $item_transactions[$index+2].itemId==2419 then
                         .[([$participants[].participantId] | index(($item_transactions[$index+2].participantId | tonumber)))
                             ] |= .+ [2419] |

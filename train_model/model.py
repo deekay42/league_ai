@@ -34,7 +34,7 @@ class Model(ABC):
             model = tflearn.DNN(self.network, session=self.session)
             self.session.run(tf.global_variables_initializer())
             try:
-                self.model_path = glob.glob(self.model_path + "my_model*")[0]
+                self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
                 self.model_path = self.model_path.rpartition('.')[0]
                 model.load(self.model_path, create_new_session=False)
             except Exception as e:
@@ -182,8 +182,6 @@ class ImgModel(Model):
         super().__init__()
         self.network_crop = res_converter.network_crop[self.elements]
         self.res_converter = res_converter
-        self.coords = list(self.generate_coords())
-        self.coords = np.reshape(self.coords, (-1, 2))
 
 
     def predict(self, img):
@@ -193,21 +191,22 @@ class ImgModel(Model):
         return predicted_artifacts
 
 
-    def generate_coords(self):
-        for team_offset in [0, self.res_converter.lookup(self.elements, "x_diff")]:
-            for row in range(5):
-                yield round(self.res_converter.lookup(self.elements, "x_start") + team_offset), \
-                      round(row * self.res_converter.lookup(
-                          self.elements, "y_diff") + \
-                      self.res_converter.lookup(self.elements, "y_start"))
+    def get_coords(self):
+        return list(self.res_converter.generate_std_coords(self.elements))
 
 
     def extract_imgs(self, whole_img):
-        coords = self.generate_coords()
+        coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
-        sub_imgs = [whole_img[coord[1]:coord[1] + self.res_converter.lookup(self.elements, "y_crop"),
-                    coord[0]:coord[0] + self.res_converter.lookup(self.elements, "x_crop")] for coord in coords]
+        sub_imgs = [whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements,
+                                                                                                  "y_crop"))),
+                    int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_crop")))]
+                    for coord in
+                    coords]
         sub_imgs = [cv.resize(img, self.network_crop, cv.INTER_AREA) for img in sub_imgs]
+        # for i, img in enumerate(sub_imgs):
+        #     cv.imshow(str(i), img)
+        # cv.waitKey(0)
         return sub_imgs
 
 
@@ -239,31 +238,27 @@ class TesseractModel:
         self.config = ("-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=@0123456789")
         self.res_converter = res_converter
         self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
-        self.separator = cv.copyMakeBorder(self.separator, 0, 0, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        self.separator = cv.copyMakeBorder(self.separator, 0, 0, 5, 5, cv.BORDER_CONSTANT, value=(255, 255, 255))
         _, self.separator = cv.threshold(self.separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
 
 
-    def generate_coords(self):
-        for team_offset in [0, self.res_converter.lookup(self.elements, "x_diff")]:
-            for row in range(5):
-                yield round(self.res_converter.lookup(self.elements, "x_start") + team_offset), \
-                      round(row * self.res_converter.lookup(
-                          self.elements, "y_diff") + \
-                      self.res_converter.lookup(self.elements, "y_start"))
-
-
     def extract_slide_img(self, slide_img):
+
         x_pad = y_pad = 20
         img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
         scale_factor = 5
         img_bordered = cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
         gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-        cutoff_ratio = 2/5
+        cv.imshow("gray", gray)
+
         ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        sorted_thresholds = sorted(gray[thresholded > 0])
-        thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
-        gray[gray < thresh] = 0
-        contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+        cv.imshow("thresholded", thresholded)
+        # cutoff_ratio = 2/5
+        # sorted_thresholds = sorted(gray[thresholded > 0])
+        # thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
+        # gray[gray < thresh] = 0
+        # cv.imshow("gray_thresholded", gray)
+        contours, hier = cv.findContours(thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
         sorted_bboxes = sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0])
         x_l, y_l, w_l, h_l = sorted_bboxes[0]
         x_r, y_r, w_r, h_r = sorted_bboxes[-1]
@@ -273,15 +268,22 @@ class TesseractModel:
         separator = cv.resize(self.separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
         width = x_r - x_l + w_r
         blob_contour = gray[y_top:y_top + height, x_l:x_r + w_r]
-        blob_contour = cv.bitwise_not(blob_contour)
-        ret, blob_contour = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        img = np.concatenate([separator, blob_contour, separator], axis=1)
-        img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        return  img
+        cv.imshow("blob_contour", blob_contour)
 
+        ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        cv.imshow("thresholded", thresholded)
+
+        inv = cv.bitwise_not(thresholded)
+        img = np.concatenate([separator, separator, inv, separator, separator], axis=1)
+        img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+
+        return img
+
+    def get_coords(self):
+        return list(self.res_converter.generate_std_coords(self.elements))
 
     def get_raw_slide_imgs(self, whole_img):
-        coords = list(self.generate_coords())
+        coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
         slide_imgs = [
             whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
@@ -292,7 +294,8 @@ class TesseractModel:
 
     def extract_all_slide_imgs(self, whole_img):
         slide_imgs = self.get_raw_slide_imgs(whole_img)
-        return [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
+        result = [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
+        return result
 
 
     def predict(self, whole_img):
@@ -308,7 +311,7 @@ class TesseractModel:
 
     def convert(self, tesseract_result):
         try:
-            return int(tesseract_result[1:-1])
+            return int(tesseract_result[2:-2])
         except ValueError as e:
             return 0
 
@@ -560,11 +563,13 @@ class LvlImgModel(TesseractModel):
         super().__init__(res_converter)
 
 
-    def predict_slide_img(self, slide_img, height=None):
+    def extract_slide_img(self, slide_img):
+        cv.imshow("original", slide_img)
         bw_pixels = np.logical_and(slide_img[:,:,0] == slide_img[:,:,1], slide_img[:,:,1] == slide_img[:,:,
                                                                                              2]).astype(np.uint8)
         slide_img = cv.bitwise_and(slide_img, slide_img, mask=bw_pixels)
-        return super().predict_slide_img(slide_img, height)
+        cv.imshow("preprocessed", slide_img)
+        return super().extract_slide_img(slide_img)
 
 
 class KDAImgModel(ImgModel):
@@ -577,7 +582,7 @@ class KDAImgModel(ImgModel):
         self.network = network.DigitRecognitionNetwork(lambda: self.artifact_manager.get_num("img_int"),
                                                        self.network_crop)
         self.model_path = app_constants.model_paths["best"][self.elements]
-        self.load_model()
+
 
 
     def predict(self, whole_img):
@@ -650,7 +655,7 @@ class KDAImgModel(ImgModel):
 
 
     def extract_imgs(self, whole_img):
-        coords = list(self.generate_coords())
+        coords = list(self.get_coords())
         coords = np.reshape(coords, (-1, 2))
         slide_imgs = [
             whole_img[coord[1]:int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
@@ -671,8 +676,6 @@ class KDAImgModel(ImgModel):
         return sub_imgs, num_elements
 
 
-
-
 class CurrentGoldImgModel(TesseractModel):
 
     def __init__(self, res_converter):
@@ -680,9 +683,10 @@ class CurrentGoldImgModel(TesseractModel):
         super().__init__(res_converter)
 
 
-    def generate_coords(self):
-        return self.res_converter.lookup(self.elements, "x_start"), self.res_converter.lookup(self.elements, "y_start")
-
+    def get_raw_slide_imgs(self, whole_img):
+        x,y,w,h = self.res_converter.generate_current_gold_coords()
+        slide_imgs = [whole_img[int(round(y)):int(round(y + h)), int(round(x)):int(round(x+w))]]
+        return slide_imgs
 
 
 class ChampImgModel(ImgModel):
@@ -694,41 +698,19 @@ class ChampImgModel(ImgModel):
         self.artifact_manager = ChampManager()
 
 
+
 class ItemImgModel(ImgModel):
 
-    def __init__(self, res_converter, summ_names_displayed):
-        self.summ_names_displayed = summ_names_displayed
+    def __init__(self, res_converter):
         self.elements = "items"
         super().__init__(res_converter)
         self.network = network.ItemImgNetwork()
-
-        self.model_path = app_constants.model_paths["best"]["item_imgs"]
         self.artifact_manager = ItemManager()
-        self.coords = res_converter.coords["items"]
 
 
-    def generate_coords(self):
-        item_x_offset = self.coords["item_spacing"]
-        item_y_offset = self.coords["item_spacing"]
-        if self.summ_names_displayed:
-            item_x_offset += self.coords["summ_names_x_offset"]
-            item_y_offset += self.coords["summ_names_y_offset"]
 
-        return ItemImgModel.generate_item_coords(self.coords["item_spacing"], self.coords["x_start"],
-                                                 self.coords["x_diff"], self.coords["y_diff"],
-                                                 self.coords["x_start"], item_x_offset, item_y_offset)
-
-
-    @staticmethod
-    def generate_item_coords(box_size, left_x, right_x_offset, y_diff, top_left_trinket_y, x_offset, y_offset):
-        item_slots_coordinates = np.zeros((2, 5, 7, 2), dtype=np.int64)
-        total_x_offsets = (left_x + x_offset, left_x + right_x_offset + x_offset)
-        for total_x_offset, team in zip(total_x_offsets, range(2)):
-            for player in range(5):
-                for item in range(7):
-                    item_slots_coordinates[team][player][item] = (
-                        round(total_x_offset + item * box_size), round(top_left_trinket_y + y_offset + player * y_diff))
-        return item_slots_coordinates
+    def get_coords(self):
+        return list(self.res_converter.generate_item_coords())
 
 
 class SelfImgModel(ImgModel):
@@ -736,6 +718,9 @@ class SelfImgModel(ImgModel):
     def __init__(self, res_converter):
         self.elements = "self"
         super().__init__(res_converter)
+        self.network = network.SelfImgNetwork()
+        self.artifact_manager = SimpleManager(self.elements)
+
 
 
     def predict(self, img):
@@ -833,7 +818,8 @@ class PositionsModel(Model):
         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
         self.champ_manager = ChampManager()
-        self.spell_manager = SimpleManager("spell")
+        self.spell_manager = SimpleManager("spells")
+        self.elements = "positions"
         self.load_model()
         self.lock = threading.Lock()
 

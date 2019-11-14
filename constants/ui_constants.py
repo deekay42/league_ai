@@ -1,3 +1,5 @@
+import numpy as np
+
 SCOREBOARD_SCALING = 0.5
 STD_SCOREBOARD_WIDTH = 870
 STD_SCOREBOARD_HEIGHT = 352
@@ -74,12 +76,16 @@ class Res_16_9(ResolutionBase):
         self.coords["self"]["x_crop"] = 17
         self.coords["self"]["y_crop"] = 17
 
-        self.coords["current_gold"]["x_start"] = 1132
-        self.coords["current_gold"]["y_start"] = 1056
-        self.coords["current_gold"]["y_height"] = 17
-        self.coords["current_gold"]["x_width"] = 59
         self.coords["current_gold"]["x_crop"] = 8
         self.coords["current_gold"]["y_crop"] = 12
+        self.coords["current_gold"]["min_x_start"] = 1120.5
+        self.coords["current_gold"]["max_x_start"] = 1200
+        self.coords["current_gold"]["min_y_start"] = 1057.5
+        self.coords["current_gold"]["max_y_start"] = 1045.5
+        self.coords["current_gold"]["min_x_width"] = 60
+        self.coords["current_gold"]["max_x_width"] = 90
+        self.coords["current_gold"]["min_y_height"] = 15
+        self.coords["current_gold"]["max_y_height"] = 24
 
         self.coords["kda"]["x_start"] = 610
         self.coords["kda"]["y_start"] = 335
@@ -98,12 +104,11 @@ class Res_16_9(ResolutionBase):
         self.coords["cs"]["y_diff"] = self.coords["kda"]["y_diff"]
         self.coords["cs"]["x_crop"] = self.coords["kda"]["x_crop"]
         self.coords["cs"]["y_crop"] = self.coords["kda"]["y_crop"]
-        self.coords["cs"]["triple_digit_x_width"] = 25
-        self.coords["cs"]["double_digit_x_width"] = 14
+
 
         self.coords["lvl"]["x_start"] = 521
-        self.coords["lvl"]["y_start"] = 363
-        self.coords["lvl"]["y_height"] = 11
+        self.coords["lvl"]["y_start"] = 362
+        self.coords["lvl"]["y_height"] = 13
         self.coords["lvl"]["x_width"] = 18
         self.coords["lvl"]["x_diff"] = self.coords["kda"]["x_diff"]
         self.coords["lvl"]["y_diff"] = self.coords["kda"]["y_diff"]
@@ -144,12 +149,16 @@ class Res_8_5(ResolutionBase):
         self.coords["self"]["x_crop"] = 15
         self.coords["self"]["y_crop"] = 15
 
-        self.coords["current_gold"]["x_start"] = 867
-        self.coords["current_gold"]["y_start"] = 879
-        self.coords["current_gold"]["y_height"] = 14
-        self.coords["current_gold"]["x_width"] = 40
         self.coords["current_gold"]["x_crop"] = 5
         self.coords["current_gold"]["y_crop"] = 9
+        self.coords["current_gold"]["min_x_start"] = 854
+        self.coords["current_gold"]["max_x_start"] = 922
+        self.coords["current_gold"]["min_y_start"] = 881
+        self.coords["current_gold"]["max_y_start"] = 871
+        self.coords["current_gold"]["min_x_width"] = 50
+        self.coords["current_gold"]["max_x_width"] = 72
+        self.coords["current_gold"]["min_y_height"] = 14
+        self.coords["current_gold"]["max_y_height"] = 18
 
         self.coords["kda"]["x_start"] = 430
         self.coords["kda"]["y_start"] = 278
@@ -168,14 +177,13 @@ class Res_8_5(ResolutionBase):
         self.coords["cs"]["y_diff"] = self.coords["kda"]["y_diff"]
         self.coords["cs"]["x_crop"] = self.coords["kda"]["x_crop"]
         self.coords["cs"]["y_crop"] = self.coords["kda"]["y_crop"]
-        self.coords["cs"]["triple_digit_x_width"] = 19
-        self.coords["cs"]["double_digit_x_width"] = 10
+
 
         self.coords["lvl"]["x_start"] = 354
-        self.coords["lvl"]["y_start"] = 302
-        self.coords["lvl"]["y_height"] = 10
-        self.coords["lvl"]["x_width"] = 14
-        self.coords["lvl"]["x_diff"] = 480
+        self.coords["lvl"]["y_start"] = 299
+        self.coords["lvl"]["y_height"] = 14
+        self.coords["lvl"]["x_width"] = 15
+        self.coords["lvl"]["x_diff"] = 479
         self.coords["lvl"]["y_diff"] = self.coords["kda"]["y_diff"]
         self.coords["lvl"]["x_crop"] = 5
         self.coords["lvl"]["y_crop"] = 10
@@ -220,6 +228,14 @@ class Res_1366_768(ResolutionBase):
         self.coords["current_gold"]["x_width"] = 30
         self.coords["current_gold"]["x_crop"] = 5
         self.coords["current_gold"]["y_crop"] = 7
+        self.coords["current_gold"]["min_x_start"] = 797
+        self.coords["current_gold"]["max_x_start"] = 856
+        self.coords["current_gold"]["min_y_start"] = 752
+        self.coords["current_gold"]["max_y_start"] = 744
+        self.coords["current_gold"]["min_x_width"] = 42
+        self.coords["current_gold"]["max_x_width"] = 60
+        self.coords["current_gold"]["min_y_height"] = 11
+        self.coords["current_gold"]["max_y_height"] = 17
 
         self.coords["kda"]["x_start"] = 436
         self.coords["kda"]["y_start"] = 236
@@ -238,12 +254,11 @@ class Res_1366_768(ResolutionBase):
         self.coords["cs"]["y_diff"] = self.coords["kda"]["y_diff"]
         self.coords["cs"]["x_crop"] = self.coords["kda"]["x_crop"]
         self.coords["cs"]["y_crop"] = self.coords["kda"]["y_crop"]
-        self.coords["cs"]["triple_digit_x_width"] = 15
-        self.coords["cs"]["double_digit_x_width"] = 8
+
 
         self.coords["lvl"]["x_start"] = 372
-        self.coords["lvl"]["y_start"] = 258
-        self.coords["lvl"]["y_height"] = 9
+        self.coords["lvl"]["y_start"] = 255
+        self.coords["lvl"]["y_height"] = 11
         self.coords["lvl"]["x_width"] = 10
         self.coords["lvl"]["x_diff"] = self.coords["kda"]["x_diff"]
         self.coords["lvl"]["y_diff"] = self.coords["kda"]["y_diff"]
@@ -283,12 +298,16 @@ class Res_4_3(ResolutionBase):
         self.coords["self"]["x_crop"] = 11
         self.coords["self"]["y_crop"] = 11
 
-        self.coords["current_gold"]["x_start"] = 636
-        self.coords["current_gold"]["y_start"] = 750
-        self.coords["current_gold"]["y_height"] = 12
-        self.coords["current_gold"]["x_width"] = 34
         self.coords["current_gold"]["x_crop"] = 5
         self.coords["current_gold"]["y_crop"] = 7
+        self.coords["current_gold"]["min_x_start"] = 627
+        self.coords["current_gold"]["max_x_start"] = 686
+        self.coords["current_gold"]["min_y_start"] = 752
+        self.coords["current_gold"]["max_y_start"] = 744
+        self.coords["current_gold"]["min_x_width"] = 42
+        self.coords["current_gold"]["max_x_width"] = 60
+        self.coords["current_gold"]["min_y_height"] = 11
+        self.coords["current_gold"]["max_y_height"] = 17
 
         self.coords["kda"]["x_start"] = 267
         self.coords["kda"]["y_start"] = 236
@@ -307,12 +326,10 @@ class Res_4_3(ResolutionBase):
         self.coords["cs"]["y_diff"] = self.coords["kda"]["y_diff"]
         self.coords["cs"]["x_crop"] = self.coords["kda"]["x_crop"]
         self.coords["cs"]["y_crop"] = self.coords["kda"]["y_crop"]
-        self.coords["cs"]["triple_digit_x_width"] = 15
-        self.coords["cs"]["double_digit_x_width"] = 8
 
         self.coords["lvl"]["x_start"] = 200
-        self.coords["lvl"]["y_start"] = 259
-        self.coords["lvl"]["y_height"] = 7
+        self.coords["lvl"]["y_start"] = 256
+        self.coords["lvl"]["y_height"] = 9
         self.coords["lvl"]["x_width"] = 12
         self.coords["lvl"]["x_diff"] = self.coords["kda"]["x_diff"]
         self.coords["lvl"]["y_diff"] = self.coords["kda"]["y_diff"]
@@ -331,9 +348,11 @@ class ResConverter:
     network_crop["lvl"] = (11, 7)
 
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, hud_scale=None, summ_names_displayed=False):
         self.x = int(x)
         self.y = int(y)
+        self.hud_scale = hud_scale
+        self.summ_names_displayed = summ_names_displayed
 
         if round(self.x / self.y, 4) == 1.7786:
             self.selected_res = Res_1366_768()
@@ -345,6 +364,44 @@ class ResConverter:
             self.selected_res = Res_4_3()
         else:
             raise Exception("Screen resolution not supported: " + str(self.x) + " " + str(self.y))
+
+
+    def generate_std_coords(self, elements):
+        for team_offset in [0, self.lookup(elements, "x_diff")]:
+            for row in range(5):
+                yield round(self.lookup(elements, "x_start") + team_offset), \
+                      round(row * self.lookup(elements, "y_diff") + self.lookup(elements, "y_start"))
+
+
+    def generate_item_coords(self):
+        item_x_offset = self.lookup("items", "x_inner_offset")
+        item_y_offset = item_x_offset
+        if self.summ_names_displayed:
+            item_x_offset += self.lookup("items", "summ_names_x_offset")
+            item_y_offset += self.lookup("items", "summ_names_y_offset")
+
+
+        for team_offset in [0, self.lookup("items", "x_diff")]:
+            for row in range(5):
+                for item in range(7):
+                    yield round(self.lookup("items", "x_start") + team_offset + item_x_offset + item * self.lookup(
+                        "items", "x_item_spacing")), \
+                          round(row * self.lookup("items", "y_diff") + self.lookup("items", "y_start") + item_y_offset)
+
+
+
+    def generate_current_gold_coords(self):
+        if self.hud_scale is None:
+            raise Exception("No value given for hud_scale")
+        return self.lookup("current_gold", "min_x_start") + self.hud_scale * (self.lookup("current_gold", "max_x_start") -
+                                                                          self.lookup(
+            "current_gold", "min_x_start")), \
+                self.lookup("current_gold", "min_y_start") - self.hud_scale * (self.lookup("current_gold", "min_y_start") - self.lookup(
+            "current_gold", "max_y_start")), \
+                self.lookup("current_gold", "min_x_width") + self.hud_scale * (self.lookup("current_gold", "max_x_width") - self.lookup(
+            "current_gold", "min_x_width")), \
+                self.lookup("current_gold", "min_y_height") + self.hud_scale * (self.lookup("current_gold", "max_y_height") - self.lookup(
+            "current_gold", "min_y_height"))
 
 
     def lookup(self, elements, attribute):

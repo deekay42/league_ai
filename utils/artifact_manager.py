@@ -1,8 +1,10 @@
 import json
-from abc import ABC, abstractmethod
-from constants import app_constants
-import cv2 as cv
 import traceback
+from abc import ABC
+
+import cv2 as cv
+
+from constants import app_constants
 
 
 class ArtifactManager(ABC):
@@ -18,6 +20,7 @@ class ArtifactManager(ABC):
         self.assets_path = assets_path
         self.parse_data()
         self.build_lookup_dicts()
+
 
     def lookup_by(self, lookup, val):
         try:
@@ -92,8 +95,8 @@ class ChampManager:
     class __ChampManager(ArtifactManager):
 
         def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["champ_json"],
-                             assets_path=app_constants.asset_paths["champ_imgs"])
+            super().__init__(data_path=app_constants.asset_paths["champs_json"],
+                             assets_path=app_constants.asset_paths["champs"])
 
 
         def build_lookup_dicts(self):
@@ -129,8 +132,8 @@ class ItemManager:
     class __ItemManager(ArtifactManager):
 
         def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["item_json"],
-                             assets_path=app_constants.asset_paths["item_imgs"])
+            super().__init__(data_path=app_constants.asset_paths["items_json"],
+                             assets_path=app_constants.asset_paths["items"])
 
 
         def build_lookup_dicts(self):
@@ -178,151 +181,45 @@ class ItemManager:
 
 
         def get_num_completes(self):
-            return sum([1 if "completion" in artifact and (artifact["completion"]=="complete" or artifact[
-                "completion"]=="semi") else 0 for artifact in self._by["int"].values()])
+            return sum([1 if "completion" in artifact and (artifact["completion"] == "complete" or artifact[
+                "completion"] == "semi") else 0 for artifact in self._by["int"].values()])
 
 
         def get_completes(self):
             return [artifact for artifact in self._by["int"].values() if "completion" in artifact and (artifact[
-                                                                                                           "completion"] == "complete" or artifact[
-                "completion"] == "semi")]
+                                                                                                           "completion"] == "complete" or
+                                                                                                       artifact[
+                                                                                                           "completion"] == "semi")]
+
 
         def get_early_game_items(self):
             return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
-                                                                                                           "starting"]
+                                                                                                         "starting"]
                                                                                                      == "0,1" or
-                                                                                                       artifact[
-                                                                                                           "starting"]
+                                                                                                     artifact[
+                                                                                                         "starting"]
                                                                                                      == "0")]
+
 
         def num_early_game_items(self):
             return len(self.get_early_game_items())
 
+
         def get_late_game_items(self):
             return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
-                                                                                                           "starting"]
+                                                                                                         "starting"]
                                                                                                      == "0,1" or
-                                                                                                       artifact[
-                                                                                                           "starting"]
+                                                                                                     artifact[
+                                                                                                         "starting"]
                                                                                                      == "1")]
+
+
         def num_late_game_items(self):
             return len(self.get_late_game_items())
 
 
-class SelfManager:
-    instance = None
+class SimpleManager(ArtifactManager):
 
-
-    def __init__(self):
-        if not SelfManager.instance:
-            SelfManager.instance = SelfManager.__SelfManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __SelfManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["self_json"],
-                             assets_path=app_constants.asset_paths["self_imgs"])
-
-
-class SpellManager:
-    instance = None
-
-
-    def __init__(self):
-        if not SpellManager.instance:
-            SpellManager.instance = SpellManager.__SpellManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __SpellManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["spell_json"])
-
-
-class CurrentGoldManager:
-    instance = None
-
-
-    def __init__(self):
-        if not CurrentGoldManager.instance:
-            CurrentGoldManager.instance = CurrentGoldManager.__CurrentGoldManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __CurrentGoldManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["current_gold_json"],
-                             assets_path=app_constants.asset_paths["current_gold_imgs"])
-
-
-class KDAManager:
-    instance = None
-
-
-    def __init__(self):
-        if not KDAManager.instance:
-            KDAManager.instance = KDAManager.__KDAManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __KDAManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["kda_json"],
-                             assets_path=app_constants.asset_paths["kda_imgs"])
-
-
-class CSManager:
-    instance = None
-
-
-    def __init__(self):
-        if not CSManager.instance:
-            CSManager.instance = CSManager.__CSManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __CSManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["cs_json"],
-                             assets_path=app_constants.asset_paths["cs_imgs"])
-
-
-class LvlManager:
-    instance = None
-
-
-    def __init__(self):
-        if not LvlManager.instance:
-            LvlManager.instance = LvlManager.__LvlManager()
-
-
-    def __getattr__(self, name):
-        return getattr(self.instance, name)
-
-
-    class __LvlManager(ArtifactManager):
-
-        def __init__(self):
-            super().__init__(data_path=app_constants.asset_paths["lvl_json"],
-                             assets_path=app_constants.asset_paths["lvl_imgs"])
+    def __init__(self, element):
+        super().__init__(data_path=app_constants.asset_paths[element + "_json"],
+                         assets_path=app_constants.asset_paths[element])
