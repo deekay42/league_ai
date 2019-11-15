@@ -257,6 +257,7 @@ class PositionsNetwork(Network):
         spells_per_summ = self.game_config["spells_per_summ"]
         total_num_spells = self.game_config["total_num_spells"]
         rest_dim = self.game_config["rest_dim"]
+        total_sum_dim = 1 + spells_per_summ + rest_dim
 
         learning_rate = self.network_config["learning_rate"]
         champ_emb_dim = self.network_config["champ_emb_dim"]
@@ -264,24 +265,23 @@ class PositionsNetwork(Network):
         in_vec = input_data(shape=[None, champs_per_team + champs_per_team * (spells_per_summ + rest_dim)],
                             name='input')
 
-        champ_ints = in_vec[:, ::1+spells_per_summ+rest_dim]
+        champ_ints = in_vec[:, ::total_sum_dim]
         champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
                            scope="champ_scope")
         champs = tf.reshape(champs, [-1, champs_per_team * champ_emb_dim])
 
-        spell_ints = [in_vec[:,i*champs_per_team+1:i*champs_per_team+1+spells_per_summ] for i in range(\
-                champs_per_team)]
-
+        spell_ints = [in_vec[:,i*total_sum_dim+1:i*total_sum_dim+1+spells_per_summ] for i in range(champs_per_team)]
+        spell_ints = tf.transpose(spell_ints, (1, 0, 2))
         spell_ints = tf.reshape(spell_ints, [-1, champs_per_team, spells_per_summ])
 
         spells_one_hot_i = tf.one_hot(tf.cast(spell_ints, tf.int32), depth=total_num_spells)
         spells_one_hot = tf.reduce_sum(spells_one_hot_i, axis=2)
         spells_one_hot = tf.reshape(spells_one_hot, [-1, champs_per_team * total_num_spells])
 
-        rest = [in_vec[:,i*champs_per_team+1+spells_per_summ:i*champs_per_team+1+spells_per_summ+rest_dim] for i in
-                range(\
-                champs_per_team)]
-        rest = tf.reshape(rest, [-1, rest_dim])
+        rest = [in_vec[:,i*total_sum_dim+1+spells_per_summ:i*total_sum_dim+1+spells_per_summ+rest_dim] for i in
+                range(champs_per_team)]
+        rest = tf.transpose(rest, (1, 0, 2))
+        rest = tf.reshape(rest, [-1, champs_per_team * rest_dim])
 
         final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 

@@ -166,44 +166,24 @@ class PositionsDataLoader(DataLoaderBase):
         super().__init__()
 
 
+    def permutate_data(self, data):
+        order = np.array([[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]])
+        perms = list(itertools.permutations([0, 1, 2, 3, 4], 5))
+        x_perms = np.reshape([data[:, perm] for perm in perms], (len(data)*len(perms), -1))
+        y_perms = np.reshape(np.repeat(np.array([order[perm,] for perm in perms]),len(data), axis=0),
+                             (len(data)*len(perms),-1))
+        return x_perms, y_perms
+
     def get_train_data(self):
         if not self.train_x:
             self.read_train_from_np_files()
-        result_x, result_y = [], []
-        order = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
-        progress_counter = 0
-        for x in self.train_x:
-            progress_counter += 1
-            comp_order = ((comp, pos) for comp, pos in zip(x, order))
-            for champ_position in itertools.permutations(comp_order, 5):
-                champ_position = np.array(champ_position)
-                team_comp = np.stack(champ_position[:, 0])
-                positions = np.stack(champ_position[:, 1])
-                result_x.append(
-                    np.concatenate((np.ravel(team_comp[:, 0]), np.ravel(team_comp[:, 1:3]), np.ravel(team_comp[:, 3:])),
-                                   axis=0))
-                result_y.append(np.ravel(positions))
-            print("training data {:.2%} generated".format(progress_counter / len(self.train_x)))
-        return np.array(result_x), np.array(result_y)
+        return self.permutate_data(self.train_x)
 
 
     def get_test_data(self):
         if not self.test_x:
             self.read_test_from_np_files()
-        result_x, result_y = [], []
-        order = [[1, 0, 0, 0, 0], [0, 1, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0], [0, 0, 0, 0, 1]]
-        for x in self.test_x:
-
-            comp_order = ((comp, pos) for comp, pos in zip(x, order))
-            for champ_position in itertools.permutations(comp_order, 5):
-                champ_position = np.array(champ_position)
-                team_comp = np.stack(champ_position[:, 0])
-                positions = np.stack(champ_position[:, 1])
-                result_x.append(
-                    np.concatenate((np.ravel(team_comp[:, 0]), np.ravel(team_comp[:, 1:3]), np.ravel(team_comp[:, 3:])),
-                                   axis=0))
-                result_y.append(np.ravel(positions))
-        return np.array(result_x), np.array(result_y)
+        return self.permutate_data(self.test_x)
 
 
     def read_test_from_np_files(self):
@@ -213,6 +193,7 @@ class PositionsDataLoader(DataLoaderBase):
         for i in self.test_x_filenames:
             data = list(dict(np.load(i)).values())
             self.test_x += data
+        self.test_x = np.array(self.test_x)
 
 
 
@@ -223,4 +204,4 @@ class PositionsDataLoader(DataLoaderBase):
         for i in self.train_x_filenames:
             data = list(dict(np.load(i)).values())
             self.train_x += data
-
+        self.train_x = np.array(self.train_x)
