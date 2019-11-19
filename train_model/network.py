@@ -627,7 +627,15 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
              opp_summ_champ_emb,
              opp_summ_items,
              champs_embedded_flat,
-             champs_with_items_emb],
+             champs_with_items_emb,
+             opp_champs_k_hot,
+             target_summ_current_gold,
+             target_summ_cs,
+             target_summ_kda,
+             target_summ_lvl,
+             lvl,
+             kda,
+             cs],
             mode='concat', axis=1)
         # net = dropout(final_input_layer, 0.9)
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
