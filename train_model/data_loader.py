@@ -174,6 +174,7 @@ class PositionsDataLoader(DataLoaderBase):
                              (len(data)*len(perms),-1))
         return x_perms, y_perms
 
+
     def get_train_data(self):
         if not self.train_x:
             self.read_train_from_np_files()

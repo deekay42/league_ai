@@ -400,7 +400,7 @@ class PositionsTrainer(Trainer):
 
     def __init__(self):
         super().__init__()
-        self.num_epochs = 10
+        self.num_epochs = 30
 
 
     def eval_model(self, model, epoch):

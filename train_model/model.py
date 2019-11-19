@@ -13,6 +13,7 @@ from train_model import network
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import pytesseract
 import json
+import itertools
 
 
 class Model(ABC):
@@ -837,6 +838,35 @@ class PositionsModel(Model):
             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
             return dict(zip(champ_roles, champ_ids))
+
+
+    def multi_predict_perm(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                with tf.Session() as sess:
+                    x = network.PositionsNetwork.permutate_inputs(x)
+                    pred = []
+                    chunk_len = 1000
+                    x = tf.reshape(x, (-1,120,55))
+                    i = 0
+                    final_pred = []
+                    while i < int(x.shape[0]):
+                        print(i/int(x.shape[0]))
+                        next_chunk = x[i:i+chunk_len]
+                        next_chunk = tf.reshape(next_chunk, (-1,55))
+                        pred.extend(self.model.predict(sess.run(next_chunk)).tolist())
+                        i += chunk_len
+                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(pred))
+                        final_pred.extend(sess.run(best_perms).tolist())
+
+        result = []
+        for sorted_team in final_pred:
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+        return result
+
 
 
     def multi_predict(self, x):
