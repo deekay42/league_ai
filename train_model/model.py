@@ -845,7 +845,7 @@ class PositionsModel(Model):
             with self.graph.as_default():
                 with tf.Session() as sess:
                     x = network.PositionsNetwork.permutate_inputs(x)
-                    pred = []
+
                     chunk_len = 1000
                     x = tf.reshape(x, (-1,120,55))
                     i = 0
@@ -854,9 +854,9 @@ class PositionsModel(Model):
                         print(i/int(x.shape[0]))
                         next_chunk = x[i:i+chunk_len]
                         next_chunk = tf.reshape(next_chunk, (-1,55))
-                        pred.extend(self.model.predict(sess.run(next_chunk)).tolist())
+                        chunk_pred = self.model.predict(sess.run(next_chunk))
                         i += chunk_len
-                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(pred))
+                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
                         final_pred.extend(sess.run(best_perms).tolist())
 
         result = []
