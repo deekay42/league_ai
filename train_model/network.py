@@ -206,6 +206,46 @@ class PositionsNetwork(Network):
                 yield from PositionsNetwork.permute(a, l + 1, r)
                 a[l], a[i] = a[i], a[l]
 
+    @staticmethod
+    def permutate_inputs(x):
+        perm_indices = tf.constant(
+            np.array(list(PositionsNetwork.permute([0, 1, 2, 3, 4], 0, 4)))[:, :, 1][:, :,tf.newaxis])
+        x = np.transpose(x, (1, 2, 0))
+        x = tf.gather_nd(np.array(x), perm_indices)
+        x = tf.transpose(x, (3, 0, 1, 2))
+        x = tf.reshape(x, (-1, 55))
+        return x
+
+
+    #expects already permutated pred input vector
+    @staticmethod
+    def select_best_input_perm(pred):
+
+        perm_indices = tf.constant(
+            np.array(list(PositionsNetwork.permute([0, 1, 2, 3, 4], 0, 4)))[:, :, 1][:, :, tf.newaxis])
+        num_perms = perm_indices.shape[0]
+        batch_size = pred.shape[0]//num_perms
+        pred = PositionsNetwork.best_permutations_one_hot(pred)
+        pred_5x5_one_hot_by_permed_example = tf.reshape(pred, (-1, num_perms, 5, 5))
+        batch_range = tf.tile(tf.range(batch_size), [num_perms * 5])
+        batch_range = tf.reshape(batch_range, (num_perms * 5, -1))
+        batch_range = tf.transpose(batch_range, (1, 0))
+        batch_range = tf.reshape(batch_range, (-1, 5, 1))
+        perm_range = tf.tile(tf.range(num_perms), [5])
+        perm_range = tf.reshape(perm_range, (5, -1))
+        perm_range = tf.transpose(perm_range, (1, 0))
+        perm_range = tf.tile(perm_range, [batch_size, 1])
+        perm_range = tf.reshape(perm_range, (-1, 5, 1))
+        repeat_perms = tf.tile(perm_indices, [batch_size, 1, 1])
+        repeat_perms = tf.cast(repeat_perms, tf.int32)
+        inv_perm_indices = tf.concat([batch_range, perm_range, repeat_perms],
+                                     axis=2)
+        inv_perm_indices_shaped = tf.reshape(inv_perm_indices, (batch_size, num_perms, 5, 3))
+        x_perms_inv = tf.gather_nd(pred_5x5_one_hot_by_permed_example, inv_perm_indices_shaped)
+        x_perms_inv_summed = tf.reduce_sum(x_perms_inv, axis=1)
+        best_perm = PositionsNetwork.best_permutations_one_hot(x_perms_inv_summed)
+        return best_perm
+
 
 
     @staticmethod
@@ -220,26 +260,6 @@ class PositionsNetwork(Network):
         pred_5x5_one_hot = tf.reshape(tf.one_hot(best_perms, depth=5), (-1, 5, 5))
         return pred_5x5_one_hot
 
-
-    @staticmethod
-    def best_permutations_one_hot_permutated(pred):
-        pred_5x5 = tf.reshape(pred, [-1, 5, 5])
-        pred_5x5_T = tf.transpose(pred_5x5, (1, 2, 0))
-        all_perms = tf.constant(list(PositionsNetwork.permute([0, 1, 2, 3, 4], 0, 4)))
-        selected_elements_per_example = tf.gather_nd(pred_5x5_T, all_perms)
-        sums_per_example = tf.reduce_sum(selected_elements_per_example, axis=1)
-        best_perm_per_example_index = tf.argmax(sums_per_example, axis=0)
-        best_perms = tf.gather_nd(all_perms, best_perm_per_example_index[:, tf.newaxis])[:, :, 1]
-        pred_5x5_one_hot = tf.reshape(tf.one_hot(best_perms, depth=5), (-1, 5, 5))
-        pred_5x5_one_hot_by_permed_example = tf.reshape(pred_5x5_one_hot, (-1, len(all_perms), 5, 5))
-        # tf.range(len(all_perms))
-        # np.concatenate([, all_perms[:,:,0], all_perms[:,:,1]], )
-        # tf.tile(tf.range(len(all_perms)), 5*2)
-        # tf.concatenate([, tf.reshape(all_perms, (-1,2))])
-
-        x_perms_inv = tf.gather(pred_5x5_one_hot_by_permed_example, all_perms, axis=1)
-        x_perms_inv_summed = tf.reduce_sum(x_perms_inv, axis=1)
-        return best_perm_per_example_index(x_perms_inv_summed)
 
     @staticmethod
     def multi_class_acc_positions(pred, target, input_):
@@ -285,11 +305,11 @@ class PositionsNetwork(Network):
 
         final_input_layer = merge([champs, spells_one_hot, rest], mode='concat', axis=1)
 
-        net = dropout(final_input_layer, 0.8)
-        # net = final_input_layer
+        # net = dropout(final_input_layer, 0.8)
+        net = final_input_layer
         net = relu(
             batch_normalization(fully_connected(net, 256, bias=False, activation=None, regularizer="L2")))
-        net = dropout(net, 0.6)
+        # net = dropout(net, 0.6)
 
         net = fully_connected(net, champs_per_team * champs_per_team, activation=None)
 

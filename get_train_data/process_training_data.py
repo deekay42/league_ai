@@ -143,29 +143,10 @@ class ProcessNextItemsTrainingData:
         return data
 
 
-    def team2role_predictor_input_to_be_pred(self, team):
-        data = np.array([[participant['championId'], participant['spell1Id'], participant['spell2Id'],
-                          participant['kills'], participant['deaths'], participant['assists'],
-                          participant['earned'], participant['level'],
-                          participant['minionsKilled'], participant['neutralMinionsKilled'], participant['wardsPlaced']]
-                         for
-                         participant in team], dtype=np.str)
-        champ_ids = np.stack(data[:, 0])
-        spell_ids = np.ravel(np.stack(data[:, 1:3]))
-        rest = np.array(np.ravel(np.stack(data[:, 3:])), dtype=np.uint16)
-        champ_ints = [self.champ_manager.lookup_by("id", champ_id)["int"] for champ_id in champ_ids]
-        spell_ints = [self.spell_manager.lookup_by("id", spell_id)["int"] for spell_id in spell_ids]
-        return np.concatenate([champ_ints, spell_ints, rest], axis=0)
-
-
     def run_positions_transformations(self, games, sorted_state):
         for game in games:
             for team_offset, team_sorted in enumerate(game["sorted"]):
-                if sorted_state == 1:
-                    encoded_team = self.team2role_predictor_input_perm(game['participants'][team_offset * 5:team_offset * 5 + 5])
-                else:
-                    encoded_team = self.team2role_predictor_input_to_be_pred(
-                        game['participants'][team_offset * 5:team_offset * 5 + 5])
+                encoded_team = self.team2role_predictor_input_perm(game['participants'][team_offset * 5:team_offset * 5 + 5])
                 result = {str(game['gameId'])+"_"+str(team_offset):  encoded_team}
                 if team_sorted == sorted_state:
                     yield result
@@ -372,6 +353,21 @@ class ProcessNextItemsTrainingData:
         self.write_chunk(sorted_processed_data, app_constants.train_paths["next_items_processed_sorted"])
 
 
+    def cvt_to_new_positions(self, in_vec):
+        in_vec = np.array(in_vec)
+        champ_dim = 1
+        spell_dim = 2
+        rest_dim = 8
+        champs_per_game = 5
+
+        spells_offset = champs_per_game*champ_dim
+        rest_offset = spells_offset + champs_per_game * spell_dim
+        return np.transpose([np.concatenate([in_vec[:,i*champ_dim][:,np.newaxis],
+                        in_vec[:,spells_offset + i*spell_dim : spells_offset + (i+1)*spell_dim],
+                        in_vec[:,rest_offset + i*rest_dim : rest_offset + (i+1)*rest_dim]], axis=1)
+                        for i in range(champs_per_game)], (1,0,2))
+
+
     def write_chunk(self, data, out_dir):
         data = list(data)
         data = np.concatenate(data, axis=0)
@@ -398,7 +394,10 @@ class ProcessNextItemsTrainingData:
             self.role_predictor = model.PositionsModel()
         if not unsorted_positions:
             return
-        sorted_teams = self.role_predictor.multi_predict(list(unsorted_positions.values()))
+        # unsorted_positions = dict(zip(list(unsorted_positions.keys())[:100], list(unsorted_positions.values())[:100]))
+        unsorted_positions_values = list(unsorted_positions.values())
+        unsorted_positions_values = self.cvt_to_new_positions(unsorted_positions_values)
+        sorted_teams = self.role_predictor.multi_predict_perm(unsorted_positions_values)
         match_id2perm = {}
         for index, unsorted_team_id in enumerate(unsorted_positions):
             gameId = unsorted_team_id[:-2]
@@ -441,8 +440,10 @@ class ProcessNextItemsTrainingData:
             try:
                 current_game = unsorted_processed[gameId]
                 permutation = match_id2perm[gameId]
+                new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
+                updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, pos_start:pos_end]]
 
-                reordered_result = np.concatenate([current_game[:, pos_start:pos_end],
+                reordered_result = np.concatenate([updated_positions,
                                                    current_game[:, champs_start:champs_end][:, permutation],
                                                    current_game[:, items_start:items_end].reshape((-1, champs_per_game,
                                                                                                    items_per_champ * 2))[
