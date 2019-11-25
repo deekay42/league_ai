@@ -19,7 +19,7 @@ from watchdog.observers import Observer
 
 from utils import utils
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel, CSImgModel, \
-    KDAImgModel, CurrentGoldImgModel, LvlImgModel
+    KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 from utils.build_path import build_path
 from constants import ui_constants, game_constants, app_constants
@@ -84,7 +84,9 @@ class Main(FileSystemEventHandler):
 
         self.kda_img_model = KDAImgModel(self.res_converter)
         self.kda_img_model.load_model()
-        self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter), CSImgModel(self.res_converter), CurrentGoldImgModel(self.res_converter)])
+        self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
+                                                     CSImgModel(self.res_converter),
+                                                     CurrentGoldImgModel(self.res_converter)])
 
         Main.test_connection()
 
@@ -452,11 +454,15 @@ class Main(FileSystemEventHandler):
 
 # pr = cProfile.Profile()
 
-#
-# dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_early_processed"])
-# X, _ = dataloader.get_train_data()
-# m = NextItemEarlyGameModel()
-# m.output_logs(X)
+# dataloader_1 = data_loader.UnsortedNextItemsDataLoader()
+# X_un = dataloader_1.get_train_data()
+dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted"])
+X, Y = dataloader.get_train_data()
+m = NextItemEarlyGameModel()
+# X = X[Y==2]
+X_ = X[:, 1:]
+X_ = X_[500:700]
+m.output_logs(X_[:200])
 
 #
 # blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )

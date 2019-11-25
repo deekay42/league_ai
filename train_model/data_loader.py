@@ -48,8 +48,8 @@ class FullDataLoader:
 
 class UnsortedNextItemsDataLoader:
 
-    def __init__(self):
-        self.train_filenames = sorted(glob.glob(app_constants.train_paths["next_items_processed_unsorted"] + 'train_*.npz'))
+    def __init__(self, path):
+        self.train_filenames = sorted(glob.glob(path + 'train_*.npz'))
         self.train = {}
 
     def get_train_data(self):
@@ -95,12 +95,14 @@ class SortedNextItemsDataLoader(DataLoaderBase):
     def get_test_data(self):
         if not self.test:
             self.read_test_from_np_files()
-        return self.test[:, :-1], self.test[:,-1]
+        X, Y = self.test[:, 1:-1], self.test[:, -1]
+        return X,Y
 
     def get_train_data(self):
         if not self.train:
             self.read_train_from_np_files()
-        return self.train[:, :-1], self.train[:, -1]
+        X,Y = self.train[:, 1:-1], self.train[:, -1]
+        return X,Y
 
 
     def get_test_data_raw(self):

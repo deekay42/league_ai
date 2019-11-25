@@ -64,6 +64,7 @@ class ProcessTrainingDataWorker(Process):
         print(f"Thread {self.thread_index} complete")
 
 
+
 class WriteResultWorker(Process):
 
     def __init__(self, out_queue, chunksize, out_dir):
@@ -91,8 +92,8 @@ class WriteResultWorker(Process):
             np.savez_compressed(writer, **data)
 
 
-    def write_chunk(self, data, chunk_counter):
-        filename = self.out_dir + f"train_{chunk_counter}.npz"
+    def write_chunk(self, data, chunk_counter, out_dir):
+        filename = out_dir + f"train_{chunk_counter}.npz"
         with open(filename, "wb") as writer:
             np.savez_compressed(writer, **data)
 
@@ -105,12 +106,43 @@ class WriteResultWorker(Process):
             for i in range(self.chunksize):
                 next_item = self.out_queue.get()
                 if next_item is None:
+                    while not self.out_queue.empty():
+                        self.out_queue.get()
                     terminated = True
                     break
                 chunk.update(next_item)
 
-            self.write_chunk(chunk, chunk_counter)
+            self.write_chunk(chunk, chunk_counter, self.out_dir)
             chunk_counter += 1
+        print(f"Writer {self.out_dir} complete")
+
+
+class NextItemsWriteResultWorker(WriteResultWorker):
+    def __init__(self, out_queue, chunksize, out_dir_inf, out_dir_uninf):
+        super().__init__(out_queue, chunksize, None)
+        self.out_dir_inf = out_dir_inf
+        self.out_dir_uninf = out_dir_uninf
+
+    def run(self):
+        chunk_counter = 0
+        terminated = False
+        while not terminated:
+            chunk_inf = {}
+            chunk_uninf = {}
+            for i in range(self.chunksize):
+                next_item = self.out_queue.get()
+                if next_item is None:
+                    while not self.out_queue.empty():
+                        self.out_queue.get()
+                    terminated = True
+                    break
+                chunk_inf.update(next_item[0])
+                chunk_uninf.update(next_item[1])
+
+            self.write_chunk(chunk_inf, chunk_counter, self.out_dir_inf)
+            self.write_chunk(chunk_uninf, chunk_counter, self.out_dir_uninf)
+            chunk_counter += 1
+        print(f"Writer {self.out_dir_inf} {self.out_dir_uninf} complete")
 
 
 class ProcessNextItemsTrainingData:
@@ -347,25 +379,34 @@ class ProcessNextItemsTrainingData:
         unsorted_positions_dl = data_loader.PositionsToBePredDataLoader()
         unsorted_positions = unsorted_positions_dl.read()
         gameId2roles = self.determine_roles(unsorted_positions)
-        unsorted_processed_dataloader = data_loader.UnsortedNextItemsDataLoader()
-        unsorted_processed_data = unsorted_processed_dataloader.get_train_data()
-        sorted_processed_data = self.apply_roles_to_unsorted_processed(gameId2roles, unsorted_processed_data)
-        self.write_chunk(sorted_processed_data, app_constants.train_paths["next_items_processed_sorted"])
+        unsorted_processed_dataloader_inf = data_loader.UnsortedNextItemsDataLoader(app_constants.train_paths[
+                                                                                    "next_items_processed_unsorted_inf"])
+
+        unsorted_processed_data_inf = unsorted_processed_dataloader_inf.get_train_data()
+        sorted_processed_data_inf = self.apply_roles_to_unsorted_processed(gameId2roles, unsorted_processed_data_inf)
+        self.write_chunk(sorted_processed_data_inf, app_constants.train_paths["next_items_processed_sorted_inf"])
+
+        unsorted_processed_dataloader_uninf = data_loader.UnsortedNextItemsDataLoader(app_constants.train_paths[
+                                                                                          "next_items_processed_unsorted_uninf"])
+        unsorted_processed_data_uninf = unsorted_processed_dataloader_uninf.get_train_data()
+        sorted_processed_data_uninf = self.apply_roles_to_unsorted_processed(gameId2roles,
+                                                                             unsorted_processed_data_uninf)
+        self.write_chunk(sorted_processed_data_uninf, app_constants.train_paths["next_items_processed_sorted_uninf"])
 
 
-    def cvt_to_new_positions(self, in_vec):
-        in_vec = np.array(in_vec)
-        champ_dim = 1
-        spell_dim = 2
-        rest_dim = 8
-        champs_per_game = 5
-
-        spells_offset = champs_per_game*champ_dim
-        rest_offset = spells_offset + champs_per_game * spell_dim
-        return np.transpose([np.concatenate([in_vec[:,i*champ_dim][:,np.newaxis],
-                        in_vec[:,spells_offset + i*spell_dim : spells_offset + (i+1)*spell_dim],
-                        in_vec[:,rest_offset + i*rest_dim : rest_offset + (i+1)*rest_dim]], axis=1)
-                        for i in range(champs_per_game)], (1,0,2))
+    # def cvt_to_new_positions(self, in_vec):
+    #     in_vec = np.array(in_vec)
+    #     champ_dim = 1
+    #     spell_dim = 2
+    #     rest_dim = 8
+    #     champs_per_game = 5
+    #
+    #     spells_offset = champs_per_game*champ_dim
+    #     rest_offset = spells_offset + champs_per_game * spell_dim
+    #     return np.transpose([np.concatenate([in_vec[:,i*champ_dim][:,np.newaxis],
+    #                     in_vec[:,spells_offset + i*spell_dim : spells_offset + (i+1)*spell_dim],
+    #                     in_vec[:,rest_offset + i*rest_dim : rest_offset + (i+1)*rest_dim]], axis=1)
+    #                     for i in range(champs_per_game)], (1,0,2))
 
 
     def write_chunk(self, data, out_dir):
@@ -396,7 +437,7 @@ class ProcessNextItemsTrainingData:
             return
         # unsorted_positions = dict(zip(list(unsorted_positions.keys())[:100], list(unsorted_positions.values())[:100]))
         unsorted_positions_values = list(unsorted_positions.values())
-        unsorted_positions_values = self.cvt_to_new_positions(unsorted_positions_values)
+        # unsorted_positions_values = self.cvt_to_new_positions(unsorted_positions_values)
         sorted_teams = self.role_predictor.multi_predict_perm(unsorted_positions_values)
         match_id2perm = {}
         for index, unsorted_team_id in enumerate(unsorted_positions):
@@ -439,11 +480,13 @@ class ProcessNextItemsTrainingData:
         for gameId in unsorted_processed:
             try:
                 current_game = unsorted_processed[gameId]
+                gameIds = [[int(gameId)]] * current_game.shape[0]
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
                 updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, pos_start:pos_end]]
 
-                reordered_result = np.concatenate([updated_positions,
+
+                reordered_result = np.concatenate([gameIds, updated_positions,
                                                    current_game[:, champs_start:champs_end][:, permutation],
                                                    current_game[:, items_start:items_end].reshape((-1, champs_per_game,
                                                                                                    items_per_champ * 2))[
@@ -462,136 +505,7 @@ class ProcessNextItemsTrainingData:
                                                    current_game[:, -1:]], axis=1)
                 yield reordered_result
             except KeyError as e:
-                yield current_game
-
-
-    #
-    #
-    #
-    # def determine_roles(self, matches, log_info, out_path=None):
-    #
-    #     def sort_metadata(winning_team_part_ids, losing_team_part_ids, winning_team_positioned, losing_team_positioned,
-    #                       events):
-    #         sorted_winning_team_part_ids = []
-    #         sorted_losing_team_part_ids = []
-    #         if not winning_team_positioned:
-    #             winning_team_positioned = {zip(game_constants.ROLE_ORDER, winning_team_part_ids)}
-    #         if not losing_team_positioned:
-    #             losing_team_positioned = {zip(game_constants.ROLE_ORDER, losing_team_part_ids)}
-    #
-    #         for role in game_constants.ROLE_ORDER:
-    #             sorted_winning_team_part_ids.append(champid2participantid[winning_team_positioned[role]])
-    #             sorted_losing_team_part_ids.append(champid2participantid[losing_team_positioned[role]])
-    #         sorted_team_part_ids = sorted_winning_team_part_ids + sorted_losing_team_part_ids
-    #         unsorted_team_part_ids = [participant for participant in winning_team_part_ids + losing_team_part_ids]
-    #         team_permutation = [unsorted_team_part_ids.index(part_id) for part_id in
-    #                             sorted_team_part_ids]
-    #
-    #         for event in events:
-    #             if event['type'] == "ITEM_UNDO":
-    #                 continue
-    #             event['total_gold'] = np.array(event['total_gold'])[team_permutation].tolist()
-    #             event['current_gold_sloped'] = np.array(event['current_gold_sloped'])[team_permutation].tolist()
-    #             event['cs'] = np.array(event['cs'])[team_permutation].tolist()
-    #             event['neutral_cs'] = np.array(event['neutral_cs'])[team_permutation].tolist()
-    #             event['xp'] = np.array(event['xp'])[team_permutation].tolist()
-    #             event['lvl'] = np.array(event['lvl'])[team_permutation].tolist()
-    #             event['kda'] = np.array(event['kda'])[team_permutation].tolist()
-    #
-    #
-    #     first = True
-    #     if out_path:
-    #         fsorted = open(out_path, "w")
-    #         fsorted.write('[')
-    #
-    #
-    #     team_index = 0
-    #     progress_counter = 0
-    #
-    #     for unsorted_match in unsorted_matches:
-    #         gameId = unsorted_match["gameId"]
-    #         events = unsorted_match["itemsTimeline"]
-    #         sorted = unsorted_match["sorted"]
-    #         teams = unsorted_match["participants"]
-    #         winning_team = teams[:5]
-    #         losing_team = teams[5:]
-    #         champid2participantid = {champ["championId"]: champ["participantId"] for champ in
-    #                                  winning_team + losing_team}
-    #         if first:
-    #             first = False
-    #         elif out_path:
-    #             fsorted.write(',')
-    #
-    #         winning_team_part_ids = [part['participantId'] for part in winning_team]
-    #         losing_team_part_ids = [part['participantId'] for part in losing_team]
-    #
-    #         # winning team is unsorted
-    #         if sorted == "2":
-    #             winning_team_positioned = sorted_teams[team_index]
-    #             sort_metadata(winning_team_part_ids, losing_team_part_ids, winning_team_positioned,
-    #                           losing_team_positioned,
-    #                           events)
-    #
-    #             team_index += 1
-    #             winning_team = []
-    #             for position in game_constants.ROLE_ORDER:
-    #                 winning_team.append({"championId": winning_team_positioned[position],
-    #                                      "participantId": champid2participantid[winning_team_positioned[position]]})
-    #             losing_team = [{"championId": champ["championId"], "participantId": champ["participantId"]} for
-    #                            champ in losing_team]
-    #
-    #         # losing team is unsorted
-    #         elif sorted == "1":
-    #             losing_team_positioned = sorted_teams[team_index]
-    #             sort_metadata(winning_team_part_ids, losing_team_part_ids, winning_team_positioned,
-    #                           losing_team_positioned,
-    #                           events)
-    #
-    #             team_index += 1
-    #             losing_team = []
-    #             for position in game_constants.ROLE_ORDER:
-    #                 losing_team.append({"championId": losing_team_positioned[position],
-    #                                     "participantId": champid2participantid[losing_team_positioned[position]]})
-    #             winning_team = [{"championId": champ["championId"], "participantId": champ["participantId"]} for
-    #                             champ in winning_team]
-    #
-    #
-    #
-    #         # none are sorted
-    #         elif sorted == "0":
-    #             winning_team_positioned = sorted_teams[team_index]
-    #             losing_team_positioned = sorted_teams[team_index + 1]
-    #             sort_metadata(winning_team_part_ids, losing_team_part_ids, winning_team_positioned,
-    #                           losing_team_positioned,
-    #                           events)
-    #
-    #             team_index += 2
-    #
-    #             winning_team = []
-    #             for position in game_constants.ROLE_ORDER:
-    #                 winning_team.append({"championId": winning_team_positioned[position],
-    #                                      "participantId": champid2participantid[
-    #                                          winning_team_positioned[position]]})
-    #
-    #             losing_team = []
-    #             for position in game_constants.ROLE_ORDER:
-    #                 losing_team.append({"championId": losing_team_positioned[position],
-    #                                     "participantId": champid2participantid[
-    #                                         losing_team_positioned[position]]})
-    #
-    #         yield {"gameId": gameId, "participants": winning_team + losing_team,
-    #                "itemsTimeline": events}
-    #         if out_path:
-    #             fsorted.write(json.dumps(result[-1], separators=(',', ':')))
-    #             fsorted.flush()
-    #         # print(log_info + " determine roles unsorted: current file {:.2%} processed".format(progress_counter / len(
-    #         #     unsorted_matches)))
-    #         progress_counter += 1
-    #
-    #     if out_path:
-    #         fsorted.write(']')
-    #         fsorted.close()
-
+                yield np.concatenate([gameIds, current_game], axis=1)
 
 
     def encode_items(self, items):
@@ -637,8 +551,6 @@ class ProcessNextItemsTrainingData:
 
 
                 except ValueError as e:
-                    print(f"ERROR: {processed_player_items}")
-                    print(items)
                     raise e
 
                 processed_player_items = np.concatenate([player_items_dict_items, empties, padding],
@@ -649,39 +561,11 @@ class ProcessNextItemsTrainingData:
         return np.array(items_at_time_x)
 
 
-    def update_current_gold(self, meta, delta_current_gold, participantid2index):
-        if meta["type"] == "ITEM_SOLD":
-            delta_update = cass.Item(id=int(meta["itemId"]), region=region).gold.sell
-            delta_current_gold[participantid2index[meta['participantId']]] += delta_update
-        elif meta["type"] == "ITEM_PURCHASED":
-            new_item = cass.Item(id=int(meta["itemId"]), region=region)
-            part_index = participantid2index[meta['participantId']]
-            participant_current_items = meta['absolute_items'][part_index]
-            if participant_current_items:
-                participant_current_items = [self.item_manager.lookup_by('id', str(item)) for item in
-                                             participant_current_items]
-                participant_current_items = [int(item['buyable_id']) if 'buyable_id' in item else int(item[
-                                                                                                          'id']) for
-                                             item in
-                                             participant_current_items]
-            component_items = build_path.build_path(participant_current_items, new_item)[0]
-            delta_update = 0
-            for component_item in component_items:
-                delta_update -= component_item.gold.base
-
-            meta['current_gold'] = (np.array(meta['current_gold_sloped']) + \
-                                    np.array(delta_current_gold)).tolist()
-            # lol = sum(1 if i < -100 else 0 for i in meta['current_gold'])
-            # if lol > 0:
-            #     print(f"less than zero: {meta}")
-            del meta['current_gold_sloped']
-            return delta_update
-
-
     def post_process(self, matches):
 
         for i, game in enumerate(matches):
-            out = []
+            out_uninf = []
+            out_inf = []
             game = game[0]
             participantid2index = {participant['participantId']: j for j, participant in enumerate(game[
                                                                                                        'participants'])}
@@ -691,45 +575,73 @@ class ProcessNextItemsTrainingData:
             champs = np.array([participant['championId'] for participant in game['participants']])
             champs = [self.champ_manager.lookup_by("id", str(champ))["int"] for champ in champs]
 
-            lol = 0
+
             for current_index, event in enumerate(game['itemsTimeline']):
 
                 pos = participantid2index[event['participantId']]
+                if pos > 4:
+                    continue
                 if prev_frame_index != event["frame_index"]:
                     prev_frame_index = event["frame_index"]
                     delta_current_gold = [0] * 10
 
-                delta_update = self.update_current_gold(event, delta_current_gold, participantid2index)
-                if not delta_update:
-                    continue
+                new_item = cass.Item(id=int(event["itemId"]), region=region)
+                part_index = participantid2index[event['participantId']]
+                if event["type"] == "ITEM_SOLD":
+                    delta_current_gold[part_index] += new_item.gold.sell
+                elif event["type"] == "ITEM_PURCHASED":
+                    participant_current_items = event['absolute_items'][part_index]
+                    if participant_current_items:
+                        participant_current_items = [self.item_manager.lookup_by('id', str(item)) for item in
+                                                     participant_current_items]
+                        participant_current_items = [int(item['buyable_id']) if 'buyable_id' in item else int(item[
+                                                                                                                  'id'])
+                                                     for
+                                                     item in
+                                                     participant_current_items]
+                    try:
+                        items_at_time_x = self.encode_items(event['absolute_items'])
+                    except ValueError as e:
+                        continue
+                    out_uninf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
+                                                     np.around(event['total_gold']).astype(int),
+                                                     np.around(event['cs']).astype(int),
+                                                     np.around(event['neutral_cs']).astype(int),
+                                                     np.around(event['xp']).astype(int),
+                                                     np.around(event['lvl']).astype(int),
+                                                     np.ravel(event['kda']).tolist(),
+                                                     np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
+                                                     [self.item_manager.lookup_by("id", str(event['itemId']))["int"]]
+                                                     ], 0))
+                    component_items,_, insert_item_states,_ = build_path.build_path(participant_current_items, new_item)
+                    prev_event = event
+                    for i, (component_item, insert_item_state) in enumerate(zip(component_items, insert_item_states)):
+                        event_copy = prev_event.copy()
+                        event_copy['absolute_items'] = prev_event['absolute_items'].copy()
+                        event_copy['itemId'] = component_item.id
 
-                delta_current_gold[pos] += delta_update
+                        try:
+                            items_at_time_x = self.encode_items(event_copy['absolute_items'])
+                            y = self.item_manager.lookup_by("id", str(component_item.id))["int"]
+                            out_inf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
+                                                           np.around(event_copy['total_gold']).astype(int),
+                                                           np.around(event_copy['cs']).astype(int),
+                                                           np.around(event_copy['neutral_cs']).astype(int),
+                                                           np.around(event_copy['xp']).astype(int),
+                                                           np.around(event_copy['lvl']).astype(int),
+                                                           np.ravel(event_copy['kda']).tolist(),
+                                                           np.around(event_copy['current_gold_sloped'] + np.array(
+                                                               delta_current_gold)).astype(int),
+                                                           [y]
+                                                           ], 0))
+                        except ValueError as e:
+                            pass
 
-                if pos > 4:
-                    continue
-                lol += 1
-                try:
-                    items_at_time_x = self.encode_items(event['absolute_items'])
-
-                except ValueError as e:
-                    print(f"Error occurred. Probably >6 items. event: {event} gameId: {game['gameId']}")
-                    yield {}
-                    break
-
-                y = self.item_manager.lookup_by("id", str(event['itemId']))["int"]
-
-                out.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
-                                           np.around(event['total_gold']).astype(int),
-                                           np.around(event['cs']).astype(int),
-                                           np.around(event['neutral_cs']).astype(int),
-                                           np.around(event['xp']).astype(int),
-                                           np.around(event['lvl']).astype(int),
-                                           np.ravel(event['kda']).tolist(),
-                                           np.around(event['current_gold']).astype(int),
-                                           [y]
-                                           ], 0))
+                        delta_current_gold[pos] -= component_item.gold.base
+                        event_copy['absolute_items'][part_index] = insert_item_state
+                        prev_event = event_copy
             else:
-                yield {str(game['gameId']): out}
+                yield [{str(game['gameId']): out_inf}, {str(game['gameId']): out_uninf}]
 
 
     def deflate_next_items(self, matches, log_info, out_file_name=None):
@@ -795,15 +707,20 @@ class ProcessNextItemsTrainingData:
     def start(self, games_by_top_leagues, region, start_date, num_threads=os.cpu_count(), chunklen=400):
         utils.remove_old_files(app_constants.train_paths["positions_processed"])
         utils.remove_old_files(app_constants.train_paths["positions_to_be_pred"])
-        in_queue = Queue(maxsize=400)
+        in_queue = Queue()
         out_queues = [Queue(), Queue(), Queue()]
         transformations = [self.run_next_item_transformations,
                            lambda a: self.run_positions_transformations(a, 1),
                            lambda a: self.run_positions_transformations(a, 0)]
-        out_keys = ["next_items_processed_unsorted", "positions_processed", "positions_to_be_pred"]
+        out_keys = ["positions_processed", "positions_to_be_pred"]
         workers = [ProcessTrainingDataWorker(in_queue, out_queues, transformations, i) for i in range(num_threads)]
-        writers = [WriteResultWorker(out_queue, chunklen, app_constants.train_paths[out_key]) for out_key, out_queue
-                   in zip(out_keys, out_queues)]
+
+        writers = [NextItemsWriteResultWorker(out_queues[0], chunklen, app_constants.train_paths[
+            "next_items_processed_unsorted_inf"], app_constants.train_paths["next_items_processed_unsorted_uninf"])]
+        writers.extend([WriteResultWorker(out_queue, chunklen, app_constants.train_paths[out_key]) for out_key,
+                                                                                                       out_queue
+                   in zip(out_keys, out_queues[1:])])
+
 
         for process in workers + writers:
             process.start()
@@ -836,108 +753,18 @@ class ProcessNextItemsTrainingData:
         print("All complete.")
 
 
-    @staticmethod
-    def list_diff(first, second):
-        diff = Counter()
-        for item in first:
-            diff[item] += 1
-        for item in second:
-            diff[item] -= 1
-        diff = list(diff.elements())
-        assert len(diff) <= 1
-        if not diff:
-            return []
-        else:
-            return diff[0]
-
-
-    def build_np_db_for_next_items_early_game(self, games, log_info):
-        result = dict()
-        i = 0
-        for game in games:
-
-            team1_team_champs = np.array(game['participants'][:5])
-            team2_team_champs = np.array(game['participants'][5:])
-
-            team1_team_champs = [self.champ_manager.lookup_by("id", str(champ))["int"] for champ in team1_team_champs]
-            team2_team_champs = [self.champ_manager.lookup_by("id", str(champ))["int"] for champ in team2_team_champs]
-
-            # next items could be shorter than absolute items because at match end there are no next item predictions, or the losing could continue buying
-
-            for summ_index, summ_itemsTimeline in enumerate(game["itemsTimeline"]):
-                for items_x, item_y in summ_itemsTimeline:
-
-                    try:
-                        team1_team_items_at_time_x = items_x[:5]
-                        team1_team_items_at_time_x = [
-                            np.pad(player_items, (0, game_constants.MAX_ITEMS_PER_CHAMP - len(player_items)),
-                                   'constant',
-                                   constant_values=(0, 0)) for player_items in team1_team_items_at_time_x]
-                        team1_team_items_at_time_x = np.ravel(team1_team_items_at_time_x).astype(int)
-
-                        team2_team_items_at_time_x = items_x[5:]
-                        team2_team_items_at_time_x = [
-                            np.pad(player_items, (0, game_constants.MAX_ITEMS_PER_CHAMP - len(player_items)),
-                                   'constant',
-                                   constant_values=(
-                                       0, 0)) for player_items in team2_team_items_at_time_x]
-                        team2_team_items_at_time_x = np.ravel(team2_team_items_at_time_x).astype(int)
-                    except ValueError as e:
-                        print("ERROR: Probably more than 6 items for summoner: GameId: " + str(game_x['gameId']))
-                        print(repr(e))
-                        break
-
-                    try:
-                        team1_team_items_at_time_x = [self.item_manager.lookup_by("id", str(item))["int"] for item in
-                                                      team1_team_items_at_time_x]
-                        team2_team_items_at_time_x = [self.item_manager.lookup_by("id", str(item))["int"] for item in
-                                                      team2_team_items_at_time_x]
-                    except KeyError as e:
-                        print("Error: KeyError")
-                        print(e)
-                        break
-
-                    x = tuple(np.concatenate([[summ_index], team1_team_champs,
-                                              team2_team_champs,
-                                              team1_team_items_at_time_x,
-                                              team2_team_items_at_time_x], 0))
-
-                    # empty items should be set to 0, not empty list
-                    y = 0 if item_y == [] else item_y
-
-                    try:
-                        y = self.item_manager.lookup_by("id", str(y))["int"]
-                    except KeyError as e:
-                        print("Error: KeyError")
-                        print(e)
-                        break
-
-                    # don't include dupes. happens when someone buys a potion and consumes it
-                    # also don't include empty item recommendations
-                    if x not in result and y:
-                        result[x] = y
-                else:
-                    continue
-                # print(log_info + " build_db {0:.0%} complete".format(i / len(abs_inf)))
-                i += 1
-
-        return result
-
-        return result_x, result_y
-
-
-
 
 if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
-    # region = "EUW"
+    region = "KR"
     l = ProcessNextItemsTrainingData()
-    # games_by_top_leagues = [5000, 4000, 4000, 3000, 3000, 3000, 3000]
-    # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=arrow.Arrow(2019, 11, 5, 0, 0, 0))
+    games_by_top_leagues = [5000, 4000, 400, 300, 300, 300, 300]
+    start_date = cass.Patch.latest(region="KR").start
+    l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
     # s = train.PositionsTrainer()
     # s.train()
-    l.update_roles()
+    # l.update_roles()
 
     # unsorted_processed_dataloader = data_loader.UnsortedNextItemsDataLoader()
     # unsorted_processed_data = unsorted_processed_dataloader.get_train_data()

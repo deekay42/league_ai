@@ -14,6 +14,7 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import pytesseract
 import json
 import itertools
+from tflearn.layers.embedding_ops import embedding
 
 
 class Model(ABC):
@@ -73,7 +74,9 @@ class Model(ABC):
 
         learning_rate = network_config["learning_rate"]
         champ_emb_dim = network_config["champ_emb_dim"]
-        item_emb_dim = network_config["item_emb_dim"]
+
+        all_items_emb_dim = network_config["all_items_emb_dim"]
+        champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
 
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
@@ -99,6 +102,7 @@ class Model(ABC):
         current_gold_start = kda_end
         current_gold_end = current_gold_start + champs_per_game
 
+        # in_vec = input_data(shape=[None, 221], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -126,6 +130,17 @@ class Model(ABC):
         target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), pos_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
+
+
+
+        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
+        opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
+        opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
+        # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
+        target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
+        opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
+
+
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
         items_by_champ_flat = tf.reshape(items_by_champ, [-1])
 
@@ -146,22 +161,29 @@ class Model(ABC):
         items = tf.sparse.to_dense(items, validate_indices=False)
         items_by_champ_k_hot = items[:, :, 1:]
 
-        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
-        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
 
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
         pos = tf.one_hot(pos, depth=champs_per_team)
-        pos = tf.cast(pos, tf.int64)
         final_input_layer = merge(
-            [pos, target_summ_items, target_summ_current_gold,
-             target_summ_cs, target_summ_lvl, target_summ_kda,
-             lvl, kda, total_cs],
+            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items,
+             opp_summ_champ,
+             opp_summ_champ_emb,
+             opp_summ_items,
+             champs_embedded_flat,
+             champs_with_items_emb,
+             opp_champs_k_hot,
+             target_summ_current_gold,
+             target_summ_cs,
+             target_summ_kda,
+             target_summ_lvl,
+             lvl,
+             kda,
+             cs],
             mode='concat', axis=1)
-
         return items
 
 
