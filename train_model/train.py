@@ -628,18 +628,18 @@ class NextItemsTrainer(Trainer):
         # self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
         # max_weight = np.max(self.class_weights)
         self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        #executioners
-        self.class_weights[106] *= 3
-        #qss
-        self.class_weights[113] *= 2
-        #cull
-        self.class_weights[27] *= 2.5
-        #last whisper
-        self.class_weights[62] *= 3
-        #stopwatch
-        self.class_weights[45] *= 2
-        #dark seal
-        self.class_weights[26] *= 1.5
+        # #executioners
+        # self.class_weights[106] *= 3
+        # #qss
+        # self.class_weights[113] *= 2
+        # #cull
+        # self.class_weights[27] *= 2.5
+        # #last whisper
+        # self.class_weights[62] *= 3
+        # #stopwatch
+        # self.class_weights[45] *= 2
+        # #dark seal
+        # self.class_weights[26] *= 1.5
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         # don't include weights for empty item
