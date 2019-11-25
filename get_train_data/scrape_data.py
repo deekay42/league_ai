@@ -156,7 +156,9 @@ def get_matches(match_ids, region):
 
     for match_id in match_ids:
         try:
+            print(f"Trying to download match: {match_id}")
             match = cass.get_match(match_id, region=region)
+            print(f"Downloaded: {match_id}")
             champ2participant = dict()
             participants = match.red_team.participants + match.blue_team.participants
             for participant in participants:
@@ -167,7 +169,7 @@ def get_matches(match_ids, region):
             losing_team = match.red_team
             if losing_team.win:
                 winning_team, losing_team = losing_team, winning_team
-
+            print("Determine win team complete")
             teams = []
             for team in [winning_team, losing_team]:
                 out_team = []
@@ -185,9 +187,7 @@ def get_matches(match_ids, region):
                     out_team.append(summ_dict)
                 teams.append(out_team)
 
-
-
-
+            print("Parsing teams complete")
             winning_team, winning_team_sorted = sort_if_complete(teams[0])
             losing_team, losing_team_sorted = sort_if_complete(teams[1])
             teams = np.ravel([winning_team, losing_team]).tolist()
@@ -204,7 +204,7 @@ def get_matches(match_ids, region):
                     if event.timestamp <= preprocessed_frames[-2].timestamp:
                         preprocessed_frames[-2].events.append(preprocessed_frames[-1].events.pop(0))
 
-
+            print("Sort frames complete")
             events = []
             prev_frame = preprocessed_frames[0]
             prev_participant_frames = prev_frame.participant_frames
@@ -215,11 +215,12 @@ def get_matches(match_ids, region):
             kda = np.zeros((10, 3), dtype=np.int32)
 
             event_counter = 0
+
             for frame_index, frame in enumerate(preprocessed_frames[1:]):
                 participant_frames = frame.participant_frames
                 # last interval might be shorter
                 if frame_index >= len(preprocessed_frames) - 2:
-                    interval = (frame.events[-1].timestamp.seconds % 60) + 1
+                    interval = ((frame.events[-1].timestamp.seconds-1) % 60) + 1
                 else:
                     interval = frame.timestamp.seconds - prev_frame.timestamp.seconds
 
@@ -339,6 +340,8 @@ def get_matches(match_ids, region):
             yield {"gameId": match_id, "sorted": teams_sorted, "participants": teams,
                    "itemsTimeline": events}
 
+            print(f"Processing complete {match_id}")
+
         except HTTPError as e:
             print('HTTP ERROR: There was an error obtaining this match. Skip.')
             print(repr(e))
@@ -353,8 +356,8 @@ def scrape_matches(games_by_top_leagues, region, cut_off_date):
     # match_ids = get_match_ids(games_by_top_leagues, region, cut_off_date)
     # with open(app_constants.train_paths["matchids"], "w") as f:
     #     f.write(json.dumps(list(match_ids)))
-    with open(app_constants.train_paths["matchids"], "r") as f:
-        match_ids = json.load(f)
-    return get_matches(match_ids, region)
+    # with open(app_constants.train_paths["matchids"], "r") as f:
+    #     match_ids = json.load(f)
+    # return get_matches(match_ids, region)
 
-    # return get_matches([4264691280], region)
+    return get_matches([3985109758], region)

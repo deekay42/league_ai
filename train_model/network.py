@@ -622,28 +622,29 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items,
-            opp_summ_champ,
-             opp_summ_champ_emb,
+            [
+                pos, target_summ_champ, target_summ_champ_emb, target_summ_items, opp_summ_champ, opp_summ_champ_emb,
              opp_summ_items,
-             champs_embedded_flat,
-             champs_with_items_emb,
              opp_champs_k_hot,
+             champs_with_items_emb,
              target_summ_current_gold,
              target_summ_cs,
              target_summ_kda,
              target_summ_lvl,
              lvl,
              kda,
-             cs],
-            mode='concat', axis=1)
-        # net = dropout(final_input_layer, 0.9)
-        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
+             total_cs
+        ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
                                                 regularizer="L2"))
-        # net = dropout(net, 0.9)
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-        net = merge([net, target_summ_items], mode='concat', axis=1)
+        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)

@@ -15,6 +15,7 @@ from train_model.model import *
 from train_model.network import *
 from utils import utils
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
+import sklearn
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -604,7 +605,8 @@ class NextItemsTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
 
         print("Loading training data")
-        dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted"])
+        dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_sorted_inf"])
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
@@ -619,15 +621,56 @@ class NextItemsTrainer(Trainer):
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
                                                                                     missing_items).items()),
                                                                               key=lambda x: x[0]))[:, 1]])
-        # self.class_weights = total_y / total_y_distrib_sorted
+        # self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
 
-        effective_num = 1.0 - np.power(0.9999, total_y_distrib_sorted)
-        self.class_weights = (1.0 - 0.9999) / np.array(effective_num)
+        effective_num = 1.0 - np.power(0.99, total_y_distrib_sorted)
+        self.class_weights = (1.0 - 0.99) / np.array(effective_num)
         self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
+        max_weight = np.max(self.class_weights)
+        #executioners
+        self.class_weights[106] *= 10
+        #qss
+        self.class_weights[113] *= 5
+        #cull
+        self.class_weights[27] *= 3
+        #last whisper
+        self.class_weights[62] *= 5
+        #stopwatch
+        self.class_weights[45] *= 3
+        #dark seal
+        self.class_weights[26] *= 3
 
+        # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         # don't include weights for empty item
         self.class_weights[0] = 0
         self.network.network_config["class_weights"] = self.class_weights
+
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1,1))
+        min_max_scaler.fit(np.reshape(self.X[:, -90:-80], (-1,1)))
+        self.X[:, -90:-80] = min_max_scaler.transform(self.X[:, -90:-80])
+        self.X_test[:, -90:-80] = min_max_scaler.transform(self.X_test[:, -90:-80])
+        min_max_scaler.fit(np.reshape(self.X[:, -80:-70], (-1, 1)))
+        self.X[:, -80:-70] = min_max_scaler.transform(self.X[:, -80:-70])
+        self.X_test[:, -80:-70] = min_max_scaler.transform(self.X_test[:, -80:-70])
+        min_max_scaler.fit(np.reshape(self.X[:, -70:-60], (-1, 1)))
+        self.X[:, -70:-60] = min_max_scaler.transform(self.X[:, -70:-60])
+        self.X_test[:, -70:-60] = min_max_scaler.transform(self.X_test[:, -70:-60])
+        min_max_scaler.fit(np.reshape(self.X[:, -60:-50], (-1, 1)))
+        self.X[:, -60:-50] = min_max_scaler.transform(self.X[:, -60:-50])
+        self.X_test[:, -60:-50] = min_max_scaler.transform(self.X_test[:, -60:-50])
+        min_max_scaler.fit(np.reshape(self.X[:, -50:-40], (-1, 1)))
+        self.X[:, -50:-40] = min_max_scaler.transform(self.X[:, -50:-40])
+        self.X_test[:, -50:-40] = min_max_scaler.transform(self.X_test[:, -50:-40])
+        min_max_scaler.fit(np.reshape(self.X[:, -30:-10], (-1, 1)))
+        self.X[:, -40:-10] = min_max_scaler.transform(self.X[:, -40:-10])
+        self.X_test[:, -40:-10] = min_max_scaler.transform(self.X_test[:, -40:-10])
+        min_max_scaler.fit(np.reshape(self.X[:, -10:], (-1, 1)))
+        self.X[:, -10:] = min_max_scaler.transform(self.X[:, -10:])
+        self.X_test[:, -10:] = min_max_scaler.transform(self.X_test[:, -10:])
+
         self.build_new_model()
 
 

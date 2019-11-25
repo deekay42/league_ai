@@ -31,8 +31,14 @@ base_train_path = "training_data" + os.sep
 train_paths = dict()
 train_paths["next_items"] = base_train_path + "next_items" + os.sep
 train_paths["positions"] = base_train_path + "positions" + os.sep
-train_paths["next_items_processed_unsorted"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + os.sep
-train_paths["next_items_processed_sorted"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + os.sep
+train_paths["next_items_processed_unsorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+                                                   os.sep + "inf" + os.sep
+train_paths["next_items_processed_unsorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+                                                   os.sep + "uninf" + os.sep
+train_paths["next_items_processed_sorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + os.sep\
+                                                 + "inf" + os.sep
+train_paths["next_items_processed_sorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + \
+                                                   os.sep + "uninf" + os.sep
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
 train_paths["positions_to_be_pred"] = train_paths["positions"] + "to_be_pred" + os.sep
 
