@@ -623,10 +623,10 @@ class NextItemsTrainer(Trainer):
                                                                               key=lambda x: x[0]))[:, 1]])
         # self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
 
-        effective_num =  1.0 - np.power(0.99, total_y_distrib_sorted)
-        self.class_weights = (1.0 - 0.99) / np.array(effective_num)
-        self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
-        # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        # effective_num =  1.0 - np.power(0.99, total_y_distrib_sorted)
+        # self.class_weights = (1.0 - 0.99) / np.array(effective_num)
+        # self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
+        self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         #executioners
         self.class_weights[106] *= 3
         #qss
