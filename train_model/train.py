@@ -621,8 +621,8 @@ class NextItemsTrainer(Trainer):
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
                                                                                     missing_items).items()),
                                                                               key=lambda x: x[0]))[:, 1]])
-        # self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
-        self.class_weights = total_y / total_y_distrib_sorted
+        self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
+        
 
         # effective_num =  1.0 - np.power(0.99, total_y_distrib_sorted)
         # self.class_weights = (1.0 - 0.99) / np.array(effective_num)
