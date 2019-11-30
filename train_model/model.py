@@ -15,6 +15,7 @@ import pytesseract
 import json
 import itertools
 from tflearn.layers.embedding_ops import embedding
+from collections import Counter
 
 
 class Model(ABC):
@@ -272,10 +273,10 @@ class TesseractModel:
         scale_factor = 5
         img_bordered = cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
         gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-        cv.imshow("gray", gray)
+        # cv.imshow("gray", gray)
 
         ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        cv.imshow("thresholded", thresholded)
+        # cv.imshow("thresholded", thresholded)
         # cutoff_ratio = 2/5
         # sorted_thresholds = sorted(gray[thresholded > 0])
         # thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
@@ -291,10 +292,10 @@ class TesseractModel:
         separator = cv.resize(self.separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
         width = x_r - x_l + w_r
         blob_contour = gray[y_top:y_top + height, x_l:x_r + w_r]
-        cv.imshow("blob_contour", blob_contour)
+
 
         ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        cv.imshow("thresholded", thresholded)
+
 
         inv = cv.bitwise_not(thresholded)
         img = np.concatenate([separator, separator, inv, separator, separator], axis=1)
@@ -328,8 +329,7 @@ class TesseractModel:
             cv.imwrite(app_constants.asset_paths["tesseract_tmp_files"] + str(i+1)+".png", img)
         text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config)
         return self.convert(text)
-        # cv.imshow("blobby", long_slide)
-        # cv.waitKey(0)
+
 
 
     def convert(self, tesseract_result):
@@ -587,11 +587,9 @@ class LvlImgModel(TesseractModel):
 
 
     def extract_slide_img(self, slide_img):
-        cv.imshow("original", slide_img)
         bw_pixels = np.logical_and(slide_img[:,:,0] == slide_img[:,:,1], slide_img[:,:,1] == slide_img[:,:,
                                                                                              2]).astype(np.uint8)
         slide_img = cv.bitwise_and(slide_img, slide_img, mask=bw_pixels)
-        cv.imshow("preprocessed", slide_img)
         return super().extract_slide_img(slide_img)
 
 
@@ -760,12 +758,105 @@ class NextItemEarlyGameModel(Model):
         self.network = network.NextItemEarlyGameNetwork()
         self.model_path = app_constants.model_paths["best"]["next_items_early"]
         self.artifact_manager = ItemManager()
+        self.elements = "next_items_early"
         # self.load_model()
 
         # with open(glob.glob('models/best/next_items/early/thresholds*')[0]) as f:
         #     self.thresholds = json.load(f)
         self.thresholds = 1
 
+        champs_per_game = game_constants.CHAMPS_PER_GAME
+        items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
+
+        self.pos_start = 0
+        self.pos_end = self.pos_start + 1
+        self.champs_start = self.pos_end
+        self.champs_end = self.champs_start + champs_per_game
+        self.items_start = self.champs_end
+        self.items_end = self.items_start + items_per_champ * 2 * champs_per_game
+        self.total_gold_start = self.items_end
+        self.total_gold_end = self.total_gold_start + champs_per_game
+        self.cs_start = self.total_gold_end
+        self.cs_end = self.cs_start + champs_per_game
+        self.neutral_cs_start = self.cs_end
+        self.neutral_cs_end = self.neutral_cs_start + champs_per_game
+        self.xp_start = self.neutral_cs_end
+        self.xp_end = self.xp_start + champs_per_game
+        self.lvl_start = self.xp_end
+        self.lvl_end = self.lvl_start + champs_per_game
+        self.kda_start = self.lvl_end
+        self.kda_end = self.kda_start + champs_per_game * 3
+        self.current_gold_start = self.kda_end
+        self.current_gold_end = self.current_gold_start + champs_per_game
+
+
+    def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold):
+        x = np.zeros(shape=self.current_gold_end, dtype=np.int32)
+        x[self.pos_start:self.pos_end] = [role]
+        x[self.champs_start:self.champs_end] = champs_int
+        encoded_items = np.ravel(self.encode_items(items_id, self.artifact_manager))
+        x[self.items_start:self.items_end] = encoded_items
+        x[self.cs_start:self.cs_end] = cs
+        x[self.lvl_start:self.lvl_end] = lvl
+        x[self.kda_start:self.kda_end] = np.ravel(kda)
+        current_gold_list = np.zeros(10)
+        current_gold_list[role] = current_gold
+        x[self.current_gold_start:self.current_gold_end] = current_gold_list
+        return self.predict([x])
+
+
+    @staticmethod
+    def encode_items(items, artifact_manager):
+        items_at_time_x = []
+        for player_items in items:
+            player_items_dict = Counter(player_items)
+            player_items_dict_items = []
+            processed_player_items = []
+            for item in player_items_dict:
+                # these items can fit multiple instances into one item slot
+                if item == 2055 or item == 2003:
+                    added_item = [artifact_manager.lookup_by('id', str(item))['int'],
+                                  player_items_dict[
+                                      item]]
+                    processed_player_items.append(added_item)
+                    player_items_dict_items.append(added_item)
+                elif item == 2138 or item == 2139 or item == 2140:
+                    continue
+                else:
+                    added_item = artifact_manager.lookup_by('id', str(item))['int']
+                    processed_player_items.extend([[added_item, 1]] * player_items_dict[item])
+                    player_items_dict_items.append((added_item, player_items_dict[item]))
+
+            if processed_player_items == []:
+                processed_player_items = [[0, 6], [-1, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
+            else:
+                empties_length = game_constants.MAX_ITEMS_PER_CHAMP - len(processed_player_items)
+                padding_length = game_constants.MAX_ITEMS_PER_CHAMP - len(player_items_dict_items)
+
+                try:
+                    if empties_length < 0:
+                        raise ValueError()
+
+                    if padding_length == 0:
+                        empties = np.array([]).reshape((0, 2)).astype(int)
+                        padding = np.array([]).reshape((0, 2)).astype(int)
+                    if padding_length == 1:
+                        empties = [[0, empties_length]]
+                        padding = np.array([]).reshape((0, 2)).astype(int)
+                    elif padding_length > 1:
+                        empties = [[0, empties_length]]
+                        padding = [[-1, -1]] * (padding_length - 1)
+
+
+                except ValueError as e:
+                    raise e
+
+                processed_player_items = np.concatenate([player_items_dict_items, empties, padding],
+                                                        axis=0).tolist()
+
+            items_at_time_x.append(processed_player_items)
+
+        return np.array(items_at_time_x)
 
     def predict(self, x):
         # with self.graph.as_default(), tf.Session() as sess:
@@ -779,19 +870,12 @@ class NextItemEarlyGameModel(Model):
         #         print(f"{i}: {log[i]}")
         # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
-        item_int = self.predict_with_prior(x)
-        item = self.artifact_manager.lookup_by("int", item_int[0])
-        return item
-
-
-    # first item is the empty item... don't want to include that
-
-    def predict_with_prior(self, x):
         with self.graph.as_default():
             y = self.model.predict(x)
-            y_priored = y / self.thresholds
-            y_int = np.argmax(y_priored, axis=len(y.shape) - 1)
-            return y_int
+            item_int = np.argmax(y, axis=len(y.shape) - 1)
+
+        item = self.artifact_manager.lookup_by("int", item_int[0])
+        return item
 
 
 class NextItemLateGameModel(Model):
