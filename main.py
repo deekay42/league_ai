@@ -43,20 +43,26 @@ class Main(FileSystemEventHandler):
             print(repr(e))
             res = 1366, 768
             print("Couldn't find Width or Height sections")
-        #
+
         # try:
         #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         # except KeyError as e:
         #     print(repr(e))
         #     show_names_in_sb = False
-
+        #
         # try:
         #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         # except KeyError as e:
-        #     print(repr(e))re
+        #     print(repr(e))
         #     flipped_sb = False
-
-
+        #
+        # try:
+        #     hud_scale = bool(int(self.config['HUD']['HudScale']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
         # if flipped_sb:
         #     Tk().withdraw()
         #     messagebox.showinfo("Error",
@@ -64,10 +70,12 @@ class Main(FileSystemEventHandler):
         #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
         self.res_converter = ui_constants.ResConverter(*res)
         print(f"Res is {res}")
+
         self.item_manager = ItemManager()
         # if Main.shouldTerminate():
         #     return
         self.next_item_model = NextItemEarlyGameModel()
+        self.next_item_model.load_model()
         # if Main.shouldTerminate():
         #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
@@ -125,12 +133,11 @@ class Main(FileSystemEventHandler):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
 
 
-    def predict_next_item(self, role, champs, items):
-        champs_int = [champ["int"] for champ in champs]
-        items_int = [item["int"] for item in items]
-        next_items_input = np.concatenate([[role], champs_int, items_int], axis=0)
-        next_item = self.next_item_model.predict([next_items_input])
-        return next_item
+    def predict_next_item(self, role, champs, items, cs, lvl, kda, current_gold):
+        champs_int = [int(champ["int"]) for champ in champs]
+        items_id = [[int(item["id"]) for item in summ_items] for summ_items in items]
+
+        return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold)
 
 
     def build_path(self, items, next_item, role):
@@ -174,6 +181,38 @@ class Main(FileSystemEventHandler):
             pass
 
 
+    def analyze_champ(self, role, champs, items, cs, lvl, kda, current_gold):
+        assert (len(champs) == 10)
+        assert (len(items) == 60)
+        print("\nRole: " + str(role))
+        empty_item = self.item_manager.lookup_by("int", 0)
+        if role > 4:
+            print("Switching teams!")
+            champs, items = self.swap_teams(champs, items)
+            role -= 5
+
+        result = []
+
+        items_id = np.reshape(items, (10, 6))
+        items_id = [list(filter(lambda a: a["id"] != '0', summ_items)) for summ_items in items_id]
+
+        while current_gold > 0:
+            try:
+                next_item = self.predict_next_item(role, champs, items_id, cs, lvl, kda, current_gold)
+            except ValueError as e:
+                abs_items[-1] = self.remove_low_value_items(abs_items[-1])
+
+
+            next_items, abs_items = self.build_path(items, next_item, role)
+            result.extend(next_items)
+            for next_item in next_items:
+                cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+                                                next_item else int(next_item["id"])), region="KR")
+                current_gold -= cass_next_item.gold.base
+
+        return result
+
+
     def next_item_for_champ(self, role, champs, items):
         assert (len(champs) == 10)
         assert (len(items) == 60)
@@ -200,11 +239,7 @@ class Main(FileSystemEventHandler):
 
             abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
 
-
-
-
             try:
-
                 if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
                     print("too many items:")
                     print(abs_items[-1])
@@ -226,71 +261,6 @@ class Main(FileSystemEventHandler):
                 else:
                     req_item_tier += 1
         return True
-
-
-
-
-
-    def analyze_champ(self, role, champs, items):
-        assert(len(champs) == 10)
-        assert(len(items) == 60)
-        print("\nRole: " + str(role))
-        empty_item = self.item_manager.lookup_by("int", 0)
-        if role > 4:
-            print("Switching teams!")
-            champs, items = self.swap_teams(champs, items)
-            role -= 5
-        summ_next_item_cass = None
-        result = []
-        items_ahead = 0
-        new_completes = 0
-        req_item_tier = 0
-        while items_ahead < 20:
-
-            completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
-                             items[self.summoner_items_slice(role)]])
-            if completes >= 6:
-                break
-
-            items_ahead += 1
-            next_item = self.predict_next_item(role, champs, items)
-            next_items, abs_items = self.build_path(items, next_item, role)
-            cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item[
-                                                                                                              "id"])),
-                                       region="KR")
-
-            new_completes += int("completion" in next_item and next_item[
-                "completion"]=="complete")
-
-            abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
-
-            result.extend(next_items)
-
-            if new_completes >= 2 and cass_next_item.tier >= 2 and len(result) > 1:
-                break
-            try:
-
-                if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
-                    print("too many items:")
-                    print(abs_items[-1])
-                    abs_items[-1] = self.remove_low_value_items(abs_items[-1])
-                    print("removing low value items:")
-                    print(abs_items[-1])
-                items[self.summoner_items_slice(role)] = np.pad(
-                    abs_items[-1], (0, game_constants.MAX_ITEMS_PER_CHAMP - len(abs_items[-1])),
-                    'constant',
-                    constant_values=(
-                        empty_item, empty_item))
-            except ValueError as e:
-                print("Max items reached!!")
-                print(repr(e))
-
-                if req_item_tier != 2:
-                    req_item_tier += 1
-                else:
-                    break
-
-        return result
 
 
     def on_created(self, event):
@@ -359,9 +329,13 @@ class Main(FileSystemEventHandler):
             kda = list(self.kda_img_model.predict(screenshot))
             print(f"KDA:\n {kda}\n")
             tesseract_result = self.tesseract_models.predict(screenshot)
-            print(f"Lvl:\n {next(tesseract_result)}\n")
-            print(f"CS:\n {next(tesseract_result)}\n")
-            print(f"Current Gold:\n {next(tesseract_result)}\n")
+            lvl = next(tesseract_result)
+            cs = next(tesseract_result)
+            current_gold = next(tesseract_result)[0]
+
+            print(f"Lvl:\n {lvl}\n")
+            print(f"CS:\n {cs}\n")
+            print(f"Current Gold:\n {current_gold}\n")
             print("Trying to predict item imgs. \nHere are the raw items: ")
             items = list(self.item_img_model.predict(screenshot))
             for i, item in enumerate(items):
@@ -373,7 +347,7 @@ class Main(FileSystemEventHandler):
             print("Trying to predict self imgs")
             self_index = self.self_img_model.predict(screenshot)
             print(self_index)
-            return
+
         except FileNotFoundError as e:
             print(e)
             return
@@ -391,10 +365,10 @@ class Main(FileSystemEventHandler):
         items = np.delete(items, np.arange(6, len(items), 7))
         #
         # items = [self.item_manager.lookup_by('int', 0)] * 60
-        items[30:] = [self.item_manager.lookup_by('int', 0)]*30
-        champs[0] = ChampManager().lookup_by('name', 'Aatrox')
-        champs[2] = ChampManager().lookup_by('name', 'Vladimir')
-        champs[4] = ChampManager().lookup_by('name', 'Soraka')
+        # items[30:] = [self.item_manager.lookup_by('int', 0)]*30
+        # champs[0] = ChampManager().lookup_by('name', 'Aatrox')
+        # champs[2] = ChampManager().lookup_by('name', 'Vladimir')
+        # champs[4] = ChampManager().lookup_by('name', 'Soraka')
 
 
         # x = np.load(sorted(glob.glob(app_constants.train_paths[
@@ -405,7 +379,7 @@ class Main(FileSystemEventHandler):
         #
         # items = [ItemManager().lookup_by("int", item) for item in x[25][10:]]
         # champs = [ChampManager().lookup_by("int", champ) for champ in x[0][:10]]
-        self.simulate_game(items, champs)
+        # self.simulate_game(items, champs)
 
         # for summ_index in range(10):
         #     champs_copy = copy.deepcopy(champs)
@@ -416,14 +390,14 @@ class Main(FileSystemEventHandler):
 
 
 
-        # items_to_buy = self.analyze_champ(self_index, champs, items)
-        # print(f"This is the result for summ_index {self_index}: ")
-        # print(items_to_buy)
-        # out_string = ""
-        # if items_to_buy[0]:
-        #     out_string += str(items_to_buy[0]["id"])
-        # for item in items_to_buy[1:]:
-        #     out_string += "," + str(item["id"])
+        items_to_buy = self.analyze_champ(self_index, champs, items, cs, lvl, kda, current_gold)
+        print(f"This is the result for summ_index {self_index}: ")
+        print(items_to_buy)
+        out_string = ""
+        if items_to_buy[0]:
+            out_string += str(items_to_buy[0]["id"])
+        for item in items_to_buy[1:]:
+            out_string += "," + str(item["id"])
         # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
         #     f.write(out_string)
 
@@ -456,13 +430,13 @@ class Main(FileSystemEventHandler):
 
 # dataloader_1 = data_loader.UnsortedNextItemsDataLoader()
 # X_un = dataloader_1.get_train_data()
-dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted"])
-X, Y = dataloader.get_train_data()
-m = NextItemEarlyGameModel()
-# X = X[Y==2]
-X_ = X[:, 1:]
-X_ = X_[500:700]
-m.output_logs(X_[:200])
+# dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted"])
+# X, Y = dataloader.get_train_data()
+# m = NextItemEarlyGameModel()
+# # X = X[Y==2]
+# X_ = X[:, 1:]
+# X_ = X_[500:700]
+# m.output_logs(X_[:200])
 
 #
 # blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
@@ -472,24 +446,25 @@ m.output_logs(X_[:200])
 # cv.imshow("thresholded", thresholded)
 # cv.waitKey(0)
 #
-# from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
-# with open('test_data/easy/test_labels.json', "r") as f:
-#     elems = json.load(f)
-#
-# base_path = "test_data/easy/"
-# m = Main()
-#
-#
-# for key in elems:
-#
-#
-#     if elems[key]["hud_scale"] != None:
-#         test_image_y = elems[key]
-#
-#         m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"]))
-#
-#         m.process_image(base_path + test_image_y["filename"])
-#
-#             # KDAImgModel(res_cvt).predict(test_image_x)
+from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
+with open('test_data/easy/test_labels.json', "r") as f:
+    elems = json.load(f)
 
-cass.Item(id=2055, region="KR")
+base_path = "test_data/easy/"
+m = Main()
+
+
+for key in elems:
+
+
+    if elems[key]["hud_scale"] != None:
+        test_image_y = elems[key]
+
+        m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
+                                                      elems[key]["summ_names_displayed"]))
+
+        m.process_image(base_path + test_image_y["filename"])
+
+            # KDAImgModel(res_cvt).predict(test_image_x)
+
+# cass.Item(id=2055, region="KR")

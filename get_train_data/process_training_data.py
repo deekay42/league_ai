@@ -16,6 +16,8 @@ from utils import build_path, cass_configured as cass
 from utils.artifact_manager import *
 import arrow
 from utils import utils
+from train_model.model import NextItemEarlyGameModel
+
 
 class DuplicateTimestampException(Exception):
     pass
@@ -508,59 +510,6 @@ class ProcessNextItemsTrainingData:
                 yield np.concatenate([gameIds, current_game], axis=1)
 
 
-    def encode_items(self, items):
-        items_at_time_x = []
-        for player_items in items:
-            player_items_dict = Counter(player_items)
-            player_items_dict_items = []
-            processed_player_items = []
-            for item in player_items_dict:
-                # these items can fit multiple instances into one item slot
-                if item == 2055 or item == 2003:
-                    added_item = [self.item_manager.lookup_by('id', str(item))['int'],
-                                  player_items_dict[
-                                      item]]
-                    processed_player_items.append(added_item)
-                    player_items_dict_items.append(added_item)
-                elif item == 2138 or item == 2139 or item == 2140:
-                    continue
-                else:
-                    added_item = self.item_manager.lookup_by('id', str(item))['int']
-                    processed_player_items.extend([[added_item, 1]] * player_items_dict[item])
-                    player_items_dict_items.append((added_item, player_items_dict[item]))
-
-            if processed_player_items == []:
-                processed_player_items = [[0, 6], [-1, -1], [-1, -1], [-1, -1], [-1, -1], [-1, -1]]
-            else:
-                empties_length = game_constants.MAX_ITEMS_PER_CHAMP - len(processed_player_items)
-                padding_length = game_constants.MAX_ITEMS_PER_CHAMP - len(player_items_dict_items)
-
-                try:
-                    if empties_length < 0:
-                        raise ValueError()
-
-                    if padding_length == 0:
-                        empties = np.array([]).reshape((0, 2)).astype(int)
-                        padding = np.array([]).reshape((0, 2)).astype(int)
-                    if padding_length == 1:
-                        empties = [[0, empties_length]]
-                        padding = np.array([]).reshape((0, 2)).astype(int)
-                    elif padding_length > 1:
-                        empties = [[0, empties_length]]
-                        padding = [[-1, -1]] * (padding_length - 1)
-
-
-                except ValueError as e:
-                    raise e
-
-                processed_player_items = np.concatenate([player_items_dict_items, empties, padding],
-                                                        axis=0).tolist()
-
-            items_at_time_x.append(processed_player_items)
-
-        return np.array(items_at_time_x)
-
-
     def post_process(self, matches):
 
         for i, game in enumerate(matches):
@@ -600,9 +549,12 @@ class ProcessNextItemsTrainingData:
                                                      item in
                                                      participant_current_items]
                     try:
-                        items_at_time_x = self.encode_items(event['absolute_items'])
+                        items_at_time_x = NextItemEarlyGameModel.encode_items(event['absolute_items'], self.item_manager)
                     except ValueError as e:
                         continue
+                    y = self.item_manager.lookup_by("id", str(event['itemId']))["int"]
+                    if y==0:
+                        print(f"y==0 gameId {str(game['gameId'])}")
                     out_uninf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
                                                      np.around(event['total_gold']).astype(int),
                                                      np.around(event['cs']).astype(int),
@@ -611,7 +563,7 @@ class ProcessNextItemsTrainingData:
                                                      np.around(event['lvl']).astype(int),
                                                      np.ravel(event['kda']).tolist(),
                                                      np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
-                                                     [self.item_manager.lookup_by("id", str(event['itemId']))["int"]]
+                                                     [y]
                                                      ], 0))
                     component_items,_, insert_item_states,_ = build_path.build_path(participant_current_items, new_item)
                     prev_event = event
@@ -621,8 +573,11 @@ class ProcessNextItemsTrainingData:
                         event_copy['itemId'] = component_item.id
 
                         try:
-                            items_at_time_x = self.encode_items(event_copy['absolute_items'])
+                            items_at_time_x = NextItemEarlyGameModel.encode_items(event_copy['absolute_items'],
+                                                                                  self.item_manager)
                             y = self.item_manager.lookup_by("id", str(component_item.id))["int"]
+                            if y == 0:
+                                print(f"y==0 gameId {str(game['gameId'])}")
                             out_inf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
                                                            np.around(event_copy['total_gold']).astype(int),
                                                            np.around(event_copy['cs']).astype(int),

@@ -694,6 +694,8 @@ if __name__ == "__main__":
     t.build_next_items_early_game_model()
     # t.standalone_eval()
 
+
+
     # s = PositionsTrainer()
     # s.train()
 
@@ -717,5 +719,5 @@ if __name__ == "__main__":
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
 
-    # s = DynamicTrainingDataTrainer()
-    # s.build_new_item_model()
+    # s = ItemImgTrainer()
+    # s.build_new_img_model()
