@@ -1,0 +1,150 @@
+Epoch 1 accuracy 0.35 | loss 2.02
+Raw test accuracy 0.3942 | preprocessed images accuracy 0.2404  0.2692  0.2692  0.2981 
+
+Epoch 2 accuracy 0.65 | loss 1.36
+Raw test accuracy 0.6442 | preprocessed images accuracy 0.9327  0.5096  0.8942  0.3750 
+
+Epoch 3 accuracy 0.81 | loss 0.79
+Raw test accuracy 0.7788 | preprocessed images accuracy 0.9423  0.7981  0.9904  0.3750 
+
+Epoch 4 accuracy 0.84 | loss 0.62
+Raw test accuracy 0.9231 | preprocessed images accuracy 0.8846  0.5481  0.8654  0.2788 
+
+Epoch 5 accuracy 0.88 | loss 0.50
+Raw test accuracy 0.8750 | preprocessed images accuracy 0.9135  0.6154  0.9231  0.2885 
+
+Epoch 6 accuracy 0.89 | loss 0.41
+Raw test accuracy 0.9712 | preprocessed images accuracy 0.9519  0.6346  0.9327  0.3462 
+
+Epoch 7 accuracy 0.90 | loss 0.37
+Raw test accuracy 0.9615 | preprocessed images accuracy 0.9904  0.6154  0.9904  0.2788 
+
+Epoch 8 accuracy 0.93 | loss 0.29
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.7212  1.0000  0.3269 
+
+Epoch 9 accuracy 0.94 | loss 0.22
+Raw test accuracy 0.9519 | preprocessed images accuracy 0.9808  0.7404  0.9712  0.5288 
+
+Epoch 10 accuracy 0.94 | loss 0.26
+Raw test accuracy 0.8942 | preprocessed images accuracy 0.9519  0.7788  0.9615  0.5385 
+
+Epoch 11 accuracy 0.95 | loss 0.22
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.5962  1.0000  0.5385 
+
+Epoch 12 accuracy 0.96 | loss 0.20
+Raw test accuracy 0.9904 | preprocessed images accuracy 0.9904  0.6827  0.9904  0.5769 
+
+Epoch 13 accuracy 0.96 | loss 0.16
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.7500  0.9808  0.6058 
+
+Epoch 14 accuracy 0.96 | loss 0.18
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6346  1.0000  0.4808 
+
+Epoch 15 accuracy 0.96 | loss 0.26
+Raw test accuracy 0.9327 | preprocessed images accuracy 1.0000  0.7885  1.0000  0.5673 
+
+Epoch 16 accuracy 0.96 | loss 0.23
+Raw test accuracy 0.9327 | preprocessed images accuracy 0.9904  0.8654  0.9808  0.5769 
+
+Epoch 17 accuracy 0.96 | loss 0.17
+Raw test accuracy 0.9904 | preprocessed images accuracy 0.9327  0.5962  0.9615  0.5769 
+
+Epoch 18 accuracy 0.96 | loss 0.16
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9423  0.5962  0.9615  0.4327 
+
+Epoch 19 accuracy 0.95 | loss 0.27
+Raw test accuracy 0.9904 | preprocessed images accuracy 1.0000  0.7981  0.9904  0.3942 
+
+Epoch 20 accuracy 0.97 | loss 0.15
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6154  1.0000  0.4327 
+
+Epoch 21 accuracy 0.97 | loss 0.14
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9808  0.6442  0.9712  0.5000 
+
+Epoch 22 accuracy 0.97 | loss 0.16
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.7212  0.9808  0.5481 
+
+Epoch 23 accuracy 0.97 | loss 0.14
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6058  0.9712  0.4615 
+
+Epoch 24 accuracy 0.97 | loss 0.13
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9712  0.6058  1.0000  0.5962 
+
+Epoch 25 accuracy 0.97 | loss 0.15
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6154  1.0000  0.5385 
+
+Epoch 26 accuracy 0.97 | loss 0.13
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9519  0.6250  0.9808  0.5288 
+
+Epoch 27 accuracy 0.97 | loss 0.14
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9808  0.6058  0.9808  0.5385 
+
+Epoch 28 accuracy 0.97 | loss 0.14
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.6058  0.9712  0.5288 
+
+Epoch 29 accuracy 0.98 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6538  1.0000  0.5385 
+
+Epoch 30 accuracy 0.99 | loss 0.07
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9712  0.6058  0.9712  0.4808 
+
+Epoch 31 accuracy 0.97 | loss 0.13
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.5962  0.9712  0.5096 
+
+Epoch 32 accuracy 0.98 | loss 0.11
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6250  1.0000  0.6058 
+
+Epoch 33 accuracy 0.98 | loss 0.17
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6346  1.0000  0.6058 
+
+Epoch 34 accuracy 0.98 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6442  0.9712  0.5096 
+
+Epoch 35 accuracy 0.98 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6346  1.0000  0.5577 
+
+Epoch 36 accuracy 0.99 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.6250  0.9904  0.4712 
+
+Epoch 37 accuracy 0.98 | loss 0.08
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9615  0.7788  0.9712  0.5000 
+
+Epoch 38 accuracy 0.98 | loss 0.10
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9808  0.7596  0.9808  0.5577 
+
+Epoch 39 accuracy 0.98 | loss 0.10
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.7692  1.0000  0.5865 
+
+Epoch 40 accuracy 0.98 | loss 0.13
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6538  0.9904  0.5192 
+
+Epoch 41 accuracy 0.98 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.7404  0.9615  0.4904 
+
+Epoch 42 accuracy 0.99 | loss 0.06
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6346  0.9904  0.5769 
+
+Epoch 43 accuracy 0.98 | loss 0.11
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6538  1.0000  0.5577 
+
+Epoch 44 accuracy 0.98 | loss 0.11
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6538  0.9712  0.5192 
+
+Epoch 45 accuracy 0.99 | loss 0.10
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6731  1.0000  0.5288 
+
+Epoch 46 accuracy 0.98 | loss 0.12
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6442  1.0000  0.4808 
+
+Epoch 47 accuracy 0.98 | loss 0.10
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6827  1.0000  0.5481 
+
+Epoch 48 accuracy 0.99 | loss 0.10
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6442  1.0000  0.5288 
+
+Epoch 49 accuracy 0.98 | loss 0.06
+Raw test accuracy 1.0000 | preprocessed images accuracy 1.0000  0.6442  1.0000  0.6058 
+
+Epoch 50 accuracy 0.99 | loss 0.09
+Raw test accuracy 1.0000 | preprocessed images accuracy 0.9904  0.6250  1.0000  0.5288 
+
