@@ -33,59 +33,59 @@ class Main(FileSystemEventHandler):
 
     def __init__(self):
         self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         try:
-            res = 1440,810
-            # res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+            # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
         except KeyError as e:
             print(repr(e))
             res = 1366, 768
             print("Couldn't find Width or Height sections")
 
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = bool(int(self.config['HUD']['HudScale']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        self.res_converter = ui_constants.ResConverter(*res)
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale, show_names_in_sb)
         print(f"Res is {res}")
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model = NextItemEarlyGameModel()
         self.next_item_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -324,14 +324,28 @@ class Main(FileSystemEventHandler):
             screenshot = cv.imread(img_path)
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             print("Trying to predict champ imgs")
+            
             champs = list(self.champ_img_model.predict(screenshot))
             print(f"Champs: {champs}\n")
-            kda = list(self.kda_img_model.predict(screenshot))
+
+            try:
+                kda = list(self.kda_img_model.predict(screenshot))
+            except Exception as e:
+                kda = [[0,0,0]]*10
             print(f"KDA:\n {kda}\n")
             tesseract_result = self.tesseract_models.predict(screenshot)
-            lvl = next(tesseract_result)
-            cs = next(tesseract_result)
-            current_gold = next(tesseract_result)[0]
+            try:
+                lvl = next(tesseract_result)
+            except Exception as e:
+                lvl = [0]*10
+            try:
+                cs = next(tesseract_result)
+            except Exception as e:
+                cs = [0]*10
+            try:
+                current_gold = next(tesseract_result)[0]
+            except Exception as e:
+                current_gold = 500
 
             print(f"Lvl:\n {lvl}\n")
             print(f"CS:\n {cs}\n")
@@ -398,8 +412,8 @@ class Main(FileSystemEventHandler):
             out_string += str(items_to_buy[0]["id"])
         for item in items_to_buy[1:]:
             out_string += "," + str(item["id"])
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
 
     @staticmethod
     def shouldTerminate():
@@ -423,7 +437,8 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-# m = Main()
+m = Main()
+m.run()
 # m.run_test_games()
 
 # pr = cProfile.Profile()
@@ -446,24 +461,24 @@ class Main(FileSystemEventHandler):
 # cv.imshow("thresholded", thresholded)
 # cv.waitKey(0)
 #
-from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
-with open('test_data/easy/test_labels.json', "r") as f:
-    elems = json.load(f)
+# from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
+# with open('test_data/easy/test_labels.json', "r") as f:
+#     elems = json.load(f)
 
-base_path = "test_data/easy/"
-m = Main()
-
-
-for key in elems:
+# base_path = "test_data/easy/"
+# m = Main()
 
 
-    if elems[key]["hud_scale"] != None:
-        test_image_y = elems[key]
+# for key in elems:
 
-        m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
-                                                      elems[key]["summ_names_displayed"]))
 
-        m.process_image(base_path + test_image_y["filename"])
+#     if elems[key]["hud_scale"] != None:
+#         test_image_y = elems[key]
+
+#         m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
+#                                                       elems[key]["summ_names_displayed"]))
+
+#         m.process_image(base_path + test_image_y["filename"])
 
             # KDAImgModel(res_cvt).predict(test_image_x)
 
