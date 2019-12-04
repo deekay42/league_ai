@@ -16,7 +16,9 @@ import json
 import itertools
 from tflearn.layers.embedding_ops import embedding
 from collections import Counter
+import os
 
+pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
 
 class Model(ABC):
 
@@ -245,8 +247,8 @@ class MultiTesseractModel:
             index = 0
             for imgs in slide_imgs:
                 for slide_img in imgs:
-                    cv.imwrite(app_constants.asset_paths["tesseract_tmp_files"] + str(index+1)+".png", slide_img)
-                    f.write(app_constants.asset_paths["tesseract_tmp_files"] + str(index+1)+".png\n")
+                    cv.imwrite(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png"), slide_img)
+                    f.write(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png\n"))
                     index += 1
 
         text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config).split()

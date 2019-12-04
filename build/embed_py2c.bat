@@ -54,6 +54,11 @@ mkdir %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\champ2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\item2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\self2id.json %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\..\assets\data\kda2id.json %OUT_DIR%\assets\data
+mkdir %OUT_DIR%\assets\tesseract
+COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
+
+ROBOCOPY /NFL /NDL  %PYTHONDIR%\Tesseract-OCR %OUT_DIR%\Tesseract-OCR *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\fonts %OUT_DIR%\assets\fonts *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\icons %OUT_DIR%\assets\icons *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
