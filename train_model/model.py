@@ -255,10 +255,15 @@ class MultiTesseractModel:
                     f.write(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png\n"))
                     index += 1
 
-        text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config).split()
+        text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config,
+                                           output_type=pytesseract.Output.BYTES
+                                           ).decode('utf-8').split('\f')
+        text = [token.strip() for token in text]
         offset = 0
         for i in range(len(slide_imgs)):
-            yield [self.tesseractmodels[i].convert(result) for result in text[offset:offset+len(slide_imgs[i])]]
+            yield np.array([self.tesseractmodels[i].convert(result) if result != '' else None for result in text[
+                                                                                                  offset:offset+len(slide_imgs[
+                                                                                                             i])]])
             offset += len(slide_imgs[i])
 
 
@@ -289,20 +294,19 @@ class TesseractModel:
         # gray[gray < thresh] = 0
         # cv.imshow("gray_thresholded", gray)
         contours, hier = cv.findContours(thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-        sorted_bboxes = sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0])
-        x_l, y_l, w_l, h_l = sorted_bboxes[0]
-        x_r, y_r, w_r, h_r = sorted_bboxes[-1]
-        y_top = min(y_l, y_r)
-        height = max(h_r, h_l)
-        ratio = height / self.separator.shape[0]
+        bboxes = [cv.boundingRect(contour) for contour in contours]
+        bboxes = np.array([[bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]] for bbox in bboxes])
+        # sorted_bboxes = np.array(sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0]))
+        # x_l, y_l, w_l, h_l = sorted_bboxes[0]
+        # x_r, y_r, w_r, h_r = sorted_bboxes[-1]
+        x_left = np.min(bboxes[:, 0])
+        x_right = np.max(bboxes[:, 2])
+        y_top = np.min(bboxes[:, 1])
+        y_bot = np.max(bboxes[:, 3])
+        ratio = (y_bot - y_top) / self.separator.shape[0]
         separator = cv.resize(self.separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
-        width = x_r - x_l + w_r
-        blob_contour = gray[y_top:y_top + height, x_l:x_r + w_r]
-
-
+        blob_contour = gray[y_top:y_bot, x_left:x_right]
         ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-
-
         inv = cv.bitwise_not(thresholded)
         img = np.concatenate([separator, separator, inv, separator, separator], axis=1)
         img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
