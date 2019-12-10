@@ -646,33 +646,26 @@ class NextItemsTrainer(Trainer):
         self.class_weights[0] = 0
         self.network.network_config["class_weights"] = self.class_weights
 
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-
-        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1,1))
-        min_max_scaler.fit(np.reshape(self.X[:, -90:-80], (-1,1)))
-        self.X[:, -90:-80] = min_max_scaler.transform(self.X[:, -90:-80])
-        self.X_test[:, -90:-80] = min_max_scaler.transform(self.X_test[:, -90:-80])
-        min_max_scaler.fit(np.reshape(self.X[:, -80:-70], (-1, 1)))
-        self.X[:, -80:-70] = min_max_scaler.transform(self.X[:, -80:-70])
-        self.X_test[:, -80:-70] = min_max_scaler.transform(self.X_test[:, -80:-70])
-        min_max_scaler.fit(np.reshape(self.X[:, -70:-60], (-1, 1)))
-        self.X[:, -70:-60] = min_max_scaler.transform(self.X[:, -70:-60])
-        self.X_test[:, -70:-60] = min_max_scaler.transform(self.X_test[:, -70:-60])
-        min_max_scaler.fit(np.reshape(self.X[:, -60:-50], (-1, 1)))
-        self.X[:, -60:-50] = min_max_scaler.transform(self.X[:, -60:-50])
-        self.X_test[:, -60:-50] = min_max_scaler.transform(self.X_test[:, -60:-50])
-        min_max_scaler.fit(np.reshape(self.X[:, -50:-40], (-1, 1)))
-        self.X[:, -50:-40] = min_max_scaler.transform(self.X[:, -50:-40])
-        self.X_test[:, -50:-40] = min_max_scaler.transform(self.X_test[:, -50:-40])
-        min_max_scaler.fit(np.reshape(self.X[:, -30:-10], (-1, 1)))
-        self.X[:, -40:-10] = min_max_scaler.transform(self.X[:, -40:-10])
-        self.X_test[:, -40:-10] = min_max_scaler.transform(self.X_test[:, -40:-10])
-        min_max_scaler.fit(np.reshape(self.X[:, -10:], (-1, 1)))
-        self.X[:, -10:] = min_max_scaler.transform(self.X[:, -10:])
-        self.X_test[:, -10:] = min_max_scaler.transform(self.X_test[:, -10:])
+        self.fit_all_inputs()
 
         self.build_new_model()
+
+    def fit_all_inputs(self):
+        model = NextItemEarlyGameModel()
+        for slice_name in model.cont_slices_by_name:
+            slice = model.cont_slices_by_name[slice_name]
+            scaler = self.fit_input(self.X[slice], slice_name)
+            self.X[slice] = scaler.transform(self.X[slice])
+            self.X_test[slice] = scaler.transform(self.X_test[slice])
+
+
+    def fit_input(self, X, scaler_name):
+        X = X.astype(np.float32)
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
+        min_max_scaler.fit(np.reshape(X, (-1, 1)))
+        dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
+        dump(min_max_scaler, self.best_path + scaler_name + "_scaler", compress=True)
+        return min_max_scaler
 
 
     def build_next_items_late_game_model(self):

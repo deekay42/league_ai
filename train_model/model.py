@@ -17,8 +17,12 @@ import itertools
 from tflearn.layers.embedding_ops import embedding
 from collections import Counter
 import os
+import platform
+import sklearn
+from sklearn.externals.joblib import dump, load
 
-pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
 
 class Model(ABC):
 
@@ -770,6 +774,14 @@ class NextItemEarlyGameModel(Model):
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
+        self.cont_slices_by_name = {'total_gold': np.s_[:, -90:-80],
+         'cs': np.s_[:, -80:-70],
+         'neutral_cs': np.s_[:, -70:-60],
+         'xp': np.s_[:, -60:-50],
+         'lvl': np.s_[:, -50:-40],
+         'kda': np.s_[:, -40:-10],
+         'cg': np.s_[:, -10:]}
+
         self.pos_start = 0
         self.pos_end = self.pos_start + 1
         self.champs_start = self.pos_end
@@ -804,7 +816,16 @@ class NextItemEarlyGameModel(Model):
         current_gold_list = np.zeros(10)
         current_gold_list[role] = current_gold
         x[self.current_gold_start:self.current_gold_end] = current_gold_list
-        return self.predict([x])
+        x = self.scale_inputs(np.array([x]).astype(np.float32))
+        return self.predict(x)
+
+
+    def scale_inputs(self, X):
+        for slice_name in self.cont_slices_by_name:
+            scaler = load(app_constants.model_paths["best"][self.elements] + slice_name +"_scaler")
+            slice = self.cont_slices_by_name[slice_name]
+            X[slice] = scaler.transform(X[slice])
+        return X
 
 
     @staticmethod
