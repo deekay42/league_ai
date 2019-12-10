@@ -32,61 +32,61 @@ from train_model import data_loader
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
-        
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-        
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-        
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-        
-        
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale, show_names_in_sb)
-        print(f"Res is {res}")
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # try:
+        # # res = 1440,810
+        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     res = 1366, 768
+        #     print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.res_converter = ui_constants.ResConverter(1440,900, 0.48)
+
 
        
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model = NextItemEarlyGameModel()
         self.next_item_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -331,6 +331,13 @@ class Main(FileSystemEventHandler):
         time.sleep(5.0)
         self.onTimeout = False
 
+    def repair_failed_predictions(self, predictions):
+        failed_predictions = predictions == None
+        if np.any(failed_predictions):
+            print(f"FAILED PREDICTION!!: {predictions}")
+            avg = sum([l if l else 0 for l in predictions]) // (len(predictions) - sum(failed_predictions))
+            predictions[predictions == None] = avg
+        return predictions
 
     def process_image(self, img_path):
 
@@ -356,21 +363,28 @@ class Main(FileSystemEventHandler):
             except Exception as e:
                 print(e)
                 lvl = [0]*10
+            lvl = self.repair_failed_predictions(lvl)
+
             try:
                 cs = next(tesseract_result)
             except Exception as e:
                 print(e)
                 cs = [0]*10
+            cs = self.repair_failed_predictions(cs)
             try:
                 current_gold = next(tesseract_result)[0]
             except Exception as e:
                 print(e)
                 current_gold = 500
 
-
-            lvl[lvl>18] = 18
-            cs[cs>400] = 400
+            if np.any(lvl>18):
+                print("WARNING: Some lvls > 18")
+                lvl[lvl>18] = 18
+            if np.any(cs > 400):
+                print("WARNING: Some cs > 400")
+                cs[cs>400] = 400
             if current_gold > 5000:
+                print("WARNING: current_gold>5000")
                 current_gold = 5000
             
             print(f"Lvl:\n {lvl}\n")
@@ -378,8 +392,8 @@ class Main(FileSystemEventHandler):
             print(f"Current Gold:\n {current_gold}\n")
             print("Trying to predict item imgs. \nHere are the raw items: ")
             items = list(self.item_img_model.predict(screenshot))
-            for i, item in enumerate(items):
-                print(f"{divmod(i, 7)}: {item}")
+            # for i, item in enumerate(items):
+            #     print(f"{divmod(i, 7)}: {item}")
             items = [self.item_manager.lookup_by("int", item["int"])  for item in items]
             print("Here are the converted items:")
             for i, item in enumerate(items):
@@ -464,7 +478,7 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 m = Main()
-m.run()
+m.process_image("Screen212.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
