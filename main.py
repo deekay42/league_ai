@@ -32,61 +32,62 @@ from train_model import data_loader
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        # self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        # try:
-        # # res = 1440,810
-        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     res = 1366, 768
-        #     print("Couldn't find Width or Height sections")
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        self.res_converter = ui_constants.ResConverter(1440,900, 0.48)
+        self.onTimeout = False
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        try:
+        # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        except KeyError as e:
+            print(repr(e))
+            res = 1366, 768
+            print("Couldn't find Width or Height sections")
+        
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # self.res_converter = ui_constants.ResConverter(1440,900, 0.48)
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
 
        
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model = NextItemEarlyGameModel()
         self.next_item_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -154,7 +155,8 @@ class Main(FileSystemEventHandler):
     def remove_low_value_items(self, items):
         return list(filter(lambda a: "Potion" not in a["name"] and "Cull" not in a["name"] and "Doran" not in a[
             "name"] and "Dark Seal" not in a[
-            "name"] and "Soul" not in a["name"]  and "Faerie" not in a["name"] and "Bead" not in a["name"], items))
+            "name"] and "Meja" not in a["name"]  and "Faerie" not in a["name"] and "Bead" not in a["name"] and "Control Ward" not in a["name"], items))
+
 
     def simulate_game(self, items, champs):
         count = 0
@@ -196,27 +198,34 @@ class Main(FileSystemEventHandler):
         items = np.reshape(items, (10, 6))
         items = [np.array(list(filter(lambda a: a["id"] != '0', summ_items))) for summ_items in items]
 
-
+        has_ward = False
         while current_gold >= 50:
-            print(f"current_gold: {current_gold}")
+            print(f"\n\ncurrent_gold: {current_gold}")
             current_summoner_items = items[role]
             try:
-                print(f"current sum items {current_summoner_items}")
+                print(f"current sum items {[item['name'] for item in current_summoner_items]}")
                 next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
                 print(f"next_item: {next_item}")
             except ValueError as e:
-                print(e)
-                print("VALUEERROR")
-                print(e)
+                print(f"VALUEERROR: {e}")
+                ward = self.item_manager.lookup_by("name", "Control Ward")
                 completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
                              items[self.summoner_items_slice(role)]])
-                print("completes")
+                
                 if completes >= 1:
                     current_summoner_items = self.remove_low_value_items(current_summoner_items)
+                elif ward in current_summoner_items:
+                    print("hasward")
+                    has_ward = True
+                    current_summoner_items = current_summoner_items[current_summoner_items != ward]
+                else:
+                    has_ward = False
+                
                 try:
                     next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
                 except Exception as e:
-                    return []
+                    result.pop()
+                    return result
 
             next_items, abs_items = self.build_path(current_summoner_items, next_item, role)
             
@@ -226,58 +235,8 @@ class Main(FileSystemEventHandler):
                                                 next_item else int(next_item["id"])), region="KR")
                 current_gold -= cass_next_item.gold.base
             items[role] = abs_items[-1]
-
+        if has_ward
         return result
-
-
-    def next_item_for_champ(self, role, champs, items):
-        assert (len(champs) == 10)
-        assert (len(items) == 60)
-
-        empty_item = self.item_manager.lookup_by("int", 0)
-
-        summ_next_item_cass = None
-        result = []
-
-        containsCompletedItem = False
-        req_item_tier = 0
-        items_ahead = 0
-
-
-        while items_ahead < 20:
-            items_ahead += 1
-            completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
-                             items[self.summoner_items_slice(role)]])
-            if completes >= 6:
-                return True
-
-            next_item = self.predict_next_item(role, champs, items)
-            next_items, abs_items = self.build_path(items, next_item, role)
-
-            abs_items[-1] = list(filter(lambda a: a["id"] != '0', abs_items[-1]))
-
-            try:
-                if len(abs_items[-1]) >= game_constants.MAX_ITEMS_PER_CHAMP:
-                    print("too many items:")
-                    print(abs_items[-1])
-                    abs_items[-1] = self.remove_low_value_items(abs_items[-1])
-                    print("removing low value items:")
-                    print(abs_items[-1])
-                items[self.summoner_items_slice(role)] = np.pad(
-                    abs_items[-1], (0, game_constants.MAX_ITEMS_PER_CHAMP - len(abs_items[-1])),
-                    'constant',
-                    constant_values=(
-                        empty_item, empty_item))
-                return False
-            except ValueError as e:
-                print("Max items reached!!")
-                print(repr(e))
-
-                if req_item_tier == 2:
-                    return True
-                else:
-                    req_item_tier += 1
-        return True
 
 
     def on_created(self, event):
@@ -478,7 +437,8 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 m = Main()
-m.process_image("Screen212.png")
+m.run()
+# m.process_image("Screen212.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
