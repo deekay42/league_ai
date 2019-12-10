@@ -749,11 +749,11 @@ class SelfImgModel(ImgModel):
         self.artifact_manager = SimpleManager(self.elements)
 
 
-
     def predict(self, img):
         x = self.extract_imgs(img)
-        img_ints = super().predict2int(np.array(x)).flatten()
-        role_index = np.argmax(img_ints)
+        with self.graph.as_default():
+            y = self.model.predict(x)
+            role_index = np.argmax(y)
         return role_index
 
 
