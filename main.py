@@ -33,60 +33,60 @@ class Main(FileSystemEventHandler):
 
     def __init__(self):
         self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        # try:
-        res = 1440,810
-            # res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     res = 1366, 768
-        #     print("Couldn't find Width or Height sections")
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        try:
+        # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        except KeyError as e:
+            print(repr(e))
+            res = 1366, 768
+            print("Couldn't find Width or Height sections")
         
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale, show_names_in_sb)
-        # print(f"Res is {res}")
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale, show_names_in_sb)
+        print(f"Res is {res}")
 
-        self.res_converter = ui_constants.ResConverter(*res)
+       
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model = NextItemEarlyGameModel()
         self.next_item_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -143,10 +143,9 @@ class Main(FileSystemEventHandler):
 
     def build_path(self, items, next_item, role):
         items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
-        summ_curr_items = items_id[self.summoner_items_slice(role)]
-
+        
         #TODO: this is bad. the item class should know when to return main_img or id
-        next_items, _, abs_items, _ = build_path(summ_curr_items, cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"])), region="KR"))
+        next_items, _, abs_items, _ = build_path(items_id, cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"])), region="KR"))
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
         return next_items, abs_items
@@ -155,7 +154,7 @@ class Main(FileSystemEventHandler):
     def remove_low_value_items(self, items):
         return list(filter(lambda a: "Potion" not in a["name"] and "Cull" not in a["name"] and "Doran" not in a[
             "name"] and "Dark Seal" not in a[
-            "name"] and "Soul" not in a["name"], items))
+            "name"] and "Soul" not in a["name"]  and "Faerie" not in a["name"] and "Bead" not in a["name"], items))
 
     def simulate_game(self, items, champs):
         count = 0
@@ -199,13 +198,28 @@ class Main(FileSystemEventHandler):
 
 
         while current_gold >= 50:
+            print(f"current_gold: {current_gold}")
             current_summoner_items = items[role]
             try:
+                print(f"current sum items {current_summoner_items}")
                 next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                print(f"next_item: {next_item}")
             except ValueError as e:
-                current_summoner_items = self.remove_low_value_items(current_summoner_items)
+                print(e)
+                print("VALUEERROR")
+                print(e)
+                completes = sum([(1 if "completion" in item and item["completion"]=="complete" else 0) for item in
+                             items[self.summoner_items_slice(role)]])
+                print("completes")
+                if completes >= 1:
+                    current_summoner_items = self.remove_low_value_items(current_summoner_items)
+                try:
+                    next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                except Exception as e:
+                    return []
 
             next_items, abs_items = self.build_path(current_summoner_items, next_item, role)
+            
             result.extend(next_items)
             for next_item in next_items:
                 cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in
@@ -340,16 +354,25 @@ class Main(FileSystemEventHandler):
             try:
                 lvl = next(tesseract_result)
             except Exception as e:
+                print(e)
                 lvl = [0]*10
             try:
                 cs = next(tesseract_result)
             except Exception as e:
+                print(e)
                 cs = [0]*10
             try:
                 current_gold = next(tesseract_result)[0]
             except Exception as e:
+                print(e)
                 current_gold = 500
 
+
+            lvl[lvl>18] = 18
+            cs[cs>400] = 400
+            if current_gold > 5000:
+                current_gold = 5000
+            
             print(f"Lvl:\n {lvl}\n")
             print(f"CS:\n {cs}\n")
             print(f"Current Gold:\n {current_gold}\n")
@@ -411,7 +434,7 @@ class Main(FileSystemEventHandler):
         print(f"This is the result for summ_index {self_index}: ")
         print(items_to_buy)
         out_string = ""
-        if items_to_buy[0]:
+        if items_to_buy and items_to_buy[0]:
             out_string += str(items_to_buy[0]["id"])
         for item in items_to_buy[1:]:
             out_string += "," + str(item["id"])
@@ -440,8 +463,8 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-# m = Main()
-# m.run()
+m = Main()
+m.run()
 # m.run_test_games()
 
 # pr = cProfile.Profile()
@@ -465,23 +488,23 @@ class Main(FileSystemEventHandler):
 # cv.waitKey(0)
 #
 # from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
-with open('test_data/easy/test_labels.json', "r") as f:
-    elems = json.load(f)
+# with open('test_data/easy/test_labels.json', "r") as f:
+#     elems = json.load(f)
 
-base_path = "test_data/easy/"
-m = Main()
-
-
-for key in elems:
+# base_path = "test_data/easy/"
+# m = Main()
 
 
-    if elems[key]["hud_scale"] != None:
-        test_image_y = elems[key]
+# for key in elems:
 
-        m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
-                                                      elems[key]["summ_names_displayed"]))
 
-        m.process_image(base_path + test_image_y["filename"])
+#     if elems[key]["hud_scale"] != None:
+#         test_image_y = elems[key]
+
+#         m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
+#                                                       elems[key]["summ_names_displayed"]))
+
+#         m.process_image(base_path + test_image_y["filename"])
 
             # KDAImgModel(res_cvt).predict(test_image_x)
 
