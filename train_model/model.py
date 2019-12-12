@@ -831,6 +831,11 @@ class NextItemEarlyGameModel(Model):
             X[slice] = scaler.transform(X[slice])
         return X
 
+    @staticmethod
+    def num_itemslots(items):
+        items = np.array([ItemManager().lookup_by("int", item)["id"] for item in items])
+        return int(np.any(items == '2003')) + int(np.any(items == '2055'))\
+               + int(sum((items != '2003') & (items != '2055')))
 
     @staticmethod
     def encode_items(items, artifact_manager):
