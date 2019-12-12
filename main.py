@@ -36,62 +36,62 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
-        
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-        
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-        
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-        
-        
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        # self.res_converter = ui_constants.ResConverter(1440,900, 0.48)
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # try:
+        # # res = 1440,810
+        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     res = 1366, 768
+        #     print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.res_converter = ui_constants.ResConverter(1440,900, 0.48)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
 
        
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model = NextItemEarlyGameModel()
         self.next_item_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -164,17 +164,23 @@ class Main(FileSystemEventHandler):
          "Rejuvenation Bead", "The Dark Seal", "Mejai's Soulstealer", "Faerie Charm"]
         removal_index = 0
         delta_items = Counter()
+        six_items = None
+        delta_six = None
+
 
         while NextItemEarlyGameModel.num_itemslots(items) >= game_constants.MAX_ITEMS_PER_CHAMP:
+            if NextItemEarlyGameModel.num_itemslots(items) == game_constants.MAX_ITEMS_PER_CHAMP:
+                six_items = Counter(items)
+                delta_six = Counter(delta_items)
             if removal_index >= len(removable_items):
-                raise NoMoreItemSlots()
+                break
             item_to_remove = self.item_manager.lookup_by("name", removable_items[removal_index])['int']
             if item_to_remove in items:
                 delta_items += Counter({item_to_remove: items[item_to_remove]})
             items -= delta_items
             removal_index += 1
 
-        return items, delta_items
+        return items, delta_items, six_items, delta_six
 
     def simulate_game(self, items, champs):
         count = 0
@@ -214,30 +220,41 @@ class Main(FileSystemEventHandler):
 
         while current_gold >= 50:
             
-            second_attempt = False
-            while True:
+            if NextItemEarlyGameModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
+
+                items_five, delta_five, items_six, delta_six = self.remove_low_value_items(items[role])
+                # items[role], delta_items = self.remove_low_value_items(items[role])
+
+                for items_reduction, deltas in zip([items_six, items_five],[delta_six, delta_five]):
+                    if items_reduction is None:
+                        continue
+                    items[role] = items_reduction
+                    delta_items = deltas
+                    try:
+                        next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                    except ValueError as e:
+                        print("max items reached. thats it")
+                        return result
+
+                    next_items, abs_items = self.build_path(items[role], next_item)
+                    updated_items = Counter([item["int"]  for item in abs_items[-1]])
+                    if NextItemEarlyGameModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
+                        break
+            else:
+                delta_items = None
                 try:
                     next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
                 except ValueError as e:
-                    print("Couldn't fit items. Exiting now.")
-                    return result
-
-                #network likes to buy lots of control wards...
-                if next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
-                                                                                                "Control Ward")[
-                    "int"]] >= 2:
+                    print("max items reached. thats it")
                     return result
                 next_items, abs_items = self.build_path(items[role], next_item)
-                updated_items = Counter([item["int"]  for item in abs_items[-1]])
-                if NextItemEarlyGameModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP or second_attempt:
-                    return result
-                try:
-                    items[role], delta_items = self.remove_low_value_items(items[role])
-                    second_attempt = True
-                except NoMoreItemSlots as e:
-                    print("No Empty item slots available")
-                    return result
+                updated_items = Counter([item["int"] for item in abs_items[-1]])
 
+            # network likes to buy lots of control wards...
+            if next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
+                                                                                               "Control Ward")[
+                "int"]] >= 2:
+                return result
             result.extend(next_items)
             for next_item in next_items:
                 cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in
@@ -462,8 +479,8 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 m = Main()
-m.run()
-# m.process_image("Screen217.png")
+# m.run()
+m.process_image("Screen217.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
