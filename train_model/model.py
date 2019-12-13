@@ -838,7 +838,7 @@ class NextItemEarlyGameModel(Model):
             return 0
         wards = ItemManager().lookup_by("name", "Control Ward")["int"]
         hpots = ItemManager().lookup_by("name", "Health Potion")["int"]
-        num_single_slot_items = items.get(wards, 0) + items.get(hpots, 0)
+        num_single_slot_items = int(items.get(wards, 0)>0) + int(items.get(hpots, 0)>0)
         reg_item_keys = (set(items.keys()) - {hpots, wards})
         num_reg_items = sum([items[key] for key in reg_item_keys])
         return num_single_slot_items + num_reg_items
