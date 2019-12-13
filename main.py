@@ -173,6 +173,7 @@ class Main(FileSystemEventHandler):
 
 
     def remove_low_value_items(self, items):
+        items = Counter(items)
         removable_items = ["Control Ward", "Health Potion", "Refillable Potion", "Corrupting Potion",
          "Cull", "Doran's Blade", "Doran's Shield", "Doran's Ring",
          "Rejuvenation Bead", "The Dark Seal", "Mejai's Soulstealer", "Faerie Charm"]
@@ -242,15 +243,16 @@ class Main(FileSystemEventHandler):
                 for items_reduction, deltas in zip([items_six, items_five],[delta_six, delta_five]):
                     if items_reduction is None:
                         continue
-                    items[role] = items_reduction
+                    copied_items = [Counter(summ_items) for summ_items in items]
+                    copied_items[role] = items_reduction
                     delta_items = deltas
                     try:
-                        next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                        next_item = self.predict_next_item(role, champs, copied_items, cs, lvl, kda, current_gold)
                     except ValueError as e:
                         print("max items reached. thats it")
                         return result
 
-                    next_items, abs_items = self.build_path(items[role], next_item)
+                    next_items, abs_items = self.build_path(copied_items[role], next_item)
                     updated_items = Counter([item["int"]  for item in abs_items[-1]])
                     if NextItemEarlyGameModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
                         break
@@ -267,7 +269,7 @@ class Main(FileSystemEventHandler):
             # network likes to buy lots of control wards...
             if next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
                                                                                                "Control Ward")[
-                "int"]] >= 2:
+                "int"]] >= 1:
                 return result
             result.extend(next_items)
             for next_item in next_items:
@@ -494,7 +496,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen220.png")
+m.process_image("Screen228.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
