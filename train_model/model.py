@@ -831,11 +831,17 @@ class NextItemEarlyGameModel(Model):
             X[slice] = scaler.transform(X[slice])
         return X
 
+
     @staticmethod
     def num_itemslots(items):
-        items = np.array([ItemManager().lookup_by("int", item)["id"] for item in items])
-        return int(np.any(items == '2003')) + int(np.any(items == '2055'))\
-               + int(sum((items != '2003') & (items != '2055')))
+        if not items:
+            return 0
+        wards = ItemManager().lookup_by("name", "Control Ward")["int"]
+        hpots = ItemManager().lookup_by("name", "Health Potion")["int"]
+        num_single_slot_items = items.get(wards, 0) + items.get(hpots, 0)
+        reg_item_keys = (set(items.keys()) - {hpots, wards})
+        num_reg_items = sum([items[key] for key in reg_item_keys])
+        return num_single_slot_items + num_reg_items
 
     @staticmethod
     def encode_items(items, artifact_manager):

@@ -138,17 +138,31 @@ class Main(FileSystemEventHandler):
     def summoner_items_slice(self, role):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
 
+    def all_items_counter2items_list(self, counter):
+        items_id = [[], [], [], [], [], [], [], [], [], []]
+        for i in range(10):
+            items_id[i] = self.items_counter2items_list(counter[i])
+        return items_id
+
+
+    def items_counter2items_list(self, summ_items):
+        result = []
+        for item_key in summ_items:
+            id_item = self.item_manager.lookup_by("int", item_key)
+            result.extend([id_item] * summ_items[item_key])
+        return result
 
     def predict_next_item(self, role, champs, items, cs, lvl, kda, current_gold):
         champs_int = [int(champ["int"]) for champ in champs]
-        items_id = [[int(self.item_manager.lookup_by("int",item)["id"]) for item in list(summ_items)] for \
-                summ_items in items]
+        items_id = self.all_items_counter2items_list(items)
+        items_id = [[int(item["id"]) for item in summ_items] for summ_items in items_id]
+
 
         return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold)
 
 
     def build_path(self, items, next_item):
-        items = [self.item_manager.lookup_by("int", item) for item in items]
+        items = self.items_counter2items_list(items)
         items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
         
         #TODO: this is bad. the item class should know when to return main_img or id
@@ -480,7 +494,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen217.png")
+m.process_image("Screen220.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
