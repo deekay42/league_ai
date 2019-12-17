@@ -8,6 +8,7 @@ from range_key_dict import RangeKeyDict
 from constants import game_constants, app_constants
 from utils import cass_configured as cass
 import arrow
+import time
 
 class AllGamesCollected(Exception): pass
 
@@ -91,18 +92,21 @@ def get_match_ids(countdowns, region, start_date):
     for i, (generator, countdown) in enumerate(zip(league_generators, countdowns)):
         while countdown >= 0:
             try:
-                summoner = next(generator).summoner
-            except StopIteration as e:
-                print(f"StopIteration: Queue {i}. Countdown left: {countdown}")
-                break
+                try:
+                    summoner = next(generator).summoner
+                except StopIteration as e:
+                    print(f"StopIteration: Queue {i}. Countdown left: {countdown}")
+                    break
 
-            summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
+                summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
                                                      begin_time=start_date)
-            next_matches = [match.id for match in summ_match_hist]
-            prev_len = len(matches)
-            matches.update(next_matches)
-            countdown -= len(matches) - prev_len
-
+                next_matches = [match.id for match in summ_match_hist]
+                prev_len = len(matches)
+                matches.update(next_matches)
+                countdown -= len(matches) - prev_len
+            except Exception as e:
+                print("Error downloading this summoner. Skip.")
+                time.sleep(5)
     return matches
 
 
@@ -344,20 +348,22 @@ def get_matches(match_ids, region):
 
         except HTTPError as e:
             print('HTTP ERROR: There was an error obtaining this match. Skip.')
+            time.sleep(10)
             print(repr(e))
             print(traceback.format_exc())
         except Exception as e:
             print('ERROR: There was an error obtaining this match. Skip.')
+            time.sleep(10)
             print(repr(e))
             print(traceback.format_exc())
 
 
 def scrape_matches(games_by_top_leagues, region, cut_off_date):
-    match_ids = get_match_ids(games_by_top_leagues, region, cut_off_date)
-    with open(app_constants.train_paths["matchids"], "w") as f:
-        f.write(json.dumps(list(match_ids)))
-    # with open(app_constants.train_paths["matchids"], "r") as f:
-    #     match_ids = json.load(f)
+    # match_ids = get_match_ids(games_by_top_leagues, region, cut_off_date)
+    # with open(app_constants.train_paths["matchids"], "w") as f:
+    #     f.write(json.dumps(list(match_ids)))
+    with open(app_constants.train_paths["matchids"], "r") as f:
+        match_ids = json.load(f)
     return get_matches(match_ids, region)
 
     # return get_matches([3984982067], region)

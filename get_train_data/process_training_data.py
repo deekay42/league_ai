@@ -188,12 +188,61 @@ class ProcessNextItemsTrainingData:
 
     # input is a list of games
     def run_next_item_transformations(self, training_data):
-        transformations = [self.sort_equal_timestamps, self.remove_undone_items, self.build_abs_timeline,
+        transformations = [self.sort_equal_timestamps, self.remove_undone_items, self.insert_null_items,
+                           self.build_abs_timeline,
                            self.post_process]
         result = training_data
         for transformation in transformations:
             result = transformation(result)
         return result
+
+
+    def insert_null_items(self, matches):
+        for match in matches:
+            participantid2index = {participant['participantId']: j for j, participant in enumerate(match[
+                                                                                                       'participants'])}
+            events = match["itemsTimeline"]
+            next_event_by_summ = dict()
+            last_event_by_summ = np.full(10, -1)
+
+            for event_index, event in enumerate(events):
+                if event["type"] == "ITEM_PURCHASED":
+                    summ_index = participantid2index[event["participantId"]]
+                    if last_event_by_summ[summ_index] != -1:
+                        next_event_by_summ[last_event_by_summ[summ_index]] = event_index
+                    last_event_by_summ[summ_index] = event_index
+                event_index += 1
+            for last_event in last_event_by_summ:
+                next_event_by_summ[last_event] = -1
+
+            new_events = []
+            event_index = 0
+            while event_index < len(events):
+                event = events[event_index]
+                new_events.append(event)
+                append_event = event
+
+                if event["type"] == "ITEM_PURCHASED":
+                    next_event = events[next_event_by_summ[event_index]]
+                    if next_event == -1 or (next_event['timestamp'] - event['timestamp']) > 15000:
+                        append_event = dict(event)
+                        append_event['itemId'] = 0
+                        append_event['timestamp'] += 1
+
+                        if event_index < len(events) - 1:
+                            event_index += 1
+                            next_event = events[event_index]
+                            while next_event['timestamp'] == event['timestamp'] and event['participantId'] == \
+                                    next_event['participantId']:
+                                new_events.append(next_event)
+                                event_index += 1
+                                next_event = events[event_index]
+                            event_index -= 1
+                        new_events.append(append_event)
+
+                event_index += 1
+            match['itemsTimeline'] = new_events
+            yield match
 
 
     def build_abs_timeline(self, training_data):
@@ -527,6 +576,7 @@ class ProcessNextItemsTrainingData:
 
             for current_index, event in enumerate(game['itemsTimeline']):
 
+
                 pos = participantid2index[event['participantId']]
                 if pos > 4:
                     continue
@@ -534,7 +584,8 @@ class ProcessNextItemsTrainingData:
                     prev_frame_index = event["frame_index"]
                     delta_current_gold = [0] * 10
 
-                new_item = cass.Item(id=int(event["itemId"]), region=region)
+                if event['itemId'] != 0:
+                    new_item = cass.Item(id=int(event["itemId"]), region=region)
                 part_index = participantid2index[event['participantId']]
                 if event["type"] == "ITEM_SOLD":
                     delta_current_gold[part_index] += new_item.gold.sell
@@ -553,9 +604,7 @@ class ProcessNextItemsTrainingData:
                     except ValueError as e:
                         continue
                     y = self.item_manager.lookup_by("id", str(event['itemId']))["int"]
-                    if y==0:
-                        print(f"y==0 gameId {str(game['gameId'])}")
-                    out_uninf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
+                    uninf_example = [[pos], champs, np.ravel(items_at_time_x),
                                                      np.around(event['total_gold']).astype(int),
                                                      np.around(event['cs']).astype(int),
                                                      np.around(event['neutral_cs']).astype(int),
@@ -564,7 +613,11 @@ class ProcessNextItemsTrainingData:
                                                      np.ravel(event['kda']).tolist(),
                                                      np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
                                                      [y]
-                                                     ], 0))
+                                                     ]
+                    out_uninf.append(np.concatenate(uninf_example, 0))
+                    if event['itemId'] == 0:
+                        out_inf.append(np.concatenate(uninf_example, 0))
+                        continue
                     component_items,_, insert_item_states,_ = build_path.build_path(participant_current_items, new_item)
                     prev_event = event
                     for i, (component_item, insert_item_state) in enumerate(zip(component_items, insert_item_states)):
@@ -714,8 +767,8 @@ if __name__ == "__main__":
     # p.start()
     region = "KR"
     l = ProcessNextItemsTrainingData()
-    # games_by_top_leagues = [5000, 4000, 4000, 3000, 3000, 3000, 3000]
-    # # start_date = cass.Patch.latest(region="KR").start
+    games_by_top_leagues = [5000, 4000, 4000, 3000, 3000, 3000, 3000]
+    start_date = cass.Patch.latest(region="KR").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
     # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
     # s = train.PositionsTrainer()
