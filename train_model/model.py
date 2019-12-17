@@ -817,10 +817,15 @@ class NextItemEarlyGameModel(Model):
         x[self.cs_start:self.cs_end] = cs
         x[self.lvl_start:self.lvl_end] = lvl
         x[self.kda_start:self.kda_end] = np.ravel(kda)
-        current_gold_list = np.zeros(10)
-        current_gold_list[role] = current_gold
-        x[self.current_gold_start:self.current_gold_end] = current_gold_list
-        x = self.scale_inputs(np.array([x]).astype(np.float32))
+        num_increments = 20
+        current_gold_list = np.zeros((num_increments,10))
+
+
+        current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(0,num_increments*100,100))
+        print(current_gold_list[:,role])
+        x = np.tile(x,num_increments).reshape((num_increments,-1))
+        x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
+        x = self.scale_inputs(np.array(x).astype(np.float32))
         return self.predict(x)
 
 
@@ -910,10 +915,11 @@ class NextItemEarlyGameModel(Model):
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
         with self.graph.as_default():
             y = self.model.predict(x)
-            item_int = np.argmax(y, axis=len(y.shape) - 1)
-
-        item = self.artifact_manager.lookup_by("int", item_int[0])
-        return item
+            item_ints = np.argmax(y, axis=len(y.shape) - 1)
+            print(f"Confidence: {np.max(y, axis=1)}")
+        items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
+        print([item["name"] for item in items])
+        return items[0]
 
 
 class NextItemLateGameModel(Model):

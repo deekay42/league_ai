@@ -642,8 +642,6 @@ class NextItemsTrainer(Trainer):
         self.class_weights[26] *= 1.5
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        # don't include weights for empty item
-        self.class_weights[0] = 0
         self.network.network_config["class_weights"] = self.class_weights
 
         self.fit_all_inputs()
