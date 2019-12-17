@@ -266,16 +266,18 @@ class Main(FileSystemEventHandler):
                 next_items, abs_items = self.build_path(items[role], next_item)
                 updated_items = Counter([item["int"] for item in abs_items[-1]])
 
-            # network likes to buy lots of control wards...
-            if next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
+
+            recipe_cost = self.recipe_cost(next_items)
+            # 1. network likes to buy lots of control wards...
+            # 2. sometimes network likes to buy items that are too expensive. happens often when confidence is low
+            if (next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
                                                                                                "Control Ward")[
-                "int"]] >= 1:
+                "int"]] >= 1) or \
+                    (recipe_cost + 50 > current_gold):
                 return result
             result.extend(next_items)
-            for next_item in next_items:
-                cass_next_item = cass.Item(id=(int(next_item["main_img"]) if "main_img" in
-                                                next_item else int(next_item["id"])), region="KR")
-                current_gold -= cass_next_item.gold.base
+
+            current_gold -= recipe_cost
             items[role] = updated_items
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in items[role]]
             if delta_items:
@@ -289,6 +291,10 @@ class Main(FileSystemEventHandler):
             items[role] = +items[role]
         return result
 
+    def recipe_cost(self, next_items):
+        return sum([cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+                                                                         next_item else int(next_item["id"])),
+                                       region="KR").gold.base for next_item in next_items])
 
     def on_created(self, event):
         # pr.enable()
@@ -496,7 +502,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen228.png")
+m.process_image("Screen236.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()

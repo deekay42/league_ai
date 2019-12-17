@@ -17,7 +17,7 @@ def uniq:
               ($current.participantId | tonumber) as $participantsIdKey |
               ([$participants[].participantId] | index($participantsIdKey)) as $key |
               if $current.type=="ITEM_PURCHASED" then
-                if $current.itemId==3901 or $current.itemId==3902 or $current.itemId==3903 then
+                if $current.itemId==3901 or $current.itemId==3902 or $current.itemId==3903 or $current.itemId==0 then
                     .
                 else
                     .[$key] |= .+ [$current.itemId]

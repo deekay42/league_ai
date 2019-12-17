@@ -667,8 +667,8 @@ class NextItemsTrainer(Trainer):
 
 
     def build_next_items_late_game_model(self):
-        self.train_path = app_constants.model_paths["train"]["next_items_late"]
-        self.best_path = app_constants.model_paths["best"]["next_items_late"]
+        # self.train_path = app_constants.model_paths["train"]["next_items_late"]
+        # self.best_path = app_constants.model_paths["best"]["next_items_late"]
         self.network = NextItemLateGameNetwork()
         print("Loading training data")
         dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_late_processed"])
@@ -710,5 +710,5 @@ if __name__ == "__main__":
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
 
-    # s = ItemImgTrainer()
-    # s.build_new_img_model()
+    s = ChampImgTrainer()
+    s.build_new_img_model()
