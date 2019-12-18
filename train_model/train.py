@@ -185,7 +185,7 @@ class DynamicTrainingDataTrainer(Trainer):
         for key in elems:
             test_image_y = elems[key]
             test_image_x = cv.imread(base_path + test_image_y["filename"])
-            res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")), test_image_y["hud_scale"],
+            res_cvt = ui_constants.ResConverter(*(test_image_y["res"].split(",")), test_image_y.get("hud_scale", None),
                                                 test_image_y["summ_names_displayed"])
 
             if test_image_y[self.elements] is not None:
@@ -643,7 +643,8 @@ class NextItemsTrainer(Trainer):
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
-
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
         self.fit_all_inputs()
 
         self.build_new_model()
@@ -652,13 +653,15 @@ class NextItemsTrainer(Trainer):
         model = NextItemEarlyGameModel()
         for slice_name in model.cont_slices_by_name:
             slice = model.cont_slices_by_name[slice_name]
-            scaler = self.fit_input(self.X[slice], slice_name)
+            if slice_name != 'cg':
+                scaler = self.fit_input(self.X[slice], slice_name)
+            else:
+                scaler = self.fit_input(np.array([[0.0,2000.0]]), slice_name)
             self.X[slice] = scaler.transform(self.X[slice])
             self.X_test[slice] = scaler.transform(self.X_test[slice])
 
 
     def fit_input(self, X, scaler_name):
-        X = X.astype(np.float32)
         min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
@@ -710,5 +713,5 @@ if __name__ == "__main__":
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
 
-    s = ChampImgTrainer()
-    s.build_new_img_model()
+    # s = ChampImgTrainer()
+    # s.build_new_img_model()

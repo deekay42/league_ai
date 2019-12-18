@@ -249,6 +249,7 @@ class Main(FileSystemEventHandler):
                     try:
                         next_item = self.predict_next_item(role, champs, copied_items, cs, lvl, kda, current_gold)
                     except ValueError as e:
+                        print(e)
                         print("max items reached. thats it")
                         return result
 
@@ -261,6 +262,7 @@ class Main(FileSystemEventHandler):
                 try:
                     next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
                 except ValueError as e:
+                    print(e)
                     print("max items reached. thats it")
                     return result
                 next_items, abs_items = self.build_path(items[role], next_item)
@@ -502,7 +504,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen236.png")
+m.process_image("Screen195.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
