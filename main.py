@@ -233,7 +233,7 @@ class Main(FileSystemEventHandler):
 
         result = []
 
-        while current_gold >= 50:
+        while True:
             
             if NextItemEarlyGameModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
 
@@ -268,16 +268,18 @@ class Main(FileSystemEventHandler):
                 next_items, abs_items = self.build_path(items[role], next_item)
                 updated_items = Counter([item["int"] for item in abs_items[-1]])
 
+            if next_item["name"] == "Empty":
+                return result
 
             recipe_cost = self.recipe_cost(next_items)
             # 1. network likes to buy lots of control wards...
             # 2. sometimes network likes to buy items that are too expensive. happens often when confidence is low
-            if (next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
-                                                                                               "Control Ward")[
-                "int"]] >= 1) or \
-                    (recipe_cost + 50 > current_gold):
-                return result
-            result.extend(next_items)
+            # if (next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
+            #                                                                                    "Control Ward")[
+            #     "int"]] >= 1) or \
+            #         (recipe_cost > current_gold + 50):
+            #     return result
+            # result.extend(next_items)
 
             current_gold -= recipe_cost
             items[role] = updated_items
@@ -504,7 +506,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen195.png")
+m.process_image("Screen236.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
