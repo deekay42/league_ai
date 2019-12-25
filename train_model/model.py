@@ -822,6 +822,7 @@ class NextItemEarlyGameModel(Model):
 
 
         current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(0,num_increments*100,100))
+
         print(current_gold_list[:,role])
         x = np.tile(x,num_increments).reshape((num_increments,-1))
         x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
