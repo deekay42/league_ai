@@ -666,10 +666,13 @@ class NextItemsTrainer(Trainer):
                 scaler = self.fit_input(np.array([[0.0,2000.0]]), slice_name)
             elif slice_name == 'total_gold':
                 scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
+            elif slice_name == 'xp':
+                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
             else:
                 print("WTFFFFFFFF")
             self.X[slice] = scaler.transform(self.X[slice])
             self.X_test[slice] = scaler.transform(self.X_test[slice])
+
 
 
     def fit_input(self, X, scaler_name):

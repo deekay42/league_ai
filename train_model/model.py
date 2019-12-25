@@ -7,6 +7,7 @@ import numpy as np
 import tensorflow as tf
 import tflearn
 from tflearn.layers.merge_ops import merge
+from tflearn.layers.core import fully_connected, input_data, dropout
 
 from constants import game_constants, app_constants, ui_constants
 from train_model import network
@@ -54,6 +55,7 @@ class Model(ABC):
 
     def output_logs(self, in_vec):
         sess = tf.InteractiveSession()
+        tflearn.is_training(True, session=sess)
         game_config = \
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
@@ -123,6 +125,9 @@ class Model(ABC):
 
         #  10 elements long
         champ_ints = in_vec[:, champs_start:champs_end]
+        #  10 elements long
+
+        champ_ints = dropout(champ_ints, 0.8)
         # 60 elements long
         item_ints = in_vec[:, items_start:items_end]
         cs = in_vec[:, cs_start:cs_end]
@@ -176,21 +181,9 @@ class Model(ABC):
 
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_champ_emb, target_summ_items,
-             opp_summ_champ,
-             opp_summ_champ_emb,
-             opp_summ_items,
-             champs_embedded_flat,
-             champs_with_items_emb,
-             opp_champs_k_hot,
-             target_summ_current_gold,
-             target_summ_cs,
-             target_summ_kda,
-             target_summ_lvl,
-             lvl,
-             kda,
-             cs],
+            [pos, target_summ_champ, target_summ_items, opp_summ_champ],
             mode='concat', axis=1)
+        lol = dropout(final_input_layer, 0.8)
         return items
 
 
@@ -831,9 +824,22 @@ class NextItemEarlyGameModel(Model):
 
 
     def scale_inputs(self, X):
-        for slice_name in self.cont_slices_by_name:
-            scaler = load(app_constants.model_paths["best"][self.elements] + slice_name +"_scaler")
-            slice = self.cont_slices_by_name[slice_name]
+        for slice_name in model.cont_slices_by_name:
+            slice = model.cont_slices_by_name[slice_name]
+            if slice_name == 'cs' or slice_name == 'neutral_cs':
+                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
+            elif slice_name == 'lvl':
+                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
+            elif slice_name == 'kda':
+                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
+            elif slice_name == 'cg':
+                scaler = self.fit_input(np.array([[0.0, 2000.0]]), slice_name)
+            elif slice_name == 'total_gold':
+                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
+            elif slice_name == 'xp':
+                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
+            else:
+                print("WTFFFFFFFF")
             X[slice] = scaler.transform(X[slice])
         return X
 
@@ -914,6 +920,7 @@ class NextItemEarlyGameModel(Model):
         #         print(f"{i}: {log[i]}")
         # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
+
         with self.graph.as_default():
             y = self.model.predict(x)
             item_ints = np.argmax(y, axis=len(y.shape) - 1)

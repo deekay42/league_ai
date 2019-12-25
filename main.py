@@ -504,22 +504,22 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-m = Main()
+# m = Main()
 # m.run()
-m.process_image("Screen248.png")
+# m.process_image("Screen248.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
 
 # dataloader_1 = data_loader.UnsortedNextItemsDataLoader()
 # X_un = dataloader_1.get_train_data()
-# dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted"])
-# X, Y = dataloader.get_train_data()
-# m = NextItemEarlyGameModel()
-# # X = X[Y==2]
+dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted_inf"])
+X, Y = dataloader.get_train_data()
+m = NextItemEarlyGameModel()
+# X = X[Y==2]
 # X_ = X[:, 1:]
 # X_ = X_[500:700]
-# m.output_logs(X_[:200])
+m.output_logs(X[:200].astype(np.float32))
 
 #
 # blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
