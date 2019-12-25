@@ -549,6 +549,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         #  10 elements long
         champ_ints = in_vec[:, champs_start:champs_end]
+        champ_ints = dropout(champ_ints, 0.8)
         # 60 elements long
         item_ints = in_vec[:, items_start:items_end]
         cs = in_vec[:, cs_start:cs_end]
@@ -573,6 +574,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
+        opp_champs_k_hot = tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32)
         # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
         target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
@@ -621,20 +623,36 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
         pos = tf.one_hot(pos, depth=champs_per_team)
+        final_input_layer1 = merge(
+            [
+                target_summ_champ,
+                target_summ_champ_emb,
+                target_summ_items,
+                opp_summ_champ,
+                opp_summ_champ_emb,
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb
+        ], mode='concat', axis=1)
+
+        final_input_layer2 = merge(
+            [
+                pos,
+                target_summ_current_gold,
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                lvl,
+                kda,
+                total_cs
+            ], mode='concat', axis=1)
+        final_input_layer2 = dropout(final_input_layer2, 0.8)
+
         final_input_layer = merge(
             [
-                pos, target_summ_champ, target_summ_champ_emb, target_summ_items, opp_summ_champ, opp_summ_champ_emb,
-             opp_summ_items,
-             opp_champs_k_hot,
-             champs_with_items_emb,
-             target_summ_current_gold,
-             target_summ_cs,
-             target_summ_kda,
-             target_summ_lvl,
-             lvl,
-             kda,
-             total_cs
-        ], mode='concat', axis=1)
+                final_input_layer1,
+                final_input_layer2
+            ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
                                                 regularizer="L2"))

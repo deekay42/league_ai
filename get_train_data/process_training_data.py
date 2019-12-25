@@ -621,6 +621,9 @@ class ProcessNextItemsTrainingData:
                     component_items,_, insert_item_states,_ = build_path.build_path(participant_current_items, new_item)
                     prev_event = event
                     for i, (component_item, insert_item_state) in enumerate(zip(component_items, insert_item_states)):
+                        if NextItemEarlyGameModel.num_itemslots(Counter(insert_item_state)) > \
+                                game_constants.MAX_ITEMS_PER_CHAMP:
+                            continue
                         event_copy = prev_event.copy()
                         event_copy['absolute_items'] = prev_event['absolute_items'].copy()
                         event_copy['itemId'] = component_item.id
@@ -770,10 +773,10 @@ if __name__ == "__main__":
     games_by_top_leagues = [5000, 4000, 4000, 3000, 3000, 3000, 3000]
     start_date = cass.Patch.latest(region="KR").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
+    # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
     # s = train.PositionsTrainer()
     # s.train()
-    # l.update_roles()
+    l.update_roles()
 
     # unsorted_processed_dataloader = data_loader.UnsortedNextItemsDataLoader()
     # unsorted_processed_data = unsorted_processed_dataloader.get_train_data()
