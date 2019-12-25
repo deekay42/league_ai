@@ -650,6 +650,8 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+
+
     def fit_all_inputs(self):
         model = NextItemEarlyGameModel()
         for slice_name in model.cont_slices_by_name:
@@ -662,8 +664,10 @@ class NextItemsTrainer(Trainer):
                 scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
             elif slice_name == 'cg':
                 scaler = self.fit_input(np.array([[0.0,2000.0]]), slice_name)
+            elif slice_name == 'total_gold':
+                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
             else:
-                scaler = self.fit_input(self.X[slice], slice_name)
+                print("WTFFFFFFFF")
             self.X[slice] = scaler.transform(self.X[slice])
             self.X_test[slice] = scaler.transform(self.X_test[slice])
 
@@ -671,8 +675,8 @@ class NextItemsTrainer(Trainer):
     def fit_input(self, X, scaler_name):
         min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
-        dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
-        dump(min_max_scaler, self.best_path + scaler_name + "_scaler", compress=True)
+        # dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
+        # dump(min_max_scaler, self.best_path + scaler_name + "_scaler", compress=True)
         return min_max_scaler
 
 

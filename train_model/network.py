@@ -574,7 +574,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
-        opp_champs_k_hot = tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32)
+        opp_champs_k_hot = tf.cast(tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32), tf.float32)
         # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
         target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
