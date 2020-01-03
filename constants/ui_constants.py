@@ -88,8 +88,8 @@ class Res_16_9(ResolutionBase):
         self.coords["current_gold"]["max_y_height"] = 24
 
         self.coords["kda"]["x_start"] = 610
-        self.coords["kda"]["y_start"] = 335
-        self.coords["kda"]["y_height"] = 24
+        self.coords["kda"]["y_start"] = 339
+        self.coords["kda"]["y_height"] = 17
         self.coords["kda"]["x_width"] = 90
         self.coords["kda"]["x_diff"] = 574
         self.coords["kda"]["y_diff"] = 76
@@ -161,8 +161,8 @@ class Res_8_5(ResolutionBase):
         self.coords["current_gold"]["max_y_height"] = 18
 
         self.coords["kda"]["x_start"] = 430
-        self.coords["kda"]["y_start"] = 278
-        self.coords["kda"]["y_height"] = 22
+        self.coords["kda"]["y_start"] = 282
+        self.coords["kda"]["y_height"] = 11
         self.coords["kda"]["x_width"] = 70
         self.coords["kda"]["x_diff"] = 479
         self.coords["kda"]["y_diff"] = 64
@@ -238,8 +238,8 @@ class Res_1366_768(ResolutionBase):
         self.coords["current_gold"]["max_y_height"] = 17
 
         self.coords["kda"]["x_start"] = 436
-        self.coords["kda"]["y_start"] = 236
-        self.coords["kda"]["y_height"] = 20
+        self.coords["kda"]["y_start"] = 241
+        self.coords["kda"]["y_height"] = 10
         self.coords["kda"]["x_width"] = 58
         self.coords["kda"]["x_diff"] = 408
         self.coords["kda"]["y_diff"] = 55
@@ -310,8 +310,8 @@ class Res_4_3(ResolutionBase):
         self.coords["current_gold"]["max_y_height"] = 17
 
         self.coords["kda"]["x_start"] = 267
-        self.coords["kda"]["y_start"] = 236
-        self.coords["kda"]["y_height"] = 22
+        self.coords["kda"]["y_start"] = 241
+        self.coords["kda"]["y_height"] = 10
         self.coords["kda"]["x_width"] = 56
         self.coords["kda"]["x_diff"] = 409
         self.coords["kda"]["y_diff"] = 55

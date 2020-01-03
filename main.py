@@ -247,12 +247,15 @@ class Main(FileSystemEventHandler):
                     copied_items[role] = items_reduction
                     delta_items = deltas
                     try:
-                        next_item = self.predict_next_item(role, champs, copied_items, cs, lvl, kda, current_gold)
+                        next_predicted_items = self.predict_next_item(role, champs, copied_items, cs, lvl, kda, current_gold)
+                        next_item = next_predicted_items[0]
                     except ValueError as e:
                         print(e)
                         print("max items reached. thats it")
                         return result
 
+                    if next_item["name"] == "Empty":
+                        continue
                     next_items, abs_items = self.build_path(copied_items[role], next_item)
                     updated_items = Counter([item["int"]  for item in abs_items[-1]])
                     if NextItemEarlyGameModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
@@ -260,16 +263,21 @@ class Main(FileSystemEventHandler):
             else:
                 delta_items = None
                 try:
-                    next_item = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                    next_predicted_items = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)
+                    next_item = next_predicted_items[0]
                 except ValueError as e:
                     print(e)
                     print("max items reached. thats it")
                     return result
+
+                if next_item["name"] == "Empty":
+                    return self.return_result(next_predicted_items, result)
+
                 next_items, abs_items = self.build_path(items[role], next_item)
                 updated_items = Counter([item["int"] for item in abs_items[-1]])
 
             if next_item["name"] == "Empty":
-                return result
+                return self.return_result(next_predicted_items, result)
 
             recipe_cost = self.recipe_cost(next_items)
             # 1. network likes to buy lots of control wards...
@@ -279,7 +287,7 @@ class Main(FileSystemEventHandler):
             #     "int"]] >= 1) or \
             #         (recipe_cost > current_gold + 50):
             #     return result
-            # result.extend(next_items)
+            result.extend(next_items)
 
             current_gold -= recipe_cost
             items[role] = updated_items
@@ -294,6 +302,15 @@ class Main(FileSystemEventHandler):
                 delta_items = None
             items[role] = +items[role]
         return result
+
+
+    def return_result(self, next_items, result):
+        if not result:
+            for next_item in next_items:
+                if next_item["name"] != "Empty":
+                    return [next_item]
+        return result
+
 
     def recipe_cost(self, next_items):
         return sum([cass.Item(id=(int(next_item["main_img"]) if "main_img" in
@@ -351,12 +368,15 @@ class Main(FileSystemEventHandler):
         time.sleep(5.0)
         self.onTimeout = False
 
-    def repair_failed_predictions(self, predictions):
-        failed_predictions = predictions == None
+    def repair_failed_predictions(self, predictions, lower, upper):
+        none_predictions = predictions == None
+        too_high_predictions = predictions > upper
+        too_low_predictions = predictions < lower
+        failed_predictions = none_predictions | too_low_predictions | too_high_predictions
         if np.any(failed_predictions):
             print(f"FAILED PREDICTION!!: {predictions}")
             avg = sum([l if l else 0 for l in predictions]) // (len(predictions) - sum(failed_predictions))
-            predictions[predictions == None] = avg
+            predictions[failed_predictions] = avg
         return predictions
 
     def process_image(self, img_path):
@@ -377,35 +397,31 @@ class Main(FileSystemEventHandler):
             except Exception as e:
                 kda = [[0,0,0]]*10
             print(f"KDA:\n {kda}\n")
+            kda = np.array(kda)
+            kda[:, 0] = self.repair_failed_predictions(kda[:, 0], 0, 25)
+            kda[:, 1] = self.repair_failed_predictions(kda[:, 1], 0, 25)
+            kda[:, 2] = self.repair_failed_predictions(kda[:, 2], 0, 25)
             tesseract_result = self.tesseract_models.predict(screenshot)
             try:
                 lvl = next(tesseract_result)
             except Exception as e:
                 print(e)
                 lvl = [0]*10
-            lvl = self.repair_failed_predictions(lvl)
+            lvl = self.repair_failed_predictions(lvl, 1, 18)
 
             try:
                 cs = next(tesseract_result)
             except Exception as e:
                 print(e)
                 cs = [0]*10
-            cs = self.repair_failed_predictions(cs)
+            cs = self.repair_failed_predictions(cs, 0, 400)
             try:
                 current_gold = next(tesseract_result)[0]
             except Exception as e:
                 print(e)
                 current_gold = 500
 
-            if np.any(lvl>18):
-                print("WARNING: Some lvls > 18")
-                lvl[lvl>18] = 18
-            if np.any(cs > 400):
-                print("WARNING: Some cs > 400")
-                cs[cs>400] = 400
-            if current_gold > 5000:
-                print("WARNING: current_gold>5000")
-                current_gold = 5000
+            current_gold = self.repair_failed_predictions(current_gold, 0, 4000)
             
             print(f"Lvl:\n {lvl}\n")
             print(f"CS:\n {cs}\n")
@@ -504,22 +520,22 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-# m = Main()
+m = Main()
 # m.run()
-# m.process_image("Screen248.png")
+m.process_image("Screen248.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
 
 # dataloader_1 = data_loader.UnsortedNextItemsDataLoader()
 # X_un = dataloader_1.get_train_data()
-dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted_inf"])
-X, Y = dataloader.get_train_data()
-m = NextItemEarlyGameModel()
+# dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted_inf"])
+# X, Y = dataloader.get_train_data()
+# m = NextItemEarlyGameModel()
 # X = X[Y==2]
 # X_ = X[:, 1:]
 # X_ = X_[500:700]
-m.output_logs(X[:200].astype(np.float32))
+# m.output_logs(X[:200].astype(np.float32))
 
 #
 # blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
