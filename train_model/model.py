@@ -824,8 +824,8 @@ class NextItemEarlyGameModel(Model):
 
 
     def scale_inputs(self, X):
-        for slice_name in model.cont_slices_by_name:
-            slice = model.cont_slices_by_name[slice_name]
+        for slice_name in self.cont_slices_by_name:
+            slice = self.cont_slices_by_name[slice_name]
             if slice_name == 'cs' or slice_name == 'neutral_cs':
                 scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
             elif slice_name == 'lvl':
@@ -842,6 +842,11 @@ class NextItemEarlyGameModel(Model):
                 print("WTFFFFFFFF")
             X[slice] = scaler.transform(X[slice])
         return X
+
+    def fit_input(self, X, scaler_name):
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
+        min_max_scaler.fit(np.reshape(X, (-1, 1)))
+        return min_max_scaler
 
 
     @staticmethod
@@ -928,7 +933,7 @@ class NextItemEarlyGameModel(Model):
         items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
         print([item["name"] for item in items])
         print("\n\n")
-        return items[0]
+        return items
 
 
 class NextItemLateGameModel(Model):
