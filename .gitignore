@@ -3,7 +3,7 @@ loldir
 ai_loaded
 .idea/
 .DS_Store
-models/train/
+models/train/*
 last
 build/out/
 *.pyo
@@ -13,4 +13,4 @@ tmp_build/
 sed*
 build/main/
 main.spec
-
+training_data/positions/*
