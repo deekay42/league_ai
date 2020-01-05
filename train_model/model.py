@@ -820,6 +820,9 @@ class NextItemEarlyGameModel(Model):
         x = np.tile(x,num_increments).reshape((num_increments,-1))
         x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
         x = self.scale_inputs(np.array(x).astype(np.float32))
+        lul = False
+        if lul:
+            self.output_logs(x)
         return self.predict(x)
 
 
@@ -925,7 +928,7 @@ class NextItemEarlyGameModel(Model):
         #         print(f"{i}: {log[i]}")
         # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
-
+        # self.output_logs(x)
         with self.graph.as_default():
             y = self.model.predict(x)
             item_ints = np.argmax(y, axis=len(y.shape) - 1)

@@ -421,7 +421,10 @@ class Main(FileSystemEventHandler):
                 print(e)
                 current_gold = 500
 
-            current_gold = self.repair_failed_predictions(current_gold, 0, 4000)
+            if current_gold > 4000:
+                current_gold = 4000
+            elif current_gold < 0 or not current_gold:
+                current_gold = 500
             
             print(f"Lvl:\n {lvl}\n")
             print(f"CS:\n {cs}\n")
@@ -522,7 +525,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen248.png")
+m.process_image("Screen272.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
