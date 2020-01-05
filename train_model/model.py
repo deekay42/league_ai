@@ -125,9 +125,8 @@ class Model(ABC):
 
         #  10 elements long
         champ_ints = in_vec[:, champs_start:champs_end]
-        #  10 elements long
-
-        champ_ints = dropout(champ_ints, 0.8)
+        # champ_ints = dropout(champ_ints, 0.8)
+        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
         # 60 elements long
         item_ints = in_vec[:, items_start:items_end]
         cs = in_vec[:, cs_start:cs_end]
@@ -142,16 +141,21 @@ class Model(ABC):
         target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), pos_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
+        # champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
+        #                             reuse=tf.AUTO_REUSE,
+        #                             scope="champ_scope")
 
-
-
+        # champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim * champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
+        opp_champs_k_hot = tf.cast(tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32), tf.float32)
         # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
         target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
 
+        # target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
+        # opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
 
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
         items_by_champ_flat = tf.reshape(items_by_champ, [-1])
@@ -173,18 +177,55 @@ class Model(ABC):
         items = tf.sparse.to_dense(items, validate_indices=False)
         items_by_champ_k_hot = items[:, :, 1:]
 
+        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
+        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False,
+                                                    activation=None,
+                                                    reuse=tf.AUTO_REUSE,
+                                                    scope="item_sum_scope")
+        # summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
+
+        # summed_items_by_champ_exp = tf.expand_dims(summed_items_by_champ, -1)
+        # champs_exp = tf.expand_dims(champs_embedded, -2)
+        # champs_with_items = tf.multiply(champs_exp, summed_items_by_champ_exp)
+        # champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * all_items_emb_dim))
+        # champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+        #                                         reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+        # champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game * champ_all_items_emb_dim))
 
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
         pos = tf.one_hot(pos, depth=champs_per_team)
+        final_input_layer1 = merge(
+            [
+                target_summ_champ,
+                target_summ_items,
+                opp_summ_champ,
+                opp_summ_items,
+                opp_champs_k_hot
+            ], mode='concat', axis=1)
+
+        final_input_layer2 = merge(
+            [
+                pos,
+                target_summ_current_gold,
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                lvl,
+                kda,
+                total_cs
+            ], mode='concat', axis=1)
+        final_input_layer2 = dropout(final_input_layer2, 0.7)
+
         final_input_layer = merge(
-            [pos, target_summ_champ, target_summ_items, opp_summ_champ],
-            mode='concat', axis=1)
-        lol = dropout(final_input_layer, 0.8)
-        return items
+            [
+                final_input_layer1,
+                final_input_layer2
+            ], mode='concat', axis=1)
 
 
     def predict2int(self, x):
@@ -847,7 +888,7 @@ class NextItemEarlyGameModel(Model):
         return X
 
     def fit_input(self, X, scaler_name):
-        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         return min_max_scaler
 

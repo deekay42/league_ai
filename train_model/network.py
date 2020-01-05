@@ -631,13 +631,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 opp_summ_champ_emb,
                 opp_summ_items,
                 opp_champs_k_hot,
-                champs_with_items_emb
+                champs_with_items_emb,
+                target_summ_current_gold
         ], mode='concat', axis=1)
 
         final_input_layer2 = merge(
             [
                 pos,
-                target_summ_current_gold,
                 target_summ_cs,
                 target_summ_kda,
                 target_summ_lvl,

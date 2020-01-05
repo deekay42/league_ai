@@ -645,33 +645,17 @@ class NextItemsTrainer(Trainer):
         self.network.network_config["class_weights"] = self.class_weights
         self.X = self.X.astype(np.float32)
         self.X_test = self.X_test.astype(np.float32)
+
+        model = NextItemEarlyGameModel()
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+
         self.fit_all_inputs()
 
         self.build_new_model()
 
 
 
-
-    def fit_all_inputs(self):
-        model = NextItemEarlyGameModel()
-        for slice_name in model.cont_slices_by_name:
-            slice = model.cont_slices_by_name[slice_name]
-            if slice_name == 'cs' or slice_name == 'neutral_cs':
-                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
-            elif slice_name == 'lvl':
-                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
-            elif slice_name == 'kda':
-                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
-            elif slice_name == 'cg':
-                scaler = self.fit_input(np.array([[0.0,2000.0]]), slice_name)
-            elif slice_name == 'total_gold':
-                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
-            elif slice_name == 'xp':
-                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
-            else:
-                print("WTFFFFFFFF")
-            self.X[slice] = scaler.transform(self.X[slice])
-            self.X_test[slice] = scaler.transform(self.X_test[slice])
 
 
 
