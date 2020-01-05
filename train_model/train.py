@@ -650,8 +650,6 @@ class NextItemsTrainer(Trainer):
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
 
-        self.fit_all_inputs()
-
         self.build_new_model()
 
 
