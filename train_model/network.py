@@ -655,10 +655,10 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
                                                 regularizer="L2"))
-        net = dropout(net, 0.8)
+        # net = dropout(net, 0.8)
         net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
                                                   regularizer="L2"))
-        net = dropout(net, 0.9)
+        # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         net = merge([target_summ_current_gold, net], mode='concat', axis=1)
