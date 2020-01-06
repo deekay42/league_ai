@@ -625,13 +625,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         final_input_layer1 = merge(
             [
                 target_summ_champ,
-                target_summ_champ_emb,
                 target_summ_items,
-                opp_summ_champ,
-                opp_summ_champ_emb,
-                opp_summ_items,
-                opp_champs_k_hot,
-                champs_with_items_emb,
                 target_summ_current_gold
         ], mode='concat', axis=1)
 
@@ -643,7 +637,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 target_summ_lvl,
                 lvl,
                 kda,
-                total_cs
+                total_cs,
+                opp_summ_champ,
+                opp_summ_champ_emb,
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb,
+                target_summ_champ_emb,
             ], mode='concat', axis=1)
         final_input_layer2 = dropout(final_input_layer2, 0.7)
 
