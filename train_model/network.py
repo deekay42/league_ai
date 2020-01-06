@@ -491,7 +491,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         self.network_config = \
             {
                 "learning_rate": 0.00025,
-                "champ_emb_dim": 4,
+                "champ_emb_dim": 2,
                 "all_items_emb_dim": 6,
                 "champ_all_items_emb_dim": 8,
                 "class_weights": [1]
@@ -624,14 +624,14 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         pos = tf.one_hot(pos, depth=champs_per_team)
         final_input_layer1 = merge(
             [
-                target_summ_champ,
+                pos,
+                target_summ_champ_emb,
                 target_summ_items,
                 target_summ_current_gold
         ], mode='concat', axis=1)
 
         final_input_layer2 = merge(
             [
-                pos,
                 target_summ_cs,
                 target_summ_kda,
                 target_summ_lvl,
@@ -643,9 +643,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 opp_summ_items,
                 opp_champs_k_hot,
                 champs_with_items_emb,
-                target_summ_champ_emb,
+                target_summ_champ,
             ], mode='concat', axis=1)
-        final_input_layer2 = dropout(final_input_layer2, 0.7)
+        final_input_layer2 = dropout(final_input_layer2, 0.5)
 
         final_input_layer = merge(
             [
