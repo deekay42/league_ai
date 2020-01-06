@@ -768,10 +768,12 @@ class ProcessNextItemsTrainingData:
 if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
-    region = "KR"
+    region = "EUW"
     l = ProcessNextItemsTrainingData()
-    games_by_top_leagues = [5000, 4000, 4000, 3000, 3000, 3000, 3000]
-    start_date = cass.Patch.latest(region="KR").start
+    # games_by_top_leagues = [1500, 1400, 1300, 1200, 1100, 1000, 900, 800, 700, 600, 500, 400, 300, 200, 100]
+    games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
+                                300, 250, 200, 150, 100, 50]
+    start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
     l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
     # s = train.PositionsTrainer()
