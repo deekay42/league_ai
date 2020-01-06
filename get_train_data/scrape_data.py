@@ -79,8 +79,13 @@ class AllGamesCollected(Exception): pass
 
 def get_match_ids(countdowns, region, start_date):
     matches = set()
-    leagues = [cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond]
-    divisions = [cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four]
+    leagues = [cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond, cass.Tier.platinum,
+               cass.Tier.platinum, cass.Tier.platinum, cass.Tier.platinum, cass.Tier.gold, cass.Tier.gold,
+               cass.Tier.gold, cass.Tier.gold, cass.Tier.silver, cass.Tier.silver,
+               cass.Tier.silver, cass.Tier.silver, cass.Tier.bronze, cass.Tier.bronze,
+               cass.Tier.bronze, cass.Tier.bronze, cass.Tier.iron, cass.Tier.iron,
+               cass.Tier.iron, cass.Tier.iron]
+    divisions = [cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four]
     lower_league_generators = [iter(cass.LeagueEntries(region=region, queue=cass.Queue.ranked_solo_fives, tier=league,
                        division=division)) for league, division in zip(leagues, divisions)]
     elite_league_generators = [iter(cass.get_challenger_league(cass.Queue.ranked_solo_fives, region).entries),
