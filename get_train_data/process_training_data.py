@@ -775,10 +775,10 @@ if __name__ == "__main__":
                                 300, 250, 200, 150, 100, 50]
     start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
+    # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
     # s = train.PositionsTrainer()
     # s.train()
-    # l.update_roles()
+    l.update_roles()
 
     # unsorted_processed_dataloader = data_loader.UnsortedNextItemsDataLoader()
     # unsorted_processed_data = unsorted_processed_dataloader.get_train_data()
