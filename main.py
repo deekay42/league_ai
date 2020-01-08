@@ -124,16 +124,8 @@ class Main(FileSystemEventHandler):
 
 
     @staticmethod
-    def swap_teams(champs, items):
-        tmp = np.copy(champs[:5])
-        champs[:5] = champs[5:]
-        champs[5:] = tmp
-
-        tmp = np.copy(items[:30])
-        items[:30] = items[30:]
-        items[30:] = tmp
-        return champs, items
-
+    def swap_teams(team_data):
+        return np.concatenate([team_data[5:], team_data[:5]], axis=0)
 
     def summoner_items_slice(self, role):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
@@ -228,13 +220,16 @@ class Main(FileSystemEventHandler):
 
         if role > 4:
             print("Switching teams!")
-            champs, items = self.swap_teams(champs, items)
+            champs = self.swap_teams(champs)
+            items = self.swap_teams(items)
+            lvl = self.swap_teams(lvl)
+            cs = self.swap_teams(cs)
+            kda = self.swap_teams(kda)
             role -= 5
 
         result = []
 
         while True:
-            
             if NextItemEarlyGameModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
 
                 items_five, delta_five, items_six, delta_six = self.remove_low_value_items(items[role])
@@ -525,7 +520,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen273.png")
+m.process_image("Screen280.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
