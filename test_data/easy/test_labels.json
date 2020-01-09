@@ -299,6 +299,31 @@
     "kda": null,
     "cs": [14,27,21,24,36,40,36,33,28,30],
     "lvl": [9,7,7,7,7,7,7,9,8,7]
+  },
+  "21" : {
+    "spells": null,
+    "champs": ["Garen", "XinZhao", "Diana", "Senna", "Mordekaiser", "Yorick", "LeeSin", "AurelionSol", "Kaisa", "Soraka"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen291.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "22" : {
+    "spells": null,
+    "champs": ["Garen", "XinZhao", "Diana", "Senna", "Mordekaiser", "Yorick", "LeeSin", "AurelionSol", "Kaisa", "Soraka"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen304.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
   }
-
 }

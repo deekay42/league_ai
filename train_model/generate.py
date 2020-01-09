@@ -343,6 +343,40 @@ def mess_up_current_gold(img, config):
     return img
 
 
+def messUpChamp(img, config):
+    angle = config["angle"]
+    color_change_rate = config["color_change_rate"]
+
+    blur_rate = config["blur_rate"]
+
+    pixelate_rate = config["pixelate_rate"]
+    brightness_rate = config["brightness_rate"]
+    line_rate = config["line_rate"]
+    num_circles = config["num_circles"]
+    contrast_rate = config["contrast_rate"]
+    circle_size = config["circle_size"]
+    darkness_rate = config["darkness_rate"]
+    translate_rate = config["translate_rate"]
+    resize_rate = config["resize_rate"]
+    gaussian_rate = config["gaussian_rate"]
+    gray_rate = config["gray_rate"]
+
+    img = addLines(img, line_rate)
+    img = overlayText(img)
+    img = overlayCircle(img, angle)
+    img = occlude(img, num_circles, circle_size, darkness_rate)
+
+    img = skewColor(img, color_change_rate)
+    img = changeBrightness(img, brightness_rate)
+    img = changeContrast(img, contrast_rate)
+
+    img = grayOut(img, gray_rate)
+
+    img = noisy(img, "gauss", gaussian_rate)
+
+    return img
+
+
 def messUpItem(img, config):
     angle = config["angle"]
     color_change_rate = config["color_change_rate"]
@@ -664,6 +698,24 @@ item_config = \
         "gray_rate": 0.3
     }
 
+champ_config = \
+    {
+        "angle": 360,
+        "num_circles": 3,
+        "circle_size": 1.0,
+        "darkness_rate": 0.4,
+        "color_change_rate": 0.2,
+        "blur_rate": 6,
+        "pixelate_rate": 0.4,
+        "brightness_rate": 20,
+        "line_rate": 2,
+        "contrast_rate": 20,
+        "translate_rate": 0.3,
+        "resize_rate": 0.2,
+        "gaussian_rate": 10,
+        "gray_rate": 0.3
+    }
+
 current_gold_config = \
     {
         "angle": 360,
@@ -932,6 +984,45 @@ def getBatch(size, img_size):
 # ps.print_stats()
 # print(s.getvalue())
 
+def generate_training_data_champs(imgs, epochs, new_size, extra_dim=False):
+    max_crop_rate = 0.25
+    images = []
+    classes = []
+    mykey = list(imgs.keys())[0]
+    img_size = imgs[mykey].shape[0]
+    global gauss
+    gauss = np.random.normal(0, 10, (*new_size, 3))
+    for _ in range(epochs):
+
+        for key, image in imgs.items():
+            # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
+            new_top_left_x = np.random.randint(0, int(img_size * max_crop_rate))
+            new_top_left_y = np.random.randint(0, int(img_size * max_crop_rate))
+            max_size = img_size - max(new_top_left_x, new_top_left_y)
+            min_size = max_size - max_crop_rate * img_size
+            crop_size = np.random.randint(min_size, max_size)
+
+            gauss = np.random.normal(0, 10, (*new_size, 3))
+
+            # cv.imshow('original', image)
+            # cv.imshow('gray', grayimg)
+            # cv.imshow('mod', mod)
+            # cv.waitKey(0)
+            image = pixelate(image, champ_config["pixelate_rate"])
+            image = blur(image, champ_config["blur_rate"])
+            image = image[new_top_left_x:new_top_left_x + crop_size, new_top_left_y:new_top_left_y + crop_size]
+
+            image = cv.resize(image, new_size, interpolation=cv.INTER_AREA)
+
+            image = messUpChamp(image, champ_config)
+
+            images.append(image)
+            classes.append(key)
+    if extra_dim:
+        classes = np.array(classes)[:, np.newaxis]
+
+    return (images, classes)
+
 
 def generate_training_data(imgs, epochs, new_size, extra_dim=False):
     max_crop_rate = 0.25
@@ -970,6 +1061,7 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
         classes = np.array(classes)[:, np.newaxis]
 
     return (images, classes)
+
 
 
 def generate_training_data_nonsquare(imgs, epochs, new_size):
@@ -1080,10 +1172,10 @@ def generate_training_data_rect(imgs, epochs, new_size):
 if __name__ == "__main__":
     import copy
 
-    img_orig = cv.imread('../assets/train_imgs/cs/5.png')
+    img_orig = cv.imread('../assets/train_imgs/champs/Kaisa.png')
     cv.imshow("original", img_orig)
     while True:
         img = copy.deepcopy(img_orig)
-        img = generate_training_data_rect({"lol": img}, 1, (14, 10))[0][0]
+        img = generate_training_data_champs({"lol": img}, 1, (20, 20))[0][0]
         cv.imshow("text", img)
         cv.waitKey(0)
