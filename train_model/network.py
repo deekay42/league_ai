@@ -325,7 +325,7 @@ class NextItemNetwork(Network):
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
-                "total_num_champs": ChampManager().get_num("int"),
+                "total_num_champs": ChampManager().get_num("int") - 1,
 
                 "total_num_items": ItemManager().get_num("int"),
                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
@@ -491,7 +491,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         self.network_config = \
             {
                 "learning_rate": 0.00025,
-                "champ_emb_dim": 4,
+                "champ_emb_dim": 3,
                 "all_items_emb_dim": 6,
                 "champ_all_items_emb_dim": 8,
                 "class_weights": [1]
@@ -638,12 +638,12 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 lvl,
                 kda,
                 total_cs,
-                opp_summ_champ,
+                # opp_summ_champ,
                 opp_summ_champ_emb,
                 opp_summ_items,
                 opp_champs_k_hot,
                 champs_with_items_emb,
-                target_summ_champ,
+                # target_summ_champ,
             ], mode='concat', axis=1)
         final_input_layer2 = dropout(final_input_layer2, 0.5)
 

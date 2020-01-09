@@ -97,23 +97,23 @@ class Trainer(ABC):
                     # for i, img in enumerate(self.X_test):
                     #     cv.imshow(str(i), img)
                     # cv.waitKey(0)
-                    # y = model.predict(self.X_test)
-                    # # y = [np.argmax(y_) for y_ in y]
+                    y = model.predict(self.X_test)
+                    y = [np.argmax(y_) for y_ in y]
                     # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
                     # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
-                    #
+                    y_actual = self.Y_test
                     # print("Pred Actual")
-                    # for i in range(len(y_actual)):
-                    #     # a = self.manager.lookup_by('img_int', y[i])['name']
-                    #     # b = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-                    #     a = y[i]
-                    #     b = y_actual[i]
-                    #     if not np.all(np.equal(a,b)):
-                    #         print(f"----->{i}: {a} {b}")
-                    #     else:
-                    #         print(f"{i}: {a} {b}")
-                    # print("Raw test data predictions: {0}".format(y))
-                    # print("Actual test data  values : {0}".format(y_actual))
+                    for i in range(len(y_actual)):
+                        a_text = self.manager.lookup_by('img_int', y[i])['name']
+                        b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+                        a = y[i]
+                        b = y_actual[i]
+                        if not np.all(np.equal(a,b)):
+                            print(f"----->{i}: {a_text} {b_text}")
+                        else:
+                            print(f"{i}: {a_text} {b_text}")
+                    print("Raw test data predictions: {0}".format(y))
+                    print("Actual test data  values : {0}".format(y_actual))
 
                     # y = model.predict(self.X_test)
                     # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
@@ -363,7 +363,7 @@ class ChampImgTrainer(DynamicTrainingDataTrainer):
         self.epoch_size = 100
         super().__init__()
         self.manager = ChampManager()
-        self.training_data_generator = lambda: generate.generate_training_data(self.manager.get_imgs(), self.epoch_size,
+        self.training_data_generator = lambda: generate.generate_training_data_champs(self.manager.get_imgs(), self.epoch_size,
                                                                                self.network_crop)
         self.network = ChampImgNetwork()
         self.X_test, self.Y_test = self.load_test_data()
@@ -680,8 +680,8 @@ class NextItemsTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    t = NextItemsTrainer()
-    t.build_next_items_early_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_early_game_model()
     # t.standalone_eval()
 
 
@@ -709,5 +709,5 @@ if __name__ == "__main__":
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
 
-    # s = ChampImgTrainer()
-    # s.build_new_img_model()
+    s = ChampImgTrainer()
+    s.build_new_img_model()

@@ -102,6 +102,12 @@ class Main(FileSystemEventHandler):
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
 
+        self.previous_champs = None
+        self.previous_kda = None
+        self.previous_cs = None
+        self.previous_lvl = None
+        self.previous_self_index = None
+
         Main.test_connection()
 
     def set_res_converter(self, res_cvt):
@@ -436,6 +442,28 @@ class Main(FileSystemEventHandler):
             self_index = self.self_img_model.predict(screenshot)
             print(self_index)
 
+            #sometimes we get incorrect champ img predictions. we need to detect this and correct for it by taking
+            # the previous prediction
+            if self.previous_champs:
+                champ_overlap = np.sum(np.equal(champs, self.previous_champs))
+                k_increase = np.all(np.greater_equal(kda[:,0], self.previous_kda[:,0]))
+                d_increase = np.all(np.greater_equal(kda[:, 1], self.previous_kda[:, 1]))
+                a_increase = np.all(np.greater_equal(kda[:, 2], self.previous_kda[:, 2]))
+                # cs_increase = np.all(np.greater_equal(cs, self.previous_cs))
+                # lvl_increase = np.all(np.greater_equal(cs, self.previous_cs))
+                # all_increased = k_increase and d_increase and a_increase and cs_increase and lvl_increase
+                if champ_overlap > 0.7 and k_increase and d_increase and a_increase:
+                    champs = self.previous_champs
+
+
+
+            self.previous_champs = champs
+            self.previous_kda = kda
+            self.previous_cs = cs
+            self.previous_lvl = lvl
+            self.previous_self_index = self_index
+
+
         except FileNotFoundError as e:
             print(e)
             return
@@ -520,7 +548,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen280.png")
+m.process_image("Screen266_.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
