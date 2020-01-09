@@ -325,7 +325,7 @@ class NextItemNetwork(Network):
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
-                "total_num_champs": ChampManager().get_num("int") - 1,
+                "total_num_champs": ChampManager().get_num("int"),
 
                 "total_num_items": ItemManager().get_num("int"),
                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
