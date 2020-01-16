@@ -696,6 +696,12 @@ class NextItemsTrainer(Trainer):
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
+
+        # self.X = self.X[:1000]
+        # self.Y = self.Y[:1000]
+        # self.X_test = self.X[:1000]
+        # self.Y_test = self.Y[:1000]
+
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
 

@@ -806,8 +806,9 @@ if __name__ == "__main__":
 
     # games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
     #                             300, 250, 200, 150, 100, 50]
-    games_by_top_leagues = [4000, 3000, 4000, 3000, 950, 900, 850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
-                            300, 250, 200, 150, 100, 50]
+    games_by_top_leagues = [4000, 3000,300,300,300,300,300, 300, 300, 300, 300, 300, 200, 200, 200, 200, 200,
+                                200, 200, 200, 150, 100, 50]
+
     start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
     l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
