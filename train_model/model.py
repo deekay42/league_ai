@@ -795,14 +795,21 @@ class SelfImgModel(ImgModel):
         return role_index
 
 
-class NextItemEarlyGameModel(Model):
+class NextItemModel(Model):
 
-    def __init__(self):
+    def __init__(self, early_or_late):
         super().__init__()
-        self.network = network.NextItemEarlyGameNetwork()
-        self.model_path = app_constants.model_paths["best"]["next_items_early"]
+        if early_or_late == "early":
+            self.network = network.NextItemEarlyGameNetwork()
+            self.model_path = app_constants.model_paths["best"]["next_items_early"]
+            self.elements = "next_items_early"
+        elif early_or_late == "late":
+            self.network = network.NextItemLateGameNetwork()
+            self.model_path = app_constants.model_paths["best"]["next_items_late"]
+            self.elements = "next_items_late"
+
         self.artifact_manager = ItemManager()
-        self.elements = "next_items_early"
+
         # self.load_model()
 
         # with open(glob.glob('models/best/next_items/early/thresholds*')[0]) as f:
@@ -957,41 +964,10 @@ class NextItemEarlyGameModel(Model):
 
         return np.array(items_at_time_x)
 
-    def predict(self, x):
-        # with self.graph.as_default(), tf.Session() as sess:
-        #     tflearn.is_training(False, session=sess)
-        #     X = tf.placeholder("float", [None, 71])
-        #     # X = input_data(shape=[None, 71], name='lolol')
-        #     log = self.output_logs(X)
-        #     sess.run(tf.global_variables_initializer())
-        #     log = sess.run(log, feed_dict = {X: np.array(x)})
-        #     for i, _ in enumerate(log):
-        #         print(f"{i}: {log[i]}")
-        # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
-        #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
-        # self.output_logs(x)
-        with self.graph.as_default():
-            y = self.model.predict(x)
-            item_ints = np.argmax(y, axis=len(y.shape) - 1)
-            print(f"Confidence: {np.max(y, axis=1)}")
-        items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
-        print([item["name"] for item in items])
-        print("\n\n")
-        return items
-
-
-class NextItemLateGameModel(Model):
-
-    def __init__(self):
-        super().__init__()
-        self.network = network.NextItemLateGameNetwork()
-        self.model_path = app_constants.model_paths["best"]["next_items_late"]
-        self.artifact_manager = ItemManager()
-
 
     def predict2int_blackouts(self, x, blackout_indices):
         with self.graph.as_default():
-            y = self.model.predict(x)[0]
+            y = self.model.predict(x)
             y = np.array(list(zip(y, range(len(y)))))
             blackout_indices = list(blackout_indices)
             y = np.delete(y, blackout_indices, axis=0)
@@ -1012,9 +988,20 @@ class NextItemLateGameModel(Model):
         #     log = sess.run(log, feed_dict = {X: np.array(x)})
         #     for i, _ in enumerate(log):
         #         print(f"{i}: {log[i]}")
-        item_int = self.predict2int_blackouts(x, blackout_indices)
-        item = self.artifact_manager.lookup_by("int", item_int[0])
-        return item
+        # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
+        #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
+        # self.output_logs(x)
+        if blackout_indices:
+            item_ints = self.predict2int_blackouts(x, blackout_indices)
+        else:
+            with self.graph.as_default():
+                y = self.model.predict(x)
+                item_ints = np.argmax(y, axis=len(y.shape) - 1)
+            print(f"Confidence: {np.max(y, axis=1)}")
+        items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
+        print([item["name"] for item in items])
+        print("\n\n")
+        return items
 
 
 class PositionsModel(Model):

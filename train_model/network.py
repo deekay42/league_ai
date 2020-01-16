@@ -491,9 +491,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         self.network_config = \
             {
                 "learning_rate": 0.00025,
-                "champ_emb_dim": 2,
-                "all_items_emb_dim": 4,
-                "champ_all_items_emb_dim": 6,
+                "champ_emb_dim": 3,
+                "all_items_emb_dim": 6,
+                "champ_all_items_emb_dim": 8,
                 "class_weights": [1]
             }
 
@@ -748,6 +748,210 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         #
         # class_weights = class_weights + tf.cast(bad_predictions_by_batch_index, tf.float32) * max(self.network_config["class_weights"])
 
+        return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
+
+    def weighted_accuracy(self, preds, targets, input_):
+        targets_sparse = tf.argmax(targets, axis=-1)
+        preds_sparse = tf.argmax(preds, axis=-1)
+        return weighted_accuracy(preds_sparse, targets_sparse, self.network_config["class_weights"])
+
+
+class NextItemLateGameNetwork(NextItemNetwork):
+
+    def __init__(self):
+        super().__init__()
+
+        self.network_config = \
+            {
+                "learning_rate": 0.00025,
+                "champ_emb_dim": 2,
+                "all_items_emb_dim": 4,
+                "champ_all_items_emb_dim": 6,
+                "class_weights": [1]
+            }
+
+
+    def build(self):
+        champs_per_game = self.game_config["champs_per_game"]
+        total_num_champs = self.game_config["total_num_champs"]
+        total_num_items = self.game_config["total_num_items"]
+        items_per_champ = self.game_config["items_per_champ"]
+        champs_per_team = self.game_config["champs_per_team"]
+
+        learning_rate = self.network_config["learning_rate"]
+        champ_emb_dim = self.network_config["champ_emb_dim"]
+
+        all_items_emb_dim = self.network_config["all_items_emb_dim"]
+        champ_all_items_emb_dim = self.network_config["champ_all_items_emb_dim"]
+
+        total_champ_dim = champs_per_game
+        total_item_dim = champs_per_game * items_per_champ
+
+        pos_start = 0
+        pos_end = pos_start + 1
+        champs_start = pos_end
+        champs_end = champs_start + champs_per_game
+        items_start = champs_end
+        items_end = items_start + items_per_champ*2*champs_per_game
+        total_gold_start = items_end
+        total_gold_end = total_gold_start + champs_per_game
+        cs_start = total_gold_end
+        cs_end = cs_start + champs_per_game
+        neutral_cs_start = cs_end
+        neutral_cs_end = neutral_cs_start + champs_per_game
+        xp_start = neutral_cs_end
+        xp_end = xp_start + champs_per_game
+        lvl_start = xp_end
+        lvl_end = lvl_start + champs_per_game
+        kda_start = lvl_end
+        kda_end = kda_start + champs_per_game*3
+        current_gold_start = kda_end
+        current_gold_end = current_gold_start + champs_per_game
+
+        in_vec = input_data(shape=[None, 221], name='input')
+        #  1 elements long
+        pos = in_vec[:, 0]
+        pos = tf.cast(pos, tf.int32)
+
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+        pos_index = tf.transpose([batch_index, pos], (1, 0))
+        opp_index = tf.transpose([batch_index, pos + champs_per_team], (1, 0))
+
+        # Make tensor of indices for the first dimension
+
+        #  10 elements long
+        champ_ints = in_vec[:, champs_start:champs_end]
+        # champ_ints = dropout(champ_ints, 0.8)
+        #this does not work since dropout scales inputs, hence embedding lookup fails after that.
+        # 60 elements long
+        item_ints = in_vec[:, items_start:items_end]
+        cs = in_vec[:, cs_start:cs_end]
+        neutral_cs = in_vec[:, neutral_cs_start:neutral_cs_end]
+        lvl = in_vec[:, lvl_start:lvl_end]
+        kda = in_vec[:, kda_start:kda_end]
+        current_gold = in_vec[:, current_gold_start:current_gold_end]
+        total_cs = cs + neutral_cs
+
+        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
+        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda,(-1,champs_per_game, 3)), pos_index)
+        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
+
+        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
+                                                                       reuse=tf.AUTO_REUSE,
+                                                               scope="champ_scope")
+
+        champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim*champs_per_game))
+        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
+        opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
+        opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
+        opp_champs_k_hot = tf.cast(tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32), tf.float32)
+        # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
+        target_summ_champ = tf.gather_nd(champs_one_hot, pos_index)
+        opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
+
+        target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
+        opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
+
+        items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
+        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
+
+        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, champs_per_game * items_per_champ]),
+                                   (-1,))
+        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(champs_per_game),1), [1,
+                                                                                                 items_per_champ]),
+                                           [n, 1]),
+                                   (-1,))
+
+        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
+
+        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
+                                       tf.int64)
+
+        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
+                                dense_shape=(n, champs_per_game, total_num_items + 1))
+        items = tf.sparse.to_dense(items, validate_indices=False)
+        items_by_champ_k_hot = items[:, :, 1:]
+
+        items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
+
+        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False, activation=None,
+                                                    reuse=tf.AUTO_REUSE,
+                                                    scope="item_sum_scope")
+        summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
+
+        summed_items_by_champ_exp = tf.expand_dims(summed_items_by_champ, -1)
+        champs_exp = tf.expand_dims(champs_embedded, -2)
+        champs_with_items = tf.multiply(champs_exp, summed_items_by_champ_exp)
+        champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * all_items_emb_dim))
+        champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="champ_item_scope")
+        champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game * champ_all_items_emb_dim))
+
+        target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
+        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
+
+        pos = tf.one_hot(pos, depth=champs_per_team)
+        final_input_layer1 = merge(
+            [
+                pos,
+                target_summ_champ_emb,
+                target_summ_items,
+                # target_summ_current_gold
+        ], mode='concat', axis=1)
+
+        final_input_layer2 = merge(
+            [
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                lvl,
+                kda,
+                total_cs,
+                # opp_summ_champ,
+                opp_summ_champ_emb,
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb,
+                # target_summ_champ,
+            ], mode='concat', axis=1)
+        final_input_layer2 = dropout(final_input_layer2, 0.5)
+
+        final_input_layer = merge(
+            [
+                final_input_layer1,
+                final_input_layer2
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
+                                                regularizer="L2"))
+        # net = dropout(net, 0.8)
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        # net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
+        net = fully_connected(net, total_num_items, activation='linear')
+        is_training = tflearn.get_training_mode()
+        inference_output = tf.nn.softmax(net)
+
+        net = tf.cond(is_training, lambda: net, lambda: inference_output)
+
+        return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True, n_classes=total_num_items,
+                                 shuffle_batches=True,
+                                  learning_rate=learning_rate,
+                                  loss=self.class_weighted_sm_ce_loss,
+                                  name='target', metric=self.weighted_accuracy)
+
+
+    #calculates penalty if prediction is an item we already have, or an item with an item effect we already have
+    def class_weighted_sm_ce_loss(self, y_pred, y_true, target_summ_items_sparse):
+        class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
+                                            "class_weights"], dtype=tf.float32)), 1)
         return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
 
     def weighted_accuracy(self, preds, targets, input_):

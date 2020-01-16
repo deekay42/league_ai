@@ -208,3 +208,9 @@ class PositionsDataLoader(DataLoaderBase):
             data = list(dict(np.load(i)).values())
             self.train_x += data
         self.train_x = np.array(self.train_x)
+
+
+    def train2test(self):
+        for index, train_fname in enumerate(self.train_x_filenames[:round(len(self.train_x_filenames)/10 + 1)]):
+            train_index = train_fname.rfind("train")
+            os.rename(train_fname, train_fname[:train_index] + f"test_{index}.npz")
