@@ -684,8 +684,7 @@ class NextItemsTrainer(Trainer):
 
 
     def build_next_items_late_game_model(self):
-        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_completes().values()),
-                                                                 key=lambda
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
         self.network = NextItemLateGameNetwork()
         self.train_path = app_constants.model_paths["train"]["next_items_late"]
