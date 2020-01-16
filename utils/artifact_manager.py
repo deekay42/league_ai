@@ -79,6 +79,15 @@ class ArtifactManager(ABC):
         return self._by["int"]
 
 
+    def get_completes(self):
+        return {item_key: item for item_key, item in self._by["int"].items() if ("completion" in
+                                                                                                    item and (item["completion"] ==
+                                                                                             "semi"
+                                                                                         or
+                                                                                    item[
+            "completion"] == "complete"))}
+
+
 class ChampManager:
     instance = None
 
@@ -180,42 +189,6 @@ class ItemManager:
                     self._by["img_int"].values()}
 
 
-        def get_num_completes(self):
-            return sum([1 if "completion" in artifact and (artifact["completion"] == "complete" or artifact[
-                "completion"] == "semi") else 0 for artifact in self._by["int"].values()])
-
-
-        def get_completes(self):
-            return [artifact for artifact in self._by["int"].values() if "completion" in artifact and (artifact[
-                                                                                                           "completion"] == "complete" or
-                                                                                                       artifact[
-                                                                                                           "completion"] == "semi")]
-
-
-        def get_early_game_items(self):
-            return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
-                                                                                                         "starting"]
-                                                                                                     == "0,1" or
-                                                                                                     artifact[
-                                                                                                         "starting"]
-                                                                                                     == "0")]
-
-
-        def num_early_game_items(self):
-            return len(self.get_early_game_items())
-
-
-        def get_late_game_items(self):
-            return [artifact for artifact in self._by["int"].values() if "starting" in artifact and (artifact[
-                                                                                                         "starting"]
-                                                                                                     == "0,1" or
-                                                                                                     artifact[
-                                                                                                         "starting"]
-                                                                                                     == "1")]
-
-
-        def num_late_game_items(self):
-            return len(self.get_late_game_items())
 
 
 class SimpleManager(ArtifactManager):
