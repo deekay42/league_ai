@@ -900,7 +900,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 pos,
                 target_summ_champ_emb,
                 target_summ_items,
-                # target_summ_current_gold
+                target_summ_current_gold
         ], mode='concat', axis=1)
 
         final_input_layer2 = merge(
