@@ -42,10 +42,15 @@ train_paths["next_items_processed_unsorted_inf"] = train_paths["next_items"] + "
                                                    os.sep + "inf" + os.sep
 train_paths["next_items_processed_unsorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
                                                    os.sep + "uninf" + os.sep
+train_paths["next_items_processed_unsorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+                                                   os.sep + "complete" + os.sep
+
 train_paths["next_items_processed_sorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + os.sep\
                                                  + "inf" + os.sep
 train_paths["next_items_processed_sorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + \
                                                    os.sep + "uninf" + os.sep
+train_paths["next_items_processed_sorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + \
+                                                   os.sep + "complete" + os.sep
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
 train_paths["positions_to_be_pred"] = train_paths["positions"] + "to_be_pred" + os.sep
 

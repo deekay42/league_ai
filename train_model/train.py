@@ -439,7 +439,13 @@ class PositionsTrainer(Trainer):
         dataloader = data_loader.PositionsDataLoader()
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
-        self.X_test, self.Y_test = dataloader.get_test_data()
+        try:
+            self.X_test, self.Y_test = dataloader.get_test_data()
+        except FileNotFoundError:
+            dataloader.train2test()
+            dataloader = data_loader.PositionsDataLoader()
+            self.X, self.Y = dataloader.get_train_data()
+            self.X_test, self.Y_test = dataloader.get_test_data()
         self.build_new_model()
 
 
@@ -646,7 +652,7 @@ class NextItemsTrainer(Trainer):
         self.X = self.X.astype(np.float32)
         self.X_test = self.X_test.astype(np.float32)
 
-        model = NextItemEarlyGameModel()
+        model = NextItemModel("early")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
 
@@ -677,11 +683,71 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+    def build_next_items_late_game_model(self):
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_completes().values()),
+                                                                 key=lambda
+            x: x["int"])]
+        self.network = NextItemLateGameNetwork()
+        self.train_path = app_constants.model_paths["train"]["next_items_late"]
+        self.best_path = app_constants.model_paths["best"]["next_items_late"]
+
+        print("Loading training data")
+        dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_sorted_complete"])
+        self.X, self.Y = dataloader.get_train_data()
+        print("Loading test data")
+        self.X_test, self.Y_test = dataloader.get_test_data()
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+
+        total_y_distrib = self.train_y_distrib + self.test_y_distrib
+        missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
+        print(f"missing items are: {missing_items}")
+        # assert(missing_items == Counter([0]))
+        total_y = sum(list(total_y_distrib.values()))
+        total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
+                                                                                    missing_items).items()),
+                                                                              key=lambda x: x[0]))[:, 1]])
+        # self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
+
+
+        effective_num =  1.0 - np.power(0.99, total_y_distrib_sorted)
+        self.class_weights = (1.0 - 0.99) / np.array(effective_num)
+        non_complete_ints = (ItemManager().get_ints().keys() - ItemManager().get_completes().keys())
+        self.class_weights = [0 if index in non_complete_ints else weight for index, weight in enumerate(
+            self.class_weights)]
+        self.class_weights = self.class_weights / np.sum(self.class_weights) * int(len(ItemManager().get_completes()))
+        # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        #executioners
+        self.class_weights[106] *= 3
+        #qss
+        self.class_weights[113] *= 2
+        #cull
+        self.class_weights[27] *= 2.5
+        #last whisper
+        self.class_weights[62] *= 3
+        #stopwatch
+        self.class_weights[45] *= 2
+        #dark seal
+        self.class_weights[26] *= 1.5
+
+
+
+        # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("late")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.build_new_model()
+
+
 
 
 if __name__ == "__main__":
     t = NextItemsTrainer()
-    t.build_next_items_early_game_model()
+    t.build_next_items_late_game_model()
     # t.standalone_eval()
 
 
