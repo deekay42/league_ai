@@ -748,8 +748,6 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
-
-
 if __name__ == "__main__":
     t = NextItemsTrainer()
     t.build_next_items_late_game_model()
@@ -779,6 +777,6 @@ if __name__ == "__main__":
     #         print(f"{i}: {a} {b}")
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
-
-    # s = ChampImgTrainer()
+    #
+    # s = ItemImgTrainer()
     # s.build_new_img_model()

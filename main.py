@@ -18,7 +18,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
 from utils import utils
-from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemEarlyGameModel, CSImgModel, \
+from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
     KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 from utils.build_path import build_path
@@ -80,8 +80,15 @@ class Main(FileSystemEventHandler):
         self.item_manager = ItemManager()
         # if Main.shouldTerminate():
         #     return
-        self.next_item_model = NextItemEarlyGameModel()
-        self.next_item_model.load_model()
+        with open(app_constants.train_paths["champ_vs_roles"], "r") as f:
+            self.champ_vs_roles = json.load(f)
+        self.early_or_late = "early"
+        self.next_item_model_early = NextItemModel("early")
+        self.next_item_model_early.load_model()
+        self.next_item_model_late = NextItemModel("late")
+        self.next_item_model_late.load_model()
+        self.next_item_model = self.next_item_model_early
+
         # if Main.shouldTerminate():
         #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
@@ -154,9 +161,11 @@ class Main(FileSystemEventHandler):
         champs_int = [int(champ["int"]) for champ in champs]
         items_id = self.all_items_counter2items_list(items)
         items_id = [[int(item["id"]) for item in summ_items] for summ_items in items_id]
-
-
-        return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold)
+        summ_owned_completes = None
+        if self.early_or_late == "late":
+            summ_owned_completes = list(self.item_manager.extract_completes(items[role]))
+        return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold,
+                                                 summ_owned_completes)
 
 
     def build_path(self, items, next_item):
@@ -181,8 +190,8 @@ class Main(FileSystemEventHandler):
         delta_six = None
 
 
-        while NextItemEarlyGameModel.num_itemslots(items) >= game_constants.MAX_ITEMS_PER_CHAMP:
-            if NextItemEarlyGameModel.num_itemslots(items) == game_constants.MAX_ITEMS_PER_CHAMP:
+        while NextItemModel.num_itemslots(items) >= game_constants.MAX_ITEMS_PER_CHAMP:
+            if NextItemModel.num_itemslots(items) == game_constants.MAX_ITEMS_PER_CHAMP:
                 six_items = Counter(items)
                 delta_six = Counter(delta_items)
             if removal_index >= len(removable_items):
@@ -235,8 +244,23 @@ class Main(FileSystemEventHandler):
 
         result = []
 
-        while True:
-            if NextItemEarlyGameModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
+        while current_gold > 0:
+
+            summ_true_completes_owned = self.item_manager.extract_completes(items[role], True)
+            # start_buy = sum(items[role].values()) < 3 and self.recipe_cost([self.item_manager.lookup_by("int",
+            #                                                                                       item_int) for
+            #                                                item_int in items[role]]) < 500
+            if (len(list(summ_true_completes_owned)) < 4 and \
+                    self.champ_vs_roles[str(champs[role]["int"])].get(game_constants.ROLE_ORDER[role], 0) >= 0.01):
+                self.early_or_late = "early"
+                self.next_item_model = self.next_item_model_early
+                print("USING early GAME MODEL")
+            else:
+                self.early_or_late = "late"
+                self.next_item_model = self.next_item_model_late
+                print("USING late GAME MODEL")
+
+            if NextItemModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
 
                 items_five, delta_five, items_six, delta_six = self.remove_low_value_items(items[role])
                 # items[role], delta_items = self.remove_low_value_items(items[role])
@@ -259,7 +283,7 @@ class Main(FileSystemEventHandler):
                         continue
                     next_items, abs_items = self.build_path(copied_items[role], next_item)
                     updated_items = Counter([item["int"]  for item in abs_items[-1]])
-                    if NextItemEarlyGameModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
+                    if NextItemModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
                         break
             else:
                 delta_items = None
@@ -280,17 +304,18 @@ class Main(FileSystemEventHandler):
             if next_item["name"] == "Empty":
                 return self.return_result(next_predicted_items, result)
 
-            recipe_cost = self.recipe_cost(next_items)
-            # 1. network likes to buy lots of control wards...
-            # 2. sometimes network likes to buy items that are too expensive. happens often when confidence is low
-            # if (next_item["name"] == "Control Ward" and items[role][self.item_manager.lookup_by("name",
-            #                                                                                    "Control Ward")[
-            #     "int"]] >= 1) or \
-            #         (recipe_cost > current_gold + 50):
-            #     return result
-            result.extend(next_items)
+            for ni in next_items:
+                cass_item_cost = cass.Item(id=(int(ni["main_img"]) if "main_img" in
+                                                             ni else int(ni["id"])),
+                           region="KR").gold.base
+                current_gold -= cass_item_cost
+                if current_gold < -50:
+                    return self.return_result(next_predicted_items, result)
+                else:
+                    result.append(ni)
 
-            current_gold -= recipe_cost
+
+
             items[role] = updated_items
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in items[role]]
             if delta_items:
@@ -311,6 +336,7 @@ class Main(FileSystemEventHandler):
                 if next_item["name"] != "Empty":
                     return [next_item]
         return result
+
 
 
     def recipe_cost(self, next_items):
@@ -548,7 +574,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen358.png")
+m.process_image("Screen291.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()

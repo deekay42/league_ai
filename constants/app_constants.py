@@ -61,6 +61,9 @@ train_paths["accountids"] = train_paths["next_items"] + "summoner_account_ids"
 train_paths["sorted_matches_path"] = train_paths["next_items"] + "matches_sorted.json"
 train_paths["presorted_matches_path"] = train_paths["next_items"] + "matches_presorted.json"
 
+train_paths["champ_vs_roles"] = train_paths["next_items"] + "champ_vs_roles.json"
+
+
 jq_base_path = "jq_scripts" + os.sep
 jq_script_names = ["itemUndos_robust", "sortEqualTimestamps.jq", "buildAbsoluteItemTimeline.jq",
                    "extractNextItemsForWinningTeam.jq"]

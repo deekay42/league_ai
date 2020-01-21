@@ -17,6 +17,7 @@ from utils.artifact_manager import *
 import arrow
 from utils import utils
 from train_model.model import NextItemModel
+from train_model.train import NextItemsTrainer
 
 
 class DuplicateTimestampException(Exception):
@@ -430,13 +431,42 @@ class ProcessNextItemsTrainingData:
             progress_counter += 1
 
 
+    def calc_champ_role_stats(self):
+        total_champ_distrib = dict()
+
+        total_champ_distrib = {champ_int: sum(self.champs_vs_roles[champ_int].values()) for champ_int in
+                               self.champs_vs_roles}
+        champs_vs_roles_names = {ChampManager().lookup_by("int", champ_int)["name"]: champ_dist for champ_int,
+                                                                                                    champ_dist in
+                                 self.champs_vs_roles.items()}
+        champs_vs_roles_rel = {int(champ_int): {
+            champ_role: champ_dist/total_champ_distrib[
+            champ_int] for champ_role, champ_dist in champ_roles.items()} for champ_int,champ_roles in
+                                 self.champs_vs_roles.items()}
+        total_champ_distrib = sorted(np.array(list(total_champ_distrib.items())), key=lambda a: int(a[1]))
+
+        total_role_distrib = {'top': Counter(), 'jg': Counter(), 'mid': Counter(), 'adc': Counter(), 'sup': Counter()}
+        for current_champ in champs_vs_roles_names:
+            for role in champs_vs_roles_names[current_champ]:
+                total_role_distrib[role] += Counter({current_champ: champs_vs_roles_names[current_champ][role]})
+        for role in total_role_distrib:
+            total_role_distrib[role] = sorted(np.array(list(total_role_distrib[role].items())), key=lambda a: int(a[1]))
+
+        return champs_vs_roles_rel, total_champ_distrib, total_role_distrib
+
+
     def update_roles(self):
         unsorted_positions_dl = data_loader.PositionsToBePredDataLoader()
         unsorted_positions = unsorted_positions_dl.read()
         gameId2roles = self.determine_roles(unsorted_positions)
+        self.champs_vs_roles = dict()
         print("Writing inf")
         self.update_roles_by_dataset(gameId2roles, "next_items_processed_unsorted_inf",
                                      "next_items_processed_sorted_inf")
+        champs_vs_roles_rel = self.calc_champ_role_stats()[0]
+
+        with open(app_constants.train_paths["champ_vs_roles"], "w") as f:
+            f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
         print("Writing uninf")
         self.update_roles_by_dataset(gameId2roles, "next_items_processed_unsorted_uninf",
                                      "next_items_processed_sorted_uninf")
@@ -541,6 +571,7 @@ class ProcessNextItemsTrainingData:
             try:
                 current_game = unsorted_processed[gameId]
                 gameIds = [[int(gameId)]] * current_game.shape[0]
+                #this will throw a keyerror if the game is already sorted
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
                 updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, pos_start:pos_end]]
@@ -563,9 +594,23 @@ class ProcessNextItemsTrainingData:
                                                                          champs_per_game * 3)),
                                                    current_game[:, current_gold_start:current_gold_end][:, permutation],
                                                    current_game[:, -1:]], axis=1)
+                sorted_champs = reordered_result[:, champs_start+1:champs_end+1][0]
+                self.stat_champs_vs_roles(sorted_champs)
                 yield reordered_result
             except KeyError as e:
+                sorted_champs = current_game[:, champs_start:champs_end][0]
+                self.stat_champs_vs_roles(sorted_champs)
                 yield np.concatenate([gameIds, current_game], axis=1)
+
+
+    def stat_champs_vs_roles(self, sorted_champs):
+        for team in range(2):
+            for position in range(5):
+                current_champ = sorted_champs[team * 5 + position]
+                if current_champ in self.champs_vs_roles:
+                    self.champs_vs_roles[current_champ] += Counter({game_constants.ROLE_ORDER[position]:1})
+                else:
+                    self.champs_vs_roles[current_champ] = Counter({game_constants.ROLE_ORDER[position]: 1})
 
 
     def post_process(self, matches):
@@ -806,8 +851,11 @@ if __name__ == "__main__":
 
     # games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
     #                             300, 250, 200, 150, 100, 50]
-    games_by_top_leagues = [4000, 3000,300,300,300,300,300, 300, 300, 300, 300, 300, 200, 200, 200, 200, 200,
-                                200, 200, 200, 150, 100, 50]
+    # games_by_top_leagues = [4000, 3000,300,300,300,300,300, 300, 300, 300, 300, 300, 200, 200, 200, 200, 200,
+    #                             200, 200, 200, 150, 100, 50]
+    games_by_top_leagues = [4000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500,
+                            500, 500,
+                                                         500, 500, 500, 500, 500, 500]
 
     start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
@@ -815,3 +863,5 @@ if __name__ == "__main__":
     s = train.PositionsTrainer()
     s.train()
     l.update_roles()
+    t = NextItemsTrainer()
+    t.build_next_items_late_game_model()

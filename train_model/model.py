@@ -799,6 +799,7 @@ class NextItemModel(Model):
 
     def __init__(self, early_or_late):
         super().__init__()
+        self.early_or_late = early_or_late
         if early_or_late == "early":
             self.network = network.NextItemEarlyGameNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_early"]
@@ -849,7 +850,7 @@ class NextItemModel(Model):
         self.current_gold_end = self.current_gold_start + champs_per_game
 
 
-    def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold):
+    def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold, blackout_indices):
         x = np.zeros(shape=self.current_gold_end, dtype=np.int32)
         x[self.pos_start:self.pos_end] = [role]
         x[self.champs_start:self.champs_end] = champs_int
@@ -871,7 +872,7 @@ class NextItemModel(Model):
         lul = False
         if lul:
             self.output_logs(x)
-        return self.predict(x)
+        return self.predict(x, blackout_indices)
 
 
     def scale_inputs(self, X):
@@ -968,9 +969,9 @@ class NextItemModel(Model):
     def predict2int_blackouts(self, x, blackout_indices):
         with self.graph.as_default():
             y = self.model.predict(x)
-            y = np.array(list(zip(y, range(len(y)))))
+
             blackout_indices = list(blackout_indices)
-            y = np.delete(y, blackout_indices, axis=0)
+            y[:,blackout_indices] = 0
             logits = y[:, 0]
             old_indices = y[:, 1]
             y_int = np.argmax(logits, axis=0)
@@ -978,7 +979,7 @@ class NextItemModel(Model):
             return [int(y_int)]
 
 
-    def predict(self, x, blackout_indices):
+    def predict(self, x, blackout_indices=None):
         # with self.graph.as_default(), tf.Session() as sess:
         #     tflearn.is_training(False, session=sess)
         #     X = tf.placeholder("float", [None, 71])
@@ -991,13 +992,14 @@ class NextItemModel(Model):
         # x = [[3,1,73,142,38,130,110,6,123,139,127,42,0,0,0,0,0,15,41,0,0,0,0,42,0,0,0,0,0,37,23,12,2,0,0,151,0,0,0,0,
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
         # self.output_logs(x)
-        if blackout_indices:
-            item_ints = self.predict2int_blackouts(x, blackout_indices)
-        else:
-            with self.graph.as_default():
-                y = self.model.predict(x)
-                item_ints = np.argmax(y, axis=len(y.shape) - 1)
-            print(f"Confidence: {np.max(y, axis=1)}")
+
+
+        with self.graph.as_default():
+            y = self.model.predict(x)
+            if blackout_indices:
+                y[:, blackout_indices] = 0
+            item_ints = np.argmax(y, axis=len(y.shape) - 1)
+        print(f"Confidence: {np.max(y, axis=1)}")
         items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
         print([item["name"] for item in items])
         print("\n\n")

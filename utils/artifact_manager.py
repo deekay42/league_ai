@@ -79,15 +79,6 @@ class ArtifactManager(ABC):
         return self._by["int"]
 
 
-    def get_completes(self):
-        return {item_key: item for item_key, item in self._by["int"].items() if ("completion" in
-                                                                                                    item and (item["completion"] ==
-                                                                                             "semi"
-                                                                                         or
-                                                                                    item[
-            "completion"] == "complete"))}
-
-
 class ChampManager:
     instance = None
 
@@ -187,6 +178,24 @@ class ItemManager:
         def get_imgs(self):
             return {item["img_int"]: cv.imread(self.assets_path + item["id"] + ".png") for item in
                     self._by["img_int"].values()}
+
+
+        def get_completes(self, true_completes_only=False):
+            return {item_key: item for item_key, item in self._by["int"].items() if ("completion" in
+                                                                                     item and (item["completion"] ==
+                                                                                               "complete"
+                                                                                               or (
+                                                                                                   not
+                                                                                                   true_completes_only and
+                                                                                               item[
+                                                                                                   "completion"] ==
+                                                                                               "semi")))}
+        def extract_completes(self, summ_items_counter, true_completes_only=False):
+            completes = self.get_completes(true_completes_only)
+            for item in summ_items_counter:
+                if item in completes:
+                    yield item
+
 
 
 
