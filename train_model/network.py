@@ -786,6 +786,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
+        pos_dim = 2
 
         pos_start = 0
         pos_end = pos_start + 1
@@ -894,10 +895,17 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
-        pos = tf.one_hot(pos, depth=champs_per_team)
+        # pos = tf.one_hot(pos, depth=champs_per_team)
+
+        pos = tf.expand_dims(pos, -1)
+        pos_embedded = embedding(pos, input_dim=5, output_dim=pos_dim,
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="pos_scope")
+        pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
+
         final_input_layer1 = merge(
             [
-                pos,
+                pos_embedded,
                 target_summ_champ_emb,
                 target_summ_items,
                 target_summ_current_gold
