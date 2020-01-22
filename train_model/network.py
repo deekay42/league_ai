@@ -934,8 +934,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 final_input_layer2
             ], mode='concat', axis=1)
 
-
-        net = merge([target_summ_current_gold, final_input_layer], mode='concat', axis=1)
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)
