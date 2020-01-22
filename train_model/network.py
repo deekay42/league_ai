@@ -926,7 +926,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 champs_with_items_emb,
                 # target_summ_champ,
             ], mode='concat', axis=1)
-        final_input_layer2 = dropout(final_input_layer2, 0.5)
+        final_input_layer2 = dropout(final_input_layer2, 0.8)
 
         final_input_layer = merge(
             [
