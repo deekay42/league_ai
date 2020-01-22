@@ -913,6 +913,15 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         final_input_layer2 = merge(
             [
+
+                opp_summ_champ_emb,
+                opp_summ_items,
+                opp_champs_k_hot
+            ], mode='concat', axis=1)
+        final_input_layer2 = dropout(final_input_layer2, 0.8)
+
+        final_input_layer3 = merge(
+            [
                 target_summ_cs,
                 target_summ_kda,
                 target_summ_lvl,
@@ -920,18 +929,16 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 kda,
                 total_cs,
                 # opp_summ_champ,
-                opp_summ_champ_emb,
-                opp_summ_items,
-                opp_champs_k_hot,
                 champs_with_items_emb,
                 # target_summ_champ,
             ], mode='concat', axis=1)
-        final_input_layer2 = dropout(final_input_layer2, 0.8)
+        final_input_layer3 = dropout(final_input_layer3, 0.5)
 
         final_input_layer = merge(
             [
                 final_input_layer1,
-                final_input_layer2
+                final_input_layer2,
+                final_input_layer3
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
