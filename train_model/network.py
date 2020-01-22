@@ -786,7 +786,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
-        pos_dim = 2
+        pos_dim = 1
 
         pos_start = 0
         pos_end = pos_start + 1
