@@ -574,7 +574,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen291.png")
+m.process_image("Screen432.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()

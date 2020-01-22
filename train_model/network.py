@@ -764,7 +764,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         self.network_config = \
             {
                 "learning_rate": 0.00025,
-                "champ_emb_dim": 2,
+                "champ_emb_dim": 3,
                 "all_items_emb_dim": 4,
                 "champ_all_items_emb_dim": 6,
                 "class_weights": [1]
@@ -786,7 +786,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         total_champ_dim = champs_per_game
         total_item_dim = champs_per_game * items_per_champ
-        pos_dim = 2
+        pos_dim = 1
 
         pos_start = 0
         pos_end = pos_start + 1
