@@ -842,6 +842,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                                                        reuse=tf.AUTO_REUSE,
                                                                scope="champ_scope")
+        champs_embedded_short = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-1,
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="champ_scope_short")
 
         champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim*champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
@@ -853,7 +856,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
 
         target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
-        opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
+        opp_summ_champ_emb = tf.gather_nd(champs_embedded_short, opp_index)
 
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
         items_by_champ_flat = tf.reshape(items_by_champ, [-1])
@@ -908,13 +911,14 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 pos_embedded,
                 target_summ_champ_emb,
                 target_summ_items,
-                target_summ_current_gold
+                target_summ_current_gold,
+                opp_summ_champ_emb
         ], mode='concat', axis=1)
 
         final_input_layer2 = merge(
             [
 
-                opp_summ_champ_emb,
+
                 opp_summ_items,
                 opp_champs_k_hot
             ], mode='concat', axis=1)
