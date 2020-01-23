@@ -765,7 +765,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
             {
                 "learning_rate": 0.00025,
                 "champ_emb_dim": 3,
-                "all_items_emb_dim": 5,
+                "all_items_emb_dim": 4,
                 "champ_all_items_emb_dim": 6,
                 "class_weights": [1]
             }
@@ -837,16 +837,20 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
         target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
         target_summ_kda = tf.gather_nd(tf.reshape(kda,(-1,champs_per_game, 3)), pos_index)
-        opp_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), opp_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
+        opp_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, opp_index), 1)
+        opp_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), opp_index)
+        opp_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, opp_index), 1)
 
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                     reuse=tf.AUTO_REUSE,
                                     scope="champ_scope")
-
-        champs_embedded_short = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-2,
+        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-1,
                                     reuse=tf.AUTO_REUSE,
-                                    scope="champ_scope_short")
+                                    scope="champs_embedded_short1")
+        champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-2,
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="champs_embedded_short2")
 
         champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim*champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
@@ -858,7 +862,11 @@ class NextItemLateGameNetwork(NextItemNetwork):
         opp_summ_champ = tf.gather_nd(champs_one_hot, opp_index)
 
         target_summ_champ_emb = tf.gather_nd(champs_embedded, pos_index)
-        opp_summ_champ_emb = tf.gather_nd(champs_embedded_short, opp_index)
+        opp_summ_champ_emb = tf.gather_nd(champs_embedded, opp_index)
+        target_summ_champ_emb_short1 = tf.gather_nd(champs_embedded_short1, pos_index)
+        opp_summ_champ_emb_short1 = tf.gather_nd(champs_embedded_short1, opp_index)
+        target_summ_champ_emb_short2 = tf.gather_nd(champs_embedded_short2, pos_index)
+        opp_summ_champ_emb_short2 = tf.gather_nd(champs_embedded_short2, opp_index)
 
         items_by_champ = tf.reshape(item_ints, [-1, champs_per_game, items_per_champ, 2])
         items_by_champ_flat = tf.reshape(items_by_champ, [-1])
@@ -908,35 +916,49 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                     scope="pos_scope")
         pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
 
-        final_input_layer1 = merge(
+
+        opp_strength_input = merge(
+            [
+                opp_summ_champ_emb,
+                opp_summ_champ_emb_short1
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb
+            ], mode='concat', axis=1)
+        opp_strength_output = fully_connected(opp_strength_input, 20, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="opp_strength_scope")
+
+
+        stats_input = merge(
+            [
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                opp_summ_cs,
+                opp_summ_kda,
+                opp_summ_lvl,
+                lvl,
+                kda,
+                total_cs,
+            ], mode='concat', axis=1)
+
+        stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="stats_scope")
+
+        final_input_layer = merge(
             [
                 pos_embedded,
                 target_summ_champ_emb,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2,
+                opp_summ_champ_emb_short2,
                 target_summ_items,
-                target_summ_current_gold,
-                opp_summ_champ_emb
-
+                opp_strength_output,
+                stats_output
         ], mode='concat', axis=1)
-        # final_input_layer1 = dropout(final_input_layer1, 0.8)
 
-        final_input_layer2 = merge(
-            [
-                opp_summ_items,
-                opp_champs_k_hot,
-                target_summ_kda,
-                opp_summ_kda,
-
-            ], mode='concat', axis=1)
-        # final_input_layer2 = dropout(final_input_layer2, 0.5)
-        final_input_layer = merge(
-            [
-                final_input_layer1,
-                final_input_layer2
-            ], mode='concat', axis=1)
-
-        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu',
-                                                regularizer="L2"))
-        # net = dropout(net, 0.8)
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
         net = merge([target_summ_current_gold, net], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
