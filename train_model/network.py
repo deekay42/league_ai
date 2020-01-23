@@ -764,7 +764,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         self.network_config = \
             {
                 "learning_rate": 0.00025,
-                "champ_emb_dim": 4,
+                "champ_emb_dim": 3,
                 "all_items_emb_dim": 5,
                 "champ_all_items_emb_dim": 6,
                 "class_weights": [1]
@@ -837,6 +837,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
         target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
         target_summ_kda = tf.gather_nd(tf.reshape(kda,(-1,champs_per_game, 3)), pos_index)
+        opp_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), opp_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
@@ -908,47 +909,28 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 pos_embedded,
                 target_summ_champ_emb,
                 target_summ_items,
-                target_summ_current_gold
+                target_summ_current_gold,
+                opp_summ_champ_emb
         ], mode='concat', axis=1)
+        final_input_layer1 = dropout(final_input_layer1, 0.9)
 
         final_input_layer2 = merge(
             [
-                opp_summ_champ_emb,
                 opp_summ_items,
-                opp_champs_k_hot
+                opp_champs_k_hot,
+                target_summ_kda,
+                opp_summ_kda
             ], mode='concat', axis=1)
         final_input_layer2 = dropout(final_input_layer2, 0.65)
-
-        final_input_layer3 = merge(
-            [
-                target_summ_cs,
-                target_summ_kda,
-                target_summ_lvl,
-                lvl,
-                kda,
-                total_cs,
-                # opp_summ_champ,
-                champs_with_items_emb,
-                # target_summ_champ,
-            ], mode='concat', axis=1)
-        final_input_layer3 = dropout(final_input_layer3, 0.5)
-
         final_input_layer = merge(
             [
                 final_input_layer1,
-                final_input_layer2,
-                final_input_layer3
+                final_input_layer2
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
                                                 regularizer="L2"))
-        # net = dropout(net, 0.8)
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
-                                                  regularizer="L2"))
-        # net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
-                                                  regularizer="L2"))
-        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
+        net = dropout(net, 0.8)
         net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)
