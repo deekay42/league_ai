@@ -934,7 +934,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 final_input_layer2
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu',
                                                 regularizer="L2"))
         # net = dropout(net, 0.8)
         net = merge([target_summ_current_gold, net], mode='concat', axis=1)
