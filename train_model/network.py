@@ -920,7 +920,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         opp_strength_input = merge(
             [
                 opp_summ_champ_emb,
-                opp_summ_champ_emb_short1
+                opp_summ_champ_emb_short1,
                 opp_summ_items,
                 opp_champs_k_hot,
                 champs_with_items_emb
@@ -939,7 +939,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 opp_summ_lvl,
                 lvl,
                 kda,
-                total_cs,
+                total_cs
             ], mode='concat', axis=1)
 
         stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
