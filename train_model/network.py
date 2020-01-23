@@ -910,7 +910,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 target_summ_champ_emb,
                 target_summ_items,
                 target_summ_current_gold,
-                opp_summ_champ_emb
+
         ], mode='concat', axis=1)
         final_input_layer1 = dropout(final_input_layer1, 0.9)
 
@@ -919,7 +919,8 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 opp_summ_items,
                 opp_champs_k_hot,
                 target_summ_kda,
-                opp_summ_kda
+                opp_summ_kda,
+                opp_summ_champ_emb
             ], mode='concat', axis=1)
         final_input_layer2 = dropout(final_input_layer2, 0.65)
         final_input_layer = merge(
