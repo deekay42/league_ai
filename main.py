@@ -12,7 +12,8 @@ import pstats
 import copy
 import glob
 import json
- 
+
+from range_key_dict import RangeKeyDict
 import cassiopeia as cass
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
@@ -244,14 +245,25 @@ class Main(FileSystemEventHandler):
 
         result = []
 
+        thresholds = [0, 0.05, 0.1, 0.25, 1.0]
+        num_full_items = [0, 1, 2, 3]
+        commonality_to_items = dict()
+        for i in range(len(num_full_items)):
+            commonality_to_items[(thresholds[i], thresholds[i+1])] = num_full_items[i]
+        commonality_to_items = RangeKeyDict(commonality_to_items)
+
         while current_gold > 0:
 
-            summ_true_completes_owned = self.item_manager.extract_completes(items[role], True)
+            num_true_completes_owned = len(list(self.item_manager.extract_completes(items[role], True)))
             # start_buy = sum(items[role].values()) < 3 and self.recipe_cost([self.item_manager.lookup_by("int",
             #                                                                                       item_int) for
             #                                                item_int in items[role]]) < 500
-            if (len(list(summ_true_completes_owned)) < 4 and \
-                    self.champ_vs_roles[str(champs[role]["int"])].get(game_constants.ROLE_ORDER[role], 0) >= 0.01):
+            champ_vs_role_commonality = self.champ_vs_roles[str(champs[role]["int"])].get(game_constants.ROLE_ORDER[role], 0)
+            print(f"champ vs roles commonality: {champ_vs_role_commonality}")
+            allowed_items = commonality_to_items[champ_vs_role_commonality]
+
+
+            if num_true_completes_owned < allowed_items:
                 self.early_or_late = "early"
                 self.next_item_model = self.next_item_model_early
                 print("USING early GAME MODEL")
@@ -574,7 +586,7 @@ class Main(FileSystemEventHandler):
 
 m = Main()
 # m.run()
-m.process_image("Screen432.png")
+m.process_image("Screen468.png")
 # m.run_test_games()
 
 # pr = cProfile.Profile()
