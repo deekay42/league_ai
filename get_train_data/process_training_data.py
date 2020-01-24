@@ -439,10 +439,14 @@ class ProcessNextItemsTrainingData:
         champs_vs_roles_names = {ChampManager().lookup_by("int", champ_int)["name"]: champ_dist for champ_int,
                                                                                                     champ_dist in
                                  self.champs_vs_roles.items()}
+        total_champs_vs_roles = sum([sum(champ_roles.values()) for champ_roles in champs_vs_roles_names.values()])
         champs_vs_roles_rel = {int(champ_int): {
             champ_role: champ_dist/total_champ_distrib[
             champ_int] for champ_role, champ_dist in champ_roles.items()} for champ_int,champ_roles in
                                  self.champs_vs_roles.items()}
+        # champs_vs_roles_rel = {int(champ_int): {
+        #         champ_role: champ_dist/total_champs_vs_roles for champ_role, champ_dist in champ_roles.items()} for champ_int,champ_roles in
+        #                              self.champs_vs_roles.items()}
         total_champ_distrib = sorted(np.array(list(total_champ_distrib.items())), key=lambda a: int(a[1]))
 
         total_role_distrib = {'top': Counter(), 'jg': Counter(), 'mid': Counter(), 'adc': Counter(), 'sup': Counter()}
@@ -859,9 +863,9 @@ if __name__ == "__main__":
 
     start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
-    s = train.PositionsTrainer()
-    s.train()
+    # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
+    # s = train.PositionsTrainer()
+    # s.train()
     l.update_roles()
-    t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_late_game_model()
