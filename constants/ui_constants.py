@@ -160,7 +160,7 @@ class Res_8_5(ResolutionBase):
         self.coords["current_gold"]["min_y_height"] = 14
         self.coords["current_gold"]["max_y_height"] = 18
 
-        self.coords["kda"]["x_start"] = 430
+        self.coords["kda"]["x_start"] = 435
         self.coords["kda"]["y_start"] = 282
         self.coords["kda"]["y_height"] = 11
         self.coords["kda"]["x_width"] = 70
