@@ -3,19 +3,38 @@ import random
 from collections import Counter
 
 
-def get_item_score(comp, curr_used):
+# def get_item_score(comp, curr_used):
+#     total_discount = 0
+#     for i in curr_used:
+#         # curr_used_score += i.tier
+#         total_discount += i.gold.total
+#     if total_discount == comp.gold.total:
+#         return 0
+#     else:
+#         return comp.gold.total / (comp.gold.total - total_discount)
+
+
+def get_item_score(comp, curr_used, current_gold=None):
     total_discount = 0
     for i in curr_used:
         # curr_used_score += i.tier
         total_discount += i.gold.total
     if total_discount == comp.gold.total:
         return 0
+    elif current_gold:
+        leftover_gold = current_gold - (comp.gold.total - total_discount)
+        if leftover_gold > 0:
+            return 1/leftover_gold
+        elif leftover_gold == 0:
+            return 1
+        else:
+            return leftover_gold
     else:
         return comp.gold.total / (comp.gold.total - total_discount)
 
 
 # this method is not deterministic. there may be multiple paths to a given build
-def _build_path(prev_avail_items, next_i, abs_items):
+def _build_path(prev_avail_items, next_i, abs_items, current_gold=None):
     if next_i.id in prev_avail_items:
         return [], [next_i], [], prev_avail_items
 
@@ -36,11 +55,11 @@ def _build_path(prev_avail_items, next_i, abs_items):
 
         for comp in comps.elements():
             curr_seq, curr_used, curr_abs, prev_avail_items_result = _build_path(Counter(prev_avail_items), comp,
-                                                                                 abs_items)
+                                                                                 abs_items, current_gold)
 
             # is the current component closest to completion?
             comp_score = get_item_score(comp, curr_used)
-            if comp_score > max_comp_score or comp_score == max_comp_score and random.random() > 0.5:
+            if comp_score > max_comp_score or (comp_score == max_comp_score and random.random() > 0.5):
                 max_comp_score = comp_score
                 max_ex_i_used = curr_used
                 buy_seq = curr_seq
@@ -72,13 +91,13 @@ def _build_path(prev_avail_items, next_i, abs_items):
     return result_buy_seq, result_ex_i_used, result_abs, prev_avail_items
 
 
-def build_path(prev_avail_items, next_item):
+def build_path(prev_avail_items, next_item, current_gold=None):
     occ = prev_avail_items.count(next_item.id)
     prev_avail_items = Counter(prev_avail_items)
     if occ:
         del prev_avail_items[next_item.id]
     result_buy_seq, result_ex_i_used, result_abs, prev_avail_items = _build_path(prev_avail_items, next_item, [
-        Counter(prev_avail_items)])
+        Counter(prev_avail_items)], current_gold)
     prev_avail_items[next_item.id] += occ
     result_abs = [list(item_state.elements()) + [next_item.id] * occ for item_state in result_abs]
     return result_buy_seq, result_ex_i_used, result_abs, prev_avail_items

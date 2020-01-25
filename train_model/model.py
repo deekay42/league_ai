@@ -667,9 +667,9 @@ class KDAImgModel(ImgModel):
                     assists = int(kda_string[2])
                     yield [kills, deaths, assists]
                 except ValueError as e:
-                    yield [0,0,0]
+                    yield [-1,-1,-1]
             else:
-                yield [0,0,0]
+                yield [-1,-1,-1]
             index += number
 
 

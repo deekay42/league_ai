@@ -144,23 +144,23 @@ class Main(FileSystemEventHandler):
     def summoner_items_slice(self, role):
         return np.s_[role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
 
-    def all_items_counter2items_list(self, counter):
+    def all_items_counter2items_list(self, counter, lookup):
         items_id = [[], [], [], [], [], [], [], [], [], []]
         for i in range(10):
-            items_id[i] = self.items_counter2items_list(counter[i])
+            items_id[i] = self.items_counter2items_list(counter[i], lookup)
         return items_id
 
 
-    def items_counter2items_list(self, summ_items):
+    def items_counter2items_list(self, summ_items, lookup):
         result = []
         for item_key in summ_items:
-            id_item = self.item_manager.lookup_by("int", item_key)
+            id_item = self.item_manager.lookup_by(lookup, item_key)
             result.extend([id_item] * summ_items[item_key])
         return result
 
     def predict_next_item(self, role, champs, items, cs, lvl, kda, current_gold):
         champs_int = [int(champ["int"]) for champ in champs]
-        items_id = self.all_items_counter2items_list(items)
+        items_id = self.all_items_counter2items_list(items, "int")
         items_id = [[int(item["id"]) for item in summ_items] for summ_items in items_id]
         summ_owned_completes = None
         if self.early_or_late == "late":
@@ -169,12 +169,14 @@ class Main(FileSystemEventHandler):
                                                  summ_owned_completes)
 
 
-    def build_path(self, items, next_item):
-        items = self.items_counter2items_list(items)
+    def build_path(self, items, next_item, current_gold):
+        items = self.items_counter2items_list(items, "int")
         items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
         
         #TODO: this is bad. the item class should know when to return main_img or id
-        next_items, _, abs_items, _ = build_path(items_id, cass.Item(id=(int(next_item["main_img"]) if "main_img" in next_item else int(next_item["id"])), region="KR"))
+        next_items, _, abs_items, _ = build_path(items_id, cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+                                                                                                       next_item else
+                                                                         int(next_item["id"])), region="EUW"), current_gold)
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
         return next_items, abs_items
@@ -231,6 +233,8 @@ class Main(FileSystemEventHandler):
 
 
     def analyze_champ(self, role, champs, items, cs, lvl, kda, current_gold):
+        cg_max_wait_gold = 30
+        current_gold += cg_max_wait_gold
         assert (len(champs) == 10)
         print("\nRole: " + str(role))
 
@@ -293,7 +297,7 @@ class Main(FileSystemEventHandler):
 
                     if next_item["name"] == "Empty":
                         continue
-                    next_items, abs_items = self.build_path(copied_items[role], next_item)
+                    next_items, abs_items = self.build_path(copied_items[role], next_item, current_gold)
                     updated_items = Counter([item["int"]  for item in abs_items[-1]])
                     if NextItemModel.num_itemslots(updated_items) <= game_constants.MAX_ITEMS_PER_CHAMP:
                         break
@@ -310,7 +314,7 @@ class Main(FileSystemEventHandler):
                 if next_item["name"] == "Empty":
                     return self.return_result(next_predicted_items, result)
 
-                next_items, abs_items = self.build_path(items[role], next_item)
+                next_items, abs_items = self.build_path(items[role], next_item, current_gold)
                 updated_items = Counter([item["int"] for item in abs_items[-1]])
 
             if next_item["name"] == "Empty":
@@ -348,6 +352,17 @@ class Main(FileSystemEventHandler):
                 if next_item["name"] != "Empty":
                     return [next_item]
         return result
+
+
+    def deflate_items(self, items):
+        items_counter = Counter([item["id"] for item in items])
+        large_item_sub_comps = Counter()
+        for item in items:
+            item = cass.Item(id=(int(item["id"])), region="EUW")
+            comps = Counter([ str(item_comp.id) for item_comp in list(item.builds_from)])
+            if comps:
+                large_item_sub_comps += Counter(comps)
+        return self.items_counter2items_list(items_counter - large_item_sub_comps, "id")
 
 
 
@@ -408,14 +423,16 @@ class Main(FileSystemEventHandler):
         self.onTimeout = False
 
     def repair_failed_predictions(self, predictions, lower, upper):
-        none_predictions = predictions == None
-        too_high_predictions = predictions > upper
-        too_low_predictions = predictions < lower
-        failed_predictions = none_predictions | too_low_predictions | too_high_predictions
-        if np.any(failed_predictions):
-            print(f"FAILED PREDICTION!!: {predictions}")
-            avg = sum([l if l else 0 for l in predictions]) // (len(predictions) - sum(failed_predictions))
-            predictions[failed_predictions] = avg
+        assert(len(predictions) == 10)
+        for i in range(len(predictions)):
+            #this pred is wrong
+            if upper < predictions[i] or predictions[i] < lower:
+                opp_index = (i + 5) % 10
+                opp_pred_valid = predictions[opp_index] > lower and predictions[opp_index] < upper
+                if opp_pred_valid:
+                    predictions[i] = predictions[opp_index]
+                else:
+                    predictions[i] = sum(predictions)/10
         return predictions
 
     def process_image(self, img_path):
@@ -480,26 +497,47 @@ class Main(FileSystemEventHandler):
             self_index = self.self_img_model.predict(screenshot)
             print(self_index)
 
+            def prev_champs2champs(prev_champs):
+                repaired_champs_int = [max(pos_counter, key=lambda k: pos_counter[k]) for pos_counter in
+                                       prev_champs]
+                return [ChampManager().lookup_by("int", champ_int) for champ_int in repaired_champs_int]
+
+
+            champs_int = [champ["int"] for champ in champs]
+
             #sometimes we get incorrect champ img predictions. we need to detect this and correct for it by taking
             # the previous prediction
-            if self.previous_champs:
-                champ_overlap = np.sum(np.equal(champs, self.previous_champs))
-                k_increase = np.all(np.greater_equal(kda[:,0], self.previous_kda[:,0]))
-                d_increase = np.all(np.greater_equal(kda[:, 1], self.previous_kda[:, 1]))
-                a_increase = np.all(np.greater_equal(kda[:, 2], self.previous_kda[:, 2]))
+            if not self.previous_champs:
+                self.previous_champs = [Counter({champ_int: 1}) for champ_int in champs_int]
+                self.previous_kda = kda
+                self.previous_cs = cs
+                self.previous_lvl = lvl
+                self.previous_self_index = self_index
+
+            else:
+                champ_overlap = np.sum(np.equal(champs, prev_champs2champs(self.previous_champs)))
+                #only look at top 3 kdas since the lower ones often are overlapped
+                k_increase = np.all(np.greater_equal(kda[:3,0], self.previous_kda[:3,0]))
+                d_increase = np.all(np.greater_equal(kda[:3, 1], self.previous_kda[:3, 1]))
+                a_increase = np.all(np.greater_equal(kda[:3, 2], self.previous_kda[:3, 2]))
                 # cs_increase = np.all(np.greater_equal(cs, self.previous_cs))
                 # lvl_increase = np.all(np.greater_equal(cs, self.previous_cs))
                 # all_increased = k_increase and d_increase and a_increase and cs_increase and lvl_increase
-                if champ_overlap > 0.7 and k_increase and d_increase and a_increase:
-                    champs = self.previous_champs
 
-
-
-            self.previous_champs = champs
-            self.previous_kda = kda
-            self.previous_cs = cs
-            self.previous_lvl = lvl
-            self.previous_self_index = self_index
+                #this is still the same game
+                if champ_overlap > 7 and k_increase and d_increase and a_increase:
+                    print("SAME GAME. taking previous champs")
+                    champs = prev_champs2champs(self.previous_champs)
+                    self.previous_champs = [prev_champs_counter + Counter({champ_int: 1}) for
+                                            champ_int, prev_champs_counter
+                                            in zip(champs_int, self.previous_champs)]
+                #this is a new game
+                else:
+                    self.previous_champs = [Counter({champ_int: 1}) for champ_int in champs_int]
+                self.previous_kda = kda
+                self.previous_cs = cs
+                self.previous_lvl = lvl
+                self.previous_self_index = self_index
 
 
         except FileNotFoundError as e:
@@ -552,6 +590,7 @@ class Main(FileSystemEventHandler):
 
 
         items_to_buy = self.analyze_champ(self_index, champs, items, cs, lvl, kda, current_gold)
+        items_to_buy = self.deflate_items(items_to_buy)
         print(f"This is the result for summ_index {self_index}: ")
         print(items_to_buy)
         out_string = ""
@@ -585,8 +624,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 m = Main()
-# m.run()
-m.process_image("Screen468.png")
+#m.run()
+
+# m.process_image(f"Screen516.png")
+for i in range(13,40):
+    m.process_image(f"Screen5{i}.png")
+
 # m.run_test_games()
 
 # pr = cProfile.Profile()
