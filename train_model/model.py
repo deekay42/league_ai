@@ -966,19 +966,6 @@ class NextItemModel(Model):
         return np.array(items_at_time_x)
 
 
-    def predict2int_blackouts(self, x, blackout_indices):
-        with self.graph.as_default():
-            y = self.model.predict(x)
-
-            blackout_indices = list(blackout_indices)
-            y[:,blackout_indices] = 0
-            logits = y[:, 0]
-            old_indices = y[:, 1]
-            y_int = np.argmax(logits, axis=0)
-            y_int = old_indices[y_int]
-            return [int(y_int)]
-
-
     def predict(self, x, blackout_indices=None):
         # with self.graph.as_default(), tf.Session() as sess:
         #     tflearn.is_training(False, session=sess)

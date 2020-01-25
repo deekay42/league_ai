@@ -925,8 +925,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 opp_champs_k_hot,
                 champs_with_items_emb
             ], mode='concat', axis=1)
-        opp_strength_output = batch_normalization(fully_connected(opp_strength_input, 20, bias=False,
-                                                                 activation='relu', regularizer="L2"))
+        opp_strength_output = fully_connected(opp_strength_input, 20, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="opp_strength_scope")
+
 
         stats_input = merge(
             [
@@ -940,33 +941,26 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 kda,
                 total_cs
             ], mode='concat', axis=1)
-        stats_output = batch_normalization(fully_connected(stats_input, 10, bias=False,
-                                                                 activation='relu', regularizer="L2"))
 
-        champ_context_input = merge(
-            [
-                opp_strength_output,
-                stats_output,
-                opp_summ_champ_emb_short2,
-                target_summ_champ_emb,
-                pos_embedded
-            ], mode='concat', axis=1)
-        champ_context_output = batch_normalization(fully_connected(champ_context_input, 32, bias=False,
-                                                                 activation='relu', regularizer="L2"))
+        stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="stats_scope")
 
         final_input_layer = merge(
             [
-                champ_context_output,
+                pos_embedded,
+                target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2,
-                target_summ_items
+                opp_summ_champ_emb_short2,
+                target_summ_items,
+                opp_strength_output,
+                stats_output
         ], mode='concat', axis=1)
+
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-
         net = merge([target_summ_current_gold, net], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
-
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(net)
 

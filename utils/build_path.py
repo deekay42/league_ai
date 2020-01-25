@@ -58,7 +58,7 @@ def _build_path(prev_avail_items, next_i, abs_items, current_gold=None):
                                                                                  abs_items, current_gold)
 
             # is the current component closest to completion?
-            comp_score = get_item_score(comp, curr_used)
+            comp_score = get_item_score(comp, curr_used, current_gold)
             if comp_score > max_comp_score or (comp_score == max_comp_score and random.random() > 0.5):
                 max_comp_score = comp_score
                 max_ex_i_used = curr_used
