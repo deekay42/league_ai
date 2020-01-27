@@ -287,7 +287,7 @@ class PositionsNetwork(Network):
 
         champ_ints = in_vec[:, ::total_sum_dim]
         champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
-                           scope="champ_scope")
+                           scope="champ_scope_emb")
         champs = tf.reshape(champs, [-1, champs_per_team * champ_emb_dim])
 
         spell_ints = [in_vec[:,i*total_sum_dim+1:i*total_sum_dim+1+spells_per_summ] for i in range(champs_per_team)]
@@ -644,19 +644,19 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                  scope="pos_scope")
         pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
 
-        opp_strength_input = merge(
+        final_input_layer = merge(
             [
+                pos_embedded,
+                target_summ_champ_emb,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2,
+                opp_summ_champ_emb_short2,
+                target_summ_items,
                 opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
                 opp_summ_items,
                 opp_champs_k_hot,
-                champs_with_items_emb
-            ], mode='concat', axis=1)
-        opp_strength_output = fully_connected(opp_strength_input, 20, bias=False, activation=None,
-                                              reuse=tf.AUTO_REUSE, scope="opp_strength_scope")
-
-        stats_input = merge(
-            [
+                champs_with_items_emb,
                 target_summ_cs,
                 target_summ_kda,
                 target_summ_lvl,
@@ -668,22 +668,11 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 total_cs
             ], mode='concat', axis=1)
 
-        stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
-                                       reuse=tf.AUTO_REUSE, scope="stats_scope")
-
-        final_input_layer = merge(
-            [
-                pos_embedded,
-                target_summ_champ_emb,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2,
-                opp_summ_champ_emb_short2,
-                target_summ_items,
-                opp_strength_output,
-                stats_output
-            ], mode='concat', axis=1)
-
-        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         net = merge([target_summ_current_gold, net], mode='concat', axis=1)
         net = fully_connected(net, total_num_items, activation='linear')
