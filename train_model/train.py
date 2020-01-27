@@ -94,26 +94,26 @@ class Trainer(ABC):
                     model.save(self.train_path + self.model_name + str(epoch + 1))
 
 
-                    # for i, img in enumerate(self.X_test):
-                    #     cv.imshow(str(i), img)
-                    # cv.waitKey(0)
-                    y = model.predict(self.X_test)
-                    y = [np.argmax(y_) for y_ in y]
-                    # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
-                    # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
-                    y_actual = self.Y_test
-                    # print("Pred Actual")
-                    for i in range(len(y_actual)):
-                        a_text = self.manager.lookup_by('img_int', y[i])['name']
-                        b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-                        a = y[i]
-                        b = y_actual[i]
-                        if not np.all(np.equal(a,b)):
-                            print(f"----->{i}: {a_text} {b_text}")
-                        else:
-                            print(f"{i}: {a_text} {b_text}")
-                    print("Raw test data predictions: {0}".format(y))
-                    print("Actual test data  values : {0}".format(y_actual))
+                    # # for i, img in enumerate(self.X_test):
+                    # #     cv.imshow(str(i), img)
+                    # # cv.waitKey(0)
+                    # y = model.predict(self.X_test)
+                    # y = [np.argmax(y_) for y_ in y]
+                    # # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+                    # # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+                    # y_actual = self.Y_test
+                    # # print("Pred Actual")
+                    # for i in range(len(y_actual)):
+                    #     a_text = self.manager.lookup_by('img_int', y[i])['name']
+                    #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+                    #     a = y[i]
+                    #     b = y_actual[i]
+                    #     if not np.all(np.equal(a,b)):
+                    #         print(f"----->{i}: {a_text} {b_text}")
+                    #     else:
+                    #         print(f"{i}: {a_text} {b_text}")
+                    # print("Raw test data predictions: {0}".format(y))
+                    # print("Actual test data  values : {0}".format(y_actual))
 
                     # y = model.predict(self.X_test)
                     # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
