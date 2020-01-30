@@ -677,14 +677,14 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         enemy_team_dim = 5
         enemy_team_strength_input = tf.reshape(enemy_team_strength_input, (-1, enemy_team_strength_input.shape[-1]))
         enemy_team_strength_output = batch_normalization(
-            fully_connected(enemy_team_strength_input, enemy_team_dim, bias=False, activation='relu',
-                            regularizer="L2"))
-        enemy_team_strength_output_short = batch_normalization(
             fully_connected(enemy_team_strength_input, champ_emb_dim, bias=False, activation='relu',
                             regularizer="L2"))
-        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim))
-        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, enemy_team_dim))
-        enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
+        enemy_team_strength_output_short = batch_normalization(
+            fully_connected(enemy_team_strength_input, champ_emb_dim-1, bias=False, activation='relu',
+                            regularizer="L2"))
+        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim-1))
+        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, champ_emb_dim))
+        # enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
 
         # opp_index doesnt work here since it's +5 offset
         lane_opp_strength = tf.gather_nd(enemy_team_strength_output_short, pos_index)
@@ -718,8 +718,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         final_input_layer = merge(
             [
-                laning_phase_opp_strength_output,
                 enemy_team_strength_output,
+                enemy_team_strength_output_short,
                 target_summ_strength_output,
                 pos_embedded,
                 target_summ_champ_emb,
