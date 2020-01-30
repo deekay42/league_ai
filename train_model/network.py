@@ -691,7 +691,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             fully_connected(enemy_team_strength_input, champ_emb_dim, bias=False, activation='relu',
                             regularizer="L2"))
         enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim))
-        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, total_num_items))
+        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, 10))
         enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
 
         # opp_index doesnt work here since it's +5 offset
