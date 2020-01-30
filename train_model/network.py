@@ -685,7 +685,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             ], mode='concat', axis=2)
         enemy_team_strength_input = tf.reshape(enemy_team_strength_input, (-1, enemy_team_strength_input.shape[-1]))
         enemy_team_strength_output = batch_normalization(
-            fully_connected(enemy_team_strength_input, total_num_items, bias=False, activation='relu',
+            fully_connected(enemy_team_strength_input, 10, bias=False, activation='relu',
                             regularizer="L2"))
         enemy_team_strength_output_short = batch_normalization(
             fully_connected(enemy_team_strength_input, champ_emb_dim, bias=False, activation='relu',
@@ -710,7 +710,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 target_summ_lvl
             ], mode='concat', axis=1)
         laning_phase_opp_strength_output = batch_normalization(fully_connected(laning_phase_opp_strength,
-                                                                               total_num_items, bias=False,
+                                                                               10, bias=False,
                                                                                activation='relu',
                                                                                regularizer="L2"))
 
