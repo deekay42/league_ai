@@ -197,6 +197,14 @@ class ItemManager:
                     yield item
 
 
+        def get_blackout_items(self, summ_items_counter):
+            completes = self.get_completes()
+            for item in summ_items_counter:
+                item_full = self.lookup_by("int", item)
+                if item in completes and not ("multiples_allowed" in item_full and item_full["multiples_allowed"]):
+                    yield item
+
+
 
 
 

@@ -18,6 +18,7 @@ import arrow
 from utils import utils
 from train_model.model import NextItemModel
 from train_model.train import NextItemsTrainer
+import uuid
 
 
 class DuplicateTimestampException(Exception):
@@ -37,6 +38,7 @@ class ProcessTrainingDataWorker(Process):
         self.out_queues = out_queues
         self.transformations = transformations
         self.thread_index = thread_index
+
 
 
     def run(self):
@@ -96,7 +98,7 @@ class WriteResultWorker(Process):
 
 
     def write_chunk(self, data, chunk_counter, out_dir):
-        filename = out_dir + f"train_{chunk_counter}.npz"
+        filename = out_dir + f"train_{uuid.uuid4()}.npz"
         with open(filename, "wb") as writer:
             np.savez_compressed(writer, **data)
 
@@ -160,7 +162,7 @@ class ProcessNextItemsTrainingData:
         self.item_manager = ItemManager()
         self.spell_manager = SimpleManager("spells")
         self.role_predictor = None
-
+        self.scraper = scrape_data.Scraper()
         self.data_x = None
         self.jq_scripts = {}
         for name in app_constants.jq_script_names:
@@ -464,19 +466,29 @@ class ProcessNextItemsTrainingData:
         unsorted_positions = unsorted_positions_dl.read()
         gameId2roles = self.determine_roles(unsorted_positions)
         self.champs_vs_roles = dict()
-        print("Writing inf")
-        self.update_roles_by_dataset(gameId2roles, "next_items_processed_unsorted_inf",
-                                     "next_items_processed_sorted_inf")
-        champs_vs_roles_rel = self.calc_champ_role_stats()[0]
 
-        with open(app_constants.train_paths["champ_vs_roles"], "w") as f:
-            f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
-        print("Writing uninf")
-        self.update_roles_by_dataset(gameId2roles, "next_items_processed_unsorted_uninf",
-                                     "next_items_processed_sorted_uninf")
-        print("Writing comp")
-        self.update_roles_by_dataset(gameId2roles, "next_items_processed_unsorted_complete",
-                                     "next_items_processed_sorted_complete")
+        unsorted_dataset_paths = ["next_items_processed_elite_unsorted_inf",
+                                  "next_items_processed_elite_unsorted_uninf",
+                                  "next_items_processed_elite_unsorted_complete",
+                                  "next_items_processed_lower_unsorted_inf",
+                                  "next_items_processed_lower_unsorted_uninf",
+                                  "next_items_processed_lower_unsorted_complete"
+                                  ]
+        sorted_dataset_paths = ["next_items_processed_elite_sorted_inf",
+                                  "next_items_processed_elite_sorted_uninf",
+                                  "next_items_processed_elite_sorted_complete",
+                                  "next_items_processed_lower_sorted_inf",
+                                  "next_items_processed_lower_sorted_uninf",
+                                  "next_items_processed_lower_sorted_complete"
+                                  ]
+
+        for i, (unsorted_data, sorted_data) in enumerate(zip(unsorted_dataset_paths, sorted_dataset_paths)):
+            print(f"Writing dataset: {i}")
+            self.update_roles_by_dataset(gameId2roles, unsorted_data,sorted_data)
+            if i == 0:
+                champs_vs_roles_rel = self.calc_champ_role_stats()[0]
+                with open(app_constants.train_paths["champ_vs_roles"], "w") as f:
+                    f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
 
 
     def update_roles_by_dataset(self, gameId2roles, unsorted_path, sorted_path):
@@ -790,15 +802,52 @@ class ProcessNextItemsTrainingData:
             yield {"gameId": inf_game['gameId'], "participants": inf_game['participants'], "itemsTimeline": result}
 
 
-    # chunklen is the total number of games the thread pool(typically 4) are processing together, so chunklen/4 per
-    # thread
-    def start(self, games_by_top_leagues, region, start_date, num_threads=os.cpu_count(), chunklen=400):
+    def start(self, number_of_top_games, number_of_lower_games, region, start_date):
+
         utils.remove_old_files(app_constants.train_paths["positions_processed"])
         utils.remove_old_files(app_constants.train_paths["positions_to_be_pred"])
-        utils.remove_old_files(app_constants.train_paths["next_items_processed_unsorted_inf"])
-        utils.remove_old_files(app_constants.train_paths["next_items_processed_unsorted_uninf"])
-        utils.remove_old_files(app_constants.train_paths["next_items_processed_unsorted_complete"])
 
+        elite_league_cutoff = 4
+        number_of_top_games = [number_of_top_games//elite_league_cutoff]*elite_league_cutoff
+        # 19+4 is the number of leagues in total
+        number_of_lower_games = [number_of_lower_games//(23-elite_league_cutoff)]*(23-elite_league_cutoff)
+
+        elite_match_ids, lower_match_ids = self.scraper.get_match_ids(number_of_top_games + number_of_lower_games,
+                                                                      region, start_date, elite_league_cutoff)
+        with open(app_constants.train_paths["elite_matchids"], "w") as f:
+            f.write(json.dumps(list(elite_match_ids)))
+        with open(app_constants.train_paths["lower_matchids"], "w") as f:
+            f.write(json.dumps(list(lower_match_ids)))
+        # with open(app_constants.train_paths["elite_matchids"], "r") as f:
+        #     elite_match_ids = json.load(f)
+        # with open(app_constants.train_paths["lower_matchids"], "r") as f:
+        #     lower_match_ids = json.load(f)
+        # return , get_matches(lower_match_ids, region)
+
+        # return get_matches([4359085131], region)
+
+
+        self.start_processing(elite_match_ids, region, app_constants.train_paths[
+            "next_items_processed_elite_unsorted_inf"], app_constants.train_paths[
+            "next_items_processed_elite_unsorted_uninf"], app_constants.train_paths[
+            "next_items_processed_elite_unsorted_complete"])
+
+        self.start_processing(lower_match_ids, region, app_constants.train_paths[
+            "next_items_processed_lower_unsorted_inf"], app_constants.train_paths[
+                                  "next_items_processed_lower_unsorted_uninf"], app_constants.train_paths[
+                                  "next_items_processed_lower_unsorted_complete"])
+
+    # chunklen is the total number of games the thread pool(typically 4) are processing together, so chunklen/4 per
+    # thread
+    def start_processing(self, match_ids, region, inf_path, uninf_path, complete_path,
+                         num_threads=os.cpu_count(
+
+    ), \
+                                                                                           chunklen=400):
+
+        utils.remove_old_files(inf_path)
+        utils.remove_old_files(uninf_path)
+        utils.remove_old_files(complete_path)
         in_queue = Queue()
         out_queues = [Queue(), Queue(), Queue()]
         transformations = [self.run_next_item_transformations,
@@ -807,9 +856,8 @@ class ProcessNextItemsTrainingData:
         out_keys = ["positions_processed", "positions_to_be_pred"]
         workers = [ProcessTrainingDataWorker(in_queue, out_queues, transformations, i) for i in range(num_threads)]
 
-        writers = [NextItemsWriteResultWorker(out_queues[0], chunklen, app_constants.train_paths[
-            "next_items_processed_unsorted_inf"], app_constants.train_paths["next_items_processed_unsorted_uninf"],
-                   app_constants.train_paths["next_items_processed_unsorted_complete"])]
+        writers = [NextItemsWriteResultWorker(out_queues[0], chunklen, inf_path, uninf_path,
+                   complete_path)]
         writers.extend([WriteResultWorker(out_queue, chunklen, app_constants.train_paths[out_key]) for out_key,
                                                                                                        out_queue
                    in zip(out_keys, out_queues[1:])])
@@ -818,16 +866,10 @@ class ProcessNextItemsTrainingData:
         for process in workers + writers:
             process.start()
 
-        # with open(app_constants.train_paths["presorted_matches_path"], "w") as f:
-        #     f.write('[\n')
-        for i, match in enumerate(scrape_data.scrape_matches(games_by_top_leagues, region, start_date)):
-            # if i > 0:
-            #     f.write(',')
-            # f.write(json.dumps(match, separators=(',', ':')))
-            # f.flush()
+        for i, match in enumerate(self.scraper.get_matches(match_ids, region)):
             in_queue.put([match])
             print(f"Match {i}")
-        # f.write('\n]')
+
 
         print("Trying to stop workers.")
         for worker in workers:
@@ -857,15 +899,26 @@ if __name__ == "__main__":
     #                             300, 250, 200, 150, 100, 50]
     # games_by_top_leagues = [4000, 3000,300,300,300,300,300, 300, 300, 300, 300, 300, 200, 200, 200, 200, 200,
     #                             200, 200, 200, 150, 100, 50]
-    games_by_top_leagues = [4000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 1000, 500, 500, 500, 500,
-                            500, 500,
-                                                         500, 500, 500, 500, 500, 500]
+
+
+    #takes roughly 1 hour to download 1000 games
+    number_of_top_games = 8000
+    number_of_lower_games = 8000
 
     start_date = cass.Patch.latest(region="EUW").start
     # start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    # l.start(games_by_top_leagues=games_by_top_leagues,region=region, start_date=start_date)
-    # s = train.PositionsTrainer()
-    # s.train()
+    l.start(number_of_top_games, number_of_lower_games,region=region, start_date=start_date)
+    s = train.PositionsTrainer()
+    s.train()
     l.update_roles()
-    # t = NextItemsTrainer()
-    # t.build_next_items_late_game_model()
+    t = NextItemsTrainer()
+    print("NOW TRAINING EARLY GAME")
+    try:
+        t.build_next_items_early_game_model()
+    except Exception as e:
+        print(e)
+    print("NOW TRAINING LATE GAME")
+    try:
+        t.build_next_items_late_game_model()
+    except Exception as e:
+        print(e)

@@ -166,9 +166,7 @@ class Main(FileSystemEventHandler):
         if self.early_or_late == "late":
             #at beginning of game dont buy potion first item. buy starter item first
             if items[role]:
-                summ_owned_completes = list(self.item_manager.extract_completes(items[role], true_completes_only=True))
-            else:
-                summ_owned_completes = [ItemManager().lookup_by("name", "Health Potion")["int"]]
+                summ_owned_completes = list(self.item_manager.get_blackout_items(items[role]))
 
         return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold,
                                                  summ_owned_completes)
@@ -257,14 +255,14 @@ class Main(FileSystemEventHandler):
 
         result = []
 
-        thresholds = [0, 0.05, 0.1, 0.25, 1.0]
+        thresholds = [0, 0.05, 0.1, 0.25, 1.1]
         num_full_items = [0, 1, 2, 3]
         commonality_to_items = dict()
         for i in range(len(num_full_items)):
             commonality_to_items[(thresholds[i], thresholds[i+1])] = num_full_items[i]
         commonality_to_items = RangeKeyDict(commonality_to_items)
 
-        late_network_used = False
+        force_early_after_late = False
 
         while current_gold > 0:
 
@@ -277,7 +275,7 @@ class Main(FileSystemEventHandler):
             allowed_items = commonality_to_items[champ_vs_role_commonality]
 
 
-            if num_true_completes_owned < allowed_items or current_gold <= 100:
+            if num_true_completes_owned < allowed_items or current_gold <= 100 or force_early_after_late:
                 self.early_or_late = "early"
                 self.next_item_model = self.next_item_model_early
                 print("USING early GAME MODEL")
@@ -285,7 +283,7 @@ class Main(FileSystemEventHandler):
                 self.early_or_late = "late"
                 self.next_item_model = self.next_item_model_late
                 print("USING late GAME MODEL")
-                late_network_used = True
+
 
             if NextItemModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
 
@@ -309,7 +307,7 @@ class Main(FileSystemEventHandler):
                     if next_item["name"] == "Empty":
                         continue
                     next_items, abs_items = self.build_path(copied_items[role], next_item, current_gold)
-                    if NextItemModel.num_itemslots(abs_items[-1]) <= game_constants.MAX_ITEMS_PER_CHAMP:
+                    if NextItemModel.num_itemslots(Counter([item["int"] for item in abs_items[-1]])) <= game_constants.MAX_ITEMS_PER_CHAMP:
                         break
             else:
                 delta_items = None
@@ -326,6 +324,7 @@ class Main(FileSystemEventHandler):
                     # regardless of gold
                     if not result:
                         self.next_item_model = self.next_item_model_late
+                        self.early_or_late = "late"
                         return [self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)[0]]
                     else:
                         return result
@@ -341,7 +340,7 @@ class Main(FileSystemEventHandler):
                 else:
                     return result
 
-            if late_network_used and self.early_or_late == "early" and not (next_item["name"] == "Control Ward" or
+            if force_early_after_late and not (next_item["name"] == "Control Ward" or
                                                                         next_item["name"] ==
                                                     "Health Potion"):
                 return result
@@ -352,9 +351,12 @@ class Main(FileSystemEventHandler):
                            region="KR").gold.base
 
                 if current_gold - cass_item_cost < -50:
-                    # return self.return_result(next_predicted_items, result)
-                    if i>0:
-                        items[role] = Counter([item["int"] for item in abs_items[i-1]])
+                    if self.early_or_late == "late":
+                        force_early_after_late = True
+                        if i>0:
+                            items[role] = Counter([item["int"] for item in abs_items[i-1]])
+                    else:
+                        return result
                     break
                 else:
                     current_gold -= cass_item_cost
@@ -648,9 +650,9 @@ class Main(FileSystemEventHandler):
 m = Main()
 #m.run()
 
-m.process_image(f"Screen236.png")
-# for i in range(13,40):
-#     m.process_image(f"Screen5{i}.png")
+# m.process_image(f"Screen531.png")
+for i in range(41,82):
+    m.process_image(f"Screen5{i}.png")
 
 # m.run_test_games()
 

@@ -3,7 +3,7 @@ import random
 from collections import Counter
 
 
-# def get_item_score(comp, curr_used):
+# def get_item_score(comp, curr_used, current_gold=None):
 #     total_discount = 0
 #     for i in curr_used:
 #         # curr_used_score += i.tier
@@ -20,13 +20,11 @@ def get_item_score(comp, curr_used, current_gold=None):
         # curr_used_score += i.tier
         total_discount += i.gold.total
     if total_discount == comp.gold.total:
-        return 0
+        return -10000
     elif current_gold:
         leftover_gold = current_gold - (comp.gold.total - total_discount)
-        if leftover_gold > 0:
-            return 1/leftover_gold
-        elif leftover_gold == 0:
-            return 1
+        if leftover_gold >= 0:
+            return comp.gold.total - leftover_gold
         else:
             return leftover_gold
     else:
@@ -50,7 +48,7 @@ def _build_path(prev_avail_items, next_i, abs_items, current_gold=None):
 
     result_buy_seq, result_ex_i_used, to_remove, result_abs, best_prev_avail_items_result = [], [], [], [], []
     while comps:
-        max_comp_score = -1
+        max_comp_score = -999999999
         max_ex_i_used = buy_seq = best_next_cmp = best_abs = prev_avail_items_result = None
 
         for comp in comps.elements():
