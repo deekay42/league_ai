@@ -721,7 +721,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, total_num_items, bias=False,
+        net = batch_normalization(fully_connected(final_input_layer, 64, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
 
