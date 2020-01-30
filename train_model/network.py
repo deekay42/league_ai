@@ -720,7 +720,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             [
                 laning_phase_opp_strength_output,
                 enemy_team_strength_output,
-                target_summ_strength_output
+                target_summ_strength_output,
                 pos_embedded,
                 target_summ_champ_emb,
                 target_summ_champ_emb_short1,
