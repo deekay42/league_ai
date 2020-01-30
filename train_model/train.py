@@ -80,61 +80,62 @@ class Trainer(ABC):
 
     def train_neural_network(self):
         with tf.device("/gpu:0"):
-            with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
-                tflearn.is_training(True)
-                self.network = self.network.build()
-                model = tflearn.DNN(self.network, session=sess)
-                sess.run(tf.global_variables_initializer())
-                scores = []
-                for epoch in range(self.num_epochs):
-                    x, y = self.get_train_data()
-                    model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
-                              show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
-                              callbacks=self.monitor_callback)
-                    model.save(self.train_path + self.model_name + str(epoch + 1))
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(True)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data()
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
 
 
-                    # # for i, img in enumerate(self.X_test):
-                    # #     cv.imshow(str(i), img)
-                    # # cv.waitKey(0)
-                    # y = model.predict(self.X_test)
-                    # y = [np.argmax(y_) for y_ in y]
-                    # # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
-                    # # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
-                    # y_actual = self.Y_test
-                    # # print("Pred Actual")
-                    # for i in range(len(y_actual)):
-                    #     a_text = self.manager.lookup_by('img_int', y[i])['name']
-                    #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-                    #     a = y[i]
-                    #     b = y_actual[i]
-                    #     if not np.all(np.equal(a,b)):
-                    #         print(f"----->{i}: {a_text} {b_text}")
-                    #     else:
-                    #         print(f"{i}: {a_text} {b_text}")
-                    # print("Raw test data predictions: {0}".format(y))
-                    # print("Actual test data  values : {0}".format(y_actual))
+                        # # for i, img in enumerate(self.X_test):
+                        # #     cv.imshow(str(i), img)
+                        # # cv.waitKey(0)
+                        # y = model.predict(self.X_test)
+                        # y = [np.argmax(y_) for y_ in y]
+                        # # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+                        # # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+                        # y_actual = self.Y_test
+                        # # print("Pred Actual")
+                        # for i in range(len(y_actual)):
+                        #     a_text = self.manager.lookup_by('img_int', y[i])['name']
+                        #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+                        #     a = y[i]
+                        #     b = y_actual[i]
+                        #     if not np.all(np.equal(a,b)):
+                        #         print(f"----->{i}: {a_text} {b_text}")
+                        #     else:
+                        #         print(f"{i}: {a_text} {b_text}")
+                        # print("Raw test data predictions: {0}".format(y))
+                        # print("Actual test data  values : {0}".format(y_actual))
 
-                    # y = model.predict(self.X_test)
-                    # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
-                    # y = to_categorical(y, 10).flatten()
-                    # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
-                    # y_test = to_categorical(y_test, 10).flatten()
-                    # print("Pred Actual")
-                    # for i in range(len(y)):
-                    #     a = self.self_manager.lookup_by('img_int', y[i])['name']
-                    #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
-                    #     if a != b:
-                    #         print(f"----->{i}: {a} {b}")
-                    #     else:
-                    #         print(f"{i}: {a} {b}")
-                    # print("Raw test data predictions: {0}".format(y))
-                    # print("Actual test data  values : {0}".format(self.Y_test))
+                        # y = model.predict(self.X_test)
+                        # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+                        # y = to_categorical(y, 10).flatten()
+                        # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+                        # y_test = to_categorical(y_test, 10).flatten()
+                        # print("Pred Actual")
+                        # for i in range(len(y)):
+                        #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+                        #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+                        #     if a != b:
+                        #         print(f"----->{i}: {a} {b}")
+                        #     else:
+                        #         print(f"{i}: {a} {b}")
+                        # print("Raw test data predictions: {0}".format(y))
+                        # print("Actual test data  values : {0}".format(self.Y_test))
 
-                    score = self.eval_model(model, epoch)
+                        score = self.eval_model(model, epoch)
 
-                    # self.eval_model(model, epoch, prior=score[-1])
-                    scores.append(score)
+                        # self.eval_model(model, epoch, prior=score[-1])
+                        scores.append(score)
         return scores
 
 
@@ -612,10 +613,14 @@ class NextItemsTrainer(Trainer):
 
         print("Loading training data")
         dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                               "next_items_processed_sorted_inf"])
+                                                               "next_items_processed_elite_sorted_inf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_lower_sorted_inf"])
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
 
@@ -649,7 +654,12 @@ class NextItemsTrainer(Trainer):
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
+
+
         self.X = self.X.astype(np.float32)
+        self.X_test = np.concatenate([self.X_test, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([self.Y_test, Y_test_lower], axis=0)
+
         self.X_test = self.X_test.astype(np.float32)
 
         model = NextItemModel("early")
@@ -657,10 +667,6 @@ class NextItemsTrainer(Trainer):
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
 
         self.build_new_model()
-
-
-
-
 
 
     def fit_input(self, X, scaler_name):
@@ -672,18 +678,6 @@ class NextItemsTrainer(Trainer):
 
 
     def build_next_items_late_game_model(self):
-        # self.train_path = app_constants.model_paths["train"]["next_items_late"]
-        # self.best_path = app_constants.model_paths["best"]["next_items_late"]
-        self.network = NextItemLateGameNetwork()
-        print("Loading training data")
-        dataloader = data_loader.NextItemsDataLoader(app_constants.train_paths["next_items_late_processed"])
-        self.X, self.Y = dataloader.get_train_data()
-        print("Loading test data")
-        self.X_test, self.Y_test = dataloader.get_test_data()
-        self.build_new_model()
-
-
-    def build_next_items_late_game_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
         self.network = NextItemLateGameNetwork()
@@ -691,11 +685,22 @@ class NextItemsTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["next_items_late"]
 
         print("Loading training data")
-        dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                               "next_items_processed_sorted_complete"])
-        self.X, self.Y = dataloader.get_train_data()
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_elite_sorted_complete"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_complete"])
+        X_elite, Y_elite = dataloader_elite.get_train_data()
         print("Loading test data")
-        self.X_test, self.Y_test = dataloader.get_test_data()
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
+
+        X_lower, Y_lower = dataloader_lower.get_train_data()
+        print("Loading test data")
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
 
         # self.X = self.X[:1000]
         # self.Y = self.Y[:1000]
@@ -714,7 +719,6 @@ class NextItemsTrainer(Trainer):
                                                                                     missing_items).items()),
                                                                               key=lambda x: x[0]))[:, 1]])
         # self.class_weights = np.sqrt(total_y / total_y_distrib_sorted)
-
 
         effective_num =  1.0 - np.power(0.99, total_y_distrib_sorted)
         self.class_weights = (1.0 - 0.99) / np.array(effective_num)
@@ -737,7 +741,6 @@ class NextItemsTrainer(Trainer):
         self.class_weights[26] *= 1.5
 
 
-
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
         self.X = self.X.astype(np.float32)
@@ -750,7 +753,19 @@ class NextItemsTrainer(Trainer):
 
 if __name__ == "__main__":
     t = NextItemsTrainer()
-    t.build_next_items_early_game_model()
+
+    t.build_next_items_late_game_model()
+    # try:
+    #     t.build_next_items_early_game_model()
+    # except Exception as e:
+    #     print(e)
+    # print("NOW TRAINING LATE GAME")
+    # try:
+    #     t.build_next_items_late_game_model()
+    # except Exception as e:
+    #     print(e)
+
+
     # t.standalone_eval()
 
 

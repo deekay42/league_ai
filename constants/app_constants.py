@@ -38,23 +38,53 @@ base_train_path = "training_data" + os.sep
 train_paths = dict()
 train_paths["next_items"] = base_train_path + "next_items" + os.sep
 train_paths["positions"] = base_train_path + "positions" + os.sep
-train_paths["next_items_processed_unsorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+train_paths["next_items_processed_elite_unsorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "elite" + \
+                                                         os.sep + "unsorted" + \
                                                    os.sep + "inf" + os.sep
-train_paths["next_items_processed_unsorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+train_paths["next_items_processed_elite_unsorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "elite"\
+                                                           + os.sep + \
+                                                           "unsorted" + \
                                                    os.sep + "uninf" + os.sep
-train_paths["next_items_processed_unsorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "unsorted" + \
+train_paths["next_items_processed_elite_unsorted_complete"] = train_paths["next_items"] + "processed" + os.sep + \
+                                                              "elite" + os.sep + "unsorted" + \
+                                                   os.sep + "complete" + os.sep
+train_paths["next_items_processed_lower_unsorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "lower" + \
+                                                         os.sep + "unsorted"\
+                                                        + \
+                                                   os.sep + "inf" + os.sep
+train_paths["next_items_processed_lower_unsorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "lower"\
+                                                           + os.sep + "unsorted" + \
+                                                   os.sep + "uninf" + os.sep
+train_paths["next_items_processed_lower_unsorted_complete"] = train_paths["next_items"] + "processed" + os.sep + \
+                                                              "lower" + os.sep + "unsorted" + \
                                                    os.sep + "complete" + os.sep
 
-train_paths["next_items_processed_sorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + os.sep\
+train_paths["next_items_processed_elite_sorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "elite" + \
+                                                     os.sep + \
+                                                 "sorted" + os.sep\
                                                  + "inf" + os.sep
-train_paths["next_items_processed_sorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + \
+train_paths["next_items_processed_elite_sorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "elite" + os.sep\
+                                                   + "sorted" + \
                                                    os.sep + "uninf" + os.sep
-train_paths["next_items_processed_sorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "sorted" + \
+train_paths["next_items_processed_elite_sorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "elite" + \
+                                                      os.sep + "sorted" + \
                                                    os.sep + "complete" + os.sep
+train_paths["next_items_processed_lower_sorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "lower" + \
+                                                     os.sep + \
+                                                 "sorted" + os.sep\
+                                                 + "inf" + os.sep
+train_paths["next_items_processed_lower_sorted_uninf"] = train_paths["next_items"] + "processed" + os.sep + "lower" + os.sep\
+                                                   + "sorted" + \
+                                                   os.sep + "uninf" + os.sep
+train_paths["next_items_processed_lower_sorted_complete"] = train_paths["next_items"] + "processed" + os.sep + "lower" + \
+                                                      os.sep + "sorted" + \
+                                                   os.sep + "complete" + os.sep
+
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
 train_paths["positions_to_be_pred"] = train_paths["positions"] + "to_be_pred" + os.sep
 
-train_paths["matchids"] = train_paths["next_items"] + "matchids.json"
+train_paths["elite_matchids"] = train_paths["next_items"] + "elite_matchids.json"
+train_paths["lower_matchids"] = train_paths["next_items"] + "lower_matchids.json"
 
 train_paths["accountids"] = train_paths["next_items"] + "summoner_account_ids"
 
