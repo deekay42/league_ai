@@ -685,6 +685,10 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim-1))
         enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, champ_emb_dim))
         # enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
+        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5 * enemy_team_strength_output_short.shape[
+            -1]))
+        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5 * enemy_team_strength_output.shape[
+            -1]))
 
         # opp_index doesnt work here since it's +5 offset
         lane_opp_strength = tf.gather_nd(enemy_team_strength_output_short, pos_index)
