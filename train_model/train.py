@@ -639,18 +639,18 @@ class NextItemsTrainer(Trainer):
         self.class_weights = (1.0 - 0.99) / np.array(effective_num)
         self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        #executioners
-        self.class_weights[106] *= 3
-        #qss
-        self.class_weights[113] *= 2
-        #cull
-        self.class_weights[27] *= 2.5
-        #last whisper
-        self.class_weights[62] *= 3
-        #stopwatch
-        self.class_weights[45] *= 2
-        #dark seal
-        self.class_weights[26] *= 1.5
+        # #executioners
+        # self.class_weights[106] *= 3
+        # #qss
+        # self.class_weights[113] *= 2
+        # #cull
+        # self.class_weights[27] *= 2.5
+        # #last whisper
+        # self.class_weights[62] *= 3
+        # #stopwatch
+        # self.class_weights[45] *= 2
+        # #dark seal
+        # self.class_weights[26] *= 1.5
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
@@ -727,18 +727,7 @@ class NextItemsTrainer(Trainer):
             self.class_weights)]
         self.class_weights = self.class_weights / np.sum(self.class_weights) * int(len(ItemManager().get_completes()))
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        #executioners
-        self.class_weights[106] *= 3
-        #qss
-        self.class_weights[113] *= 2
-        #cull
-        self.class_weights[27] *= 2.5
-        #last whisper
-        self.class_weights[62] *= 3
-        #stopwatch
-        self.class_weights[45] *= 2
-        #dark seal
-        self.class_weights[26] *= 1.5
+
 
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
@@ -754,7 +743,7 @@ class NextItemsTrainer(Trainer):
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
-    t.build_next_items_late_game_model()
+    t.build_next_items_early_game_model()
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:
