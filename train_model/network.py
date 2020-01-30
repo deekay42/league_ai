@@ -696,18 +696,6 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             -1]))
         opp_champs_embedded_short2 = tf.reshape(champs_embedded_short2[:, 5:10], (-1, 5 * champs_embedded_short2.shape[
             -1]))
-        laning_phase_opp_strength = merge(
-            [
-                lane_opp_strength,
-                opp_summ_champ_emb_short1,
-                opp_summ_champ_emb_short2,
-                opp_champs_embedded_short1,
-                opp_champs_embedded_short2,
-            ], mode='concat', axis=1)
-        laning_phase_opp_strength_output = batch_normalization(fully_connected(laning_phase_opp_strength,
-                                                                               10, bias=False,
-                                                                               activation='relu',
-                                                                               regularizer="L2"))
 
         target_summ_strength = merge(
             [
