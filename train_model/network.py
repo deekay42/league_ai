@@ -287,7 +287,7 @@ class PositionsNetwork(Network):
 
         champ_ints = in_vec[:, ::total_sum_dim]
         champs = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim, reuse=tf.AUTO_REUSE,
-                           scope="champ_scope_emb")
+                           scope="champ_scope")
         champs = tf.reshape(champs, [-1, champs_per_team * champ_emb_dim])
 
         spell_ints = [in_vec[:,i*total_sum_dim+1:i*total_sum_dim+1+spells_per_summ] for i in range(champs_per_team)]
@@ -579,6 +579,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short2")
 
+        champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim * champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
         opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
@@ -643,96 +644,53 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                  scope="pos_scope")
         pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
 
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
-        opp_champ_emb = champs_embedded[:, 5:10]
-        opp_champ_emb_short1 = champs_embedded_short1[:, 5:10]
-        opp_champ_emb_short2 = champs_embedded_short2[:, 5:10]
-        opp_champ_items = items_by_champ_k_hot[:, 5:10]
-
-        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
-        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
-        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
-        kda_diff = opp_kda - target_summ_kda_exp
-        lvl_diff = opp_lvl - target_summ_lvl_exp
-        cs_diff = opp_cs - target_summ_cs_exp
-        target_summ_champ_emb1_exp = tf.reshape(tf.expand_dims(tf.tile(target_summ_champ_emb_short1, multiples=[1, 5]),
-                                                               -1), (-1, 5, target_summ_champ_emb_short1.shape[-1]))
-        target_summ_champ_emb2_exp = tf.reshape(tf.expand_dims(tf.tile(target_summ_champ_emb_short2, multiples=[1, 5]),
-                                                               -1), (-1, 5, target_summ_champ_emb_short2.shape[-1]))
-        pos_emb_exp = tf.reshape(tf.expand_dims(tf.tile(pos_embedded, multiples=[1, 5]),
-                                                -1), (-1, 5, pos_embedded.shape[-1]))
-
-        enemy_team_strength_input = merge(
+        opp_strength_input = merge(
             [
-                opp_champ_emb,
-                opp_champ_emb_short1,
-                opp_champ_emb_short2,
-                kda_diff,
-                lvl_diff,
-                cs_diff
-            ], mode='concat', axis=2)
-        enemy_team_dim = 5
-        enemy_team_strength_input = tf.reshape(enemy_team_strength_input, (-1, enemy_team_strength_input.shape[-1]))
-        enemy_team_strength_output = batch_normalization(
-            fully_connected(enemy_team_strength_input, champ_emb_dim, bias=False, activation='relu',
-                            regularizer="L2"))
-        enemy_team_strength_output_short = batch_normalization(
-            fully_connected(enemy_team_strength_input, champ_emb_dim-1, bias=False, activation='relu',
-                            regularizer="L2"))
-        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim-1))
-        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, champ_emb_dim))
-        # enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
-        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5 * enemy_team_strength_output_short.shape[
-            -1]))
-        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5 * enemy_team_strength_output.shape[
-            -1]))
-
-        # opp_index doesnt work here since it's +5 offset
-        lane_opp_strength = tf.gather_nd(enemy_team_strength_output_short, pos_index)
-        opp_champs_embedded_short1 = tf.reshape(champs_embedded_short1[:, 5:10], (-1, 5 * champs_embedded_short1.shape[
-            -1]))
-        opp_champs_embedded_short2 = tf.reshape(champs_embedded_short2[:, 5:10], (-1, 5 * champs_embedded_short2.shape[
-            -1]))
-
-        target_summ_strength = merge(
-            [
-                target_summ_lvl,
-                target_summ_cs,
-                target_summ_kda
+                opp_summ_champ_emb,
+                opp_summ_champ_emb_short1,
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb
             ], mode='concat', axis=1)
-        target_summ_strength_output = batch_normalization(fully_connected(target_summ_strength,
-                                                                               1, bias=False,
-                                                                               activation='relu',
-                                                                               regularizer="L2"))
+        opp_strength_output = fully_connected(opp_strength_input, 20, bias=False, activation=None,
+                                              reuse=tf.AUTO_REUSE, scope="opp_strength_scope")
+
+        stats_input = merge(
+            [
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                opp_summ_cs,
+                opp_summ_kda,
+                opp_summ_lvl,
+                lvl,
+                kda,
+                total_cs
+            ], mode='concat', axis=1)
+
+        stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
+                                       reuse=tf.AUTO_REUSE, scope="stats_scope")
 
         final_input_layer = merge(
             [
-                enemy_team_strength_output,
-                enemy_team_strength_output_short,
-                target_summ_strength_output,
                 pos_embedded,
                 target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2,
+                opp_summ_champ_emb_short2,
                 target_summ_items,
-                target_summ_current_gold
+                opp_strength_output,
+                stats_output
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 100, bias=False,
-                                                  activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-
-        logits = fully_connected(net, total_num_items, activation='linear')
-        # logits = tf.reduce_sum([target_summ_normal_build_output, laning_phase_opp_strength_output,
-        #                         enemy_team_strength_output], axis=0)
-
+        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
+        net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
+        inference_output = tf.nn.softmax(net)
 
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+        net = tf.cond(is_training, lambda: net, lambda: inference_output)
 
         return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
                                  n_classes=total_num_items,
@@ -860,7 +818,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         champs_start = pos_end
         champs_end = champs_start + champs_per_game
         items_start = champs_end
-        items_end = items_start + items_per_champ * 2 * champs_per_game
+        items_end = items_start + items_per_champ*2*champs_per_game
         total_gold_start = items_end
         total_gold_end = total_gold_start + champs_per_game
         cs_start = total_gold_end
@@ -872,7 +830,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         lvl_start = xp_end
         lvl_end = lvl_start + champs_per_game
         kda_start = lvl_end
-        kda_end = kda_start + champs_per_game * 3
+        kda_end = kda_start + champs_per_game*3
         current_gold_start = kda_end
         current_gold_end = current_gold_start + champs_per_game
 
@@ -891,7 +849,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         #  10 elements long
         champ_ints = in_vec[:, champs_start:champs_end]
         # champ_ints = dropout(champ_ints, 0.8)
-        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
+        #this does not work since dropout scales inputs, hence embedding lookup fails after that.
         # 60 elements long
         item_ints = in_vec[:, items_start:items_end]
         cs = in_vec[:, cs_start:cs_end]
@@ -903,7 +861,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
         target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
-        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), pos_index)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda,(-1,champs_per_game, 3)), pos_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
         opp_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, opp_index), 1)
         opp_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), opp_index)
@@ -912,15 +870,16 @@ class NextItemLateGameNetwork(NextItemNetwork):
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                     reuse=tf.AUTO_REUSE,
                                     scope="champ_scope")
-        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1,
-                                           reuse=tf.AUTO_REUSE,
-                                           scope="champs_embedded_short1")
-        champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 2,
-                                           reuse=tf.AUTO_REUSE,
-                                           scope="champs_embedded_short2")
+        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-1,
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="champs_embedded_short1")
+        champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim-2,
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="champs_embedded_short2")
 
+        champs_embedded_flat = tf.reshape(champs_embedded, (-1, champ_emb_dim*champs_per_game))
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
-        opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
+        opp_champs_one_hot = champs_one_hot[:,champs_per_team:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         opp_champs_k_hot = tf.cast(tf.cast(tf.greater(opp_champs_k_hot, 0), tf.int32), tf.float32)
         # champs_one_hot_flat = tf.reshape(champs_one_hot, [-1, champs_per_game * total_num_champs])
@@ -939,8 +898,8 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, champs_per_game * items_per_champ]),
                                    (-1,))
-        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(champs_per_game), 1), [1,
-                                                                                                  items_per_champ]),
+        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(champs_per_game),1), [1,
+                                                                                                 items_per_champ]),
                                            [n, 1]),
                                    (-1,))
 
@@ -954,11 +913,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
         items = tf.sparse.to_dense(items, validate_indices=False)
         items_by_champ_k_hot = items[:, :, 1:]
 
-        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
+        items_by_champ_k_hot_flat =  tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
 
         items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
-        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False,
-                                                    activation=None,
+        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False, activation=None,
                                                     reuse=tf.AUTO_REUSE,
                                                     scope="item_sum_scope")
         summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
@@ -979,112 +937,65 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         pos = tf.expand_dims(pos, -1)
         pos_embedded = embedding(pos, input_dim=5, output_dim=pos_dim,
-                                 reuse=tf.AUTO_REUSE,
-                                 scope="pos_scope")
+                                    reuse=tf.AUTO_REUSE,
+                                    scope="pos_scope")
         pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
 
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
-        opp_champ_emb = champs_embedded[:, 5:10]
-        opp_champ_emb_short1 = champs_embedded_short1[:, 5:10]
-        opp_champ_emb_short2 = champs_embedded_short2[:, 5:10]
-        opp_champ_items = items_by_champ_k_hot[:, 5:10]
 
-        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
-        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
-        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
-        kda_diff = opp_kda - target_summ_kda_exp
-        lvl_diff = opp_lvl - target_summ_lvl_exp
-        cs_diff = opp_cs - target_summ_cs_exp
-        target_summ_champ_emb1_exp = tf.reshape(tf.expand_dims(tf.tile(target_summ_champ_emb_short1, multiples=[1, 5]),
-                                                               -1), (-1, 5, target_summ_champ_emb_short1.shape[-1]))
-        target_summ_champ_emb2_exp = tf.reshape(tf.expand_dims(tf.tile(target_summ_champ_emb_short2, multiples=[1, 5]),
-                                                               -1), (-1, 5, target_summ_champ_emb_short2.shape[-1]))
-        pos_emb_exp = tf.reshape(tf.expand_dims(tf.tile(pos_embedded, multiples=[1, 5]),
-                                                -1), (-1, 5, pos_embedded.shape[-1]))
-
-        enemy_team_strength_input = merge(
+        opp_strength_input = merge(
             [
-                opp_kda,
-                opp_lvl,
-                opp_cs,
-                opp_champ_emb,
-                opp_champ_emb_short1,
-                opp_champ_emb_short2,
-                opp_champ_items,
-                kda_diff,
-                lvl_diff,
-                cs_diff,
-                target_summ_kda_exp,
-                target_summ_lvl_exp,
-                target_summ_cs_exp,
-                target_summ_champ_emb2_exp,
-                pos_emb_exp
-            ], mode='concat', axis=2)
-        enemy_team_strength_input = tf.reshape(enemy_team_strength_input, (-1, enemy_team_strength_input.shape[-1]))
-        enemy_team_strength_output = batch_normalization(
-            fully_connected(enemy_team_strength_input, 10, bias=False, activation='relu',
-                            regularizer="L2"))
-        enemy_team_strength_output_short = batch_normalization(
-            fully_connected(enemy_team_strength_input, champ_emb_dim, bias=False, activation='relu',
-                            regularizer="L2"))
-        enemy_team_strength_output_short = tf.reshape(enemy_team_strength_output_short, (-1, 5, champ_emb_dim))
-        enemy_team_strength_output = tf.reshape(enemy_team_strength_output, (-1, 5, 10))
-        enemy_team_strength_output = tf.reduce_sum(enemy_team_strength_output, axis=1)
-
-        # opp_index doesnt work here since it's +5 offset
-        lane_opp_strength = tf.gather_nd(enemy_team_strength_output_short, pos_index)
-        opp_champs_embedded_short1 = tf.reshape(champs_embedded_short1[:, 5:10], (-1, 5 * champs_embedded_short1.shape[
-            -1]))
-        opp_champs_embedded_short2 = tf.reshape(champs_embedded_short2[:, 5:10], (-1, 5 * champs_embedded_short2.shape[
-            -1]))
-        laning_phase_opp_strength = merge(
-            [
-                lane_opp_strength,
+                opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
-                opp_summ_champ_emb_short2,
-                opp_champs_embedded_short1,
-                opp_champs_embedded_short2,
-                target_summ_lvl
+                opp_summ_items,
+                opp_champs_k_hot,
+                champs_with_items_emb
             ], mode='concat', axis=1)
-        laning_phase_opp_strength_output = batch_normalization(fully_connected(laning_phase_opp_strength,
-                                                                               10, bias=False,
-                                                                               activation='relu',
-                                                                               regularizer="L2"))
+        opp_strength_output = fully_connected(opp_strength_input, 20, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="opp_strength_scope")
+
+
+        stats_input = merge(
+            [
+                target_summ_cs,
+                target_summ_kda,
+                target_summ_lvl,
+                opp_summ_cs,
+                opp_summ_kda,
+                opp_summ_lvl,
+                lvl,
+                kda,
+                total_cs
+            ], mode='concat', axis=1)
+
+        stats_output = fully_connected(stats_input, 10, bias=False, activation=None,
+                                                reuse=tf.AUTO_REUSE, scope="stats_scope")
 
         final_input_layer = merge(
             [
-                laning_phase_opp_strength_output,
-                enemy_team_strength_output,
                 pos_embedded,
                 target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2,
+                opp_summ_champ_emb_short2,
                 target_summ_items,
-                target_summ_current_gold
-            ], mode='concat', axis=1)
+                opp_strength_output,
+                stats_output
+        ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, total_num_items, bias=False,
-                                                  activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-
-        logits = fully_connected(net, total_num_items, activation='linear')
-        # logits = tf.reduce_sum([target_summ_normal_build_output, laning_phase_opp_strength_output,
-        #                         enemy_team_strength_output], axis=0)
-
+        net = merge([target_summ_current_gold, net], mode='concat', axis=1)
+        net = fully_connected(net, total_num_items, activation='linear')
         is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
+        inference_output = tf.nn.softmax(net)
 
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+        net = tf.cond(is_training, lambda: net, lambda: inference_output)
 
-        return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
-                                 n_classes=total_num_items,
+        return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True, n_classes=total_num_items,
                                  shuffle_batches=True,
-                                 learning_rate=learning_rate,
-                                 loss=self.class_weighted_sm_ce_loss,
-                                 name='target', metric=self.weighted_accuracy)
+                                  learning_rate=learning_rate,
+                                  loss=self.class_weighted_sm_ce_loss,
+                                  name='target', metric=self.weighted_accuracy)
 
 
     #calculates penalty if prediction is an item we already have, or an item with an item effect we already have
