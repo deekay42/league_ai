@@ -22,7 +22,7 @@ from utils import utils
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
     KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-from utils.build_path import build_path
+from utils.build_path import build_path_for_gold
 from constants import ui_constants, game_constants, app_constants
 import functools
 from train_model import data_loader
@@ -130,7 +130,7 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def test_connection(timeout=0):
         try:
-            lol = build_path([], cass.Item(id=3040, region="KR"))
+            lol = cass.Item(id=3040, region="KR").name[-1]
         except Exception as e:
             print(f"Connection error. Retry in {timeout}")
             time.sleep(timeout)
@@ -172,16 +172,36 @@ class Main(FileSystemEventHandler):
                                                  summ_owned_completes)
 
 
+    # def build_path(self, items, next_item, current_gold):
+    #     items = self.items_counter2items_list(items, "int")
+    #     items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
+    #
+    #     #TODO: this is bad. the item class should know when to return main_img or id
+    #     next_items, _, abs_items, _ = build_path(items_id, cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+    #                                                                                                    next_item else
+    #                                                                      int(next_item["id"])), region="EUW"), current_gold)
+    #     next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
+    #     abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
+    #     return next_items, abs_items
+
+
     def build_path(self, items, next_item, current_gold):
-        items = self.items_counter2items_list(items, "int")
-        items_id = [int(item["main_img"]) if "main_img" in item else int(item["id"]) for item in items]
-        
-        #TODO: this is bad. the item class should know when to return main_img or id
-        next_items, _, abs_items, _ = build_path(items_id, cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+        cass_item = cass.Item(id=(int(next_item["id"])), region="EUW")
+        l = cass_item.name
+        if not list(cass_item.builds_from):
+            return [next_item], [items + Counter({next_item["int"]:1})]
+        items_by_id = Counter({int(self.item_manager.lookup_by("int", item_id)["id"]):qty for item_id,
+                                                                                          qty in items.items()})
+
+        # TODO: this is bad. the item class should know when to return main_img or id
+        next_items, abs_items = build_path_for_gold(cass.Item(id=(int(next_item["main_img"]) if
+                                                                              "main_img" in
                                                                                                        next_item else
-                                                                         int(next_item["id"])), region="EUW"), current_gold)
+                                                                         int(next_item["id"])), region="EUW"), items_by_id,
+                                                 current_gold)
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
-        abs_items = [[self.item_manager.lookup_by("id", str(item_)) for item_ in items_] for items_ in abs_items]
+        abs_items = [Counter([self.item_manager.lookup_by("id", str(item))["int"] for item, qty in
+                      abs_items_counter.items() for _ in range(qty)]) for abs_items_counter in abs_items]
         return next_items, abs_items
 
 
@@ -255,8 +275,8 @@ class Main(FileSystemEventHandler):
 
         result = []
 
-        thresholds = [0, 0.05, 0.1, 0.25, 1.1]
-        num_full_items = [0, 1, 2, 3]
+        thresholds = [0, 0.05, 0.1, 0.25, .7, 1.1]
+        num_full_items = [0, 1, 2, 3, 4]
         commonality_to_items = dict()
         for i in range(len(num_full_items)):
             commonality_to_items[(thresholds[i], thresholds[i+1])] = num_full_items[i]
@@ -307,7 +327,7 @@ class Main(FileSystemEventHandler):
                     if next_item["name"] == "Empty":
                         continue
                     next_items, abs_items = self.build_path(copied_items[role], next_item, current_gold)
-                    if NextItemModel.num_itemslots(Counter([item["int"] for item in abs_items[-1]])) <= game_constants.MAX_ITEMS_PER_CHAMP:
+                    if NextItemModel.num_itemslots(abs_items[-1]) <= game_constants.MAX_ITEMS_PER_CHAMP:
                         break
             else:
                 delta_items = None
@@ -354,7 +374,7 @@ class Main(FileSystemEventHandler):
                     if self.early_or_late == "late":
                         force_early_after_late = True
                         if i>0:
-                            items[role] = Counter([item["int"] for item in abs_items[i-1]])
+                            items[role] = abs_items[i-1].copy()
                     else:
                         return result
                     break
@@ -362,7 +382,7 @@ class Main(FileSystemEventHandler):
                     current_gold -= cass_item_cost
                     result.append(ni)
             else:
-                items[role] = Counter([item["int"] for item in abs_items[-1]])
+                items[role] = abs_items[-1].copy()
 
 
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in items[role]]
@@ -386,7 +406,10 @@ class Main(FileSystemEventHandler):
             comps = Counter([ str(item_comp.id) for item_comp in list(item.builds_from)])
             if comps:
                 large_item_sub_comps += Counter(comps)
-        return self.items_counter2items_list(items_counter - large_item_sub_comps, "id")
+        result = self.items_counter2items_list(items_counter - large_item_sub_comps, "id")
+        result_sorted = sorted(result, key=lambda a: cass.Item(id=(int(a["id"])), region="EUW").gold.total,
+                               reverse=True)
+        return result_sorted
 
 
 
@@ -450,7 +473,7 @@ class Main(FileSystemEventHandler):
         assert(len(predictions) == 10)
         for i in range(len(predictions)):
             #this pred is wrong
-            if upper < predictions[i] or predictions[i] < lower:
+            if predictions[i] is None or upper < predictions[i] or predictions[i] < lower:
                 opp_index = (i + 5) % 10
                 opp_pred_valid = predictions[opp_index] > lower and predictions[opp_index] < upper
                 if opp_pred_valid:
@@ -503,7 +526,7 @@ class Main(FileSystemEventHandler):
 
             if current_gold > 4000:
                 current_gold = 4000
-            elif current_gold < 0 or not current_gold:
+            elif current_gold < 0 or current_gold is None:
                 current_gold = 500
             
             print(f"Lvl:\n {lvl}\n")
@@ -650,9 +673,9 @@ class Main(FileSystemEventHandler):
 m = Main()
 #m.run()
 
-# m.process_image(f"Screen531.png")
-for i in range(41,82):
-    m.process_image(f"Screen5{i}.png")
+m.process_image(f"Screen331.png")
+# for i in range(300,400):
+#     m.process_image(f"Screen{i}.png")
 
 # m.run_test_games()
 
