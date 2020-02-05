@@ -1001,19 +1001,26 @@ class NextItemLateGameNetwork(NextItemNetwork):
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
         ets_direction = enemy_team_strength / ets_magnitude
 
-        final_input_layer = merge(
+        et_strength_input = merge(
             [
                 # enemy_team_strength,
                 ets_magnitude,
                 ets_direction,
                 opp_champ_emb_short2_flat,
-                pos_embedded,
-                target_summ_champ_emb,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2,
                 opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
+            ], mode='concat', axis=1)
+        et_strength_output = batch_normalization(fully_connected(et_strength_input, 10, bias=False,
+                                                  activation='relu',
+                                                  regularizer="L2"))
+
+        final_input_layer = merge(
+            [
+                et_strength_output,
+                pos_embedded,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2,
                 target_summ_items,
                 target_summ_current_gold
             ], mode='concat', axis=1)
