@@ -1037,8 +1037,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                      activation='relu',
                                                      regularizer="L2"))
 
-        net_s = tf.multiply(net_s, tf.cast(starter_item_batch_indices, tf.float32))
-        net_ns = tf.multiply(net_ns, tf.cast(nonstarter_item_batch_indices, tf.float32))
+        net_s = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
+                                                      multiples=[1, 64]))
+        net_ns = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
+                                                      multiples=[1, 64]))
         net_s_ns = tf.stack([net_ns, net_s], axis=2)
         net = tf.reduce_sum(net_s_ns, axis=2)
 
