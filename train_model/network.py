@@ -1028,20 +1028,25 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net_s = batch_normalization(fully_connected(starter_input_layer, 8, bias=False,
-                                                    activation='relu',
-                                                    regularizer="L2"))
+        # net_s = batch_normalization(fully_connected(starter_input_layer, 8, bias=False,
+        #                                             activation='relu',
+        #                                             regularizer="L2"))
         net_ns = batch_normalization(fully_connected(nonstarter_input_layer, 64, bias=False,
                                                      activation='relu',
                                                      regularizer="L2"))
 
-        net_s = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
-                                                      multiples=[1, 8]))
-        net_ns = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
-                                                      multiples=[1, 64]))
+        # net_s = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
+        #                                               multiples=[1, 8]))
+        # net_ns = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
+        #                                               multiples=[1, 64]))
 
-        logits_s = fully_connected(net_s, total_num_items, activation='linear')
+        logits_s = fully_connected(starter_input_layer, total_num_items, activation='linear')
         logits_ns = fully_connected(net_ns, total_num_items, activation='linear')
+
+        logits_s = tf.multiply(logits_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
+                                                      multiples=[1, total_num_items]))
+        logits_ns = tf.multiply(logits_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
+                                                      multiples=[1, total_num_items]))
 
         logits = tf.stack([logits_s, logits_ns], axis=2)
         logits = tf.reduce_sum(logits, axis=2)
