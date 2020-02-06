@@ -1001,8 +1001,8 @@ class NextItemLateGameNetwork(NextItemNetwork):
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
         ets_direction = enemy_team_strength / ets_magnitude
 
-        starter_item_batch_indices = tf.reduce_all(tf.equal(target_summ_items, 0), axis=1)
-        nonstarter_item_batch_indices = tf.logical_not(tf.reduce_all(tf.equal(target_summ_items, 0), axis=1))
+        starter_item_batch_indices = tf.equal(target_summ_items[:, 0], 6)
+        nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:, 0], 6))
 
         starter_input_layer = merge(
             [
