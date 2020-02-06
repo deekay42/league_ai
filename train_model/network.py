@@ -1010,6 +1010,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
                 pos_embedded,
+                target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2,
                 target_summ_items,
