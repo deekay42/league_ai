@@ -1006,12 +1006,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         starter_input_layer = merge(
             [
-                opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
                 pos_one_hot,
                 pos_embedded,
-                target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2
             ], mode='concat', axis=1)
@@ -1030,7 +1028,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net_s = batch_normalization(fully_connected(starter_input_layer, 64, bias=False,
+        net_s = batch_normalization(fully_connected(starter_input_layer, 8, bias=False,
                                                     activation='relu',
                                                     regularizer="L2"))
         net_ns = batch_normalization(fully_connected(nonstarter_input_layer, 64, bias=False,
@@ -1038,7 +1036,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                      regularizer="L2"))
 
         net_s = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
-                                                      multiples=[1, 64]))
+                                                      multiples=[1, 8]))
         net_ns = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
                                                       multiples=[1, 64]))
         net_s_ns = tf.stack([net_ns, net_s], axis=2)
