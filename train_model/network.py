@@ -957,7 +957,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
-        # pos = tf.one_hot(pos, depth=champs_per_team)
+        pos_one_hot = tf.one_hot(pos, depth=champs_per_team)
 
         pos = tf.expand_dims(pos, -1)
         pos_embedded = embedding(pos, input_dim=5, output_dim=pos_dim,
@@ -1001,15 +1001,28 @@ class NextItemLateGameNetwork(NextItemNetwork):
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
         ets_direction = enemy_team_strength / ets_magnitude
 
+        starter_item_batch_indices = tf.reduce_all(tf.equal(target_summ_items, 0), axis=1)
+        nonstarter_item_batch_indices = tf.logical_not(tf.reduce_all(tf.equal(target_summ_items, 0), axis=1))
 
-        final_input_layer = merge(
+        starter_input_layer = merge(
+            [
+                opp_summ_champ_emb,
+                opp_summ_champ_emb_short1,
+                opp_summ_champ_emb_short2,
+                pos_one_hot,
+                pos_embedded,
+                target_summ_champ_emb,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2
+            ], mode='concat', axis=1)
+
+        nonstarter_input_layer = merge(
             [
                 ets_magnitude,
                 ets_direction,
                 opp_champ_emb_short2_flat,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
-                pos_embedded,
                 target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2,
@@ -1017,9 +1030,17 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 64, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net_s = batch_normalization(fully_connected(starter_input_layer, 64, bias=False,
+                                                    activation='relu',
+                                                    regularizer="L2"))
+        net_ns = batch_normalization(fully_connected(nonstarter_input_layer, 64, bias=False,
+                                                     activation='relu',
+                                                     regularizer="L2"))
+
+        net_s = tf.multiply(net_s, tf.cast(starter_item_batch_indices, tf.float32))
+        net_ns = tf.multiply(net_ns, tf.cast(nonstarter_item_batch_indices, tf.float32))
+        net_s_ns = tf.stack([net_ns, net_s], axis=2)
+        net = tf.reduce_sum(net_s_ns, axis=2)
 
         logits = fully_connected(net, total_num_items, activation='linear')
         # logits = tf.reduce_sum([target_summ_normal_build_output, laning_phase_opp_strength_output,
