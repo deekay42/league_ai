@@ -8,6 +8,7 @@ import tensorflow as tf
 import tflearn
 from tflearn.layers.merge_ops import merge
 from tflearn.layers.core import fully_connected, input_data, dropout
+from tflearn.layers.normalization import batch_normalization
 
 from constants import game_constants, app_constants, ui_constants
 from train_model import network
@@ -55,7 +56,8 @@ class Model(ABC):
 
     def output_logs(self, in_vec):
         sess = tf.InteractiveSession()
-        tflearn.is_training(True, session=sess)
+        sess.run(tf.global_variables_initializer())
+        tflearn.is_training(False, session=sess)
         game_config = \
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
@@ -143,16 +145,16 @@ class Model(ABC):
         opp_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, champs_per_game, 3)), opp_index)
         opp_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, opp_index), 1)
 
-        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
+        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=4,
                                     reuse=tf.AUTO_REUSE,
                                     scope="champ_scope")
-        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1,
+        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=2,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short1")
-        champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 2,
+        champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=1,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short2")
-        champs_embedded_long = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim + 1,
+        champs_embedded_long = embedding(champ_ints, input_dim=total_num_champs, output_dim=5,
                                          reuse=tf.AUTO_REUSE,
                                          scope="champs_embedded_long")
 
@@ -191,34 +193,17 @@ class Model(ABC):
         items = tf.sparse.to_dense(items, validate_indices=False)
         items_by_champ_k_hot = items[:, :, 1:]
 
-        items_by_champ_k_hot_flat = tf.reshape(items_by_champ_k_hot, [-1, champs_per_game * total_num_items])
-
-        items_by_champ_k_hot_rep = tf.reshape(items_by_champ_k_hot, [-1, total_num_items])
-        summed_items_by_champ_emb = fully_connected(items_by_champ_k_hot_rep, all_items_emb_dim, bias=False,
-                                                    activation=None,
-                                                    reuse=tf.AUTO_REUSE,
-                                                    scope="item_sum_scope")
-        summed_items_by_champ = tf.reshape(summed_items_by_champ_emb, (-1, champs_per_game, all_items_emb_dim))
-
-        summed_items_by_champ_exp = tf.expand_dims(summed_items_by_champ, -1)
-        champs_exp = tf.expand_dims(champs_embedded, -2)
-        champs_with_items = tf.multiply(champs_exp, summed_items_by_champ_exp)
-        champs_with_items = tf.reshape(champs_with_items, (-1, champ_emb_dim * all_items_emb_dim))
-        champs_with_items_emb = fully_connected(champs_with_items, champ_all_items_emb_dim, bias=False, activation=None,
-                                                reuse=tf.AUTO_REUSE, scope="champ_item_scope")
-        champs_with_items_emb = tf.reshape(champs_with_items_emb, (-1, champs_per_game * champ_all_items_emb_dim))
-
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index)
 
-        # pos = tf.one_hot(pos, depth=champs_per_team)
+        pos_one_hot = tf.one_hot(pos, depth=champs_per_team)
 
         pos = tf.expand_dims(pos, -1)
-        pos_embedded = embedding(pos, input_dim=5, output_dim=pos_dim,
+        pos_embedded = embedding(pos, input_dim=5, output_dim=2,
                                  reuse=tf.AUTO_REUSE,
                                  scope="pos_scope")
-        pos_embedded = tf.reshape(pos_embedded, (-1, pos_dim))
+        pos_embedded = tf.reshape(pos_embedded, (-1, 2))
 
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
@@ -227,6 +212,7 @@ class Model(ABC):
         opp_champ_emb = champs_embedded[:, 5:10]
         opp_champ_emb_short1 = champs_embedded_short1[:, 5:10]
         opp_champ_emb_short2 = champs_embedded_short2[:, 5:10]
+        opp_champ_emb_short2_flat = tf.reshape(opp_champ_emb_short2, (-1, 5))
         opp_champ_emb_long = champs_embedded_long[:, 5:10]
         opp_champ_items = items_by_champ_k_hot[:, 5:10]
 
@@ -244,32 +230,62 @@ class Model(ABC):
                 cs_diff
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
-        enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=False, activation='linear')
+        # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
+        # the vector has no magnitude
+        enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
         enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-        enemy_summs_strength_output = tf.tile(enemy_summs_strength_output, multiples=[1, 1, champ_emb_dim + 1])
+        enemy_summs_strength_output = tf.tile(enemy_summs_strength_output, multiples=[1, 1, 5])
         enemy_team_strength = enemy_summs_strength_output * opp_champ_emb_long
         enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
-        ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        ets_direction = enemy_team_strength * (1 / ets_magnitude)
+        ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
+        # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
+        ets_direction = enemy_team_strength / ets_magnitude
 
-        final_input_layer = merge(
+        starter_item_batch_indices = tf.equal(target_summ_items[:,0], 6)
+        nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:,0], 6))
+
+        starter_input_layer = merge(
             [
-                ets_magnitude,
-                ets_direction,
-                pos_embedded,
-                target_summ_champ_emb,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2,
                 opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
+                pos_one_hot,
+                pos_embedded,
+                target_summ_champ_emb,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2
+            ], mode='concat', axis=1)
+
+        nonstarter_input_layer = merge(
+            [
+                ets_magnitude,
+                ets_direction,
+                opp_champ_emb_short2_flat,
+                opp_summ_champ_emb_short1,
+                opp_summ_champ_emb_short2,
+                target_summ_champ_emb,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb_short2,
                 target_summ_items,
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 100, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net_s = fully_connected(starter_input_layer, 64, bias=False,
+                                                    activation='relu',
+                                                    regularizer="L2")
+        net_ns = fully_connected(nonstarter_input_layer, 64, bias=False,
+                                                     activation='relu',
+                                                     regularizer="L2")
+
+        net_s_multed = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
+                                           multiples=[1, 64]))
+        net_ns_multed = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1,
+                                                                                                                 1)),
+                                             multiples=[1, 64]))
+        net_s_ns = tf.stack([net_s_multed, net_ns_multed], axis=2)
+        net = tf.reduce_sum(net_s_ns, axis=2)
+
+        logits = fully_connected(net, total_num_items, activation='linear')
 
 
     def predict2int(self, x):
