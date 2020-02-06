@@ -1039,10 +1039,12 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                       multiples=[1, 8]))
         net_ns = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1, 1)),
                                                       multiples=[1, 64]))
-        net_s_ns = tf.stack([net_ns, net_s], axis=2)
-        net = tf.reduce_sum(net_s_ns, axis=2)
 
-        logits = fully_connected(net, total_num_items, activation='linear')
+        logits_s = fully_connected(net_s, total_num_items, activation='linear')
+        logits_ns = fully_connected(net_ns, total_num_items, activation='linear')
+
+        logits = tf.stack([logits_s, logits_ns], axis=2)
+        logits = tf.reduce_sum(logits, axis=2)
         # logits = tf.reduce_sum([target_summ_normal_build_output, laning_phase_opp_strength_output,
         #                         enemy_team_strength_output], axis=0)
 
