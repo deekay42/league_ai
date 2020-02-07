@@ -992,6 +992,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
+        # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
+
+        # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
+        #since it may dip below zero with negative weights.
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
                                                      activation='relu',
                                                      regularizer="L2"))
@@ -1005,6 +1009,8 @@ class NextItemLateGameNetwork(NextItemNetwork):
         ets_direction = tf.math.divide_no_nan(enemy_team_strength, ets_magnitude)
         valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         valid_mag_idx_i = tf.where(valid_mag_idx)
+        ets_magnitude = tf.boolean_mask(ets_magnitude, valid_mag_idx)
+        ets_direction = tf.boolean_mask(ets_direction, valid_mag_idx)
         ets_magnitude = tf.scatter_nd(valid_mag_idx_i, ets_magnitude, (n, 1))
         ets_direction = tf.scatter_nd(valid_mag_idx_i, ets_direction, (n, champ_emb_dim + 1))
 
