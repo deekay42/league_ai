@@ -999,8 +999,12 @@ class NextItemLateGameNetwork(NextItemNetwork):
         enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
         ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        #this tends to cause nan errors because of div by 0
+        # this tends to cause nan errors because of div by 0
         ets_direction = tf.math.divide_no_nan(enemy_team_strength, ets_magnitude)
+        valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
+        valid_mag_idx_i = tf.where(valid_mag_idx)
+        ets_magnitude = tf.scatter_nd(valid_mag_idx_i, ets_magnitude, (n, 1))
+        ets_direction = tf.scatter_nd(valid_mag_idx_i, ets_direction, (n, champ_emb_dim + 1))
 
         starter_item_batch_indices = tf.equal(target_summ_items[:, 0], 6)
         nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:, 0], 6))
