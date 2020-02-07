@@ -241,20 +241,24 @@ class Model(ABC):
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
         ets_direction = enemy_team_strength / ets_magnitude
 
-        starter_item_batch_indices = tf.equal(target_summ_items[:,0], 6)
-        nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:,0], 6))
+        starter_item_batch_indices = tf.equal(target_summ_items[:, 0], 6)
+        nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:, 0], 6))
+        starter_item_batch_indices_i = tf.where(starter_item_batch_indices)
+        nonstarter_item_batch_indices_i = tf.where(nonstarter_item_batch_indices)
+
+
 
         starter_input_layer = merge(
             [
-                opp_summ_champ_emb,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
                 pos_one_hot,
                 pos_embedded,
-                target_summ_champ_emb,
                 target_summ_champ_emb_short1,
                 target_summ_champ_emb_short2
             ], mode='concat', axis=1)
+
+        starter_input_layer = tf.boolean_mask(starter_input_layer, starter_item_batch_indices)
 
         nonstarter_input_layer = merge(
             [
@@ -270,22 +274,24 @@ class Model(ABC):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net_s = fully_connected(starter_input_layer, 64, bias=False,
+        nonstarter_input_layer = tf.boolean_mask(nonstarter_input_layer, nonstarter_item_batch_indices)
+
+        net_s = batch_normalization(fully_connected(starter_input_layer, 8, bias=False,
                                                     activation='relu',
-                                                    regularizer="L2")
-        net_ns = fully_connected(nonstarter_input_layer, 64, bias=False,
+                                                    regularizer="L2"))
+        net_ns = batch_normalization(fully_connected(nonstarter_input_layer, 64, bias=False,
                                                      activation='relu',
-                                                     regularizer="L2")
+                                                     regularizer="L2"))
 
-        net_s_multed = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
-                                           multiples=[1, 64]))
-        net_ns_multed = tf.multiply(net_ns, tf.tile(tf.reshape(tf.cast(nonstarter_item_batch_indices, tf.float32), (-1,
-                                                                                                                 1)),
-                                             multiples=[1, 64]))
-        net_s_ns = tf.stack([net_s_multed, net_ns_multed], axis=2)
-        net = tf.reduce_sum(net_s_ns, axis=2)
-
-        logits = fully_connected(net, total_num_items, activation='linear')
+        logits_s = fully_connected(net_s, total_num_items, activation='linear')
+        logits_ns = fully_connected(net_ns, total_num_items, activation='linear')
+        logits_s_scattered = tf.scatter_nd(starter_item_batch_indices_i, logits_s, (n,
+                                                                                                     total_num_items))
+        logits_ns_scattered = tf.scatter_nd(nonstarter_item_batch_indices_i, logits_ns, (n,
+                                                                                                          total_num_items))
+        logits_s_ns = tf.stack([logits_s_scattered, logits_ns_scattered], axis=2)
+        logits = tf.reduce_sum(logits_s_ns, axis=2)
+        print("lol")
 
 
     def predict2int(self, x):
