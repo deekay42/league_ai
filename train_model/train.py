@@ -614,16 +614,12 @@ class NextItemsTrainer(Trainer):
         print("Loading training data")
         dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                "next_items_processed_elite_sorted_inf"])
-        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-        #                                                        "next_items_processed_lower_sorted_inf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_lower_sorted_inf"])
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
-        self.X = self.X[:20]
-        self.Y = self.Y[:20]
-        self.X_test = self.X[:20]
-        self.Y_test = self.Y[:20]
-        # X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
@@ -661,8 +657,8 @@ class NextItemsTrainer(Trainer):
 
 
         self.X = self.X.astype(np.float32)
-        # self.X_test = np.concatenate([self.X_test, X_test_lower], axis=0)
-        # self.Y_test = np.concatenate([self.Y_test, Y_test_lower], axis=0)
+        self.X_test = np.concatenate([self.X_test, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([self.Y_test, Y_test_lower], axis=0)
 
         self.X_test = self.X_test.astype(np.float32)
 
@@ -747,7 +743,7 @@ class NextItemsTrainer(Trainer):
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
-    t.build_next_items_early_game_model()
+    t.build_next_items_late_game_model()
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:
