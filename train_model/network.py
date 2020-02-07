@@ -999,40 +999,35 @@ class NextItemLateGameNetwork(NextItemNetwork):
         enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
         ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
         # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        ets_direction = enemy_team_strength / ets_magnitude
+        #this tends to cause nan errors when magnitutde is small
+        ets_direction = tf.divide_no_nan(enemy_team_strength, ets_magnitude)
 
         starter_item_batch_indices = tf.equal(target_summ_items[:, 0], 6)
         nonstarter_item_batch_indices = tf.logical_not(tf.equal(target_summ_items[:, 0], 6))
-        starter_item_batch_indices_i = tf.where(starter_item_batch_indices)
-        nonstarter_item_batch_indices_i = tf.where(nonstarter_item_batch_indices)
 
         starter_input_layer = merge(
             [
-                opp_summ_champ_emb_short1,
-                opp_summ_champ_emb_short2,
-                pos_one_hot,
-                pos_embedded,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2
+                opp_summ_champ_emb_short1[starter_item_batch_indices],
+                opp_summ_champ_emb_short2[starter_item_batch_indices],
+                pos_one_hot[starter_item_batch_indices],
+                pos_embedded[starter_item_batch_indices],
+                target_summ_champ_emb_short1[starter_item_batch_indices],
+                target_summ_champ_emb_short2[starter_item_batch_indices]
             ], mode='concat', axis=1)
-
-        starter_input_layer = tf.boolean_mask(starter_input_layer, starter_item_batch_indices)
 
         nonstarter_input_layer = merge(
             [
-                ets_magnitude,
-                ets_direction,
-                opp_champ_emb_short2_flat,
-                opp_summ_champ_emb_short1,
-                opp_summ_champ_emb_short2,
-                target_summ_champ_emb,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2,
-                target_summ_items,
-                target_summ_current_gold
+                ets_magnitude[nonstarter_item_batch_indices],
+                ets_direction[nonstarter_item_batch_indices],
+                opp_champ_emb_short2_flat[nonstarter_item_batch_indices],
+                opp_summ_champ_emb_short1[nonstarter_item_batch_indices],
+                opp_summ_champ_emb_short2[nonstarter_item_batch_indices],
+                target_summ_champ_emb[nonstarter_item_batch_indices],
+                target_summ_champ_emb_short1[nonstarter_item_batch_indices],
+                target_summ_champ_emb_short2[nonstarter_item_batch_indices],
+                target_summ_items[nonstarter_item_batch_indices],
+                target_summ_current_gold[nonstarter_item_batch_indices]
             ], mode='concat', axis=1)
-
-        nonstarter_input_layer = tf.boolean_mask(nonstarter_input_layer, nonstarter_item_batch_indices)
 
         net_s = batch_normalization(fully_connected(starter_input_layer, 8, bias=False,
                                                     activation='relu',
@@ -1043,11 +1038,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         logits_s = fully_connected(net_s, total_num_items, activation='linear')
         logits_ns = fully_connected(net_ns, total_num_items, activation='linear')
-        logits_s_scattered = tf.scatter_nd(starter_item_batch_indices_i, logits_s, (n,
-                                                                                    total_num_items))
-        logits_ns_scattered = tf.scatter_nd(nonstarter_item_batch_indices_i, logits_ns, (n,
-                                                                                         total_num_items))
-        logits_s_ns = tf.stack([logits_s_scattered, logits_ns_scattered], axis=2)
+        logits_s_scattered = tf.scatter_nd(starter_item_batch_indices, logits_s, (n, total_num_items))
+        logits_ns_scattered = tf.scatter_nd(nonstarter_item_batch_indices, logits_ns, (n, total_num_items))
+        logits_s_ns = tf.stack([logits_s_scattered, net_s], axis=2)
         logits = tf.reduce_sum(logits_s_ns, axis=2)
 
         # net_s = tf.multiply(net_s, tf.tile(tf.reshape(tf.cast(starter_item_batch_indices, tf.float32), (-1, 1)),
