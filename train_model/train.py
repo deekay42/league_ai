@@ -677,6 +677,16 @@ class NextItemsTrainer(Trainer):
         return min_max_scaler
 
 
+    def no_full_items_completed(data):
+        pos = data[:, 1]
+        full_item_ints = ItemManager().get_full_item_ints()
+        data_items = data[:, 12:6 * 12]
+        data_items = np.reshape(data_items, (-1, 5, 12))
+        target_summ_items = data_items[range(len(pos)), pos, ::2]
+        target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
+        return np.logical_not(np.any(target_summs_full_items_boolean, axis=1))
+
+
     def build_next_items_late_game_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
@@ -689,13 +699,13 @@ class NextItemsTrainer(Trainer):
                                                                "next_items_processed_elite_sorted_complete"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_complete"])
-        X_elite, Y_elite = dataloader_elite.get_train_data()
+        X_elite, Y_elite = dataloader_elite.get_train_data(lambda: np.logical_not(no_full_items_completed))
         print("Loading test data")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(lambda: np.logical_not(no_full_items_completed))
 
-        X_lower, Y_lower = dataloader_lower.get_train_data()
+        X_lower, Y_lower = dataloader_lower.get_train_data(lambda: np.logical_not(no_full_items_completed))
         print("Loading test data")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(lambda: np.logical_not(no_full_items_completed))
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
@@ -792,19 +802,11 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
-
     def build_next_items_first_item_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        def no_full_items_completed(data):
-            pos = data[:, 1]
-            full_item_ints = ItemManager().get_full_item_ints()
-            data_items = data[:, 12:6*12]
-            data_items = np.reshape(data_items, (-1, 5,12))
-            target_summ_items = data_items[range(len(pos)), pos, ::2]
-            target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
-            return np.logical_not(np.any(target_summs_full_items_boolean, axis=1))
+
 
         self.network = NextItemFirstItemNetwork()
         self.train_path = app_constants.model_paths["train"]["next_items_first_item"]
