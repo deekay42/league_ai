@@ -190,8 +190,21 @@ class ItemManager:
                                                                                                item[
                                                                                                    "completion"] ==
                                                                                                "semi")))}
+
+
+        def get_full_item_ints(self):
+            return {item["int"] for key, item in self._by["int"].items() if "full_item" in item and item["full_item"]}
+
+
         def extract_completes(self, summ_items_counter, true_completes_only=False):
             completes = self.get_completes(true_completes_only)
+            for item in summ_items_counter:
+                if item in completes:
+                    yield item
+
+
+        def extract_full_items(self, summ_items_counter):
+            completes = self.get_full_items()
             for item in summ_items_counter:
                 if item in completes:
                     yield item
@@ -204,6 +217,9 @@ class ItemManager:
                 if item in completes and not ("multiples_allowed" in item_full and item_full["multiples_allowed"]):
                     yield item
 
+
+        def get_starter_ints(self):
+            return {item["int"] for key, item in self._by["int"].items() if "starter" in item and item["starter"]}
 
 
 

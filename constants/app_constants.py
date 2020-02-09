@@ -105,6 +105,8 @@ for label in ["train", "best"]:
     paths.update({
         "next_items_early": paths["base"] + "next_items" + os.sep + "early" + os.sep,
         "next_items_late": paths["base"] + "next_items" + os.sep + "late" + os.sep,
+        "next_items_starter": paths["base"] + "next_items" + os.sep + "starter" + os.sep,
+        "next_items_first_item": paths["base"] + "next_items" + os.sep + "first_item" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
     paths.update({"champs": paths["imgs"] + "champs" + os.sep,

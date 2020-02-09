@@ -223,7 +223,7 @@ def score_build_path(build_path, existing_items, current_gold):
         multiplier = 1 + (cass_item.tier-1)/10
         # jg items must be finished first before enchantment
         if item==3706 or item==3715 or item==1400 or item==1401 or item==1402 or item==1412 or item==1413 or \
-                item==1414 or item==1416 or item==1419:
+                item==1414 or item==1416 or item==1419 or item==1039 or item==1041:
             multiplier *= 2
         score += cass_item.gold.total * multiplier
 
@@ -234,12 +234,19 @@ def score_build_path(build_path, existing_items, current_gold):
         return current_gold, result_buy_seq, [ai+aai for ai, aai in zip(result_abs, already_used_items_add_to_abs)]
 
 def is_super_path(path, current_items, final_item):
-    full_comp_tree = []
+    full_comp_tree = Counter()
     for item in path:
-        full_comp_tree.extend(full_item_trees[item])
-    return np.all([current_item in full_comp_tree or current_item not in full_item_trees[final_item.id] for
-                   current_item in
-                   current_items])
+        full_comp_tree += Counter(full_item_trees[item])
+
+    for current_item, qty in current_items.items():
+        if current_item not in full_item_trees[final_item.id]:
+            continue
+        if current_item in full_comp_tree and full_comp_tree[current_item] >= qty:
+            full_comp_tree -= Counter({current_item:qty})
+        else:
+            return False
+    else:
+        return True
 
 
 def normalize_bps(bps, current_items, item):
@@ -248,7 +255,10 @@ def normalize_bps(bps, current_items, item):
     bps = [bp for bp in bps if bp]
     bps = [bp for bp in bps if is_super_path(bp, current_items, item)]
     bps = [sorted(bp, key=lambda a: cass.Item(id=a, region="EUW").gold.total, reverse=True) for bp in bps]
-    return np.unique(bps)
+    try:
+        return np.unique(bps, axis=1).tolist()
+    except:
+        return np.unique(bps).tolist()
 
 
 def build_path_for_gold(item, current_items, gold):
