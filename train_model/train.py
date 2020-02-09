@@ -740,6 +740,112 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+    def build_next_items_starter_model(self):
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+        def condition(data):
+            pos = data[:, 1]
+            all_starter_items_ints = ItemManager().get_starter_ints()
+            starter_items = np.isin(data[:, -1], list(all_starter_items_ints))
+            data_items = data[:, 12:6*12]
+            data_items = np.reshape(data_items, (-1, 5,12))
+            empty_items = data_items[range(len(pos)), pos, 1] == 6
+            return np.logical_and(empty_items, starter_items)
+
+        self.network = NextItemStarterNetwork()
+        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
+        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_uninf"])
+        X_elite, Y_elite = dataloader_elite.get_train_data(condition)
+        print("Loading test data")
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(condition)
+
+        X_lower, Y_lower = dataloader_lower.get_train_data(condition)
+        print("Loading test data")
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(condition)
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+
+        # self.X = np.tile(self.X[:20], (10000,1))
+        # self.Y = np.tile(self.Y[:20], 10000)
+        # self.X_test = self.X
+        # self.Y_test = self.Y
+
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+        self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("starter")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+
+        self.build_new_model()
+
+
+
+    def build_next_items_first_item_model(self):
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+
+        def no_full_items_completed(data):
+            pos = data[:, 1]
+            full_item_ints = ItemManager().get_full_item_ints()
+            data_items = data[:, 12:6*12]
+            data_items = np.reshape(data_items, (-1, 5,12))
+            target_summ_items = data_items[range(len(pos)), pos, ::2]
+            target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
+            return np.logical_not(np.any(target_summs_full_items_boolean, axis=1))
+
+        self.network = NextItemFirstItemNetwork()
+        self.train_path = app_constants.model_paths["train"]["next_items_first_item"]
+        self.best_path = app_constants.model_paths["best"]["next_items_first_item"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_uninf"])
+        X_elite, Y_elite = dataloader_elite.get_train_data(no_full_items_completed)
+        print("Loading test data")
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(no_full_items_completed)
+
+        X_lower, Y_lower = dataloader_lower.get_train_data(no_full_items_completed)
+        print("Loading test data")
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(no_full_items_completed)
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+
+        # self.X = np.tile(self.X[:20], (10000,1))
+        # self.Y = np.tile(self.Y[:20], 10000)
+        # self.X_test = self.X
+        # self.Y_test = self.Y
+
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+        self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("first_item")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+
+        self.build_new_model()
+
+
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
