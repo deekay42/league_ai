@@ -826,16 +826,16 @@ class NextItemsTrainer(Trainer):
 
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_uninf"])
+                                                                     "next_items_processed_elite_sorted_complete"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_uninf"])
-        X_elite, Y_elite = dataloader_elite.get_train_data(no_full_items_completed)
+                                                                     "next_items_processed_lower_sorted_complete"])
+        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.no_full_items_completed)
         print("Loading test data")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(no_full_items_completed)
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.no_full_items_completed)
 
-        X_lower, Y_lower = dataloader_lower.get_train_data(no_full_items_completed)
+        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.no_full_items_completed)
         print("Loading test data")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(no_full_items_completed)
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.no_full_items_completed)
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
@@ -863,7 +863,7 @@ class NextItemsTrainer(Trainer):
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
-    t.build_next_items_late_game_model()
+    t.build_next_items_first_item_model()
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:
