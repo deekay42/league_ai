@@ -1395,9 +1395,10 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         nonstarter_input_layer = merge(
             [
                 pos_embedded,
+                pos_one_hot,
                 opp_champ_emb_short2_flat,
                 opp_champ_emb_short1_flat,
-                opp_champ_emb_flat,
+                # opp_champ_emb_flat,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
                 target_summ_champ_emb,
