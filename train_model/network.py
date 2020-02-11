@@ -1026,7 +1026,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         net = batch_normalization(fully_connected(nonstarter_input_layer, 128, bias=False,
                                             activation='relu',
                                             regularizer="L2"))
-        net = batch_normalization(fully_connected(nonstarter_input_layer, 64, bias=False,
+        net = batch_normalization(fully_connected(net, 64, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
         logits = fully_connected(net, total_num_items, activation='linear')
@@ -1408,10 +1408,10 @@ class NextItemFirstItemNetwork(NextItemNetwork):
                 target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(nonstarter_input_layer, 256, bias=False,
+        net = batch_normalization(fully_connected(nonstarter_input_layer, 128, bias=False,
                                             activation='relu',
                                             regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 128, bias=False,
+        net = batch_normalization(fully_connected(net, 64, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
         logits = fully_connected(net, total_num_items, activation='linear')
