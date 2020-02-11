@@ -613,9 +613,9 @@ class NextItemsTrainer(Trainer):
 
         print("Loading training data")
         dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                               "next_items_processed_elite_sorted_inf"])
+                                                               "next_items_processed_elite_sorted_uninf"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                               "next_items_processed_lower_sorted_inf"])
+                                                               "next_items_processed_lower_sorted_uninf"])
         self.X, self.Y = dataloader.get_train_data()
         print("Loading test data")
         self.X_test, self.Y_test = dataloader.get_test_data()
