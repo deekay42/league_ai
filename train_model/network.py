@@ -698,6 +698,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         nonstarter_input_layer = merge(
             [
+                opp_champs_k_hot,
                 opp_champ_emb_flat,
                 pos_embedded,
                 pos_one_hot,
