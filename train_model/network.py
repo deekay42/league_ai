@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tflearn
 from tflearn.activations import relu
-from tflearn.layers.conv import conv_2d, max_pool_2d
+from tflearn.layers.conv import conv_2d, conv_1d, max_pool_2d, max_pool_1d
 from tflearn.layers.core import fully_connected, input_data, dropout
 from tflearn.layers.embedding_ops import embedding
 from tflearn.layers.estimator import regression, regression_custom
@@ -498,6 +498,51 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             }
 
 
+    def filter_invalid_indices(self, ets_mag, ets_dir, team_emb_dim, n):
+        valid_mag_idx = tf.reshape(tf.greater_equal(ets_mag, 1e-7), (-1,))
+        valid_mag_idx_i = tf.where(valid_mag_idx)
+        ets_magnitude = tf.boolean_mask(ets_mag, valid_mag_idx)
+        ets_direction = tf.boolean_mask(ets_dir, valid_mag_idx)
+        ets_magnitude = tf.scatter_nd(valid_mag_idx_i, ets_magnitude, (n, 1))
+        ets_direction = tf.scatter_nd(valid_mag_idx_i, ets_direction, (n, team_emb_dim))
+        return [ets_direction, ets_magnitude]
+
+
+    def calc_norm_mag(self, enemy_team_strength, norm_type, team_emb_dim, n):
+        if norm_type == "l2":
+            ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
+        elif norm_type == "l1":
+            ets_magnitude = tf.reduce_sum(tf.abs(enemy_team_strength), axis=1, keep_dims=True) + 1e-8
+        elif norm_type == "max":
+            ets_magnitude = tf.reduce_max(tf.abs(enemy_team_strength), axis=1, keep_dims=True)
+        ets_direction = tf.math.divide_no_nan(enemy_team_strength, ets_magnitude)
+
+        return self.filter_invalid_indices(ets_magnitude, ets_direction, team_emb_dim, n)
+
+
+    def calc_enemy_team_strength(self, enemy_summs_strength_output, dim, champ_ints, total_num_champs, n):
+        champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=dim)
+        opp_champ_emb = champs_embedded[:, 5:10]
+        enemy_summs_strength_output = tf.tile(enemy_summs_strength_output, multiples=[1, 1, dim])
+        enemy_team_strength = enemy_summs_strength_output * opp_champ_emb
+        enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
+        norm_types = ["l2", "l1", "max"]
+        for norm_type in norm_types:
+            yield self.calc_norm_mag(enemy_team_strength, norm_type, dim, n)
+
+
+    def build_team_convs(self, opp_champ_emb):
+        et_lane_conv = batch_normalization(conv_1d(opp_champ_emb, 32, 2, bias=False, activation='relu',
+                                                   padding='valid'))
+        et_lane_conv = batch_normalization(conv_1d(et_lane_conv, 64, 2, bias=False, activation='relu',
+                                                   padding='valid'))
+        et_lane_conv = batch_normalization(conv_1d(et_lane_conv, 128, 2, bias=False, activation='relu',
+                                                   padding='valid'))
+        et_lane_conv = batch_normalization(conv_1d(et_lane_conv, 256, 2, bias=False, activation='relu',
+                                                   padding='valid'))
+
+        return tf.reshape(et_lane_conv, (-1, 256))
+
     def build(self):
         champs_per_game = self.game_config["champs_per_game"]
         total_num_champs = self.game_config["total_num_champs"]
@@ -652,10 +697,12 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         opp_cs = tf.expand_dims(cs[:, 5:10], -1)
         opp_champ_emb = champs_embedded[:, 5:10]
         opp_champ_emb_short1 = champs_embedded_short1[:, 5:10]
+        opp_champ_emb_short1_flat = tf.reshape(opp_champ_emb_short1, (-1, 5))
         opp_champ_emb_short2 = champs_embedded_short2[:, 5:10]
         opp_champ_emb_short2_flat = tf.reshape(opp_champ_emb_short2, (-1, 5))
         opp_champ_emb_flat = tf.reshape(opp_champ_emb, (-1, 5*champ_emb_dim))
         opp_champ_emb_long = champs_embedded_long[:, 5:10]
+        opp_champ_emb_long_flat = tf.reshape(opp_champ_emb_long, (-1, 5))
         opp_champ_items = items_by_champ_k_hot[:, 5:10]
 
         target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
@@ -679,47 +726,100 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         # since it may dip below zero with negative weights.
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
+                                                                          activation='relu'))
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
+
+
+
+
+            # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
+            # this tends to cause nan errors because of div by 0
+        enemy_team_strengths = None
+        for dim in range(2, 12, 2):
+            for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
+                                                          total_num_champs, n):
+                for res in norm_result:
+                    if enemy_team_strengths is not None:
+                        enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
+                    else:
+                        enemy_team_strengths = res
+
+        # enemy_team_strengths = [res for dim in range(2, 12, 2) for res
+        #                         in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
+        #                                                          total_num_champs, n)]
+
+        net = batch_normalization(fully_connected(enemy_team_strengths, 64, bias=False,
+                                                  activation='relu',
+                                                  regularizer="L2"))
+        net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, 32, bias=False,
                                                                           activation='relu',
                                                                           regularizer="L2"))
-        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-        enemy_summs_strength_output = tf.tile(enemy_summs_strength_output, multiples=[1, 1, champ_emb_dim + 1])
-        enemy_team_strength = enemy_summs_strength_output * opp_champ_emb_long
-        enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
-        ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
-        # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        # this tends to cause nan errors because of div by 0
-        ets_direction = tf.math.divide_no_nan(enemy_team_strength, ets_magnitude)
-        valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
-        valid_mag_idx_i = tf.where(valid_mag_idx)
-        ets_magnitude = tf.boolean_mask(ets_magnitude, valid_mag_idx)
-        ets_direction = tf.boolean_mask(ets_direction, valid_mag_idx)
-        ets_magnitude = tf.scatter_nd(valid_mag_idx_i, ets_magnitude, (n, 1))
-        ets_direction = tf.scatter_nd(valid_mag_idx_i, ets_direction, (n, champ_emb_dim + 1))
+        net = dropout(net, 0.9)
+        enemy_team_strengths_output = batch_normalization(fully_connected(net, 32, bias=False,
+                                                                          activation='relu',
+                                                                          regularizer="L2"))
 
-        nonstarter_input_layer = merge(
+        enemy_team_lane_input = merge(
             [
-                opp_champs_k_hot,
-                opp_champ_emb_flat,
+                self.build_team_convs(opp_champ_emb),
+                # self.build_team_convs(opp_champ_emb_long),
+                # self.build_team_convs(opp_champ_emb_short1),
+                # self.build_team_convs(opp_champ_emb_short2),
+                # opp_champs_k_hot,
                 pos_embedded,
                 pos_one_hot,
-                ets_magnitude,
-                ets_direction,
-                target_summ_champ_emb_short2,
-                target_summ_champ_emb_short1,
-                target_summ_champ_emb,
                 opp_summ_champ_emb_short2,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb,
-                target_summ_items,
-                target_summ_current_gold
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(nonstarter_input_layer, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(enemy_team_lane_input, 128, bias=False,
+                                                 activation='relu',
+                                                 regularizer="L2"))
+        net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
+                                                                          regularizer="L2"))
+        net = dropout(net, 0.9)
+        enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
+                                                                          activation='relu',
+                                                                          regularizer="L2"))
+
+        summ_input_layer = merge(
+            [
+                pos_embedded,
+                pos_one_hot,
+                target_summ_champ_emb_short2,
+                target_summ_champ_emb_short1,
+                target_summ_champ_emb
+            ], mode='concat', axis=1)
+
+        summ_input_layer_out = batch_normalization(fully_connected(summ_input_layer, 128, bias=False,
+                                                                   activation='relu'))
+        summ_input_layer_out = batch_normalization(fully_connected(summ_input_layer_out, 64, bias=False,
+                                                                   activation='relu'))
+
+        final_input_layer = merge(
+            [
+                summ_input_layer_out,
+                enemy_team_strengths_output,
+                enemy_team_lane_output
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(final_input_layer, total_num_items, bias=False, activation='relu'))
+        net = merge(
+            [
+                net,
+                target_summ_items
+            ], mode='concat', axis=1)
+        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu'))
+        net = merge(
+            [
+                net,
+                target_summ_current_gold
+            ], mode='concat', axis=1)
+        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu'))
+
         logits = fully_connected(net, total_num_items, activation='linear')
 
         is_training = tflearn.get_training_mode()

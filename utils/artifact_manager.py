@@ -204,7 +204,7 @@ class ItemManager:
 
 
         def extract_full_items(self, summ_items_counter):
-            completes = self.get_full_items()
+            completes = set(self.get_full_item_ints())
             for item in summ_items_counter:
                 if item in completes:
                     yield item
