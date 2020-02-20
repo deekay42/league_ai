@@ -773,9 +773,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         net = batch_normalization(fully_connected(enemy_team_lane_input, 128, bias=False,
                                                  activation='relu'))
-        net = dropout(net, 0.85)
+        # net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu'))
-        net = dropout(net, 0.9)
+        # net = dropout(net, 0.9)
         enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
                                                                           activation='relu'))
 
