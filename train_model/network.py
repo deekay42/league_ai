@@ -1499,11 +1499,9 @@ class NextItemFirstItemNetwork(NextItemNetwork):
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(nonstarter_input_layer, 128, bias=False,
-                                            activation='relu',
-                                            regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 64, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+                                            activation='relu'))
+        net = batch_normalization(fully_connected(net, 128, bias=False,
+                                                  activation='relu'))
         logits = fully_connected(net, total_num_items, activation='linear')
 
         is_training = tflearn.get_training_mode()
