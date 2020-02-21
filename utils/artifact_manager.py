@@ -223,8 +223,8 @@ class ItemManager:
 
 
         def get_starter_ints_uniques(self):
-            return {item["int"] for key, item in self._by["int"].items() if "starter" in item and item["starter"] and
-                    not ("multiples_allowed" in item and item["multiples_allowed"])}
+            return {item["int"] for key, item in self._by["int"].items() if ("starter" in item and item["starter"] and
+                    not ("multiples_allowed" in item and item["multiples_allowed"]))}
 
 
 
