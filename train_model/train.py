@@ -875,7 +875,7 @@ class NextItemsTrainer(Trainer):
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
-    t.build_next_items_first_item_model()
+    t.build_next_items_late_game_model()
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:
