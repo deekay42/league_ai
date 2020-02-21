@@ -698,7 +698,7 @@ class NextItemsTrainer(Trainer):
     def only_full_items_completed(data):
         y = data[:, -1]
         unique_starter_ints = ItemManager().get_starter_ints_uniques()
-        exlude_unique_starters = np.isin(y, list(unique_starter_ints))
+        exlude_unique_starters = np.logical_not(np.isin(y, list(unique_starter_ints)))
 
         pos = data[:, 1]
         full_item_ints = ItemManager().get_full_item_ints()
