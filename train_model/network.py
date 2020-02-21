@@ -964,14 +964,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
 
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
-        #since it may dip below zero with negative weights.
+        # since it may dip below zero with negative weights.
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
-                                                     activation='relu',
-                                                     regularizer="L2"))
+                                                                          activation='relu'))
         enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-        enemy_summs_strength_output = tf.tile(enemy_summs_strength_output, multiples=[1, 1, champ_emb_dim + 1])
-        enemy_team_strength = enemy_summs_strength_output * opp_champ_emb_long
-        enemy_team_strength = tf.reduce_sum(enemy_team_strength, axis=1)
 
         enemy_team_strengths = None
         for dim in range(2, 12, 2):
