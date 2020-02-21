@@ -628,13 +628,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         #                                                          total_num_champs, n)]
 
         net = batch_normalization(fully_connected(enemy_team_strengths, 64, bias=False,
-                                                  activation='relu'))
-        # net = dropout(net, 0.85)
+                                                  activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 32, bias=False,
-                                                                          activation='relu'))
-        # net = dropout(net, 0.9)
+                                                                          activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.9)
         enemy_team_strengths_output = batch_normalization(fully_connected(net, 32, bias=False,
-                                                                          activation='relu'))
+                                                                          activation='relu',  regularizer="L2"))
 
         enemy_team_lane_input = merge(
             [
@@ -651,12 +651,12 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(enemy_team_lane_input, 128, bias=False,
-                                                 activation='relu'))
-        # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu'))
-        # net = dropout(net, 0.9)
+                                                 activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.9)
         enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
-                                                                          activation='relu'))
+                                                                          activation='relu',  regularizer="L2"))
 
         final_input_layer = merge(
             [
@@ -671,9 +671,11 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 target_summ_items
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, total_num_items, bias=False, activation='relu'))
-        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu'))
-        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(final_input_layer, total_num_items, bias=False, activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu',  regularizer="L2"))
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, total_num_items, bias=False, activation='relu',  regularizer="L2"))
 
         logits = fully_connected(net, total_num_items, activation='linear')
 
