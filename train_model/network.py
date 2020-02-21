@@ -985,7 +985,8 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         nonstarter_input_layer = merge(
             [
-                enemy_team_strengths
+                enemy_team_strengths,
+                target_summ_champ_emb_short2,
                 target_summ_items,
                 target_summ_current_gold
             ], mode='concat', axis=1)
