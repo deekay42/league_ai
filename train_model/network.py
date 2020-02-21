@@ -1482,28 +1482,44 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         ets_magnitude = tf.scatter_nd(valid_mag_idx_i, ets_magnitude, (n, 1))
         ets_direction = tf.scatter_nd(valid_mag_idx_i, ets_direction, (n, champ_emb_dim + 1))
 
-        nonstarter_input_layer = merge(
+
+
+
+
+
+        low_prio_inputs = merge(
             [
-                pos_embedded,
-                pos_one_hot,
+
                 opp_champ_emb_short2_flat,
                 opp_champ_emb_short1_flat,
                 # opp_champ_emb_flat,
                 opp_summ_champ_emb_short1,
                 opp_summ_champ_emb_short2,
-                target_summ_champ_emb,
+                # target_summ_champ_emb,
                 target_summ_champ_emb_short1,
-                target_summ_champ_emb_short2,
-                target_summ_items,
-                target_summ_current_gold
+                target_summ_champ_emb_short2
             ], mode='concat', axis=1)
-
-        net = batch_normalization(fully_connected(nonstarter_input_layer, 128, bias=False,
-                                            activation='relu',
-                                            regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 64, bias=False,
+        net = batch_normalization(fully_connected(low_prio_inputs, 16, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 8, bias=False,
+                                                  activation='relu',
+                                                  regularizer="L2"))
+        high_prio_inputs = merge(
+            [
+                pos_embedded,
+                pos_one_hot,
+                target_summ_items,
+                target_summ_current_gold,
+                net
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(high_prio_inputs, 128, bias=False,
+                                                  activation='relu'))
+        net = batch_normalization(fully_connected(net, 64, bias=False,
+                                                  activation='relu'))
+
         logits = fully_connected(net, total_num_items, activation='linear')
 
         is_training = tflearn.get_training_mode()
