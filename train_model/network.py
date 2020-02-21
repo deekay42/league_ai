@@ -1517,7 +1517,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
 
         net = batch_normalization(fully_connected(high_prio_inputs, 128, bias=False,
                                                   activation='relu'))
-        net = batch_normalization(fully_connected(net, 64, bias=False,
+        net = batch_normalization(fully_connected(net, 128, bias=False,
                                                   activation='relu'))
 
         logits = fully_connected(net, total_num_items, activation='linear')
