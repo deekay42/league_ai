@@ -1513,6 +1513,8 @@ class NextItemFirstItemNetwork(NextItemNetwork):
                 target_summ_items,
                 target_summ_current_gold,
                 opp_summ_champ_emb_short2,
+                opp_summ_champ_emb_short1,
+                opp_summ_champ_emb,
                 target_summ_champ_emb_short2,
                 opp_champ_emb_short2_flat,
                 opp_champ_emb_short1_flat,
@@ -1521,6 +1523,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         net = batch_normalization(fully_connected(high_prio_inputs, 128, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 128, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
