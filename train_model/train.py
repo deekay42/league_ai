@@ -697,8 +697,8 @@ class NextItemsTrainer(Trainer):
     @staticmethod
     def only_full_items_completed(data):
         y = data[:, -1]
-        unique_starter_ints = ItemManager().get_starter_ints_uniques()
-        exlude_unique_starters = np.logical_not(np.isin(y, list(unique_starter_ints)))
+        starter_ints = ItemManager().get_starter_ints()
+        exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
 
         pos = data[:, 1]
         full_item_ints = ItemManager().get_full_item_ints()
@@ -707,7 +707,7 @@ class NextItemsTrainer(Trainer):
         target_summ_items = data_items[range(len(pos)), pos, ::2]
         target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
         only_full_items_complete = np.any(target_summs_full_items_boolean, axis=1)
-        valid_indices = np.logical_and(only_full_items_complete, exlude_unique_starters)
+        valid_indices = np.logical_and(only_full_items_complete, exclude_starters)
         return valid_indices
 
 
