@@ -496,9 +496,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                     reuse=tf.AUTO_REUSE,
                                     scope="champ_scope")
-        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1,
-                                           reuse=tf.AUTO_REUSE,
-                                           scope="champs_embedded_short1")
+        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1, name="my_champs_emb")
         champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 2,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short2")
