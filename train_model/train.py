@@ -872,10 +872,54 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+    def build_champ_embeddings_model(self):
+
+        self.network = ChampEmbeddings()
+        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
+        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_elite_sorted_complete"])
+        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_lower_sorted_complete"])
+        champ_ints, items = dataloader_elite.get_item_distrib_by_champ_v2()
+        self.X = []
+        self.Y = []
+        for champ_int, item in zip(champ_ints, items):
+            self.X.append(np.concatenate([[champ_int], item], axis=0))
+            self.Y.append([1])
+            nonmatching_champs = set(range(ChampManager().get_num("int"))) - {champ_int}
+            for nc in nonmatching_champs:
+                self.X.append(np.concatenate([[nc], item], axis=0))
+                self.Y.append([0])
+
+
+        self.X_test, self.Y_test = self.X[:1000], self.Y[:1000]
+        # print("Loading test data")
+        # X_test_elite, Y_test_elite = dataloader_elite.get_item_distrib_by_champ()
+
+        # X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_full_items_completed)
+        # print("Loading test data")
+        # X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.only_full_items_completed)
+
+        # self.X = np.concatenate([X_elite, X_lower], axis=0)
+        # self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        # self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        # self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+
+        # self.X = self.X[:1000]
+        # self.Y = self.Y[:1000]
+        # self.X_test = self.X[:1000]
+        # self.Y_test = self.Y[:1000]
+
+        self.build_new_model()
+
+
 if __name__ == "__main__":
     t = NextItemsTrainer()
 
-    t.build_next_items_late_game_model()
+    t.build_champ_embeddings_model()
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:

@@ -985,10 +985,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         nonstarter_input_layer = merge(
             [
-                # enemy_team_strengths,
+                enemy_team_strengths,
                 target_summ_champ_emb_short2,
                 target_summ_items,
-                # target_summ_current_gold
+                target_summ_current_gold
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(nonstarter_input_layer, 256, bias=False,
@@ -1003,7 +1003,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                   activation='relu',
                                                   regularizer="L2"))
 
-        logits = fully_connected(target_summ_champ_emb_short2, total_num_items, activation='linear')
+        logits = fully_connected(net, total_num_items, activation='linear')
 
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(logits)
@@ -1444,6 +1444,60 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         targets_sparse = tf.argmax(targets, axis=-1)
         preds_sparse = tf.argmax(preds, axis=-1)
         return weighted_accuracy(preds_sparse, targets_sparse, self.network_config["class_weights"])
+
+
+class ChampEmbeddings:
+
+    def __init__(self):
+        super().__init__()
+
+        self.network_config = \
+            {
+                "learning_rate": 0.00025,
+                "champ_emb_dim": 3,
+                "all_items_emb_dim": 4,
+                "champ_all_items_emb_dim": 6,
+                "class_weights": [1]
+            }
+        self.game_config = \
+            {
+                "champs_per_game": game_constants.CHAMPS_PER_GAME,
+                "champs_per_team": game_constants.CHAMPS_PER_TEAM,
+                "total_num_champs": ChampManager().get_num("int"),
+
+                "total_num_items": ItemManager().get_num("int"),
+                "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
+            }
+
+
+    def build(self):
+        total_num_champs = self.game_config["total_num_champs"]
+        total_num_items = ItemManager().get_num("int")
+
+        learning_rate = self.network_config["learning_rate"]
+
+        in_vec = input_data(shape=[None, 1+total_num_items], name='input')
+        champ_ints = in_vec[:, 0]
+        items = in_vec[:, 1:]
+
+        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=2,
+                                           reuse=tf.AUTO_REUSE,
+                                           scope="champs_embedded_short1")
+        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 2))
+        final_input_layer = merge(
+            [
+                champs_embedded_short1,
+                items
+            ], mode='concat', axis=1)
+
+        net = fully_connected(final_input_layer, 1, activation=None)
+
+        return regression(net, optimizer='adam', to_one_hot=False,
+                                 n_classes=total_num_items,
+                                 shuffle_batches=True,
+                                 learning_rate=learning_rate,
+                                 loss='binary_crossentropy',
+                                 name='target')
 
 
 def weighted_accuracy(preds_sparse, targets_sparse, class_weights):
