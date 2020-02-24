@@ -496,10 +496,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         champs_embedded = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim,
                                     reuse=tf.AUTO_REUSE,
                                     scope="champ_scope")
-        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1, name="my_champs_emb")
-        # champs_embedded_short1 = fully_connected(tf.reshape(champ_ints, (-1, 1)), 2, bias=False, activation='linear',
-        #                                          name="my_champs_emb")
-        # champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1,10, 2))
+        champs_embedded_short1 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 1,
+                                           reuse=tf.AUTO_REUSE,
+                                           scope="champs_embedded_short1")
         champs_embedded_short2 = embedding(champ_ints, input_dim=total_num_champs, output_dim=champ_emb_dim - 2,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short2")
@@ -605,24 +604,24 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         # since it may dip below zero with negative weights.
-        # enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
-        #                                                                   activation='relu'))
-        # enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-        #
-        #
-        #
-        #
-        #     # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        #     # this tends to cause nan errors because of div by 0
-        # enemy_team_strengths = None
-        # for dim in range(2, 12, 2):
-        #     for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
-        #                                                   total_num_champs, n):
-        #         for res in norm_result:
-        #             if enemy_team_strengths is not None:
-        #                 enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
-        #             else:
-        #                 enemy_team_strengths = res
+        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
+                                                                          activation='relu'))
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
+
+
+
+
+            # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
+            # this tends to cause nan errors because of div by 0
+        enemy_team_strengths = None
+        for dim in range(2, 12, 2):
+            for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
+                                                          total_num_champs, n):
+                for res in norm_result:
+                    if enemy_team_strengths is not None:
+                        enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
+                    else:
+                        enemy_team_strengths = res
 
         # enemy_team_strengths = [res for dim in range(2, 12, 2) for res
         #                         in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
@@ -637,19 +636,19 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # enemy_team_strengths_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
-        # enemy_team_lane_input = merge(
-        #     [
-        #         self.build_team_convs(opp_champ_emb),
-        #         # self.build_team_convs(opp_champ_emb_long),
-        #         # self.build_team_convs(opp_champ_emb_short1),
-        #         # self.build_team_convs(opp_champ_emb_short2),
-        #         # opp_champs_k_hot,
-        #         pos_embedded,
-        #         pos_one_hot,
-        #         opp_summ_champ_emb_short2,
-        #         opp_summ_champ_emb_short1,
-        #         opp_summ_champ_emb,
-        #     ], mode='concat', axis=1)
+        enemy_team_lane_input = merge(
+            [
+                self.build_team_convs(opp_champ_emb),
+                # self.build_team_convs(opp_champ_emb_long),
+                # self.build_team_convs(opp_champ_emb_short1),
+                # self.build_team_convs(opp_champ_emb_short2),
+                # opp_champs_k_hot,
+                pos_embedded,
+                pos_one_hot,
+                opp_summ_champ_emb_short2,
+                opp_summ_champ_emb_short1,
+                opp_summ_champ_emb,
+            ], mode='concat', axis=1)
 
         # net = batch_normalization(fully_connected(enemy_team_lane_input, 128, bias=False,
         #                                          activation='relu',  regularizer="L2"))
@@ -663,14 +662,14 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             [
                 pos_embedded,
                 pos_one_hot,
+                target_summ_champ_emb_short2,
                 target_summ_champ_emb_short1,
-                # target_summ_champ_emb_short1,
-                # target_summ_champ_emb,
-                # enemy_team_strengths,
+                target_summ_champ_emb,
+                enemy_team_strengths,
                 # enemy_team_lane_output,
                 target_summ_current_gold,
                 target_summ_items,
-                # enemy_team_lane_input
+                enemy_team_lane_input
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
@@ -986,10 +985,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         nonstarter_input_layer = merge(
             [
-                enemy_team_strengths,
+                # enemy_team_strengths,
                 target_summ_champ_emb_short2,
                 target_summ_items,
-                target_summ_current_gold
+                # target_summ_current_gold
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(nonstarter_input_layer, 256, bias=False,
@@ -1004,7 +1003,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                   activation='relu',
                                                   regularizer="L2"))
 
-        logits = fully_connected(net, total_num_items, activation='linear')
+        logits = fully_connected(target_summ_champ_emb_short2, total_num_items, activation='linear')
 
         is_training = tflearn.get_training_mode()
         inference_output = tf.nn.softmax(logits)
