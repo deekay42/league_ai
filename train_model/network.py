@@ -663,14 +663,14 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
             [
                 pos_embedded,
                 pos_one_hot,
-                target_summ_champ_emb_short2,
                 target_summ_champ_emb_short1,
-                target_summ_champ_emb,
-                enemy_team_strengths,
+                # target_summ_champ_emb_short1,
+                # target_summ_champ_emb,
+                # enemy_team_strengths,
                 # enemy_team_lane_output,
                 target_summ_current_gold,
                 target_summ_items,
-                enemy_team_lane_input
+                # enemy_team_lane_input
             ], mode='concat', axis=1)
 
         net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
