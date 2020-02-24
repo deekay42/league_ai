@@ -605,24 +605,24 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         # since it may dip below zero with negative weights.
-        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
-                                                                          activation='relu'))
-        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-
-
-
-
-            # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-            # this tends to cause nan errors because of div by 0
-        enemy_team_strengths = None
-        for dim in range(2, 12, 2):
-            for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
-                                                          total_num_champs, n):
-                for res in norm_result:
-                    if enemy_team_strengths is not None:
-                        enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
-                    else:
-                        enemy_team_strengths = res
+        # enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
+        #                                                                   activation='relu'))
+        # enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
+        #
+        #
+        #
+        #
+        #     # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
+        #     # this tends to cause nan errors because of div by 0
+        # enemy_team_strengths = None
+        # for dim in range(2, 12, 2):
+        #     for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
+        #                                                   total_num_champs, n):
+        #         for res in norm_result:
+        #             if enemy_team_strengths is not None:
+        #                 enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
+        #             else:
+        #                 enemy_team_strengths = res
 
         # enemy_team_strengths = [res for dim in range(2, 12, 2) for res
         #                         in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
@@ -637,19 +637,19 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # enemy_team_strengths_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
-        enemy_team_lane_input = merge(
-            [
-                self.build_team_convs(opp_champ_emb),
-                # self.build_team_convs(opp_champ_emb_long),
-                # self.build_team_convs(opp_champ_emb_short1),
-                # self.build_team_convs(opp_champ_emb_short2),
-                # opp_champs_k_hot,
-                pos_embedded,
-                pos_one_hot,
-                opp_summ_champ_emb_short2,
-                opp_summ_champ_emb_short1,
-                opp_summ_champ_emb,
-            ], mode='concat', axis=1)
+        # enemy_team_lane_input = merge(
+        #     [
+        #         self.build_team_convs(opp_champ_emb),
+        #         # self.build_team_convs(opp_champ_emb_long),
+        #         # self.build_team_convs(opp_champ_emb_short1),
+        #         # self.build_team_convs(opp_champ_emb_short2),
+        #         # opp_champs_k_hot,
+        #         pos_embedded,
+        #         pos_one_hot,
+        #         opp_summ_champ_emb_short2,
+        #         opp_summ_champ_emb_short1,
+        #         opp_summ_champ_emb,
+        #     ], mode='concat', axis=1)
 
         # net = batch_normalization(fully_connected(enemy_team_lane_input, 128, bias=False,
         #                                          activation='relu',  regularizer="L2"))
