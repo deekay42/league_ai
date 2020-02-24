@@ -7,6 +7,8 @@ import numpy as np
 import json
 
 from constants import app_constants
+from tflearn.data_utils import to_categorical
+from utils.artifact_manager import ChampManager, ItemManager
 
 
 class DataLoaderBase(ABC):
@@ -109,6 +111,50 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         return X,Y
 
 
+    def get_item_distrib_by_champ(self):
+        if not self.train:
+            self.read_train_from_np_files()
+
+        champ_distrib = {champ_int:[0]*ItemManager().get_num("int") for champ_int in ChampManager().get_ints()}
+
+        full_item_ints = [item_int for item_int in ItemManager().get_completes()]
+        prev_game_id = self.train[0][0]
+        for i, example in enumerate(self.train):
+            if example[0] != prev_game_id:
+                prev_game_id = example[0]
+                final_prev_example = self.train[i-1]
+                for j, champ_int in enumerate(final_prev_example[2:12]):
+                    champ_items = final_prev_example[(j+1)*12:(j+2)*12:2]
+                    valid_i = np.isin(champ_items, full_item_ints)
+                    for item_i in champ_items[valid_i]:
+                        champ_distrib[champ_int][item_i] += 1
+
+        normalized_d = dict()
+        for champ, distrib in champ_distrib.items():
+            normalized_d[champ] = np.array(distrib)/sum(distrib)
+
+        return np.array(list(normalized_d.keys()))[1:], np.array(list(normalized_d.values()))[1:]
+
+
+    def get_item_distrib_by_champ_v2(self):
+        if not self.train:
+            self.read_train_from_np_files()
+
+        result_x, result_y = [], []
+
+        full_item_ints = [item_int for item_int in ItemManager().get_completes()]
+        prev_game_id = self.train[0][0]
+        for i, example in enumerate(self.train):
+            if example[0] != prev_game_id:
+                prev_game_id = example[0]
+                final_prev_example = self.train[i-1]
+                for j, champ_int in enumerate(final_prev_example[2:12]):
+                    champ_items = final_prev_example[(j+1)*12:(j+2)*12:2]
+                    valid_i = np.isin(champ_items, full_item_ints)
+                    items_k_hot = np.sum(to_categorical(champ_items[valid_i], nb_classes=ItemManager().get_num("int")), axis=0)
+                    result_x.append(champ_int)
+                    result_y.append(items_k_hot)
+        return result_x, result_y
 
 
     def get_test_data_raw(self):
