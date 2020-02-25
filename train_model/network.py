@@ -1489,6 +1489,8 @@ class ChampEmbeddings:
                 champs_embedded_short1,
                 items
             ], mode='concat', axis=1)
+
+        net = final_input_layer 
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
