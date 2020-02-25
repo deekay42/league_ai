@@ -1480,10 +1480,10 @@ class ChampEmbeddings:
         champ_ints = in_vec[:, 0]
         items = in_vec[:, 1:]
 
-        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=2,
+        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=3,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short1")
-        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 2))
+        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 3))
         final_input_layer = merge(
             [
                 champs_embedded_short1,
@@ -1497,16 +1497,17 @@ class ChampEmbeddings:
                                  shuffle_batches=True,
                                  learning_rate=learning_rate,
                                  loss='binary_crossentropy',
-                                 name='target',
-                          metric=self.bin_acc)
+                                 name='target', metric=self.bin_acc)
 
 
+    tflearn.utils.feed_dict_builder
     @staticmethod
     def bin_acc(preds, targets, input_):
         preds = tf.round(preds)
         correct_prediction = tf.equal(preds, targets)
         all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
         acc = tf.reduce_mean(all_correct)
+
         return acc
 
 
