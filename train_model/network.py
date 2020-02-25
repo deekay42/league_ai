@@ -1480,10 +1480,10 @@ class ChampEmbeddings:
         champ_ints = in_vec[:, 0]
         items = in_vec[:, 1:]
 
-        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=3,
+        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=2,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short1")
-        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 3))
+        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 2))
         final_input_layer = merge(
             [
                 champs_embedded_short1,
@@ -1491,7 +1491,7 @@ class ChampEmbeddings:
             ], mode='concat', axis=1)
 
         net = final_input_layer
-        net = fully_connected(net, 128, activation='relu')
+        # net = fully_connected(net, 128, activation='relu')
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
