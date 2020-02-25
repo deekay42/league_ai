@@ -1490,13 +1490,13 @@ class ChampEmbeddings:
                 items
             ], mode='concat', axis=1)
 
-        net = final_input_layer 
+        net = final_input_layer
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
                                  shuffle_batches=True,
                                  learning_rate=learning_rate,
-                                 loss='categorical_crossentropy',
+                                 loss='binary_crossentropy',
                                  name='target')
 
 
