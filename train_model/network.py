@@ -1497,7 +1497,17 @@ class ChampEmbeddings:
                                  shuffle_batches=True,
                                  learning_rate=learning_rate,
                                  loss='binary_crossentropy',
-                                 name='target')
+                                 name='target',
+                          metric=self.bin_acc)
+
+
+    @staticmethod
+    def bin_acc(preds, targets, input_):
+        preds = tf.round(preds)
+        correct_prediction = tf.equal(preds, targets)
+        all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
+        acc = tf.reduce_mean(all_correct)
+        return acc
 
 
 def weighted_accuracy(preds_sparse, targets_sparse, class_weights):
