@@ -5,6 +5,7 @@ import shutil
 import sys
 from collections import Counter
 from multiprocessing import Process, JoinableQueue
+import random
 
 from sklearn.metrics import auc, \
     classification_report, precision_recall_curve, precision_recall_fscore_support
@@ -889,10 +890,14 @@ class NextItemsTrainer(Trainer):
         for champ_int, item in zip(champ_ints, items):
             self.X.append(np.concatenate([[champ_int], item], axis=0))
             self.Y.append([1])
-            nonmatching_champs = set(range(ChampManager().get_num("int"))) - {champ_int}
-            for nc in nonmatching_champs:
-                self.X.append(np.concatenate([[nc], item], axis=0))
-                self.Y.append([0])
+            nonmatching_champs = list(set(range(ChampManager().get_num("int"))) - {champ_int})
+
+            nc = random.choice(nonmatching_champs)
+            self.X.append(np.concatenate([[nc], item], axis=0))
+            self.Y.append([0])
+            # for nc in nonmatching_champs:
+            #     self.X.append(np.concatenate([[nc], item], axis=0))
+            #     self.Y.append([0])
 
 
         self.X_test, self.Y_test = self.X[:1000], self.Y[:1000]
@@ -916,8 +921,63 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+class ChampsEmbeddingTrainer(Trainer):
+
+    def __init__(self):
+        super().__init__()
+        self.manager = ItemManager()
+        self.num_epochs = 200
+
+
+    def determine_best_eval(self, scores):
+        # epoch counter is 1 based
+        return np.argmax(scores[:, 0]) + 1
+
+
+    def get_train_data(self):
+        X, Y = [], []
+        for example in self.X:
+            X.append(example)
+            Y.append(1)
+            nonmatching_champs = list(set(range(ChampManager().get_num("int"))) - {example[0]})
+            nc = random.choice(nonmatching_champs)
+            X.append(np.concatenate([[nc], example[1:]], axis=0))
+            Y.append(0)
+        return np.array(X), np.reshape(Y, (-1, 1))
+
+
+    def eval_model(self, model, epoch, prior=None):
+        X, Y = self.get_train_data()
+        X = X[:1000]
+        Y = Y[:1000]
+        main_eval = model.evaluate(X, Y, batch_size=self.batch_size)[0]
+        print(f"Test eval: {main_eval}")
+        return main_eval
+
+
+
+    def build_champ_embeddings_model(self):
+
+        self.network = ChampEmbeddings()
+        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
+        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                               "next_items_processed_elite_sorted_complete"])
+        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_lower_sorted_complete"])
+        champ_ints, items = dataloader_elite.get_item_distrib_by_champ_v2()
+        self.X = []
+        self.Y = []
+        for champ_int, item in zip(champ_ints, items):
+            self.X.append(np.concatenate([[champ_int], item], axis=0))
+
+        self.build_new_model()
+
+
 if __name__ == "__main__":
-    t = NextItemsTrainer()
+    t = ChampsEmbeddingTrainer()
 
     t.build_champ_embeddings_model()
     # try:

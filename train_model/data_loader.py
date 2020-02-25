@@ -139,6 +139,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
     def get_item_distrib_by_champ_v2(self):
         if not self.train:
             self.read_train_from_np_files()
+        # self.train = self.train[:1000]
 
         result_x, result_y = [], []
 
