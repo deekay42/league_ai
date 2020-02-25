@@ -1491,6 +1491,7 @@ class ChampEmbeddings:
             ], mode='concat', axis=1)
 
         net = final_input_layer
+        net = fully_connected(net, 128, activation='relu')
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
