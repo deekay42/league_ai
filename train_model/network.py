@@ -1496,7 +1496,7 @@ class ChampEmbeddings:
                                  n_classes=total_num_items,
                                  shuffle_batches=True,
                                  learning_rate=learning_rate,
-                                 loss='binary_crossentropy',
+                                 loss='categorical_crossentropy',
                                  name='target')
 
 
