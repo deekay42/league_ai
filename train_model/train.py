@@ -967,7 +967,7 @@ class ChampsEmbeddingTrainer(Trainer):
                                                                "next_items_processed_elite_sorted_complete"])
         # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_lower_sorted_complete"])
-        champ_ints, items = dataloader_elite.get_item_distrib_by_champ_v2()
+        champ_ints, items = dataloader_elite.get_item_distrib_by_champ()
         self.X = []
         self.Y = []
         for champ_int, item in zip(champ_ints, items):
