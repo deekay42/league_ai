@@ -1096,7 +1096,7 @@ class ChampsEmbeddingTrainer(Trainer):
         # for champ_int, item in zip(champ_ints, items):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
 
-        self.X = np.load("vs_champ_item_distrib")
+        self.X = np.load("vs_champ_item_distrib.npy")
         # self.X = np.load("champ_item_distrib")
         self.build_new_model()
 
