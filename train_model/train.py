@@ -4,7 +4,7 @@ import multiprocessing
 import shutil
 import sys
 from collections import Counter
-from multiprocessing import Process, JoinableQueue
+from multiprocessing import Process, JoinableQueue, Queue
 import random
 
 from sklearn.metrics import auc, \
@@ -17,6 +17,7 @@ from train_model.network import *
 from utils import utils
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import sklearn
+from tflearn.data_utils import to_categorical
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -30,6 +31,19 @@ class MonitorCallback(tflearn.callbacks.Callback):
         self.f.write(
             "Epoch {0} accuracy {1:.2f} | loss {2:.2f}\n".format(training_state.epoch, training_state.acc_value,
                                                                  training_state.global_loss))
+        self.f.flush()
+
+
+class MonitorCallbackRegression(MonitorCallback):
+
+    def __init__(self, f):
+        super().__init__(f)
+
+
+
+    def on_epoch_end(self, training_state):
+        self.f.write(
+            "Epoch {0}  loss {1:.2f}\n".format(training_state.epoch, training_state.global_loss))
         self.f.flush()
 
 
@@ -90,6 +104,7 @@ class Trainer(ABC):
                     scores = []
                     for epoch in range(self.num_epochs):
                         x, y = self.get_train_data()
+
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
@@ -926,7 +941,9 @@ class ChampsEmbeddingTrainer(Trainer):
     def __init__(self):
         super().__init__()
         self.manager = ItemManager()
-        self.num_epochs = 200
+        self.num_epochs = 2000
+        self.q = None
+        self.network = ChampEmbeddings3()
 
 
     def determine_best_eval(self, scores):
@@ -934,31 +951,138 @@ class ChampsEmbeddingTrainer(Trainer):
         return np.argmax(scores[:, 0]) + 1
 
 
-    def get_train_data(self):
-        X, Y = [], []
-        for example in self.X:
-            X.append(example)
-            Y.append(1)
-            nonmatching_champs = list(set(range(ChampManager().get_num("int"))) - {example[0]})
-            nc = random.choice(nonmatching_champs)
-            X.append(np.concatenate([[nc], example[1:]], axis=0))
-            Y.append(0)
-        return np.array(X), np.reshape(Y, (-1, 1))
+    #     def get_train_data(self):
+    #         return np.array(self.X)[:,1:], np.array(self.X)[:,1:]
+    def get_train_data(self, reps=1000):
+        return np.tile(np.array(self.X)[:,1:], [reps, 1]), np.tile(np.array(self.X)[:,0], reps)
+
+
+
+
+    # def get_train_data(self, num=100):
+    #     if not self.q:
+    #         self.q = Queue()
+    #         p = Process(target=self.generate_train_data, args=(self.q,))
+    #         p.start()
+    #
+    #     X, Y = None, None
+    #     for i in range(num):
+    #         print(f"Waiting for q. {i}")
+    #         x,y = self.q.get()
+    #         x = x[:,1:]
+    #         if X is None:
+    #             X = x
+    #             Y = np.array(self.X)[:,1:]
+    #         else:
+    #             X = np.concatenate([X, x], axis=0)
+    #             Y = np.concatenate([Y, np.array(self.X)[:,1:]], axis=0)
+    #     return X, Y
+
+    def get_train_data_st(self, num=100):
+        X, Y = None, None
+        for i in range(num):
+            x,y = self.generate_train_data_st()
+            x = x[:,1:]
+            if X is None:
+                X = x
+                Y = np.array(self.X)[:,1:]
+            else:
+                X = np.concatenate([X, x], axis=0)
+                Y = np.concatenate([Y, np.array(self.X)[:,1:]], axis=0)
+        return X, Y
+
+
+    # def get_train_data(self, num=10000):
+    #     if not self.q:
+    #         self.q = Queue()
+    #         p = Process(target=self.generate_train_data, args=(self.q,))
+    #         p.start()
+    #
+    #     X, Y = [], []
+    #     for i in range(num):
+    #         x,y = self.q.get()
+    #         X.extend(x)
+    #         Y.extend(y)
+    #     return np.array(X),np.array(Y)
+
+
+    # def generate_train_data(self, q):
+    #     while True:
+    #         X, Y = [], []
+    #         for example in self.X:
+    #             newitems = list(set(random.choices(range(177), weights=example[1:], k=random.randint(5, 7))))
+    #             newitems = np.sum(to_categorical(newitems, nb_classes=ItemManager().get_num("int")), axis=0)
+    #             X.append(np.concatenate([[example[0]], newitems], axis=0))
+    #             Y.append(1)
+    #             nonmatching_champs = list(set(range(ChampManager().get_num("int"))) - {example[0]})
+    #             nc = random.choice(nonmatching_champs)
+    #             X.append(np.concatenate([[nc], newitems], axis=0))
+    #             Y.append(0)
+    #         q.put([np.array(X), np.reshape(Y, (-1, 1))])
+
+    def generate_train_data(self, q):
+        while True:
+            X, Y = [], []
+            for example in self.X:
+                newitems = list(set(random.choices(range(177), weights=example[1:], k=7)))
+                newitems = np.sum(to_categorical(newitems, nb_classes=ItemManager().get_num("int")), axis=0)
+                X.append(np.concatenate([[example[0]], newitems], axis=0))
+                Y.append(1)
+            q.put([np.array(X), np.reshape(Y, (-1, 1))])
+
+
+    def generate_train_data_st(self):
+            X, Y = [], []
+            for example in self.X:
+                newitems = list(set(random.choices(range(177), weights=example[1:], k=random.randint(5, 7))))
+                newitems = np.sum(to_categorical(newitems, nb_classes=ItemManager().get_num("int")), axis=0)
+                X.append(np.concatenate([[example[0]], newitems], axis=0))
+                Y.append(1)
+            return np.array(X), np.reshape(Y, (-1, 1))
 
 
     def eval_model(self, model, epoch, prior=None):
         X, Y = self.get_train_data()
-        X = X[:1000]
-        Y = Y[:1000]
         main_eval = model.evaluate(X, Y, batch_size=self.batch_size)[0]
         print(f"Test eval: {main_eval}")
+        self.log_output(main_eval, epoch)
         return main_eval
 
 
 
+
+    # def build_champ_embeddings_model(self):
+    #
+    #     self.network = ChampEmbeddings()
+    #     self.train_path = app_constants.model_paths["train"]["next_items_starter"]
+    #     self.best_path = app_constants.model_paths["best"]["next_items_starter"]
+    #
+    #     print("Loading training data")
+    #     dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+    #                                                            "next_items_processed_elite_sorted_complete"])
+    #     # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+    #     #                                                              "next_items_processed_lower_sorted_complete"])
+    #     champ_ints, items = dataloader_elite.get_item_distrib_by_champ()
+    #     self.X = []
+    #     self.Y = []
+    #     for champ_int, item in zip(champ_ints, items):
+    #         self.X.append(np.concatenate([[champ_int], item], axis=0))
+    #
+    #     self.build_new_model()
+
+
+    def build_new_model(self):
+        utils.remove_old_files(self.train_path)
+        with open(self.train_path + self.acc_file_name, "w") as self.logfile:
+            self.monitor_callback = MonitorCallbackRegression(self.logfile)
+            scores = self.train_neural_network()
+        best_model_index = self.determine_best_eval(scores)
+        self.save_best_model(best_model_index)
+
+
     def build_champ_embeddings_model(self):
 
-        self.network = ChampEmbeddings()
+
         self.train_path = app_constants.model_paths["train"]["next_items_starter"]
         self.best_path = app_constants.model_paths["best"]["next_items_starter"]
 
@@ -967,19 +1091,85 @@ class ChampsEmbeddingTrainer(Trainer):
                                                                "next_items_processed_elite_sorted_complete"])
         # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_lower_sorted_complete"])
-        champ_ints, items = dataloader_elite.get_item_distrib_by_champ()
-        self.X = []
-        self.Y = []
-        for champ_int, item in zip(champ_ints, items):
-            self.X.append(np.concatenate([[champ_int], item], axis=0))
+        self.X = np.load("champ_item_distrib")
 
         self.build_new_model()
+
+
+    def train_neural_network(self):
+        with tf.device("/gpu:0"):
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(True)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data()
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+                        self.eval_model(model, epoch)
+
+        return scores
+
+    def extract_embeddings(self, model, layer_name):
+        # num_examples = 200
+        # x, y = self.get_train_data_st(num=num_examples)
+        # model.evaluate(x, y)
+
+        x, y = self.get_train_data(1)
+
+        feed_dict = tflearn.utils.feed_dict_builder(x, y, model.inputs,
+                                                    model.targets)
+        embeddings = model.predictor.evaluate(feed_dict, [layer_name], x.shape[0])[0]
+        embeddings_by_champ = np.array([[embeddings[champ_int*i] for i in range(num_examples)] for champ_int in range(
+            ChampManager().get_num("int")-1)])
+        center_points_by_champ = np.mean(embeddings_by_champ, axis=1)
+        # embeddings_distances_to_center = [[np.linalg.norm(champ_point-champ_center) for champ_point in
+        #                                    embeddings_by_champ] for champ_embeddings, champ_center in
+        #                                   zip(embeddings_by_champ, center_points_by_champ)]
+
+        # std_dev_by_champ = np.sqrt(np.mean(np.square(embeddings_distances_to_center), axis=1))
+        std_dev_by_champ = np.std(embeddings_by_champ, axis=1)
+        return center_points_by_champ, std_dev_by_champ
+
+
+    def get_embedding_for_model(self, path):
+        # print("Loading training data")
+        # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_elite_sorted_complete"])
+        # # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        # #                                                              "next_items_processed_lower_sorted_complete"])
+        # champ_ints, items = dataloader_elite.get_item_distrib_by_champ()
+        #
+        # self.X = []
+        # self.Y = []
+        # for champ_int, item in zip(champ_ints, items):
+        #     self.X.append(np.concatenate([[champ_int], item], axis=0))
+        # with open("champ_item_distrib", "r") as writer:
+        #     np.save(writer, self.X)
+        self.X = np.load("champ_item_distrib")
+        with tf.device("/gpu:0"):
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(False)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    model.load(path)
+                    embs = self.extract_embeddings(model, 'my_embedding/MatMul:0')
+        return scores
 
 
 if __name__ == "__main__":
     t = ChampsEmbeddingTrainer()
 
-    t.build_champ_embeddings_model()
+    # t.build_champ_embeddings_model()
+    t.get_embedding_for_model('models/best/next_items/starter/my_model92')
+
     # try:
     #     t.build_next_items_early_game_model()
     # except Exception as e:

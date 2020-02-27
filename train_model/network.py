@@ -1480,10 +1480,10 @@ class ChampEmbeddings:
         champ_ints = in_vec[:, 0]
         items = in_vec[:, 1:]
 
-        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=2,
+        champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=3,
                                            reuse=tf.AUTO_REUSE,
                                            scope="champs_embedded_short1")
-        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 2))
+        champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 3))
         final_input_layer = merge(
             [
                 champs_embedded_short1,
@@ -1491,7 +1491,7 @@ class ChampEmbeddings:
             ], mode='concat', axis=1)
 
         net = final_input_layer
-        # net = fully_connected(net, 128, activation='relu')
+        net = fully_connected(net, 128, activation='relu', regularizer="L2")
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
@@ -1500,8 +1500,6 @@ class ChampEmbeddings:
                                  loss='binary_crossentropy',
                                  name='target', metric=self.bin_acc)
 
-
-    tflearn.utils.feed_dict_builder
     @staticmethod
     def bin_acc(preds, targets, input_):
         preds = tf.round(preds)
@@ -1510,6 +1508,100 @@ class ChampEmbeddings:
         acc = tf.reduce_mean(all_correct)
 
         return acc
+
+
+class ChampEmbeddings2:
+
+    def __init__(self):
+        super().__init__()
+
+        self.network_config = \
+            {
+                "learning_rate": 0.00001,
+                "champ_emb_dim": 3,
+                "all_items_emb_dim": 4,
+                "champ_all_items_emb_dim": 6,
+                "class_weights": [1]
+            }
+        self.game_config = \
+            {
+                "champs_per_game": game_constants.CHAMPS_PER_GAME,
+                "champs_per_team": game_constants.CHAMPS_PER_TEAM,
+                "total_num_champs": ChampManager().get_num("int"),
+
+                "total_num_items": ItemManager().get_num("int"),
+                "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
+            }
+
+
+    def build(self):
+        total_num_champs = self.game_config["total_num_champs"]
+        total_num_items = ItemManager().get_num("int")
+
+        in_vec = input_data(shape=[None, total_num_items], name='input')
+        encoder = tflearn.fully_connected(in_vec, 64)
+        encoder = tflearn.fully_connected(encoder, 3, name="my_embedding")
+        decoder = tflearn.fully_connected(encoder, 64)
+        decoder = tflearn.fully_connected(decoder, total_num_items)
+
+        # Regression, with mean square error
+        return tflearn.regression(decoder, optimizer='adam', learning_rate=0.001,
+                                 loss='mean_square', metric=None)
+
+
+
+class ChampEmbeddings3:
+
+    def __init__(self):
+        super().__init__()
+
+        self.network_config = \
+            {
+                "learning_rate": 0.001,
+                "champ_emb_dim": 3,
+                "all_items_emb_dim": 4,
+                "champ_all_items_emb_dim": 6,
+                "class_weights": [1]
+            }
+        self.game_config = \
+            {
+                "champs_per_game": game_constants.CHAMPS_PER_GAME,
+                "champs_per_team": game_constants.CHAMPS_PER_TEAM,
+                "total_num_champs": ChampManager().get_num("int"),
+
+                "total_num_items": ItemManager().get_num("int"),
+                "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
+            }
+
+
+    def build(self):
+        total_num_champs = self.game_config["total_num_champs"]
+        total_num_items = ItemManager().get_num("int")
+
+        encoder = input_data(shape=[None, total_num_items], name='input')
+        encoder = dropout(encoder, 0.8)
+        encoder = tflearn.fully_connected(encoder, 64)
+        encoder = dropout(encoder, 0.9)
+        encoder = tflearn.fully_connected(encoder, 3, name="my_embedding", regularizer="L2")
+        decoder = tflearn.fully_connected(encoder, 64)
+        decoder = tflearn.fully_connected(decoder, total_num_champs)
+
+        is_training = tflearn.get_training_mode()
+        inference_output = tf.nn.softmax(decoder)
+
+        net = tf.cond(is_training, lambda: decoder, lambda: inference_output)
+
+        # Regression, with mean square error
+        return regression_custom(net, optimizer='adam', to_one_hot=True,
+                                 n_classes=total_num_champs,
+                                 shuffle_batches=True,
+                                 learning_rate=self.network_config["learning_rate"],
+                                 loss=self.class_weighted_sm_ce_loss,
+                                 name='target')
+
+    def class_weighted_sm_ce_loss(self, y_pred, y_true, target_summ_items_sparse):
+        return tf.losses.softmax_cross_entropy(y_true, y_pred)
+
 
 
 def weighted_accuracy(preds_sparse, targets_sparse, class_weights):
