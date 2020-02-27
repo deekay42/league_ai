@@ -142,7 +142,8 @@ class SortedNextItemsDataLoader(DataLoaderBase):
 
         champ_distrib = {champ_int:[0]*ItemManager().get_num("int") for champ_int in ChampManager().get_ints()}
 
-        full_item_ints = [item_int for item_int in ItemManager().get_completes()]
+        situational_items = [item_int for item_int in ItemManager().get_situationals()]
+
         prev_game_id = self.train[0][0]
         for i, example in enumerate(self.train):
             if example[0] != prev_game_id:
@@ -152,7 +153,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
                 for team in range(2):
                     for j, champ_int in enumerate(final_prev_example[2+5*team:7+5*team]):
                         champ_items = final_prev_example[(j+1)*12+team*5*12:(j+2)*12+team*5*12:2]
-                        valid_i = np.isin(champ_items, full_item_ints)
+                        valid_i = np.isin(champ_items, situational_items)
                         team_items[team].extend(champ_items[valid_i])
 
 

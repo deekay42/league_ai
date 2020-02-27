@@ -1580,10 +1580,10 @@ class ChampEmbeddings3:
 
         encoder = input_data(shape=[None, total_num_items], name='input')
         encoder = dropout(encoder, 0.8)
-        encoder = tflearn.fully_connected(encoder, 64)
+        encoder = batch_normalization(fully_connected(encoder, 64, bias=False, activation='relu',  regularizer="L2"))
         encoder = dropout(encoder, 0.9)
         encoder = tflearn.fully_connected(encoder, 3, name="my_embedding", regularizer="L2")
-        decoder = tflearn.fully_connected(encoder, 64)
+        decoder = batch_normalization(fully_connected(encoder, 64, bias=False, activation='relu',  regularizer="L2"))
         decoder = tflearn.fully_connected(decoder, total_num_champs)
 
         is_training = tflearn.get_training_mode()
