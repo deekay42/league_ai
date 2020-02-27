@@ -1167,8 +1167,8 @@ class ChampsEmbeddingTrainer(Trainer):
 if __name__ == "__main__":
     t = ChampsEmbeddingTrainer()
 
-    t.build_champ_embeddings_model()
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model92')
+    # t.build_champ_embeddings_model()
+    t.get_embedding_for_model('models/best/next_items/starter/my_model171')
 
     # try:
     #     t.build_next_items_early_game_model()
