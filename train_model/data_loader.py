@@ -136,6 +136,38 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         return np.array(list(normalized_d.keys()))[1:], np.array(list(normalized_d.values()))[1:]
 
 
+    def get_item_distrib_vs_champ(self):
+        if not self.train:
+            self.read_train_from_np_files()
+
+        champ_distrib = {champ_int:[0]*ItemManager().get_num("int") for champ_int in ChampManager().get_ints()}
+
+        full_item_ints = [item_int for item_int in ItemManager().get_completes()]
+        prev_game_id = self.train[0][0]
+        for i, example in enumerate(self.train):
+            if example[0] != prev_game_id:
+                prev_game_id = example[0]
+                final_prev_example = self.train[i-1]
+                team_items = [[],[]]
+                for team in range(2):
+                    for j, champ_int in enumerate(final_prev_example[2+5*team:7+5*team]):
+                        champ_items = final_prev_example[(j+1)*12+team*5*12:(j+2)*12+team*5*12:2]
+                        valid_i = np.isin(champ_items, full_item_ints)
+                        team_items[team].extend(champ_items[valid_i])
+
+
+                for team in range(2):
+                    for j, champ_int in enumerate(final_prev_example[2+5*team:7+5*team]):
+                        for item_i in team_items[int(not team)]:
+                            champ_distrib[champ_int][item_i] += 1
+
+        normalized_d = dict()
+        for champ, distrib in champ_distrib.items():
+            normalized_d[champ] = np.array(distrib)/sum(distrib)
+
+        return np.array(list(normalized_d.keys()))[1:], np.array(list(normalized_d.values()))[1:]
+
+
     def get_item_distrib_by_champ_v2(self):
         if not self.train:
             self.read_train_from_np_files()
