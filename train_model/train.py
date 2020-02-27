@@ -18,6 +18,7 @@ from utils import utils
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import sklearn
 from tflearn.data_utils import to_categorical
+from scipy import spatial
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -953,7 +954,7 @@ class ChampsEmbeddingTrainer(Trainer):
 
     #     def get_train_data(self):
     #         return np.array(self.X)[:,1:], np.array(self.X)[:,1:]
-    def get_train_data(self, reps=1000):
+    def get_train_data(self, reps=10000):
         return np.tile(np.array(self.X)[:,1:], [reps, 1]), np.tile(np.array(self.X)[:,0], reps)
 
 
@@ -1081,18 +1082,22 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
     def build_champ_embeddings_model(self):
-
-
         self.train_path = app_constants.model_paths["train"]["next_items_starter"]
         self.best_path = app_constants.model_paths["best"]["next_items_starter"]
-
         print("Loading training data")
-        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                               "next_items_processed_elite_sorted_complete"])
-        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-        #                                                              "next_items_processed_lower_sorted_complete"])
-        self.X = np.load("champ_item_distrib")
 
+        # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_elite_sorted_complete"])
+        #
+        # champ_ints, items = dataloader_elite.get_item_distrib_vs_champ()
+        #
+        # self.X = []
+        # self.Y = []
+        # for champ_int, item in zip(champ_ints, items):
+        #     self.X.append(np.concatenate([[champ_int], item], axis=0))
+
+        self.X = np.load("vs_champ_item_distrib")
+        # self.X = np.load("champ_item_distrib")
         self.build_new_model()
 
 
@@ -1125,16 +1130,34 @@ class ChampsEmbeddingTrainer(Trainer):
         feed_dict = tflearn.utils.feed_dict_builder(x, y, model.inputs,
                                                     model.targets)
         embeddings = model.predictor.evaluate(feed_dict, [layer_name], x.shape[0])[0]
-        embeddings_by_champ = np.array([[embeddings[champ_int*i] for i in range(num_examples)] for champ_int in range(
-            ChampManager().get_num("int")-1)])
-        center_points_by_champ = np.mean(embeddings_by_champ, axis=1)
+        tree = spatial.KDTree(embeddings)
+
+        print("hi")
+        d = tree.query(embeddings, k=2)
+        d = d[0][:,1]
+
+        new_embs = []
+        for i in range(100):
+            for champ_emb, dst in zip(embeddings, d):
+
+                deviance = np.random.normal(0, dst/2, 3)
+                new_emb = champ_emb + deviance
+                new_embs.append(new_emb)
+        print("hi")
+
+        # embeddings_by_champ = np.array([[embeddings[champ_int*i] for i in range(num_examples)] for champ_int in range(
+        #     ChampManager().get_num("int")-1)])
+
+
+
+        # center_points_by_champ = np.mean(embeddings_by_champ, axis=1)
         # embeddings_distances_to_center = [[np.linalg.norm(champ_point-champ_center) for champ_point in
         #                                    embeddings_by_champ] for champ_embeddings, champ_center in
         #                                   zip(embeddings_by_champ, center_points_by_champ)]
 
         # std_dev_by_champ = np.sqrt(np.mean(np.square(embeddings_distances_to_center), axis=1))
-        std_dev_by_champ = np.std(embeddings_by_champ, axis=1)
-        return center_points_by_champ, std_dev_by_champ
+        # std_dev_by_champ = np.std(embeddings_by_champ, axis=1)
+        # return center_points_by_champ, std_dev_by_champ
 
 
     def get_embedding_for_model(self, path):
@@ -1168,7 +1191,7 @@ if __name__ == "__main__":
     t = ChampsEmbeddingTrainer()
 
     t.build_champ_embeddings_model()
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model171')
+    # t.get_embedding_for_model('models/best/next_items/starter/my_model80')
 
     # try:
     #     t.build_next_items_early_game_model()
