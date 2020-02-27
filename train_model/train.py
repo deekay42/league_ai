@@ -1043,7 +1043,7 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
     def eval_model(self, model, epoch, prior=None):
-        X, Y = self.get_train_data()
+        X, Y = self.get_train_data(reps=1000)
         main_eval = model.evaluate(X, Y, batch_size=self.batch_size)[0]
         print(f"Test eval: {main_eval}")
         self.log_output(main_eval, epoch)
