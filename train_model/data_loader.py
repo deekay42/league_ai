@@ -9,6 +9,7 @@ import json
 from constants import app_constants
 from tflearn.data_utils import to_categorical
 from utils.artifact_manager import ChampManager, ItemManager
+import sklearn
 
 
 class DataLoaderBase(ABC):
@@ -142,7 +143,10 @@ class SortedNextItemsDataLoader(DataLoaderBase):
 
         champ_distrib = {champ_int:[0]*ItemManager().get_num("int") for champ_int in ChampManager().get_ints()}
 
-        situational_items = [item_int for item_int in ItemManager().get_situationals()]
+        nonsituational_items_blackout = [item_int for item_int in ItemManager().get_situationals()]
+        nonsituational_items_blackout = np.array(list(set(range(ItemManager().get_num("int"))) - set(
+            nonsituational_items_blackout))).astype(np.int32)
+        complete_items = [item_int for item_int in ItemManager().get_completes()]
 
         prev_game_id = self.train[0][0]
         for i, example in enumerate(self.train):
@@ -153,7 +157,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
                 for team in range(2):
                     for j, champ_int in enumerate(final_prev_example[2+5*team:7+5*team]):
                         champ_items = final_prev_example[(j+1)*12+team*5*12:(j+2)*12+team*5*12:2]
-                        valid_i = np.isin(champ_items, situational_items)
+                        valid_i = np.isin(champ_items, complete_items)
                         team_items[team].extend(champ_items[valid_i])
 
 
@@ -164,9 +168,17 @@ class SortedNextItemsDataLoader(DataLoaderBase):
 
         normalized_d = dict()
         for champ, distrib in champ_distrib.items():
-            normalized_d[champ] = np.array(distrib)/sum(distrib)
+            normalized_d[champ] = (np.array(distrib)/sum(distrib))
 
-        return np.array(list(normalized_d.keys()))[1:], np.array(list(normalized_d.values()))[1:]
+        x = np.array(list(normalized_d.keys()))[1:]
+        y = np.array(list(normalized_d.values()))[1:]
+
+        y[:, nonsituational_items_blackout] = 0
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
+        y = min_max_scaler.fit_transform(y)
+
+
+        return x,y
 
 
     def get_item_distrib_by_champ_v2(self):
