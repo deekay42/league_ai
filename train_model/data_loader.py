@@ -173,10 +173,10 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         x = np.array(list(normalized_d.keys()))[1:]
         y = np.array(list(normalized_d.values()))[1:]
 
-        y[:, nonsituational_items_blackout] = 0
+
         min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
         y = min_max_scaler.fit_transform(y)
-
+        y[:, nonsituational_items_blackout] = 0
 
         return x,y
 
