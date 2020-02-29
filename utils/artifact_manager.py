@@ -191,6 +191,9 @@ class ItemManager:
                                                                                                    "completion"] ==
                                                                                                "semi")))}
 
+        def get_situationals(self, true_completes_only=False):
+            return {item_key: item for item_key, item in self._by["int"].items() if "situational" in item and item["situational"]}
+
 
         def get_full_item_ints(self):
             return {item["int"] for key, item in self._by["int"].items() if "full_item" in item and item["full_item"]}
