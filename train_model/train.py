@@ -1096,8 +1096,8 @@ class ChampsEmbeddingTrainer(Trainer):
         # for champ_int, item in zip(champ_ints, items):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
 
-        # self.X = np.load("vs_champ_item_distrib.npy")
-        self.X = np.load("champ_item_distrib.npy")
+        self.X = np.load("vs_champ_item_distrib.npy")
+        # self.X = np.load("champ_item_distrib.npy")
         self.build_new_model()
 
 
@@ -1174,7 +1174,7 @@ class ChampsEmbeddingTrainer(Trainer):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
         # with open("champ_item_distrib", "r") as writer:
         #     np.save(writer, self.X)
-        self.X = np.load("champ_item_distrib")
+        self.X = np.load("champ_item_distrib.npy")
         with tf.device("/gpu:0"):
             with tf.Graph().as_default():
                 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
@@ -1191,7 +1191,7 @@ if __name__ == "__main__":
     t = ChampsEmbeddingTrainer()
     #
     t.build_champ_embeddings_model()
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model2')
+    # t.get_embedding_for_model('models/best/next_items/starter/my_model16')
 
     # try:
     #     t.build_next_items_early_game_model()
