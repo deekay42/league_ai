@@ -1089,15 +1089,15 @@ class ChampsEmbeddingTrainer(Trainer):
         # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_elite_sorted_complete"])
         #
-        # champ_ints, items = dataloader_elite.get_item_distrib_vs_champ()
+        # champ_ints, items = dataloader_elite.get_item_distrib_by_champ()
         #
         # self.X = []
         # self.Y = []
         # for champ_int, item in zip(champ_ints, items):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
 
-        self.X = np.load("vs_champ_item_distrib.npy")
-        # self.X = np.load("champ_item_distrib")
+        # self.X = np.load("vs_champ_item_distrib.npy")
+        self.X = np.load("champ_item_distrib.npy")
         self.build_new_model()
 
 
@@ -1191,7 +1191,7 @@ if __name__ == "__main__":
     t = ChampsEmbeddingTrainer()
     #
     t.build_champ_embeddings_model()
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model6')
+    # t.get_embedding_for_model('models/best/next_items/starter/my_model2')
 
     # try:
     #     t.build_next_items_early_game_model()

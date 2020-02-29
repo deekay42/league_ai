@@ -130,11 +130,19 @@ class SortedNextItemsDataLoader(DataLoaderBase):
                     for item_i in champ_items[valid_i]:
                         champ_distrib[champ_int][item_i] += 1
 
+
         normalized_d = dict()
         for champ, distrib in champ_distrib.items():
-            normalized_d[champ] = np.array(distrib)/sum(distrib)
+            normalized_d[champ] = (np.array(distrib) / sum(distrib))
 
-        return np.array(list(normalized_d.keys()))[1:], np.array(list(normalized_d.values()))[1:]
+        x = np.array(list(normalized_d.keys()))[1:]
+        y = np.array(list(normalized_d.values()))[1:]
+
+        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
+        y = min_max_scaler.fit_transform(y)
+
+
+        return x, y
 
 
     def get_item_distrib_vs_champ(self):
