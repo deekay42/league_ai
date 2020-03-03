@@ -664,19 +664,20 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # since it may dip below zero with negative weights.
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
                                                                           activation='linear', regularizer="L2"))
-        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
-
-        # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
-        # this tends to cause nan errors because of div by 0
-        enemy_team_strengths = None
-        for dim in range(2, 12, 2):
-            for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
-                                                             self.game_config["total_num_champs"], n):
-                for res in norm_result:
-                    if enemy_team_strengths is not None:
-                        enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
-                    else:
-                        enemy_team_strengths = res
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
+        # enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
+        #
+        # # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
+        # # this tends to cause nan errors because of div by 0
+        # enemy_team_strengths = None
+        # for dim in range(2, 12, 2):
+        #     for norm_result in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
+        #                                                      self.game_config["total_num_champs"], n):
+        #         for res in norm_result:
+        #             if enemy_team_strengths is not None:
+        #                 enemy_team_strengths = tf.concat([enemy_team_strengths, res], axis=1)
+        #             else:
+        #                 enemy_team_strengths = res
 
         # enemy_team_strengths = [res for dim in range(2, 12, 2) for res
         #                         in self.calc_enemy_team_strength(enemy_summs_strength_output, dim, champ_ints,
@@ -726,7 +727,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                 # enemy_team_lane_input
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))

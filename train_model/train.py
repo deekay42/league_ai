@@ -1154,7 +1154,7 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model16', np.load("champ_item_distrib.npy"),
     #                           "my_champ_embs_dst")
     t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
+    t.build_next_items_early_game_model()
     #
     # t.build_champ_embeddings_model()
 
