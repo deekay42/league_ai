@@ -324,7 +324,7 @@ class PositionsNetwork(Network):
 
 class NextItemNetwork(Network):
 
-    def __init__(self, my_champ_emb_scales=0., opp_champ_emb_scales=0.):
+    def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         self.game_config = \
             {
                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
@@ -342,10 +342,16 @@ class NextItemNetwork(Network):
                 "champ_all_items_emb_dim": 8,
                 "class_weights": [1]
             }
+
         if my_champ_emb_scales is not None:
             self.network_config["my_champ_emb_scales"] = (np.repeat(my_champ_emb_scales, self.network_config[
                 "champ_emb_dim"]) / 2).astype(np.float32)
             self.network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_emb_scales, self.network_config[
+                "champ_emb_dim"]) / 2).astype(np.float32)
+        else:
+            self.network_config["my_champ_emb_scales"] = (np.repeat([0.]*ChampManager().get_num("int"), self.network_config[
+                "champ_emb_dim"]) / 2).astype(np.float32)
+            self.network_config["opp_champ_emb_scales"] = (np.repeat([0.]*ChampManager().get_num("int"), self.network_config[
                 "champ_emb_dim"]) / 2).astype(np.float32)
 
         self.pos_start = 0
@@ -558,7 +564,7 @@ class NextItemNetwork(Network):
 
 class NextItemEarlyGameNetwork(NextItemNetwork):
 
-    def __init__(self, my_champ_emb_scales=0., opp_champ_emb_scales=0.):
+    def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
 
 
@@ -729,10 +735,10 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-        net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
-        net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
+        # net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
+        # net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
 
         logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
 
@@ -751,7 +757,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
 class NextItemLateGameNetwork(NextItemNetwork):
 
-    def __init__(self, my_champ_emb_scales=0., opp_champ_emb_scales=0.):
+    def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
 
 
@@ -910,7 +916,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
 class NextItemStarterNetwork(NextItemNetwork):
 
-    def __init__(self, my_champ_emb_scales=0., opp_champ_emb_scales=0.):
+    def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
 
 
@@ -974,7 +980,7 @@ class NextItemStarterNetwork(NextItemNetwork):
 
 class NextItemFirstItemNetwork(NextItemNetwork):
 
-    def __init__(self, my_champ_emb_scales=0., opp_champ_emb_scales=0.):
+    def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
 
 
