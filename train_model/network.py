@@ -846,7 +846,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 lvl_diff,
                 cs_diff
             ], mode='concat', axis=2)
-        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
+        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 1))
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
@@ -870,7 +870,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
                                                                           activation='linear', regularizer="L2"))
-
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
         nonstarter_input_layer = merge(
             [
                 enemy_summs_strength_output,
