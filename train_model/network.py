@@ -888,7 +888,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                                                   activation='relu',
                                                   regularizer="L2"))
         net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 64, bias=False,
+        net = batch_normalization(fully_connected(net, 128, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
 
