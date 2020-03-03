@@ -566,6 +566,16 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
 
     def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
+        if my_champ_emb_scales is not None:
+            self.network_config["my_champ_emb_scales"] = (np.repeat(my_champ_emb_scales, self.network_config[
+                "champ_emb_dim"]) / 3).astype(np.float32)
+            self.network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_emb_scales, self.network_config[
+                "champ_emb_dim"]) / 3).astype(np.float32)
+        else:
+            self.network_config["my_champ_emb_scales"] = (np.repeat([0.]*ChampManager().get_num("int"), self.network_config[
+                "champ_emb_dim"]) / 2).astype(np.float32)
+            self.network_config["opp_champ_emb_scales"] = (np.repeat([0.]*ChampManager().get_num("int"), self.network_config[
+                "champ_emb_dim"]) / 2).astype(np.float32)
 
 
     def build(self):
