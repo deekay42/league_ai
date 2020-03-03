@@ -802,7 +802,7 @@ class NextItemsTrainer(Trainer):
             self.class_weights)]
         self.class_weights = self.class_weights / np.sum(self.class_weights) * int(len(ItemManager().get_completes()))
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-
+        self.class_weights[106] *= 3
 
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
