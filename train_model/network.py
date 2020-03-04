@@ -393,7 +393,7 @@ class NextItemNetwork(Network):
         my_team_emb_noise = tf.reshape(my_team_emb_noise, (-1, 3))
         my_team_champs_embedded_noise = tf.cast(tf.gather(my_team_emb_noise,
                                                           tf.cast(champ_ints, tf.int32)), tf.float32)
-        my_team_champs_embedded = tf.cond(is_training, lambda: my_team_champs_embedded,
+        my_team_champs_embedded = tf.cond(is_training, lambda: my_team_champs_embedded + my_team_champs_embedded_noise,
                                           lambda: my_team_champs_embedded)
         return my_team_champs_embedded
 
@@ -568,7 +568,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
         if my_champ_emb_scales is not None:
             self.network_config["my_champ_emb_scales"] = (np.repeat(my_champ_emb_scales, self.network_config[
-                "champ_emb_dim"]) / 6).astype(np.float32)
+                "champ_emb_dim"]) / 4).astype(np.float32)
             self.network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_emb_scales, self.network_config[
                 "champ_emb_dim"]) / 4).astype(np.float32)
 
@@ -944,6 +944,11 @@ class NextItemStarterNetwork(NextItemNetwork):
 
     def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
+        if my_champ_emb_scales is not None:
+            self.network_config["my_champ_emb_scales"] = (np.repeat(my_champ_emb_scales, self.network_config[
+                "champ_emb_dim"]) / 4).astype(np.float32)
+            self.network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_emb_scales, self.network_config[
+                "champ_emb_dim"]) / 4).astype(np.float32)
 
 
     def build(self):
@@ -1281,5 +1286,12 @@ class ChampEmbeddings:
                                  n_classes=total_num_champs,
                                  shuffle_batches=True,
                                  learning_rate=self.network_config["learning_rate"],
-                                 loss=NextItemNetwork.class_weighted_sm_ce_loss,
+                                 loss=self.class_weighted_sm_ce_loss,
                                  name='target')
+
+    def class_weighted_sm_ce_loss(self, y_pred, y_true, target_summ_items_sparse):
+
+        class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
+                                                                          "class_weights"], dtype=tf.float32)), 1)
+
+        return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
