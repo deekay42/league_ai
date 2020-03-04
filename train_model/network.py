@@ -393,7 +393,7 @@ class NextItemNetwork(Network):
         my_team_emb_noise = tf.reshape(my_team_emb_noise, (-1, 3))
         my_team_champs_embedded_noise = tf.cast(tf.gather(my_team_emb_noise,
                                                           tf.cast(champ_ints, tf.int32)), tf.float32)
-        my_team_champs_embedded = tf.cond(is_training, lambda: my_team_champs_embedded + my_team_champs_embedded_noise,
+        my_team_champs_embedded = tf.cond(is_training, lambda: my_team_champs_embedded,
                                           lambda: my_team_champs_embedded)
         return my_team_champs_embedded
 
@@ -568,9 +568,9 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         super().__init__(my_champ_emb_scales, opp_champ_emb_scales)
         if my_champ_emb_scales is not None:
             self.network_config["my_champ_emb_scales"] = (np.repeat(my_champ_emb_scales, self.network_config[
-                "champ_emb_dim"]) / 4).astype(np.float32)
+                "champ_emb_dim"]) / 6).astype(np.float32)
             self.network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_emb_scales, self.network_config[
-                "champ_emb_dim"]) / 3).astype(np.float32)
+                "champ_emb_dim"]) / 4).astype(np.float32)
 
 
 
@@ -726,12 +726,27 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
+        enemy_team = merge(
+            [
+                opp_team_champ_embs_flat,
+                opp_summ_champ_emb
+            ], mode='concat', axis=1)
+        enemy_team = tf.reshape(enemy_team, (-1, 6, 3))
+        enemy_team = dropout(enemy_team, 0.8)
+        enemy_team = tf.reshape(enemy_team, (-1, 6*3))
+
+        enemy_summs_strength_output = dropout(enemy_summs_strength_output, 0.8)
+        enemy_team = merge(
+            [
+                enemy_team,
+                enemy_summs_strength_output
+            ], mode='concat', axis=1)
+
         final_input_layer = merge(
             [
-                pos_one_hot,
                 target_summ_champ_emb,
-                enemy_summs_strength_output,
-                opp_team_champ_embs_flat,
+                pos_one_hot,
+                enemy_team,
                 # enemy_team_strengths,
                 # enemy_team_lane_output,
                 target_summ_current_gold,
