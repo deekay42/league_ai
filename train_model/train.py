@@ -98,7 +98,7 @@ class Trainer(ABC):
         with tf.device("/gpu:0"):
             with tf.Graph().as_default():
                 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
-                    tflearn.is_training(True)
+                    tflearn.is_training(True, sess)
                     self.network = self.network.build()
                     model = tflearn.DNN(self.network, session=sess)
                     sess.run(tf.global_variables_initializer())
@@ -110,6 +110,32 @@ class Trainer(ABC):
                     scores = []
                     for epoch in range(self.num_epochs):
                         x, y = self.get_train_data()
+                        # x = x[:1000]
+                        # y = y[:1000]
+                        # x[:, 1:6] = [40, 42, 142, 84, 51]
+                        # # lul = model.evaluate(x,y)
+                        #
+                        # feed_dict = tflearn.utils.feed_dict_builder(x, y, model.inputs,
+                        #                                             model.targets)
+                        # coord = tf.train.Coordinator()
+                        # df = tflearn.data_flow.FeedDictFlow(feed_dict, coord,
+                        #                             batch_size=1,
+                        #                             dprep_dict=None,
+                        #                             daug_dict=None,
+                        #                             index_array=None,
+                        #                             num_threads=1)
+                        # df.reset()
+                        # df.start()
+                        # res = []
+                        # feed_batch = df.next()
+                        # tflearn.is_training(True, sess)
+                        # while feed_batch:
+                        #     r = sess.run(["cond/Merge:0"], feed_batch)[0]
+                        #     # r = sess.run(["Reshape_1:0"], feed_batch)[0]
+                        #     res.append(r)
+                        #     feed_batch = df.next()
+                        #
+                        # np.savetxt("lulz", np.array(res).reshape((5000, 3)), fmt="%f")
 
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
@@ -634,8 +660,8 @@ class NextItemsTrainer(Trainer):
 
         my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
         opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
-        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], opp_champ_embs_dst], axis=0)
+        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], my_champ_embs_dst], axis=0)
+        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], opp_champ_embs_dst], axis=0)
 
         self.champ_embs = my_champ_embs_dst[:, :3]
         self.opp_champ_embs = opp_champ_embs_dst[:, :3]
@@ -750,8 +776,8 @@ class NextItemsTrainer(Trainer):
 
         my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
         opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
-        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], opp_champ_embs_dst], axis=0)
+        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], my_champ_embs_dst], axis=0)
+        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], opp_champ_embs_dst], axis=0)
 
         self.champ_embs = my_champ_embs_dst[:, :3]
         self.opp_champ_embs = opp_champ_embs_dst[:, :3]
@@ -832,8 +858,8 @@ class NextItemsTrainer(Trainer):
 
         my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
         opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
-        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], opp_champ_embs_dst], axis=0)
+        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], my_champ_embs_dst], axis=0)
+        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], opp_champ_embs_dst], axis=0)
 
         self.champ_embs = my_champ_embs_dst[:, :3]
         self.opp_champ_embs = opp_champ_embs_dst[:, :3]
@@ -883,8 +909,8 @@ class NextItemsTrainer(Trainer):
 
         my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
         opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
-        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], opp_champ_embs_dst], axis=0)
+        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], my_champ_embs_dst], axis=0)
+        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], opp_champ_embs_dst], axis=0)
 
         self.champ_embs = my_champ_embs_dst[:, :3]
         self.opp_champ_embs = opp_champ_embs_dst[:, :3]
@@ -1076,7 +1102,7 @@ class ChampsEmbeddingTrainer(Trainer):
         self.save_best_model(best_model_index)
 
 
-    def build_champ_embeddings_model(self):
+    def build_champ_embeddings_model(self, distrib):
         self.train_path = app_constants.model_paths["train"]["next_items_starter"]
         self.best_path = app_constants.model_paths["best"]["next_items_starter"]
         print("Loading training data")
@@ -1091,7 +1117,7 @@ class ChampsEmbeddingTrainer(Trainer):
         # for champ_int, item in zip(champ_ints, items):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
 
-        self.X = np.load("vs_champ_item_distrib.npy")
+        self.X = distrib
         # self.X = np.load("champ_item_distrib.npy")
         self.build_new_model()
 
@@ -1125,12 +1151,12 @@ class ChampsEmbeddingTrainer(Trainer):
         feed_dict = tflearn.utils.feed_dict_builder(x, y, model.inputs,
                                                     model.targets)
         embeddings = model.predictor.evaluate(feed_dict, [layer_name], x.shape[0])[0]
-        tree = spatial.KDTree(embeddings)
+        # tree = spatial.KDTree(embeddings)
         d = tree.query(embeddings, k=2)
         d = d[0][:,1]
-
-
         return embeddings, d
+
+
 
 
     def get_embedding_for_model(self, path, distrib, out_path):
@@ -1151,8 +1177,9 @@ class ChampsEmbeddingTrainer(Trainer):
 
 if __name__ == "__main__":
     # t = ChampsEmbeddingTrainer()
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model16', np.load("champ_item_distrib.npy"),
-    #                           "my_champ_embs_dst")
+    # t.build_champ_embeddings_model(np.load("vs_champ_item_distrib.npy"))
+    # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
+    #                           "opp_champ_embs_dst")
     t = NextItemsTrainer()
     t.build_next_items_early_game_model()
     #
@@ -1199,3 +1226,32 @@ if __name__ == "__main__":
     #
     # s = ChampImgTrainer()
     # s.build_new_img_model()
+
+
+    # from mpl_toolkits.mplot3d import Axes3D
+    # import matplotlib.pyplot as plt
+    #
+    #
+    #
+    # fig = plt.figure()
+    # ax = fig.add_subplot(111, projection='3d')
+    #
+    # data = np.loadtxt("lulz")
+    # data = data[:1000]
+    #
+    # #Fizz Sona Neeko Zilean Kayle
+    #
+    # ax.scatter(data[0::5, 0], data[0::5, 1], data[0::5, 2], c='red', marker='o')
+    # # ax.scatter(data[1::5, 0], data[1::5, 1], data[1::5, 2], c='orange', marker='o')
+    # ax.scatter(data[2::5, 0], data[2::5, 1], data[2::5, 2], c='blue', marker='o')
+    # # ax.scatter(data[3::5, 0], data[3::5, 1], data[3::5, 2], c='purple', marker='o')
+    # ax.scatter([-11.58291245, -12.81385612] ,  [1.67422855, 3.79949546] ,[-4.85478115,-4.1356039 ], c='yellow',
+    #            marker='x')
+    #
+    # # [-11.58291245   1.67422855 - 4.85478115   2.55914012]
+    # # [-12.81385612   3.79949546 - 4.1356039    2.37586738]
+    # ax.set_xlabel('X Label')
+    # ax.set_ylabel('Y Label')
+    # ax.set_zlabel('Z Label')
+    #
+    # plt.show()
