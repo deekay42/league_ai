@@ -1050,8 +1050,8 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 1, 2, pos_index, n,
-                                                                          1.0)
+                                                                          "my_champ_emb_scales", 1, 4, pos_index, n,
+                                                                          0.8)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(
             opp_team_champ_ints, "opp_champ_embs",
             "opp_champ_emb_scales", 1, 6,
@@ -1085,11 +1085,11 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
-        starter_ints = list(ItemManager().get_starter_ints())
-        starter_one_hots = tf.reduce_sum(tf.one_hot(starter_ints, depth=self.game_config["total_num_items"]), axis=0)
-        target_summ_items = target_summ_items * tf.cast(
-            tf.reshape(tf.tile(tf.logical_not(tf.cast(starter_one_hots, tf.bool)),
-                               multiples=[n]), (n, -1)), tf.float32)
+        # starter_ints = list(ItemManager().get_starter_ints())
+        # starter_one_hots = tf.reduce_sum(tf.one_hot(starter_ints, depth=self.game_config["total_num_items"]), axis=0)
+        # target_summ_items = target_summ_items * tf.cast(
+        #     tf.reshape(tf.tile(tf.logical_not(tf.cast(starter_one_hots, tf.bool)),
+        #                        multiples=[n]), (n, -1)), tf.float32)
         opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index_5_offset)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
