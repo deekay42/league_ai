@@ -642,8 +642,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
                                                              "my_champ_embs", 1/i) for i in range(2,6)]
         opp_team_champ_embs = [self.noise_embeddings(opp_team_champ_ints, "opp_champ_emb_scales",
                                                           "opp_champ_embs", 1/i) for i in range(2,6)]
-        my_team_champ_embs = tf.transpose(tf.reshape(my_team_champ_embs, (-1, 4, 5, 3)), (0, 2, 1, 3))
-        opp_team_champ_embs = tf.transpose(tf.reshape(opp_team_champ_embs, (-1, 4, 5, 3)), (0, 2, 1, 3))
+        my_team_champ_embs = tf.transpose(tf.reshape(my_team_champ_embs, (4,-1,5,3)), (1,2,0,3))
+        opp_team_champ_embs = tf.transpose(tf.reshape(opp_team_champ_embs, (4,-1,5,3)), (1,2,0,3))
 
         target_summ_champ_emb = tf.gather_nd(my_team_champ_embs, pos_index)
         # target_summ_champ_emb_dropout = dropout(target_summ_champ_emb, 0.5, noise_shape=[n,4,1])
@@ -690,9 +690,7 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
-
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
-
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
