@@ -968,12 +968,12 @@ class NextItemStarterNetwork(NextItemNetwork):
         opp_team_champ_ints = champ_ints[:, 5:]
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 1, 3, pos_index, n,
-                                                                          0.5)
+                                                                          "my_champ_emb_scales", 1, 2, pos_index, n,
+                                                                          1.0)
         opp_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(
             opp_team_champ_ints, "opp_champ_embs",
-            "opp_champ_emb_scales", 1, 3,
-            opp_index_no_offset, n, 0.5)
+            "opp_champ_emb_scales", 1, 2,
+            opp_index_no_offset, n, 1.0)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
 
@@ -1050,8 +1050,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 1, 2, pos_index, n,
-                                                                          1.0)
+                                                                          "my_champ_emb_scales", 1, 2, pos_index, n)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(
             opp_team_champ_ints, "opp_champ_embs",
             "opp_champ_emb_scales", 1, 2,
