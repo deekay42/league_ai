@@ -646,13 +646,13 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         opp_team_champ_embs = tf.transpose(tf.reshape(opp_team_champ_embs, (4,-1,5,3)), (1,2,0,3))
 
         target_summ_champ_emb = tf.gather_nd(my_team_champ_embs, pos_index)
-        # target_summ_champ_emb_dropout = dropout(target_summ_champ_emb, 0.5, noise_shape=[n,4,1])
+        target_summ_champ_emb_dropout = dropout(target_summ_champ_emb, 0.5, noise_shape=[n,4,1])
         target_summ_champ_emb_dropout = target_summ_champ_emb
         opp_summ_champ_emb = tf.gather_nd(opp_team_champ_embs, opp_index_no_offset)
         opp_summ_champ_emb_dropout = opp_summ_champ_emb
         opp_team_champ_embs_dropout = opp_team_champ_embs
-        # opp_summ_champ_emb_dropout = dropout(opp_summ_champ_emb, 0.5, noise_shape=[n, 4, 1])
-        # opp_team_champ_embs_dropout = dropout(opp_team_champ_embs, 0.5, noise_shape=[n, 5, 4, 1])
+        opp_summ_champ_emb_dropout = dropout(opp_summ_champ_emb, 0.5, noise_shape=[n, 4, 1])
+        opp_team_champ_embs_dropout = dropout(opp_team_champ_embs, 0.5, noise_shape=[n, 5, 4, 1])
 
         opp_team_champ_embs_dropout_flat = tf.reshape(opp_team_champ_embs_dropout, (-1, self.game_config[
             "champs_per_team"] * 4 * self.network_config["champ_emb_dim"]))
