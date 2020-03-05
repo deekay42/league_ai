@@ -1055,7 +1055,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(
             opp_team_champ_ints, "opp_champ_embs",
             "opp_champ_emb_scales", 1, 6,
-            opp_index_no_offset, n, 1.0)
+            opp_index_no_offset, n, 0.5)
 
 
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
