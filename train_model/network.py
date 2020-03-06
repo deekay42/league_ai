@@ -404,6 +404,29 @@ class NextItemNetwork(Network):
         return target_summ_champ_emb_dropout_flat, team_champ_embs_dropout_flat
 
 
+    def get_champ_embeddings_v2(self, team_champ_ints, emb_name, angles, pos_index, n, dropout_rate):
+
+        team_champ_embs = [self.noise_embeddings_v2(team_champ_ints,
+                                                 emb_name, i) for i in angles]
+        team_champ_embs = tf.transpose(tf.reshape(team_champ_embs, (len(angles), -1, self.game_config[
+            "champs_per_team"],
+                                                                    self.network_config[
+                                                                        "champ_emb_dim"]
+                                                                    )), (1, 2, 0, 3))
+        target_summ_champ_emb = tf.gather_nd(team_champ_embs, pos_index)
+        target_summ_champ_emb_dropout = dropout(target_summ_champ_emb, dropout_rate, noise_shape=[n, len(angles), 1])
+        target_summ_champ_emb_dropout_flat = tf.reshape(target_summ_champ_emb_dropout,
+                                                        (-1, len(angles) * self.network_config[
+                                                            "champ_emb_dim"]))
+
+        team_champ_embs_dropout = dropout(team_champ_embs, dropout_rate, noise_shape=[n, self.game_config["champs_per_team"],
+                                                                             len(angles), 1])
+        team_champ_embs_dropout_flat = tf.reshape(team_champ_embs_dropout, (-1, self.game_config[
+            "champs_per_team"] * len(angles) * self.network_config["champ_emb_dim"]))
+
+        return target_summ_champ_emb_dropout_flat, team_champ_embs_dropout_flat
+
+
     def calc_noise(self, noise_name, noisyness):
         my_team_emb_noise_dist = tf.distributions.Normal(loc=[0.] * self.game_config["total_num_champs"] *
                                                              self.network_config["champ_emb_dim"],
@@ -421,14 +444,44 @@ class NextItemNetwork(Network):
         return my_team_champs_embedded
 
 
+    def apply_noise_v2(self, my_team_emb_noised, my_team_champs_embedded):
+        is_training = tflearn.get_training_mode()
+        my_team_champs_embedded = tf.cond(is_training, lambda: my_team_emb_noised,
+                                          lambda: my_team_champs_embedded)
+        return my_team_champs_embedded
+
+
     def noise_embeddings(self, champ_ints, noise_name, emb_name, noisyness):
         my_team_champs_embedded = embedding(champ_ints, input_dim=self.game_config["total_num_champs"],
                                             output_dim=self.network_config["champ_emb_dim"], trainable=False,
                                             name=emb_name)
+
         noise = self.calc_noise(noise_name, noisyness)
         my_team_champs_embedded = self.apply_noise(champ_ints, noise, my_team_champs_embedded)
 
         return my_team_champs_embedded
+
+
+    def noise_embeddings_v2(self, champ_ints, emb_name, noisyness):
+        my_team_champs_embedded = embedding(champ_ints, input_dim=self.game_config["total_num_champs"],
+                                            output_dim=self.network_config["champ_emb_dim"], trainable=False,
+                                            name=emb_name)
+
+        my_team_champs_embedded_noised = self.rand_cos_sim(my_team_champs_embedded, noisyness)
+        my_team_champs_embedded = self.apply_noise_v2(my_team_champs_embedded_noised, my_team_champs_embedded)
+
+        return my_team_champs_embedded
+
+
+    @staticmethod
+    def rand_cos_sim(v, dev):
+        costheta = 1-tf.expand_dims(tf.abs(tf.random.normal((tf.shape(v)[:-1]), 0, dev)), (-1))
+        u = v / tf.sqrt(tf.reduce_sum(tf.square(v), axis=1, keep_dims=True) + 1e-8)
+        r = tf.random.normal((tf.shape(v)))
+        uperp = r - tf.expand_dims(tf.reduce_sum(u*r, axis=-1), axis=-1) * u
+        uperp = uperp / tf.sqrt(tf.reduce_sum(tf.square(uperp), axis=1, keep_dims=True) + 1e-8)
+        w = costheta * u + tf.sqrt(1 - costheta ** 2) * uperp
+        return w
 
 
     @staticmethod
@@ -461,14 +514,14 @@ class NextItemNetwork(Network):
         return [ets_direction, ets_magnitude]
 
 
-    def calc_norm_mag(self, enemy_team_strength, norm_type, team_emb_dim, n):
+    def calc_norm_mag(self, emb, norm_type, team_emb_dim, n):
         if norm_type == "l2":
-            ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(enemy_team_strength), axis=1, keep_dims=True) + 1e-8)
+            ets_magnitude = tf.sqrt(tf.reduce_sum(tf.square(emb), axis=1, keep_dims=True) + 1e-8)
         elif norm_type == "l1":
-            ets_magnitude = tf.reduce_sum(tf.abs(enemy_team_strength), axis=1, keep_dims=True) + 1e-8
+            ets_magnitude = tf.reduce_sum(tf.abs(emb), axis=1, keep_dims=True) + 1e-8
         elif norm_type == "max":
-            ets_magnitude = tf.reduce_max(tf.abs(enemy_team_strength), axis=1, keep_dims=True)
-        ets_direction = tf.math.divide_no_nan(enemy_team_strength, ets_magnitude)
+            ets_magnitude = tf.reduce_max(tf.abs(emb), axis=1, keep_dims=True)
+        ets_direction = tf.math.divide_no_nan(emb, ets_magnitude)
 
         return self.filter_invalid_indices(ets_magnitude, ets_direction, team_emb_dim, n)
 
@@ -594,7 +647,6 @@ class NextItemNetwork(Network):
         actually_achieved_score = tf.reduce_sum(tf.gather(class_weights, matching_preds_sparse))
         return actually_achieved_score / max_achievable_score
 
-
 class NextItemEarlyGameNetwork(NextItemNetwork):
 
     def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
@@ -646,10 +698,8 @@ class NextItemEarlyGameNetwork(NextItemNetwork):
         # opp_team_champ_embs_dropout_flat = tf.reshape(opp_team_champ_embs, (-1, 5*3))
 
 
-        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints,"my_champ_embs",
-                                                                       "my_champ_emb_scales", 4, 6, pos_index, n)
-        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(opp_team_champ_ints, "opp_champ_embs",
-                                                                       "opp_champ_emb_scales", 4, 6,
+        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints,"my_champ_embs", 10, 11, pos_index, n)
+        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(opp_team_champ_ints, "opp_champ_embs", 10, 11,
                                                                                                   opp_index_no_offset, n)
 
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
@@ -967,13 +1017,10 @@ class NextItemStarterNetwork(NextItemNetwork):
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
-        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 1, 2, pos_index, n,
-                                                                          1.0)
-        opp_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(
-            opp_team_champ_ints, "opp_champ_embs",
-            "opp_champ_emb_scales", 1, 2,
-            opp_index_no_offset, n, 1.0)
+        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
+                                                                           [0.05], pos_index, n, 1.0)
+        opp_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(
+            opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
 
@@ -1049,13 +1096,10 @@ class NextItemFirstItemNetwork(NextItemNetwork):
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
 
-        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 1, 2, pos_index, n,
-                                                                          1.0)
-        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(
-            opp_team_champ_ints, "opp_champ_embs",
-            "opp_champ_emb_scales", 1, 6,
-            opp_index_no_offset, n, 0.5)
+        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
+                                                                             [0.05], pos_index, n, 1.0)
+        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+            opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
 
 
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
