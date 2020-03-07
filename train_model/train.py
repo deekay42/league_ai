@@ -949,7 +949,7 @@ class NextItemsTrainer(Trainer):
 
         print("calculating indices per class")
         num_items = ItemManager().get_num("int")
-        self.Y_indices = [[]] * num_items
+        self.Y_indices = [[] for _ in range(num_items)]
         for x_index, y in enumerate(self.Y):
             self.Y_indices[y].append(x_index)
 
