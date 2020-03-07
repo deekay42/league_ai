@@ -192,8 +192,8 @@ class Trainer(ABC):
 
 
     def get_train_data_balanced(self, size=1e6):
-        print("building new epoch")
-        chunk_per_item = size//len(self.Y_indices[self.Y_indices != []])
+        chunk_per_item = size//sum([1 if y != [] else 0 for y in self.Y_indices])
+        print(f"building new epoch with chunksize:{chunk_per_item}")
         indices = [np.random.choice(y_indices, size=chunk_per_item) for y_indices in self.Y_indices if y_indices is
                    not []]
         print("epoch built")
@@ -962,6 +962,7 @@ class NextItemsTrainer(Trainer):
             if len(y_indices) < 0.0018 * len(self.X):
                 self.Y_indices[i] = []
         print("corrected indices")
+
 
         # self.X = np.tile(self.X[:20], (10000,1))
         # self.Y = np.tile(self.Y[:20], 10000)
