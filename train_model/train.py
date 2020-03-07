@@ -986,10 +986,16 @@ class NextItemsTrainer(Trainer):
         print(f"missing items are: {missing_items}")
         # assert(missing_items == Counter([0]))
         total_y = sum(list(total_y_distrib.values()))
+
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
                                                                                     missing_items).items()),
                                                                               key=lambda x: x[0]))[:, 1]])
+        print("This is the class distrib:")
+        print(total_y_distrib_sorted)
         self.class_weights = total_y_distrib_sorted / total_y
+
+        print("These are the class weights:")
+        print(self.class_weights)
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
