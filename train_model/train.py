@@ -957,12 +957,19 @@ class NextItemsTrainer(Trainer):
 
         print("got all indices")
         print(len(self.Y_indices))
+        blacklist = []
         #don't want super minor occurrences
         for i, y_indices in enumerate(self.Y_indices):
             print(len(y_indices))
 
             if len(y_indices) < 0.0018 * len(self.X):
                 self.Y_indices[i] = []
+                blacklist.append(i)
+
+        valid_test_indices = np.logical_not(np.isin(self.Y_test, blacklist))
+        self.X_test = self.X_test[valid_test_indices]
+        self.Y_test = self.Y_test[valid_test_indices]
+        target_summs_full_items_boolean = np.isin(self.X_test, blacklist)
         print("corrected indices")
 
 
