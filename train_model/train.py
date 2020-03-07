@@ -192,10 +192,12 @@ class Trainer(ABC):
 
 
     def get_train_data_balanced(self, size=1e6):
-        chunk_per_item = size//sum([1 if y != [] else 0 for y in self.Y_indices])
+        chunk_per_item = int(size//sum([1 if y != [] else 0 for y in self.Y_indices]))
         print(f"building new epoch with chunksize:{chunk_per_item}")
-        indices = [np.random.choice(y_indices, size=chunk_per_item) for y_indices in self.Y_indices if y_indices is
-                   not []]
+        indices = []
+        for y_indices in self.Y_indices:
+            if y_indices is not []:
+                indices.append(np.random.choice(y_indices, size=chunk_per_item))
         print("epoch built")
         return self.X[indices], self.Y[indices]
 
