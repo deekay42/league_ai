@@ -954,9 +954,11 @@ class NextItemsTrainer(Trainer):
             self.Y_indices[y].append(x_index)
 
         print("got all indices")
+        print(len(self.Y_indices))
         #don't want super minor occurrences
         for i, y_indices in enumerate(self.Y_indices):
-            print(repr(y_indices))
+            print(len(y_indices))
+
             if len(y_indices) < 0.0018 * len(self.X):
                 self.Y_indices[i] = []
         print("corrected indices")
