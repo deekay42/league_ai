@@ -197,7 +197,7 @@ class Trainer(ABC):
         indices = []
         for y_indices in self.Y_indices:
             if y_indices:
-                indices.append(np.random.choice(y_indices, size=chunk_per_item))
+                indices.extend(np.random.choice(y_indices, size=chunk_per_item))
         print("epoch built")
         return self.X[indices], self.Y[indices]
 
