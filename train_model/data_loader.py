@@ -248,6 +248,8 @@ class SortedNextItemsDataLoader(DataLoaderBase):
             result += list(data)
         return np.array(result)
 
+    ]
+
 
 class PositionsToBePredDataLoader:
 
@@ -320,3 +322,5 @@ class PositionsDataLoader(DataLoaderBase):
         for index, train_fname in enumerate(self.train_x_filenames[:round(len(self.train_x_filenames)/10 + 1)]):
             train_index = train_fname.rfind("train")
             os.rename(train_fname, train_fname[:train_index] + f"test_{index}.npz")
+
+

@@ -191,6 +191,13 @@ class Trainer(ABC):
         return self.X, self.Y
 
 
+    def get_train_data_balanced(self, size=1e6):
+        chunk_per_item = size//len(self.Y_indices[self.Y_indices != []])
+        indices = [np.random.choice(y_indices, size=chunk_per_item) for y_indices in self.Y_indices if y_indices is
+                   not []]
+        return self.X[indices], self.Y[indices]
+
+
     def log_output(self, main_test_eval, epoch_counter):
         print("Epoch {0}:\nRaw test accuracy {1:.4f} | ".format(epoch_counter + 1, main_test_eval), end='')
         self.logfile.write(
@@ -938,6 +945,17 @@ class NextItemsTrainer(Trainer):
         self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
         self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
 
+        num_items = ItemManager().get_num("int")
+        self.Y_indices = [[]] * num_items
+        for x_index, y in enumerate(self.Y):
+            self.Y_indices[y].append(x_index)
+
+        #don't want super minor occurrences
+        for i, y_indices in enumerate(self.Y_indices):
+            if len(y_indices) < 0.0018 * len(self.X):
+                self.Y_indices[i] = []
+
+
         # self.X = np.tile(self.X[:20], (10000,1))
         # self.Y = np.tile(self.Y[:20], 10000)
         # self.X_test = self.X
@@ -1133,7 +1151,7 @@ class ChampsEmbeddingTrainer(Trainer):
                     sess.run(tf.global_variables_initializer())
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data()
+                        x, y = self.get_train_data_balanced()
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
@@ -1258,3 +1276,7 @@ if __name__ == "__main__":
     # ax.set_zlabel('Z Label')
     #
     # plt.show()
+
+
+
+
