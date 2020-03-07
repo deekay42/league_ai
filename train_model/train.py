@@ -196,8 +196,7 @@ class Trainer(ABC):
         print(f"building new epoch with chunksize:{chunk_per_item}")
         indices = []
         for y_indices in self.Y_indices:
-            print(y_indices)
-            if y_indices is not []:
+            if y_indices:
                 indices.append(np.random.choice(y_indices, size=chunk_per_item))
         print("epoch built")
         return self.X[indices], self.Y[indices]
