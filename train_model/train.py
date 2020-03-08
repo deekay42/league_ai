@@ -1025,7 +1025,7 @@ class FirstItemsTrainer(NextItemsTrainer):
         #
         # # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         # self.network.network_config["class_weights"] = self.class_weights
-
+        self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
 
 
         self.X = self.X.astype(np.float32)
