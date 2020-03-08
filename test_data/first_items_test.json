@@ -265,85 +265,85 @@
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
   },
   "43" : {
     "target_summ": "Kaisa",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade"]
+    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade", "Stormrazor"]
   },
   "44" : {
     "target_summ": "Xayah",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "45" : {
     "target_summ": "Twitch",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "46" : {
     "target_summ": "MissFortune",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "47" : {
     "target_summ": "MissFortune",
     "role": 0,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "48" : {
     "target_summ": "Xayah",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "49" : {
     "target_summ": "Twitch",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "50" : {
     "target_summ": "MissFortune",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "51" : {
     "target_summ": "Vayne",
     "role": 2,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "52" : {
     "target_summ": "Xayah",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "53" : {
     "target_summ": "Twitch",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "54" : {
     "target_summ": "MissFortune",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "55" : {
     "target_summ": "Vayne",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "56" : {
     "target_summ": "Ezreal",
