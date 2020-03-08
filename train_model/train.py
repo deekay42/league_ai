@@ -651,8 +651,8 @@ class NextItemsTrainer(Trainer):
             output.write("\n\n")
             output.flush()
 
-        with open(self.train_path + self.model_name + str(epoch_counter + 1) + "_thresholds.json", "w") as f:
-            f.write(json.dumps(thresholds.tolist()))
+        # with open(self.train_path + self.model_name + str(epoch_counter + 1) + "_thresholds.json", "w") as f:
+        #     f.write(json.dumps(thresholds.tolist()))
 
 
     def determine_best_eval(self, scores):
