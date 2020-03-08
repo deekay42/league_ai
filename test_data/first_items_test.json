@@ -379,13 +379,13 @@
     "target_summ": "Alistar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
+    "target": ["Luden's Echo", "Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "62" : {
     "target_summ": "Nautilus",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
+    "target": ["Luden's Echo", "Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "63" : {
     "target_summ": "Nami",
@@ -403,7 +403,7 @@
     "target_summ": "Shyvana",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Youmuu's Ghostblade"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01"]
   },
   "66" : {
     "target_summ": "Evelynn",
@@ -415,7 +415,7 @@
     "target_summ": "Katarina",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Gunblade"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Gunblade", "Liandry's Torment"]
   },
   "68" : {
     "target_summ": "Rengar",
