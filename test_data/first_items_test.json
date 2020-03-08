@@ -355,13 +355,13 @@
     "target_summ": "XinZhao",
     "role": 0,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Trinity Force", "Black Cleaver"]
+    "target": ["Trinity Force", "The Black Cleaver"]
   },
   "58" : {
     "target_summ": "XinZhao",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Trinity Force", "Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Trinity Force", "The Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "59" : {
     "target_summ": "Zilean",
