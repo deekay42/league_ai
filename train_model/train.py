@@ -922,10 +922,10 @@ class FirstItemsTrainer(NextItemsTrainer):
 
     def build_aux_test_data(self):
         with open('test_data/first_items_test.json', "r") as f:
-            elems = json.load(f)
+            self.aux_test_raw = json.load(f)
         self.X_test_aux = []
         self.Y_test_aux = []
-        for i, test_case in elems.items():
+        for i, test_case in self.aux_test_raw.items():
             my_team_champs = [0,0,0,0,0]
             my_team_champs[test_case["role"]] = ChampManager().lookup_by("name", test_case["target_summ"])["int"]
             opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
@@ -1047,19 +1047,10 @@ class FirstItemsTrainer(NextItemsTrainer):
 
 
 
-        # for i in range(len(y_actual)):
-        #     champ_int = x_test[i][x_test[i][0]+1]
-        #     champ_name = ChampManager().lookup_by("int", champ_int)
-        #     a_text = ItemManager.lookup_by('img_int', y[i])['name']
-        #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-        #     a = y[i]
-        #     b = y_actual[i]
-        #     if not np.all(np.equal(a,b)):
-        #         print(f"----->{i}: {a_text} {b_text}")
-        #     else:
-        #         print(f"{i}: {a_text} {b_text}")
-        # print("Raw test data predictions: {0}".format(y))
-        # print("Actual test data  values : {0}".format(y_actual))
+        for y_pred, y_actual, test_case in zip(y_preds, y_test, self.aux_test_raw.values()):
+            if y_pred not in y_actual:
+                print(f"test_case: {test_case}")
+                print(ItemManager.lookup_by('img_int', y_pred)['name'])
 
         # y = model.predict(self.X_test)
         # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
