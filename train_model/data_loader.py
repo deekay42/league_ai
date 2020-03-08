@@ -99,7 +99,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         if not self.test:
             self.read_test_from_np_files()
         if cond:
-            print("Condition given")
+
             self.test = self.test[cond(self.test)]
         X, Y = self.test[:, 1:-1], self.test[:, -1]
         return X,Y
@@ -108,7 +108,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         if not self.train:
             self.read_train_from_np_files()
         if cond:
-            print("Condition given")
+
             self.train = self.train[cond(self.train)]
         X,Y = self.train[:, 1:-1], self.train[:, -1]
         return X,Y

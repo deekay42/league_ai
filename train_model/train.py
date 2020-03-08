@@ -750,21 +750,19 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def no_full_items_completed(data):
-        print("lol")
         y = data[:, -1]
         starter_ints = ItemManager().get_starter_ints()
         full_item_ints = ItemManager().get_full_item_ints()
-        print(full_item_ints)
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
         exclude_noncompletes = np.isin(y, list(full_item_ints))
 
-        pos = data[:, 1]
+        pos = data[:, 1].astype(np.int32)
         data_items = data[:, 12:6 * 12]
         data_items = np.reshape(data_items, (-1, 5, 12))
         target_summ_items = data_items[range(len(pos)), pos, ::2]
         target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
         no_full_items_complete = np.logical_not(np.any(target_summs_full_items_boolean, axis=1))
-        valid_indices = np.logical_and(no_full_items_complete, exclude_starters, exclude_noncompletes)
+        valid_indices = np.all([no_full_items_complete, exclude_starters, exclude_noncompletes], axis=0)
         return valid_indices
 
 
@@ -1343,6 +1341,8 @@ if __name__ == "__main__":
     # t.build_champ_embeddings_model(np.load("vs_champ_item_distrib.npy"))
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
+
+    
     t = FirstItemsTrainer()
     t.train()
     #
