@@ -397,7 +397,7 @@
     "target_summ": "Nunu",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Abyssal Mask", "Sunfire Cape", "Dead Man's Plate", "Rylai's Crystal Scepter"]
+    "target": ["Liandry's Torment", "Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Abyssal Mask", "Sunfire Cape", "Dead Man's Plate", "Rylai's Crystal Scepter"]
   },
   "65" : {
     "target_summ": "Shyvana",
@@ -457,6 +457,6 @@
     "target_summ": "Ryze",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff", "Rod of Ages"]
   }
 }
