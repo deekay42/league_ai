@@ -753,6 +753,7 @@ class NextItemsTrainer(Trainer):
         y = data[:, -1]
         starter_ints = ItemManager().get_starter_ints()
         full_item_ints = ItemManager().get_full_item_ints()
+        print(full_item_ints)
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
         exclude_noncompletes = np.isin(y, list(full_item_ints))
 
@@ -1044,26 +1045,21 @@ class FirstItemsTrainer(NextItemsTrainer):
         y_pred_prob = np.array(y_pred_prob)
         y_preds = np.argmax(y_pred_prob, axis=1)
 
-        # # for i, img in enumerate(self.X_test):
-        # #     cv.imshow(str(i), img)
-        # # cv.waitKey(0)
-        # y = model.predict(self.X_test)
-        # y = [np.argmax(y_) for y_ in y]
-        # # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
-        # # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
-        # y_actual = self.Y_test
-        # # print("Pred Actual")
-        # for i in range(len(y_actual)):
-        #     a_text = self.manager.lookup_by('img_int', y[i])['name']
-        #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-        #     a = y[i]
-        #     b = y_actual[i]
-        #     if not np.all(np.equal(a,b)):
-        #         print(f"----->{i}: {a_text} {b_text}")
-        #     else:
-        #         print(f"{i}: {a_text} {b_text}")
-        # print("Raw test data predictions: {0}".format(y))
-        # print("Actual test data  values : {0}".format(y_actual))
+
+
+        for i in range(len(y_actual)):
+            champ_int = x_test[i][x_test[i][0]+1]
+            champ_name = ChampManager().lookup_by("int", champ_int)
+            a_text = ItemManager.lookup_by('img_int', y[i])['name']
+            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+            a = y[i]
+            b = y_actual[i]
+            if not np.all(np.equal(a,b)):
+                print(f"----->{i}: {a_text} {b_text}")
+            else:
+                print(f"{i}: {a_text} {b_text}")
+        print("Raw test data predictions: {0}".format(y))
+        print("Actual test data  values : {0}".format(y_actual))
 
         # y = model.predict(self.X_test)
         # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
