@@ -350,5 +350,113 @@
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
     "target": ["Manamune", "Umbral Glaive", "Duskblade of Draktharr"]
+  },
+  "57" : {
+    "target_summ": "XinZhao",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Trinity Force", "Black Cleaver"]
+  },
+  "58" : {
+    "target_summ": "XinZhao",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Trinity Force", "Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+  },
+  "59" : {
+    "target_summ": "Zilean",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "60" : {
+    "target_summ": "Janna",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "61" : {
+    "target_summ": "Alistar",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "62" : {
+    "target_summ": "Nautilus",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "63" : {
+    "target_summ": "Janna",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "64" : {
+    "target_summ": "Nunu",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "65" : {
+    "target_summ": "Shyvana",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "66" : {
+    "target_summ": "Evelynn",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "67" : {
+    "target_summ": "Katarina",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "68" : {
+    "target_summ": "Rengar",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "69" : {
+    "target_summ": "Fiora",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "70" : {
+    "target_summ": "Camille",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "71" : {
+    "target_summ": "Volibear",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "72" : {
+    "target_summ": "Mordekaiser",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "73" : {
+    "target_summ": "Urgot",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+  },
+  "74" : {
+    "target_summ": "Ryze",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
   }
 }
