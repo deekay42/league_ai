@@ -439,7 +439,7 @@
     "target_summ": "Volibear",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Blade of the Ruined King", "Trinity Force"]
+    "target": ["Blade of the Ruined King", "Trinity Force", "Iceborn Gauntlet"]
   },
   "72" : {
     "target_summ": "Mordekaiser",
