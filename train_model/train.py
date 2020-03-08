@@ -999,10 +999,10 @@ class FirstItemsTrainer(NextItemsTrainer):
         print("corrected indices")
 
 
-        self.X = np.tile(self.X[:20], (10000,1))
-        self.Y = np.tile(self.Y[:20], 10000)
-        self.X_test = self.X
-        self.Y_test = self.Y
+        # self.X = np.tile(self.X[:20], (10000,1))
+        # self.Y = np.tile(self.Y[:20], 10000)
+        # self.X_test = self.X
+        # self.Y_test = self.Y
 
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
