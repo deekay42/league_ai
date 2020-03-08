@@ -180,7 +180,7 @@ class Trainer(ABC):
                         # print("Raw test data predictions: {0}".format(y))
                         # print("Actual test data  values : {0}".format(self.Y_test))
 
-                        score = self.eval_model(model, epoch)
+                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
 
                         # self.eval_model(model, epoch, prior=score[-1])
                         scores.append(score)
@@ -531,9 +531,9 @@ class NextItemsTrainer(Trainer):
         return actually_achieved_score / max_achievable_score
 
 
-    def eval_model(self, model, epoch, prior=None):
+    def eval_model(self, model, epoch, x_test, y_test, prior=None):
         y_pred_prob = []
-        for chunk in utils.chunks(self.X_test, 1024):
+        for chunk in utils.chunks(x_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
         y_pred_prob = np.array(y_pred_prob)
         if prior:
@@ -541,17 +541,17 @@ class NextItemsTrainer(Trainer):
 
         y_pred = np.argmax(y_pred_prob, axis=1)
 
-        acc = sum(np.equal(y_pred, self.Y_test)) / len(self.Y_test)
-        weighted_acc = self.weighted_accuracy(y_pred, self.Y_test, self.class_weights)
+        acc = sum(np.equal(y_pred, y_test)) / len(y_test)
+        weighted_acc = self.weighted_accuracy(y_pred, y_test, self.class_weights)
         # weighted_acc = weighted_accuracy(y_pred, self.Y_test, self.class_weights)
         # with tf.Session() as sess:
         #     weighted_acc = sess.run(weighted_acc)
-        precision, recall, f1, support = precision_recall_fscore_support(self.Y_test, y_pred, average='macro')
+        precision, recall, f1, support = precision_recall_fscore_support(y_test, y_pred, average='macro')
 
-        report = classification_report(self.Y_test, y_pred, labels=range(len(self.target_names)),
+        report = classification_report(y_test, y_pred, labels=range(len(self.target_names)),
                                        target_names=self.target_names)
         # confusion = confusion_matrix(self.Y_test, y_pred)
-        avg_binary_auc, avg_binary_f1, thresholds = self.get_cum_scores(self.Y_test, y_pred_prob)
+        avg_binary_auc, avg_binary_f1, thresholds = self.get_cum_scores(y_test, y_pred_prob)
 
         self.log_output(acc, weighted_acc, f1, precision, recall, avg_binary_f1, avg_binary_auc,
                         report, thresholds, epoch)
@@ -641,13 +641,13 @@ class NextItemsTrainer(Trainer):
         for output in [sys.stdout, self.logfile]:
             output.write("Epoch {0}\n".format(epoch_counter + 1))
             output.write("1. Acc {0:.4f}\n".format(main_test_eval))
-            output.write("2. Weighted Acc {0:.4f}\n".format(weighted_acc))
-            output.write('3. F-1 {0:.4f}\n'.format(f1))
-            output.write('4. Precision {0:.4f}\n'.format(precision))
-            output.write('5. Recall {0:.4f}\n'.format(recall))
-            output.write('6. Avg binary F1 {0:.4f}\n'.format(avg_binary_f1))
-            output.write('7. Avg binary auc {0:.4f}\n'.format(avg_binary_auc))
-            output.write('8. Classification report \n {} \n'.format(classification))
+            if weighted_acc: output.write("2. Weighted Acc {0:.4f}\n".format())
+            if f1: output.write('3. F-1 {0:.4f}\n'.format(f1))
+            if precision: output.write('4. Precision {0:.4f}\n'.format(precision))
+            if recall: output.write('5. Recall {0:.4f}\n'.format(recall))
+            if avg_binary_f1: output.write('6. Avg binary F1 {0:.4f}\n'.format(avg_binary_f1))
+            if avg_binary_auc: output.write('7. Avg binary auc {0:.4f}\n'.format(avg_binary_auc))
+            if classification: output.write('8. Classification report \n {} \n'.format(classification))
             output.write("\n\n")
             output.flush()
 
@@ -911,8 +911,32 @@ class NextItemsTrainer(Trainer):
         model = NextItemModel("starter")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
-
         self.build_new_model()
+
+
+    def build_aux_test_data(self):
+        with open('test_data/first_items_test.json', "r") as f:
+            elems = json.load(f)
+        self.X_test_aux = []
+        self.Y_test_aux = []
+        for i, test_case in elems.items():
+            my_team_champs = [0,0,0,0,0]
+            my_team_champs[test_case["role"]] = ChampManager().lookup_by("name", test_case["target_summ"])["int"]
+            opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
+                "opp_team"]]
+            complete_example = [0]*221
+            complete_example[0] = test_case["role"]
+            complete_example[1:11] = my_team_champs + opp_team_champs
+
+            targets = [ChampManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
+            self.X_test_aux.append(complete_example)
+            self.Y_test_aux.append(targets)
+
+
+
+
+
+class FirstItemsTrainer(NextItemsTrainer):
 
 
     def build_next_items_first_item_model(self):
@@ -1011,7 +1035,48 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+    def eval_model_extra(self, model, epoch, x_test, y_test):
+        y_pred_prob = []
+        for chunk in utils.chunks(x_test, 1024):
+            y_pred_prob.extend(model.predict(np.array(chunk)))
+        y_pred_prob = np.array(y_pred_prob)
+        y_preds = np.argmax(y_pred_prob, axis=1)
 
+        acc = sum([y_pred in y_actual for y_pred, y_actual in zip(y_preds, y_test)])/len(y_test)
+        self.log_output(acc, None, None, None, None, None, None,
+                        None, None, epoch)
+
+        return acc
+
+
+    def train_neural_network(self):
+        with tf.device("/gpu:0"):
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(True, sess)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    if self.champ_embs is not None:
+                        embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.champ_embs)
+                        embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.opp_champ_embs)
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data_balanced()
+
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+
+                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
+                        score = self.eval_model_extra(model, epoch, self.X_test_aux, self.Y_test_aux)
+
+
+                        scores.append(score)
+        return scores
 
 
 class ChampsEmbeddingTrainer(Trainer):
