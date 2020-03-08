@@ -220,26 +220,26 @@
     "target_summ": "Alistar",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "36" : {
     "target_summ": "Alistar",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
 
   "37" : {
     "target_summ": "Nautilus",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "38" : {
     "target_summ": "Nautilus",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
 
   "39" : {
@@ -271,7 +271,7 @@
     "target_summ": "Kaisa",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade", "Stormrazor", "Wit's End", "Maw of Malmortius"]
+    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade", "Stormrazor", "Wit's End", "Maw of Malmortius", "Hextech Gunblade"]
   },
   "44" : {
     "target_summ": "Xayah",
