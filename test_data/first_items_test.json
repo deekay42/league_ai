@@ -397,7 +397,7 @@
     "target_summ": "Nunu",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Abyssal Mask", "Sunfire Cape", "Deadman's Plate", "Rylai's Crystal Scepter"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Abyssal Mask", "Sunfire Cape", "Dead Man's Plate", "Rylai's Crystal Scepter"]
   },
   "65" : {
     "target_summ": "Shyvana",
