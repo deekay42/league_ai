@@ -78,7 +78,7 @@
     "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
   },
   "13" : {
-    "target_summ": "Victor",
+    "target_summ": "Viktor",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
     "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
