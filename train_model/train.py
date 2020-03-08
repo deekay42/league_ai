@@ -750,6 +750,7 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def no_full_items_completed(data):
+        print("lol")
         y = data[:, -1]
         starter_ints = ItemManager().get_starter_ints()
         full_item_ints = ItemManager().get_full_item_ints()
@@ -963,12 +964,13 @@ class FirstItemsTrainer(NextItemsTrainer):
                                                                      "next_items_processed_elite_sorted_complete"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_complete"])
+        print("Loading elite train data first item")
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.no_full_items_completed)
-        print("Loading test data")
+        print("Loading elite test data first item")
         X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.no_full_items_completed)
-
+        print("Loading lower train data first item")
         X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.no_full_items_completed)
-        print("Loading test data")
+        print("Loading lower test data first item")
         X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.no_full_items_completed)
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
