@@ -939,7 +939,7 @@ class NextItemsTrainer(Trainer):
 class FirstItemsTrainer(NextItemsTrainer):
 
 
-    def build_next_items_first_item_model(self):
+    def build_new_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
@@ -1303,8 +1303,8 @@ if __name__ == "__main__":
     # t.build_champ_embeddings_model(np.load("vs_champ_item_distrib.npy"))
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
-    t = NextItemsTrainer()
-    t.build_next_items_first_item_model()
+    t = FirstItemsTrainer()
+    t.build_new_model()
     #
     # t.build_champ_embeddings_model()
 
