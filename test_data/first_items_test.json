@@ -87,7 +87,7 @@
     "target_summ": "Kayle",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor"]
   },
   "15" : {
     "target_summ": "Soraka",
@@ -207,143 +207,143 @@
     "target_summ": "Amumu",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
   },
   "34" : {
     "target_summ": "Amumu",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
   },
 
   "35" : {
     "target_summ": "Alistar",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
   "36" : {
     "target_summ": "Alistar",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
 
   "37" : {
     "target_summ": "Nautilus",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
   "38" : {
     "target_summ": "Nautilus",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
 
   "39" : {
     "target_summ": "Braum",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
   "40" : {
     "target_summ": "Braum",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor"]
   },
 
   "41" : {
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Warmog's Armor", "Liadry's Torment"]
   },
   "42" : {
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
   },
   "43" : {
     "target_summ": "Kaisa",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade", "Stormrazor"]
+    "target": ["Manamune", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Guinsoo's Rageblade", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "44" : {
     "target_summ": "Xayah",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "45" : {
     "target_summ": "Twitch",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "46" : {
     "target_summ": "MissFortune",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "47" : {
     "target_summ": "MissFortune",
     "role": 0,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "48" : {
     "target_summ": "Xayah",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "49" : {
     "target_summ": "Twitch",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "50" : {
     "target_summ": "MissFortune",
     "role": 2,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "51" : {
     "target_summ": "Vayne",
     "role": 2,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "52" : {
     "target_summ": "Xayah",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "53" : {
     "target_summ": "Twitch",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "54" : {
     "target_summ": "MissFortune",
     "role": 4,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "55" : {
     "target_summ": "Vayne",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor", "Wit's End", "Maw of Malmortius"]
   },
   "56" : {
     "target_summ": "Ezreal",
