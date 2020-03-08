@@ -379,16 +379,16 @@
     "target_summ": "Alistar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "62" : {
     "target_summ": "Nautilus",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Hextech GLP-800"]
   },
   "63" : {
-    "target_summ": "Janna",
+    "target_summ": "Nami",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
     "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
@@ -397,7 +397,7 @@
     "target_summ": "Nunu",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Abyssal Mask", "Sunfire Cape", "Deadman's Plate", "Rylai's Crystal Scepter"]
   },
   "65" : {
     "target_summ": "Shyvana",
@@ -421,19 +421,19 @@
     "target_summ": "Rengar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "69" : {
     "target_summ": "Fiora",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "70" : {
     "target_summ": "Camille",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "71" : {
     "target_summ": "Volibear",
@@ -451,12 +451,12 @@
     "target_summ": "Urgot",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Manamune", "The Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "74" : {
     "target_summ": "Ryze",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01"]
   }
 }
