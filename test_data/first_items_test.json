@@ -207,13 +207,13 @@
     "target_summ": "Amumu",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liandry's Torment"]
   },
   "34" : {
     "target_summ": "Amumu",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liandry's Torment"]
   },
 
   "35" : {
@@ -259,13 +259,13 @@
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Warmog's Armor", "Liadry's Torment"]
+    "target": ["Adaptive Helm", "Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Warmog's Armor", "Liandry's Torment"]
   },
   "42" : {
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liadry's Torment"]
+    "target": ["Thornmail","Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter", "Warmog's Armor", "Liandry's Torment"]
   },
   "43" : {
     "target_summ": "Kaisa",
