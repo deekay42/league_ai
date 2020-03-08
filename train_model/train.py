@@ -109,7 +109,7 @@ class Trainer(ABC):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data_balanced()
+                        x, y = self.get_train_data()
                         # x = x[:1000]
                         # y = y[:1000]
                         # x[:, 1:6] = [40, 42, 142, 84, 51]
@@ -976,28 +976,27 @@ class FirstItemsTrainer(NextItemsTrainer):
         self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
         self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
 
-        print("calculating indices per class")
-        num_items = ItemManager().get_num("int")
-        self.Y_indices = [[] for _ in range(num_items)]
-        for x_index, y in enumerate(self.Y):
-            self.Y_indices[y].append(x_index)
-
-        print("got all indices")
-        print(len(self.Y_indices))
-        blacklist = []
-        #don't want super minor occurrences
-        for i, y_indices in enumerate(self.Y_indices):
-            print(len(y_indices))
-
-            if len(y_indices) < 0.0018 * len(self.X):
-                self.Y_indices[i] = []
-                blacklist.append(i)
-
-        valid_test_indices = np.logical_not(np.isin(self.Y_test, blacklist))
-        self.X_test = self.X_test[valid_test_indices]
-        self.Y_test = self.Y_test[valid_test_indices]
-        target_summs_full_items_boolean = np.isin(self.X_test, blacklist)
-        print("corrected indices")
+        # print("calculating indices per class")
+        # num_items = ItemManager().get_num("int")
+        # self.Y_indices = [[] for _ in range(num_items)]
+        # for x_index, y in enumerate(self.Y):
+        #     self.Y_indices[y].append(x_index)
+        #
+        # print("got all indices")
+        # print(len(self.Y_indices))
+        # blacklist = []
+        # #don't want super minor occurrences
+        # for i, y_indices in enumerate(self.Y_indices):
+        #     print(len(y_indices))
+        #
+        #     if len(y_indices) < 0.0018 * len(self.X):
+        #         self.Y_indices[i] = []
+        #         blacklist.append(i)
+        #
+        # valid_test_indices = np.logical_not(np.isin(self.Y_test, blacklist))
+        # self.X_test = self.X_test[valid_test_indices]
+        # self.Y_test = self.Y_test[valid_test_indices]
+        # print("corrected indices")
 
 
         # self.X = np.tile(self.X[:20], (10000,1))
@@ -1005,27 +1004,27 @@ class FirstItemsTrainer(NextItemsTrainer):
         # self.X_test = self.X
         # self.Y_test = self.Y
 
-        self.train_y_distrib = Counter(self.Y)
-        self.test_y_distrib = Counter(self.Y_test)
-
-        total_y_distrib = self.train_y_distrib + self.test_y_distrib
-        missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
-        print(f"missing items are: {missing_items}")
-        # assert(missing_items == Counter([0]))
-        total_y = sum(list(total_y_distrib.values()))
-
-        total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
-                                                                                    missing_items).items()),
-                                                                              key=lambda x: x[0]))[:, 1]])
-        print("This is the class distrib:")
-        print(total_y_distrib_sorted)
-        self.class_weights = total_y_distrib_sorted / total_y
-
-        print("These are the class weights:")
-        print(self.class_weights)
-
-        # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        self.network.network_config["class_weights"] = self.class_weights
+        # self.train_y_distrib = Counter(self.Y)
+        # self.test_y_distrib = Counter(self.Y_test)
+        #
+        # total_y_distrib = self.train_y_distrib + self.test_y_distrib
+        # missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
+        # print(f"missing items are: {missing_items}")
+        # # assert(missing_items == Counter([0]))
+        # total_y = sum(list(total_y_distrib.values()))
+        #
+        # total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
+        #                                                                             missing_items).items()),
+        #                                                                       key=lambda x: x[0]))[:, 1]])
+        # print("This is the class distrib:")
+        # print(total_y_distrib_sorted)
+        # self.class_weights = total_y_distrib_sorted / total_y
+        #
+        # print("These are the class weights:")
+        # print(self.class_weights)
+        #
+        # # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        # self.network.network_config["class_weights"] = self.class_weights
 
 
 
@@ -1091,7 +1090,7 @@ class FirstItemsTrainer(NextItemsTrainer):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data_balanced()
+                        x, y = self.get_train_data()
 
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
