@@ -998,12 +998,6 @@ class FirstItemsTrainer(NextItemsTrainer):
         self.Y_test = self.Y_test[valid_test_indices]
         print("corrected indices")
 
-
-        # self.X = np.tile(self.X[:20], (10000,1))
-        # self.Y = np.tile(self.Y[:20], 10000)
-        # self.X_test = self.X
-        # self.Y_test = self.Y
-
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
 
@@ -1101,7 +1095,7 @@ class FirstItemsTrainer(NextItemsTrainer):
                                   callbacks=self.monitor_callback)
                         model.save(self.train_path + self.model_name + str(epoch + 1))
 
-                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
+                        # score = self.eval_model(model, epoch, self.X_test, self.Y_test)
                         score = self.eval_model_extra(model, epoch, self.X_test_aux, self.Y_test_aux)
 
 
