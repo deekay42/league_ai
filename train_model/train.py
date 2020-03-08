@@ -757,7 +757,6 @@ class NextItemsTrainer(Trainer):
         exclude_noncompletes = np.isin(y, list(full_item_ints))
 
         pos = data[:, 1]
-        full_item_ints = ItemManager().get_full_item_ints()
         data_items = data[:, 12:6 * 12]
         data_items = np.reshape(data_items, (-1, 5, 12))
         target_summ_items = data_items[range(len(pos)), pos, ::2]
@@ -1045,6 +1044,44 @@ class FirstItemsTrainer(NextItemsTrainer):
         y_pred_prob = np.array(y_pred_prob)
         y_preds = np.argmax(y_pred_prob, axis=1)
 
+        # # for i, img in enumerate(self.X_test):
+        # #     cv.imshow(str(i), img)
+        # # cv.waitKey(0)
+        # y = model.predict(self.X_test)
+        # y = [np.argmax(y_) for y_ in y]
+        # # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+        # # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+        # y_actual = self.Y_test
+        # # print("Pred Actual")
+        # for i in range(len(y_actual)):
+        #     a_text = self.manager.lookup_by('img_int', y[i])['name']
+        #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+        #     a = y[i]
+        #     b = y_actual[i]
+        #     if not np.all(np.equal(a,b)):
+        #         print(f"----->{i}: {a_text} {b_text}")
+        #     else:
+        #         print(f"{i}: {a_text} {b_text}")
+        # print("Raw test data predictions: {0}".format(y))
+        # print("Actual test data  values : {0}".format(y_actual))
+
+        # y = model.predict(self.X_test)
+        # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+        # y = to_categorical(y, 10).flatten()
+        # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+        # y_test = to_categorical(y_test, 10).flatten()
+        # print("Pred Actual")
+        # for i in range(len(y)):
+        #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+        #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+        #     if a != b:
+        #         print(f"----->{i}: {a} {b}")
+        #     else:
+        #         print(f"{i}: {a} {b}")
+        # print("Raw test data predictions: {0}".format(y))
+        # print("Actual test data  values : {0}".format(self.Y_test))
+
+
         acc = sum([y_pred in y_actual for y_pred, y_actual in zip(y_preds, y_test)])/len(y_test)
         self.log_output(acc, None, None, None, None, None, None,
                         None, None, epoch)
@@ -1076,6 +1113,8 @@ class FirstItemsTrainer(NextItemsTrainer):
 
                         score = self.eval_model(model, epoch, self.X_test, self.Y_test)
                         score = self.eval_model_extra(model, epoch, self.X_test_aux, self.Y_test_aux)
+
+
 
 
                         scores.append(score)
