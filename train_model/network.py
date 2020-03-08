@@ -1149,13 +1149,14 @@ class NextItemFirstItemNetwork(NextItemNetwork):
                 target_summ_champ_emb_dropout_flat
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(high_prio_inputs, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
-        # net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net = high_prio_inputs
+        # net = batch_normalization(fully_connected(high_prio_inputs, 128, bias=False,
+        #                                           activation='relu',
+        #                                           regularizer="L2"))
+        # # net = dropout(net, 0.9)
+        # net = batch_normalization(fully_connected(net, 128, bias=False,
+        #                                           activation='relu',
+        #                                           regularizer="L2"))
 
         logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
 

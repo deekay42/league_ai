@@ -1088,7 +1088,7 @@ class FirstItemsTrainer(NextItemsTrainer):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data_balanced()
+                        x, y = self.get_train_data_balanced(50000)
 
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
