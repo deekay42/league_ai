@@ -641,7 +641,7 @@ class NextItemsTrainer(Trainer):
         for output in [sys.stdout, self.logfile]:
             output.write("Epoch {0}\n".format(epoch_counter + 1))
             output.write("1. Acc {0:.4f}\n".format(main_test_eval))
-            if weighted_acc: output.write("2. Weighted Acc {0:.4f}\n".format())
+            if weighted_acc: output.write("2. Weighted Acc {0:.4f}\n".format(weighted_acc))
             if f1: output.write('3. F-1 {0:.4f}\n'.format(f1))
             if precision: output.write('4. Precision {0:.4f}\n'.format(precision))
             if recall: output.write('5. Recall {0:.4f}\n'.format(recall))
