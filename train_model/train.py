@@ -1025,7 +1025,11 @@ class FirstItemsTrainer(NextItemsTrainer):
         #
         # # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         # self.network.network_config["class_weights"] = self.class_weights
-        self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
+
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+        self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
 
 
         self.X = self.X.astype(np.float32)
@@ -1333,8 +1337,8 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    t = FirstItemsTrainer()
-    t.train()
+    t = NextItemsTrainer()
+    t.build_next_items_starter_model()
     #
     # t.build_champ_embeddings_model()
 
