@@ -1047,19 +1047,19 @@ class FirstItemsTrainer(NextItemsTrainer):
 
 
 
-        for i in range(len(y_actual)):
-            champ_int = x_test[i][x_test[i][0]+1]
-            champ_name = ChampManager().lookup_by("int", champ_int)
-            a_text = ItemManager.lookup_by('img_int', y[i])['name']
-            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-            a = y[i]
-            b = y_actual[i]
-            if not np.all(np.equal(a,b)):
-                print(f"----->{i}: {a_text} {b_text}")
-            else:
-                print(f"{i}: {a_text} {b_text}")
-        print("Raw test data predictions: {0}".format(y))
-        print("Actual test data  values : {0}".format(y_actual))
+        # for i in range(len(y_actual)):
+        #     champ_int = x_test[i][x_test[i][0]+1]
+        #     champ_name = ChampManager().lookup_by("int", champ_int)
+        #     a_text = ItemManager.lookup_by('img_int', y[i])['name']
+        #     b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+        #     a = y[i]
+        #     b = y_actual[i]
+        #     if not np.all(np.equal(a,b)):
+        #         print(f"----->{i}: {a_text} {b_text}")
+        #     else:
+        #         print(f"{i}: {a_text} {b_text}")
+        # print("Raw test data predictions: {0}".format(y))
+        # print("Actual test data  values : {0}".format(y_actual))
 
         # y = model.predict(self.X_test)
         # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
@@ -1076,7 +1076,6 @@ class FirstItemsTrainer(NextItemsTrainer):
         #         print(f"{i}: {a} {b}")
         # print("Raw test data predictions: {0}".format(y))
         # print("Actual test data  values : {0}".format(self.Y_test))
-
 
         acc = sum([y_pred in y_actual for y_pred, y_actual in zip(y_preds, y_test)])/len(y_test)
         self.log_output(acc, None, None, None, None, None, None,
@@ -1342,7 +1341,7 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
 
-    
+
     t = FirstItemsTrainer()
     t.train()
     #
