@@ -361,7 +361,7 @@
     "target_summ": "XinZhao",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Trinity Force", "The Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Youmuu's Ghostblade", "Trinity Force", "The Black Cleaver", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "59" : {
     "target_summ": "Zilean",
@@ -439,13 +439,13 @@
     "target_summ": "Volibear",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Blade of the Ruined King", "Trinity Force"]
   },
   "72" : {
     "target_summ": "Mordekaiser",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Liandry's Torment", "Rylai's Crystal Scepter"]
   },
   "73" : {
     "target_summ": "Urgot",
@@ -457,6 +457,6 @@
     "target_summ": "Ryze",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff"]
   }
 }
