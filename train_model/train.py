@@ -914,6 +914,11 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
+
+
+
+class FirstItemsTrainer(NextItemsTrainer):
+
     def build_aux_test_data(self):
         with open('test_data/first_items_test.json', "r") as f:
             elems = json.load(f)
@@ -928,20 +933,16 @@ class NextItemsTrainer(Trainer):
             complete_example[0] = test_case["role"]
             complete_example[1:11] = my_team_champs + opp_team_champs
 
-            targets = [ChampManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
+            targets = [ItemManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
             self.X_test_aux.append(complete_example)
             self.Y_test_aux.append(targets)
 
 
-
-
-
-class FirstItemsTrainer(NextItemsTrainer):
-
-
-    def build_new_model(self):
+    def train(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
+
+        self.build_aux_test_data()
 
         my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
         opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
@@ -1304,7 +1305,7 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
     t = FirstItemsTrainer()
-    t.build_new_model()
+    t.train()
     #
     # t.build_champ_embeddings_model()
 
