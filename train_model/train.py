@@ -1337,8 +1337,8 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    t = NextItemsTrainer()
-    t.build_next_items_starter_model()
+    t = FirstItemsTrainer()
+    t.train()
     #
     # t.build_champ_embeddings_model()
 
