@@ -1,0 +1,354 @@
+{
+  "1" : {
+    "target_summ": "Varus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "2" : {
+    "target_summ": "Vayne",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "3" : {
+    "target_summ": "Twitch",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "4" : {
+    "target_summ": "Ashe",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "5" : {
+    "target_summ": "Xayah",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "6" : {
+    "target_summ": "Caitlyn",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "7" : {
+    "target_summ": "Ezreal",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "8" : {
+    "target_summ": "Varus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "9" : {
+    "target_summ": "Aphelios",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre", "Stalker's Blade: Bloodrazor", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "10" : {
+    "target_summ": "Fizz",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "11" : {
+    "target_summ": "Annie",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "12" : {
+    "target_summ": "Vladimir",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "12" : {
+    "target_summ": "Rumble",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "13" : {
+    "target_summ": "Victor",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "14" : {
+    "target_summ": "Kayle",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "15" : {
+    "target_summ": "Soraka",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "16" : {
+    "target_summ": "Zilean",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "17" : {
+    "target_summ": "Nami",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "18" : {
+    "target_summ": "Sona",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "19" : {
+    "target_summ": "Ziggs",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes"]
+  },
+  "20" : {
+    "target_summ": "Alistar",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "21" : {
+    "target_summ": "Thresh",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "22" : {
+    "target_summ": "Nautilus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "23" : {
+    "target_summ": "Galio",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "24" : {
+    "target_summ": "Braum",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "25" : {
+    "target_summ": "Blitzcrank",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Runic Echoes", "Stalker's Blade: Runic Echoes", "Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "26" : {
+    "target_summ": "Ornn",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "1" : {
+    "target_summ": "Sion",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk"]
+  },
+  "27" : {
+    "target_summ": "Darius",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "28" : {
+    "target_summ": "Garen",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "29" : {
+    "target_summ": "Aatrox",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "30" : {
+    "target_summ": "Riven",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "31" : {
+    "target_summ": "Urgot",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "32" : {
+    "target_summ": "Renekton",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Cinderhulk", "Stalker's Blade: Cinderhulk", "Skirmisher's Sabre: Warrior", "Stalker's Blade: Warrior"]
+  },
+  "33" : {
+    "target_summ": "Amumu",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "34" : {
+    "target_summ": "Amumu",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+
+  "35" : {
+    "target_summ": "Alistar",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "36" : {
+    "target_summ": "Alistar",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+
+  "37" : {
+    "target_summ": "Nautilus",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "38" : {
+    "target_summ": "Nautilus",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+
+  "39" : {
+    "target_summ": "Braum",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "40" : {
+    "target_summ": "Braum",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+
+  "41" : {
+    "target_summ": "Sejuani",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Abyssal Mask", "Spirit Visage", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "42" : {
+    "target_summ": "Sejuani",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Righteous Glory", "Sunfire Cape", "Dead Man's Plate", "Iceborn Gauntlet","Zhonya's Hourglass","Seeker's Armguard","Gargoyle Stoneplate", "Frozen Heart", "Hextech Protobelt-01", "Rylai's Crystal Scepter"]
+  },
+  "43" : {
+    "target_summ": "Kaisa",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Manamune"]
+  },
+  "44" : {
+    "target_summ": "Xayah",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "45" : {
+    "target_summ": "Twitch",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "46" : {
+    "target_summ": "MissFortune",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "47" : {
+    "target_summ": "MissFortune",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "48" : {
+    "target_summ": "Xayah",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "49" : {
+    "target_summ": "Twitch",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "50" : {
+    "target_summ": "MissFortune",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "51" : {
+    "target_summ": "Vayne",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King"]
+  },
+  "52" : {
+    "target_summ": "Xayah",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "53" : {
+    "target_summ": "Twitch",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "54" : {
+    "target_summ": "MissFortune",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King" ]
+  },
+  "55" : {
+    "target_summ": "Vayne",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Essence Reaver", "Blade of the Ruined King"]
+  },
+  "56" : {
+    "target_summ": "Ezreal",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Manamune"]
+  }
+}
