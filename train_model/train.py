@@ -1050,7 +1050,7 @@ class FirstItemsTrainer(NextItemsTrainer):
         for y_pred, y_actual, test_case in zip(y_preds, y_test, self.aux_test_raw.values()):
             if y_pred not in y_actual:
                 print(f"test_case: {test_case}")
-                print(ItemManager.lookup_by('img_int', y_pred)['name'])
+                print(ItemManager().lookup_by('img_int', y_pred)['name'])
 
         # y = model.predict(self.X_test)
         # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
