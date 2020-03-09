@@ -811,7 +811,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         #                                                                   activation='relu',  regularizer="L2"))
 
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
-        opp_champs_one_hot = champs_one_hot[:, self.network_config["champs_per_team"]:]
+        opp_champs_one_hot = champs_one_hot[:, self.game_config["champs_per_team"]:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_one_hot = tf.gather_nd(champs_one_hot, opp_index_no_offset)
