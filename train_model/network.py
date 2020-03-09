@@ -810,11 +810,21 @@ class StandardNextItemNetwork(NextItemNetwork):
         # enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
+        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
+        opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
+        opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
+        target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
+        opp_summ_one_hot = tf.gather_nd(champs_one_hot, opp_index_no_offset)
+
+
         final_input_layer = merge(
             [
-                target_summ_champ_emb_dropout_flat,
-                opp_summ_champ_emb_dropout_flat,
-                opp_team_champ_embs_dropout_flat,
+                # target_summ_champ_emb_dropout_flat,
+                # opp_summ_champ_emb_dropout_flat,
+                # opp_team_champ_embs_dropout_flat,
+                opp_champs_k_hot,
+                target_summ_one_hot,
+                opp_summ_one_hot,
                 pos_one_hot,
                 enemy_summs_strength_output,
                 target_summ_current_gold,
