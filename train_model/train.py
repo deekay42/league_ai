@@ -671,14 +671,14 @@ class NextItemsTrainer(Trainer):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
-        opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], my_champ_embs_dst], axis=0)
-        opp_champ_embs_dst = np.concatenate([[[0, 0, 0, 0.1]], opp_champ_embs_dst], axis=0)
+        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
-        self.champ_embs = my_champ_embs_dst[:, :3]
-        self.opp_champ_embs = opp_champ_embs_dst[:, :3]
-        self.network = StandardNextItemNetwork(my_champ_embs_dst[:, -1], opp_champ_embs_dst[:, -1])
+        self.champ_embs = my_champ_embs_normed
+        self.opp_champ_embs = opp_champ_embs_normed
+        self.network = StandardNextItemNetwork()
 
         self.train_path = app_constants.model_paths["train"]["next_items_early"]
         self.best_path = app_constants.model_paths["best"]["next_items_early"]
@@ -1373,6 +1373,8 @@ if __name__ == "__main__":
 
     t = NextItemsTrainer()
     t.build_next_items_early_game_model()
+    # t = FirstItemsTrainer()
+    # t.train()
     #
     # t.build_champ_embeddings_model()
 
