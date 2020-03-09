@@ -810,8 +810,8 @@ class StandardNextItemNetwork(NextItemNetwork):
         # enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
-        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=total_num_champs)
-        opp_champs_one_hot = champs_one_hot[:, champs_per_team:]
+        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        opp_champs_one_hot = champs_one_hot[:, self.network_config["champs_per_team"]:]
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_one_hot = tf.gather_nd(champs_one_hot, opp_index_no_offset)
@@ -1107,7 +1107,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.1], pos_index, n, 1.0)
+                                                                             [0.01], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
 
