@@ -109,8 +109,8 @@ class Trainer(ABC):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        # x, y = self.get_train_data()
-                        x,y = self.get_train_data_balanced(100000)
+                        x, y = self.get_train_data()
+                        # x,y = self.get_train_data_balanced(100000)
                         # x = x[:1000]
                         # y = y[:1000]
                         # x[:, 1:6] = [40, 42, 142, 84, 51]
