@@ -758,7 +758,7 @@ class NextItemModel(Model):
         super().__init__()
         self.early_or_late = early_or_late
         if early_or_late == "early":
-            self.network = network.NextItemEarlyGameNetwork()
+            self.network = network.StandardNextItemNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_early"]
             self.elements = "next_items_early"
         elif early_or_late == "late":
