@@ -409,7 +409,7 @@
     "target_summ": "Evelynn",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane"]
+    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Liandry's Torment"]
   },
   "67" : {
     "target_summ": "Katarina",
@@ -421,25 +421,25 @@
     "target_summ": "Rengar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Youmuu's Ghostblade", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "69" : {
     "target_summ": "Fiora",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["The Black Cleaver", "Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Youmuu's Ghostblade", "The Black Cleaver", "Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "70" : {
     "target_summ": "Camille",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["The Black Cleaver", "Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
+    "target": ["Youmuu's Ghostblade", "The Black Cleaver", "Trinity Force", "Essence Reaver", "Blade of the Ruined King", "Umbral Glaive", "Duskblade of Draktharr", "Statikk Shiv", "Phantom Dancer", "Infinity Edge", "Stormrazor"]
   },
   "71" : {
     "target_summ": "Volibear",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Blade of the Ruined King", "Trinity Force", "Iceborn Gauntlet"]
+    "target": ["Blade of the Ruined King", "Trinity Force", "Iceborn Gauntlet", "Sunfire Cape"]
   },
   "72" : {
     "target_summ": "Mordekaiser",
@@ -457,6 +457,6 @@
     "target_summ": "Ryze",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff", "Rod of Ages", "Liandry's Torment"]
+    "target": ["Liandry's Torment", "Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff", "Rod of Ages", "Liandry's Torment"]
   }
 }

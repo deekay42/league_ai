@@ -883,12 +883,10 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
-        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings(my_team_champ_ints, "my_champ_embs",
-                                                                          "my_champ_emb_scales", 2, 4, pos_index, n)
-        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings(
-            opp_team_champ_ints, "opp_champ_embs",
-            "opp_champ_emb_scales", 3, 6,
-            opp_index_no_offset, n)
+        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
+                                                                             [0.1], pos_index, n, 1.0)
+        _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+            opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
 
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
             "items_per_champ"], 2])
@@ -1098,7 +1096,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.05], pos_index, n, 1.0)
+                                                                             [0.005], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.01], opp_index_no_offset, n, 1.0)
 
