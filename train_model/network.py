@@ -756,7 +756,7 @@ class StandardNextItemNetwork(NextItemNetwork):
                 kda_diff,
                 lvl_diff,
                 cs_diff,
-                pos_one_hot,
+                pos_one_hot_tiled,
                 opp_champ_pos
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 15))
