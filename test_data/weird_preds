@@ -1,0 +1,54 @@
+Garen Executioners?? 346
+Fizz jg dark seal? 310
+xin zhao executioners 410
+stopwatch nasus?? 331
+stomrazor garen 378
+nautilus ninja tabi 415
+amumu 469 470
+thresh mobis 486
+trynd supp 473
+vayne wits end 500
+blitzcrank 800g not spent?? 322
+fizz not bought zhonyas? 260
+nasus 332 righteous glory
+408 merc treads??
+431 doran's blade?
+505 nunu triforce?
+
+self_index = 0
+champs_copy = copy.deepcopy(champs)
+champs_copy[self_index] = ChampManager().lookup_by("name", "Varus")
+items_copy = [Counter()]*10
+print(self.deflate_items(self.analyze_champ(self_index, champs_copy, items_copy, cs, lvl, kda, current_gold)))
+
+
+self_index = 4
+champs[self_index] = ChampManager().lookup_by("name", "Tryndamere")
+items[self_index] = Counter({176:1})
+
+
+self.session.run(tflearn.get_layer_variables_by_scope("champs_embedded_short1"))
+
+model.get_weights(tflearn.get_layer_variables_by_scope("champs_embedded_short1")[0])
+
+self.predictor.evaluate(feed_dict, ['my_embedding/MatMul:0'], batch_size)
+
+self.predictor.evaluate(feed_dict, ['my_embedding/MatMul:0'], 177)
+
+
+self_index = 2
+champs_copy = copy.deepcopy(champs)
+champs_copy[self_index+5] = ChampManager().lookup_by("name", "Leblanc")
+items_copy = copy.deepcopy(items)
+lvl_copy = copy.deepcopy(lvl)
+cs_copy = copy.deepcopy(cs)
+lvl_copy[self_index+5] = 6
+cs_copy[self_index+5] = 40
+print(self.deflate_items(self.analyze_champ(self_index, champs_copy, items_copy, cs_copy, lvl_copy, kda, current_gold)))
+
+x = x[:1000]
+y = y[:1000]
+x[:,1:6] = [40, 42, 142, 84, 51] Fizz Sona Neeko Zilean Kayle
+feed_dict = tflearn.utils.feed_dict_builder(x, y, model.inputs,
+                                                   model.targets)
+embeddings = model.predictor.evaluate(feed_dict, ["cond/Merge"], x.shape[0])

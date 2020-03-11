@@ -1,0 +1,612 @@
+{
+  "1" : {
+    "target_summ": "Varus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "2" : {
+    "target_summ": "Vayne",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "3" : {
+    "target_summ": "Twitch",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "4" : {
+    "target_summ": "Ashe",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "5" : {
+    "target_summ": "Xayah",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "6" : {
+    "target_summ": "Caitlyn",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "7" : {
+    "target_summ": "Ezreal",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "8" : {
+    "target_summ": "Varus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "9" : {
+    "target_summ": "Aphelios",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "10" : {
+    "target_summ": "Fizz",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "11" : {
+    "target_summ": "Annie",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "12" : {
+    "target_summ": "Vladimir",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "12" : {
+    "target_summ": "Rumble",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "13" : {
+    "target_summ": "Viktor",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "14" : {
+    "target_summ": "Kayle",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "15" : {
+    "target_summ": "Soraka",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "16" : {
+    "target_summ": "Zilean",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "17" : {
+    "target_summ": "Nami",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "18" : {
+    "target_summ": "Sona",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "19" : {
+    "target_summ": "Ziggs",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "20" : {
+    "target_summ": "Alistar",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "21" : {
+    "target_summ": "Thresh",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "22" : {
+    "target_summ": "Nautilus",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "23" : {
+    "target_summ": "Galio",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "24" : {
+    "target_summ": "Braum",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "25" : {
+    "target_summ": "Blitzcrank",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "26" : {
+    "target_summ": "Ornn",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "1" : {
+    "target_summ": "Sion",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Talisman"]
+  },
+  "27" : {
+    "target_summ": "Darius",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "28" : {
+    "target_summ": "Garen",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "29" : {
+    "target_summ": "Aatrox",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "30" : {
+    "target_summ": "Riven",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "31" : {
+    "target_summ": "Urgot",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "32" : {
+    "target_summ": "Renekton",
+    "role": 1,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hunter's Machete"]
+  },
+  "33" : {
+    "target_summ": "Amumu",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "34" : {
+    "target_summ": "Amumu",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+
+  "35" : {
+    "target_summ": "Alistar",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "36" : {
+    "target_summ": "Alistar",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+
+  "37" : {
+    "target_summ": "Nautilus",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "38" : {
+    "target_summ": "Nautilus",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+
+  "39" : {
+    "target_summ": "Braum",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "40" : {
+    "target_summ": "Braum",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+
+  "41" : {
+    "target_summ": "Sejuani",
+    "role": 0,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "42" : {
+    "target_summ": "Sejuani",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Doran's Shield", "Corrupting Potion"]
+  },
+  "43" : {
+    "target_summ": "Kaisa",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "44" : {
+    "target_summ": "Xayah",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "45" : {
+    "target_summ": "Twitch",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "46" : {
+    "target_summ": "MissFortune",
+    "role": 0,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "47" : {
+    "target_summ": "MissFortune",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "48" : {
+    "target_summ": "Xayah",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "49" : {
+    "target_summ": "Twitch",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "50" : {
+    "target_summ": "MissFortune",
+    "role": 2,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "51" : {
+    "target_summ": "Vayne",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade"]
+  },
+  "52" : {
+    "target_summ": "Xayah",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle"]
+  },
+  "53" : {
+    "target_summ": "Twitch",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle"]
+  },
+  "54" : {
+    "target_summ": "MissFortune",
+    "role": 4,
+    "opp_team": ["Darius", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle"]
+  },
+  "55" : {
+    "target_summ": "Vayne",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle"]
+  },
+  "56" : {
+    "target_summ": "Ezreal",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle"]
+  },
+  "57" : {
+    "target_summ": "XinZhao",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "58" : {
+    "target_summ": "XinZhao",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "59" : {
+    "target_summ": "Zilean",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion"]
+  },
+  "60" : {
+    "target_summ": "Janna",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion"]
+  },
+  "61" : {
+    "target_summ": "Alistar",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "62" : {
+    "target_summ": "Nautilus",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "63" : {
+    "target_summ": "Nami",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "64" : {
+    "target_summ": "Nunu",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "65" : {
+    "target_summ": "Shyvana",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "66" : {
+    "target_summ": "Evelynn",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "67" : {
+    "target_summ": "Katarina",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "68" : {
+    "target_summ": "Rengar",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "69" : {
+    "target_summ": "Fiora",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "70" : {
+    "target_summ": "Camille",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "71" : {
+    "target_summ": "Volibear",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "72" : {
+    "target_summ": "Mordekaiser",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "73" : {
+    "target_summ": "Urgot",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Blade", "Doran's Shield"]
+  },
+  "74" : {
+    "target_summ": "Ryze",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Doran's Ring", "Corrupting Potion", "Doran's Shield"]
+  },
+  "75" : {
+    "target_summ": "Nunu",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield"]
+  },
+  "76" : {
+    "target_summ": "Shyvana",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "77" : {
+    "target_summ": "Evelynn",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "78" : {
+    "target_summ": "Katarina",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "79" : {
+    "target_summ": "Rengar",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "80" : {
+    "target_summ": "Fiora",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "81" : {
+    "target_summ": "Camille",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "82" : {
+    "target_summ": "Volibear",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Steel Shoulderguards"]
+  },
+  "83" : {
+    "target_summ": "Mordekaiser",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "84" : {
+    "target_summ": "Urgot",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "85" : {
+    "target_summ": "Ryze",
+    "role": 4,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "86" : {
+    "target_summ": "Darius",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Steel Shoulderguards"]
+  },
+  "87" : {
+    "target_summ": "Garen",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Steel Shoulderguards"]
+  },
+  "88" : {
+    "target_summ": "Aatrox",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "89" : {
+    "target_summ": "Riven",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "90" : {
+    "target_summ": "Urgot",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "91" : {
+    "target_summ": "Renekton",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Spectral Sickle", "Steel Shoulderguards"]
+  },
+  "92" : {
+    "target_summ": "Amumu",
+    "role": 4,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield"]
+  },
+  "93" : {
+    "target_summ": "Ekko",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "94" : {
+    "target_summ": "AurelionSol",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "95" : {
+    "target_summ": "Fizz",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "96" : {
+    "target_summ": "Zac",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield"]
+  },
+  "97" : {
+    "target_summ": "Rumble",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "98" : {
+    "target_summ": "Diana",
+    "role": 4,
+    "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Spellthief's Edge"]
+  },
+  "99" : {
+    "target_summ": "Nasus",
+    "role": 4,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Relic Shield", "Steel Shoulderguards"]
+  }
+}
