@@ -520,6 +520,24 @@ class NextItemsTrainer(Trainer):
         self.opp_champ_embs = None
         self.num_epochs = 200
 
+    def build_aux_test_data(self, sourcepath):
+        with open(sourcepath, "r") as f:
+            self.aux_test_raw = json.load(f)
+        aux_test_x, aux_test_y = [], []
+        for i, test_case in self.aux_test_raw.items():
+            my_team_champs = [0,0,0,0,0]
+            my_team_champs[test_case["role"]] = ChampManager().lookup_by("name", test_case["target_summ"])["int"]
+            opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
+                "opp_team"]]
+            complete_example = [0]*221
+            complete_example[0] = test_case["role"]
+            complete_example[1:11] = my_team_champs + opp_team_champs
+
+            targets = [ItemManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
+            aux_test_x.append(complete_example)
+            aux_test_y.append(targets)
+        return np.array(aux_test_x), np.array(aux_test_y)
+
     def determine_best_eval(self, scores):
         # epoch counter is 1 based
         return np.argmax(scores[:, 0]) + 1
@@ -680,8 +698,8 @@ class NextItemsTrainer(Trainer):
         self.opp_champ_embs = opp_champ_embs_normed
         self.network = StandardNextItemNetwork()
 
-        self.train_path = app_constants.model_paths["train"]["next_items_early"]
-        self.best_path = app_constants.model_paths["best"]["next_items_early"]
+        self.train_path = app_constants.model_paths["train"]["next_items_standard"]
+        self.best_path = app_constants.model_paths["best"]["next_items_standard"]
 
         print("Loading training data")
         dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
@@ -747,6 +765,25 @@ class NextItemsTrainer(Trainer):
         # dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
         # dump(min_max_scaler, self.best_path + scaler_name + "_scaler", compress=True)
         return min_max_scaler
+
+
+    @staticmethod
+    def only_boots(data):
+        y = data[:, -1]
+        boots_ints = ItemManager().get_boots_ints()
+        valid_indices = np.isin(y, list(boots_ints))
+        return valid_indices
+
+
+    @staticmethod
+    def only_starters(data):
+        pos = data[:, 1]
+        all_starter_items_ints = ItemManager().get_starter_ints()
+        starter_items = np.isin(data[:, -1], list(all_starter_items_ints))
+        data_items = data[:, 12:6 * 12]
+        data_items = np.reshape(data_items, (-1, 5, 12))
+        empty_items = data_items[range(len(pos)), pos, 1] == 6
+        return np.logical_and(empty_items, starter_items)
 
 
     @staticmethod
@@ -894,96 +931,13 @@ class NextItemsTrainer(Trainer):
         self.build_new_model()
 
 
-    def build_next_items_starter_model(self):
-        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
-            x: x["int"])]
-
-
-        def condition(data):
-            pos = data[:, 1]
-            all_starter_items_ints = ItemManager().get_starter_ints()
-            starter_items = np.isin(data[:, -1], list(all_starter_items_ints))
-            data_items = data[:, 12:6*12]
-            data_items = np.reshape(data_items, (-1, 5,12))
-            empty_items = data_items[range(len(pos)), pos, 1] == 6
-            return np.logical_and(empty_items, starter_items)
-
-
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
-        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
-        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
-
-        self.champ_embs = my_champ_embs_normed
-        self.opp_champ_embs = opp_champ_embs_normed
-        self.network = NextItemStarterNetwork()
-        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
-        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
-
-        print("Loading training data")
-        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_uninf"])
-        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_uninf"])
-        X_elite, Y_elite = dataloader_elite.get_train_data(condition)
-        print("Loading test data")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(condition)
-
-        X_lower, Y_lower = dataloader_lower.get_train_data(condition)
-        print("Loading test data")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(condition)
-
-        self.X = np.concatenate([X_elite, X_lower], axis=0)
-        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
-        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
-
-        # self.X = np.tile(self.X[:20], (10000,1))
-        # self.Y = np.tile(self.Y[:20], 10000)
-        # self.X_test = self.X
-        # self.Y_test = self.Y
-
-        self.train_y_distrib = Counter(self.Y)
-        self.test_y_distrib = Counter(self.Y_test)
-        self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        self.network.network_config["class_weights"] = self.class_weights
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("starter")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
-        self.build_new_model()
-
-
-
-
-
 class FirstItemsTrainer(NextItemsTrainer):
-
-    def build_aux_test_data(self):
-        with open('test_data/first_items_test.json', "r") as f:
-            self.aux_test_raw = json.load(f)
-        self.X_test_aux = []
-        self.Y_test_aux = []
-        for i, test_case in self.aux_test_raw.items():
-            my_team_champs = [0,0,0,0,0]
-            my_team_champs[test_case["role"]] = ChampManager().lookup_by("name", test_case["target_summ"])["int"]
-            opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
-                "opp_team"]]
-            complete_example = [0]*221
-            complete_example[0] = test_case["role"]
-            complete_example[1:11] = my_team_champs + opp_team_champs
-
-            targets = [ItemManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
-            self.X_test_aux.append(complete_example)
-            self.Y_test_aux.append(targets)
-
 
     def train(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        self.build_aux_test_data()
+        self.X_test_aux, self.Y_test_aux = self.build_aux_test_data('test_data/first_items_test.json')
 
         my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
         opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
@@ -1143,6 +1097,119 @@ class FirstItemsTrainer(NextItemsTrainer):
 
                         scores.append(score)
         return scores
+
+
+class StarterItemsTrainer(NextItemsTrainer):
+
+    def train(self):
+
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+        self.X_test, self.Y_test = self.build_aux_test_data('test_data/starter_items_test.json')
+
+
+        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
+
+        self.champ_embs = my_champ_embs_normed
+        self.opp_champ_embs = opp_champ_embs_normed
+        self.network = NextItemStarterNetwork()
+        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
+        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_uninf"])
+        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_starters())
+        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_starters())
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+
+
+        self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("starter")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.build_new_model()
+
+
+    def eval_model(self, model, epoch, x_test, y_test):
+        y_pred_prob = []
+        for chunk in utils.chunks(x_test, 1024):
+            y_pred_prob.extend(model.predict(np.array(chunk)))
+        y_pred_prob = np.array(y_pred_prob)
+        y_preds = np.argmax(y_pred_prob, axis=1)
+
+        for y_pred, y_actual, test_case in zip(y_preds, y_test, self.aux_test_raw.values()):
+            if y_pred not in y_actual:
+                print(f"test_case: {test_case}")
+                print(ItemManager().lookup_by('img_int', y_pred)['name'])
+                print("\n\n")
+
+        acc = sum([y_pred in y_actual for y_pred, y_actual in zip(y_preds, y_test)])/len(y_test)
+        self.log_output(acc, None, None, None, None, None, None,
+                        None, None, epoch)
+
+        return acc
+
+
+
+class BootsTrainer(NextItemsTrainer):
+
+    def train(self):
+        self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
+            x: x["int"])]
+
+
+        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
+
+        self.champ_embs = my_champ_embs_normed
+        self.opp_champ_embs = opp_champ_embs_normed
+        self.network = NextItemBootsNetwork()
+        self.train_path = app_constants.model_paths["train"]["next_items_boots"]
+        self.best_path = app_constants.model_paths["best"]["next_items_boots"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_uninf"])
+
+        print("Loading elite train data first item")
+        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_boots)
+        print("Loading elite test data first item")
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.only_boots)
+        print("Loading lower train data first item")
+        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_boots)
+        print("Loading lower test data first item")
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.only_boots)
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+
+        self.train_y_distrib = Counter(self.Y)
+        self.test_y_distrib = Counter(self.Y_test)
+        self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
+        self.network.network_config["class_weights"] = self.class_weights
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("starter")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.build_new_model()
 
 
 class ChampsEmbeddingTrainer(Trainer):
@@ -1372,9 +1439,12 @@ if __name__ == "__main__":
 
 
     t = NextItemsTrainer()
-    t.build_next_items_early_game_model()
-    # t = FirstItemsTrainer()
+    t.build_next_items_late_game_model()
+    # t = BootsTrainer()
     # t.train()
+    # t = StarterItemsTrainer()
+    # t.train()
+
     #
     # t.build_champ_embeddings_model()
 
