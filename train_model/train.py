@@ -685,7 +685,7 @@ class NextItemsTrainer(Trainer):
         return best_model_index + 1
 
 
-    def build_next_items_early_game_model(self):
+    def build_next_items_standard_game_model(self):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
@@ -1439,7 +1439,7 @@ if __name__ == "__main__":
 
 
     t = NextItemsTrainer()
-    t.build_next_items_early_game_model()
+    t.build_next_items_standard_game_model()
     # t = BootsTrainer()
     # t.train()
     # t = StarterItemsTrainer()
@@ -1450,7 +1450,7 @@ if __name__ == "__main__":
 
 
     # try:
-    #     t.build_next_items_early_game_model()
+    #     t.build_next_items_standard_game_model()
     # except Exception as e:
     #     print(e)
     # print("NOW TRAINING LATE GAME")

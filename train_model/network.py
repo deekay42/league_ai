@@ -745,14 +745,21 @@ class StandardNextItemNetwork(NextItemNetwork):
         lvl_diff = opp_lvl - target_summ_lvl_exp
         cs_diff = opp_cs - target_summ_cs_exp
 
+        pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
+        pos_one_hot = tf.tile(pos_one_hot, multiples=[1, 5])
+        pos_one_hot = tf.reshape(pos_one_hot, (-1, 5, 5))
+        opp_champ_pos = tf.one_hot([0, 1, 2, 3, 4], depth=5)
+        opp_champ_pos = tf.reshape(opp_champ_pos, (1, 5, 5))
+        opp_champ_pos = tf.tile(opp_champ_pos, multiples=[n, 1, 1])
         enemy_summ_strength_input = merge(
             [
                 kda_diff,
                 lvl_diff,
                 cs_diff,
-                pos_one_hot
+                pos_one_hot,
+                opp_champ_pos
             ], mode='concat', axis=2)
-        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
+        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 15))
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
