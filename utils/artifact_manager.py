@@ -198,6 +198,8 @@ class ItemManager:
         def get_full_item_ints(self):
             return {item["int"] for key, item in self._by["int"].items() if "full_item" in item and item["full_item"]}
 
+        def get_boots_ints(self):
+            return {item["int"] for key, item in self._by["int"].items() if "boots" in item and item["boots"]}
 
         def extract_completes(self, summ_items_counter, true_completes_only=False):
             completes = self.get_completes(true_completes_only)
