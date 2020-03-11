@@ -241,12 +241,10 @@ def is_super_path(path, current_items, final_item):
     for current_item, qty in current_items.items():
         if current_item not in full_item_trees[final_item.id]:
             continue
-        if current_item in full_comp_tree and full_comp_tree[current_item] >= qty:
+        if current_item in full_comp_tree:
             full_comp_tree -= Counter({current_item:qty})
-        else:
-            return False
     else:
-        return True
+        return full_comp_tree != Counter({})
 
 
 def normalize_bps(bps, current_items, item):
