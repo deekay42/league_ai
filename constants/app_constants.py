@@ -103,10 +103,11 @@ model_paths = dict()
 for label in ["train", "best"]:
     paths = {"base": base_model_path + label + os.sep}
     paths.update({
-        "next_items_early": paths["base"] + "next_items" + os.sep + "early" + os.sep,
+        "next_items_standard": paths["base"] + "next_items" + os.sep + "standard" + os.sep,
         "next_items_late": paths["base"] + "next_items" + os.sep + "late" + os.sep,
         "next_items_starter": paths["base"] + "next_items" + os.sep + "starter" + os.sep,
         "next_items_first_item": paths["base"] + "next_items" + os.sep + "first_item" + os.sep,
+        "next_items_boots": paths["base"] + "next_items" + os.sep + "boots" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
     paths.update({"champs": paths["imgs"] + "champs" + os.sep,
