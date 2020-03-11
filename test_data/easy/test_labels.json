@@ -325,5 +325,58 @@
     "kda": null,
     "cs": null,
     "lvl": null
+  },
+  "23" : {
+    "spells": null,
+    "champs": ["Mordekaiser", "Khazix", "Malzahar", "Tristana", "Braum", "Senna", "Alistar", "Morgana", "KogMaw", "Bard"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen539.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "24" : {
+    "spells": null,
+    "champs": ["Mordekaiser", "Khazix", "Malzahar", "Tristana", "Braum", "Senna", "Alistar", "Morgana", "KogMaw", "Bard"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen536.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "25" : {
+    "spells": null,
+    "champs": ["Ezreal", "Zac", "Fiddlesticks", "Ashe", "Brand", "Mordekaiser", "Kayn", "Diana", "Kaisa", "Morgana"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen516.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "25" : {
+    "spells": null,
+    "champs": ["Ornn", "DrMundo", "TwistedFate", "Ezreal", "Senna", "Poppy", "Garen", "Gragas", "Vayne", "Lux"],
+    "items": null,
+    "self": null,
+    "res": "1440,900",
+    "summ_names_displayed": null,
+    "current_gold": null,
+    "filename": "Screen516.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
   }
+
 }

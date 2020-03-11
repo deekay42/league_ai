@@ -1136,8 +1136,7 @@ class NextItemBootsNetwork(NextItemNetwork):
             [
                 kda_diff,
                 lvl_diff,
-                cs_diff,
-                pos_one_hot
+                cs_diff
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
         enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,

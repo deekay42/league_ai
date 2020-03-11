@@ -914,7 +914,7 @@ if __name__ == "__main__":
     t = NextItemsTrainer()
     print("NOW TRAINING EARLY GAME")
     try:
-        t.build_next_items_early_game_model()
+        t.build_next_items_standard_game_model()
     except Exception as e:
         print(e)
     print("NOW TRAINING LATE GAME")

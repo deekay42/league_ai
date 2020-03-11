@@ -83,12 +83,16 @@ class Main(FileSystemEventHandler):
         #     return
         with open(app_constants.train_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
-        self.early_or_late = "early"
-        self.next_item_model_early = NextItemModel("early")
+        self.next_item_model_early = NextItemModel("standard")
         self.next_item_model_early.load_model()
         self.next_item_model_late = NextItemModel("late")
         self.next_item_model_late.load_model()
-        self.next_item_model = self.next_item_model_early
+        self.next_item_model_starter = NextItemModel("starter")
+        self.next_item_model_starter.load_model()
+        self.next_item_model_first_item = NextItemModel("first_item")
+        self.next_item_model_first_item.load_model()
+        self.next_item_model_boots = NextItemModel("boots")
+        self.next_item_model_boots.load_model()
 
         # if Main.shouldTerminate():
         #     return
@@ -115,6 +119,8 @@ class Main(FileSystemEventHandler):
         self.previous_cs = None
         self.previous_lvl = None
         self.previous_self_index = None
+
+        self.boots_ints = ItemManager().get_boots_ints()
 
         Main.test_connection()
 
@@ -158,15 +164,15 @@ class Main(FileSystemEventHandler):
             result.extend([id_item] * summ_items[item_key])
         return result
 
-    def predict_next_item(self, role, champs, items, cs, lvl, kda, current_gold):
+    def predict_next_item(self, role, champs, items, cs, lvl, kda, current_gold, delta_items=Counter()):
         champs_int = [int(champ["int"]) for champ in champs]
         items_id = self.all_items_counter2items_list(items, "int")
         items_id = [[int(item["id"]) for item in summ_items] for summ_items in items_id]
         summ_owned_completes = None
-        if self.early_or_late == "late":
+        if self.early_or_late == "late" or self.early_or_late == "first_item":
             #at beginning of game dont buy potion first item. buy starter item first
             if items[role]:
-                summ_owned_completes = list(self.item_manager.get_blackout_items(items[role]))
+                summ_owned_completes = list(self.item_manager.get_blackout_items(items[role]+delta_items))
 
         return self.next_item_model.predict_easy(role, champs_int, items_id, cs, lvl, kda, current_gold,
                                                  summ_owned_completes)
@@ -211,7 +217,7 @@ class Main(FileSystemEventHandler):
          "Cull", "Doran's Blade", "Doran's Shield", "Doran's Ring",
          "Rejuvenation Bead", "The Dark Seal", "Mejai's Soulstealer", "Faerie Charm", "Elixir of Wrath", "Elixir of "
                                                                                                          "Iron",
-                           "Elixir of Sorcery", "Broken Stopwatch"]
+                           "Elixir of Sorcery"]
         removal_index = 0
         delta_items = Counter()
         six_items = None
@@ -231,30 +237,30 @@ class Main(FileSystemEventHandler):
             removal_index += 1
 
         return items, delta_items, six_items, delta_six
-
-    def simulate_game(self, items, champs):
-        count = 0
-        at_same_number = 0
-        last_number = 0
-        while count != 10:
-            count = 0
-            for summ_index in range(10):
-                if summ_index == 5:
-
-                    champs, items = self.swap_teams(champs, items)
-                count += int(self.next_item_for_champ(summ_index % 5, champs, items))
-
-            if count == last_number:
-                at_same_number += 1
-                if count > 6 and at_same_number >= 10:
-                    break
-            else:
-                at_same_number = 0
-                last_number = count
-            champs, items = self.swap_teams(champs, items)
-            for i, item in enumerate(items):
-                print(f"{divmod(i, 6)}: {item}")
-            pass
+    #
+    # def simulate_game(self, items, champs):
+    #     count = 0
+    #     at_same_number = 0
+    #     last_number = 0
+    #     while count != 10:
+    #         count = 0
+    #         for summ_index in range(10):
+    #             if summ_index == 5:
+    #
+    #                 champs, items = self.swap_teams(champs, items)
+    #             count += int(self.next_item_for_champ(summ_index % 5, champs, items))
+    #
+    #         if count == last_number:
+    #             at_same_number += 1
+    #             if count > 6 and at_same_number >= 10:
+    #                 break
+    #         else:
+    #             at_same_number = 0
+    #             last_number = count
+    #         champs, items = self.swap_teams(champs, items)
+    #         for i, item in enumerate(items):
+    #             print(f"{divmod(i, 6)}: {item}")
+    #         pass
 
 
     def analyze_champ(self, role, champs, items, cs, lvl, kda, current_gold):
@@ -262,6 +268,7 @@ class Main(FileSystemEventHandler):
             current_gold += 30
         assert (len(champs) == 10)
         print("\nRole: " + str(role))
+        ward_int = self.item_manager.lookup_by("name", "Control Ward")["int"]
 
 
         if role > 4:
@@ -275,8 +282,8 @@ class Main(FileSystemEventHandler):
 
         result = []
 
-        thresholds = [0, 0.05, 0.1, 0.25, .7, 1.1]
-        num_full_items = [0, 1, 2, 3, 4]
+        thresholds = [0, 0.1, 0.25, .7, 1.1]
+        num_full_items = [0, 1, 2, 3]
         commonality_to_items = dict()
         for i in range(len(num_full_items)):
             commonality_to_items[(thresholds[i], thresholds[i+1])] = num_full_items[i]
@@ -286,27 +293,37 @@ class Main(FileSystemEventHandler):
 
         while current_gold > 0:
 
-            num_true_completes_owned = len(list(self.item_manager.extract_completes(items[role], True)))
+            num_true_completes_owned = len(list(self.item_manager.extract_full_items(items[role])))
             # start_buy = sum(items[role].values()) < 3 and self.recipe_cost([self.item_manager.lookup_by("int",
             #                                                                                       item_int) for
             #                                                item_int in items[role]]) < 500
             champ_vs_role_commonality = self.champ_vs_roles[str(champs[role]["int"])].get(game_constants.ROLE_ORDER[role], 0)
             print(f"champ vs roles commonality: {champ_vs_role_commonality}")
             allowed_items = commonality_to_items[champ_vs_role_commonality]
+            if role==4:
+                allowed_items -= 1
 
 
-            if num_true_completes_owned < allowed_items or current_gold <= 100 or force_early_after_late:
-                self.early_or_late = "early"
+            if num_true_completes_owned < allowed_items or force_early_after_late:
+                self.early_or_late = "standard"
                 self.next_item_model = self.next_item_model_early
-                print("USING early GAME MODEL")
+                print("USING STANDARD GAME MODEL")
             else:
-                self.early_or_late = "late"
-                self.next_item_model = self.next_item_model_late
-                print("USING late GAME MODEL")
+                if items[role] == Counter():
+                    self.early_or_late = "starter"
+                    self.next_item_model = self.next_item_model_starter
+                    print("USING STARTER GAME MODEL")
+                elif np.any(np.isin(list(items[role].keys()), list(ItemManager().get_full_item_ints()))):
+                    self.early_or_late = "late"
+                    self.next_item_model = self.next_item_model_late
+                    print("USING LATE GAME MODEL")
+                else:
+                    self.early_or_late = "first_item"
+                    self.next_item_model = self.next_item_model_first_item
+                    print("USING FIRST ITEM GAME MODEL")
 
 
             if NextItemModel.num_itemslots(items[role]) >= game_constants.MAX_ITEMS_PER_CHAMP:
-
                 items_five, delta_five, items_six, delta_six = self.remove_low_value_items(items[role])
                 # items[role], delta_items = self.remove_low_value_items(items[role])
 
@@ -317,7 +334,8 @@ class Main(FileSystemEventHandler):
                     copied_items[role] = items_reduction
                     delta_items = deltas
                     try:
-                        next_predicted_items = self.predict_next_item(role, champs, copied_items, cs, lvl, kda, current_gold)
+                        next_predicted_items = self.predict_next_item(role, champs, copied_items, cs, lvl, kda,
+                                                                      current_gold, delta_items)
                         next_item = next_predicted_items[0]
                     except ValueError as e:
                         print(e)
@@ -339,7 +357,7 @@ class Main(FileSystemEventHandler):
                     print("max items reached. thats it")
                     return result
 
-                if self.early_or_late == "early" and next_item["name"] == "Empty":
+                if self.early_or_late == "standard" and next_item["name"] == "Empty":
                     #if there are no results for the current request, return the next late item prediction,
                     # regardless of gold
                     if not result:
@@ -348,10 +366,22 @@ class Main(FileSystemEventHandler):
                         return [self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)[0]]
                     else:
                         return result
+                elif self.early_or_late == "first_item" :
+                    if not np.any(np.isin(items[role], self.boots_ints)):
+                        self.next_item_model = self.next_item_model_boots
+                        next_boots = self.predict_next_item(role, champs, items, cs, lvl, kda, current_gold)[0]
+                        result.append(next_boots)
+                    result.append(next_item)
+                    return result
+
 
                 next_items, abs_items = self.build_path(items[role], next_item, current_gold)
 
-            if self.early_or_late == "early" and next_item["name"] == "Empty":
+            if (self.early_or_late == "standard" and next_item["name"] == "Empty") \
+                    or not next_items\
+                    or (items[role].get(ward_int, 0) >= 2 and next_item["int"] == ward_int)\
+                    or (self.contains_elixir(items[role]) and self.contains_elixir(Counter({next_item["int"]:1})))\
+                    or delta_items and next_item["int"] in delta_items and (next_item['int'] != ward_int):
                 # if there are no results for the current request, return the next late item prediction,
                 # regardless of gold
                 if not result:
@@ -388,7 +418,7 @@ class Main(FileSystemEventHandler):
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in items[role]]
             if delta_items:
                 for delta_item in delta_items:
-                    if delta_item in items[role]:
+                    if delta_item in items[role] and delta_item != ward_int:
                         items[role][delta_item] = items[role][delta_item] - delta_items[delta_item]
                     else:
                         items[role] += Counter({delta_item:delta_items[delta_item]})
@@ -397,16 +427,21 @@ class Main(FileSystemEventHandler):
             items[role] = +items[role]
         return result
 
+    def contains_elixir(self, items):
+        elixir_ints = [self.item_manager.lookup_by("name", "Elixir of Wrath")["int"], self.item_manager.lookup_by(
+            "name", "Elixir of Iron")["int"], self.item_manager.lookup_by("name", "Elixir of Sorcery")["int"]]
+        return np.any(np.isin(list(items.keys()), elixir_ints))
+
 
     def deflate_items(self, items):
-        items_counter = Counter([item["id"] for item in items])
-        large_item_sub_comps = Counter()
+        comp_pool = Counter()
         for item in items:
             item = cass.Item(id=(int(item["id"])), region="EUW")
             comps = Counter([ str(item_comp.id) for item_comp in list(item.builds_from)])
             if comps:
-                large_item_sub_comps += Counter(comps)
-        result = self.items_counter2items_list(items_counter - large_item_sub_comps, "id")
+                comp_pool -= Counter(comps)
+            comp_pool += Counter({str(item.id):1})
+        result = self.items_counter2items_list(comp_pool, "id")
         result_sorted = sorted(result, key=lambda a: cass.Item(id=(int(a["id"])), region="EUW").gold.total,
                                reverse=True)
         return result_sorted
@@ -461,7 +496,6 @@ class Main(FileSystemEventHandler):
             print(champs)
             print(items)
             self.simulate_game(items, champs)
-
 
 
     def timeout(self):
@@ -635,16 +669,19 @@ class Main(FileSystemEventHandler):
         #     print(items_to_buy)
 
 
-
-        items_to_buy = self.analyze_champ(self_index, champs, items, cs, lvl, kda, current_gold)
-        items_to_buy = self.deflate_items(items_to_buy)
-        print(f"This is the result for summ_index {self_index}: ")
-        print(items_to_buy)
-        out_string = ""
-        if items_to_buy and items_to_buy[0]:
-            out_string += str(items_to_buy[0]["id"])
-        for item in items_to_buy[1:]:
-            out_string += "," + str(item["id"])
+        try:
+            items_to_buy = self.analyze_champ(self_index, champs, items, cs, lvl, kda, current_gold)
+            items_to_buy = self.deflate_items(items_to_buy)
+            print(f"This is the result for summ_index {self_index}: ")
+            print(items_to_buy)
+            out_string = ""
+            if items_to_buy and items_to_buy[0]:
+                out_string += str(items_to_buy[0]["id"])
+            for item in items_to_buy[1:]:
+                out_string += "," + str(item["id"])
+        except Exception as e:
+            print("Unable to predict next item")
+            print(e)
         # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
         #     f.write(out_string)
 
@@ -673,23 +710,22 @@ class Main(FileSystemEventHandler):
 m = Main()
 #m.run()
 
-m.process_image(f"Screen331.png")
-# for i in range(300,400):
+m.process_image(f"Screen532.png")
+# for i in range(200,300):
 #     m.process_image(f"Screen{i}.png")
 
 # m.run_test_games()
 
 # pr = cProfile.Profile()
 
-# dataloader_1 = data_loader.UnsortedNextItemsDataLoader()
-# X_un = dataloader_1.get_train_data()
-# dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["next_items_processed_sorted_inf"])
+# dataloader = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+#                                                                      "next_items_processed_elite_sorted_uninf"])
 # X, Y = dataloader.get_train_data()
-# m = NextItemEarlyGameModel()
-# X = X[Y==2]
-# X_ = X[:, 1:]
-# X_ = X_[500:700]
-# m.output_logs(X[:200].astype(np.float32))
+# m = NextItemModel("starter")
+# # X = X[Y==2]
+# # X_ = X[:, 1:]
+# # X_ = X_[500:700]
+# m.output_logs(X[:20].astype(np.float32))
 
 #
 # blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
@@ -721,3 +757,39 @@ m.process_image(f"Screen331.png")
             # KDAImgModel(res_cvt).predict(test_image_x)
 
 # cass.Item(id=2055, region="KR")
+
+
+# import tflearn
+# from train_model.network import ChampEmbeddings
+# from tflearn.data_utils import to_categorical
+# import tensorflow as tf
+#
+# model = tflearn.DNN(ChampEmbeddings().build())
+# model.load('models/best/next_items/starter/my_model1809')
+# data_input = tflearn.input_data(shape=[None, 1+177], name='input')
+# image_batch = np.reshape(np.concatenate([[82], np.sum(to_categorical([ 23 , 57 , 52 , 47, 125, 120],
+#                                                                   nb_classes=ItemManager().get_num("int")), axis=0)],
+#                                          axis=0), (1,-1)).astype(np.float32)
+# d = model.evaluate(image_batch, np.reshape([1.], (-1, 1)))
+
+# feed_dict = tflearn.utils.feed_dict_builder(image_batch , None, [data_input], None)
+# graph = tf.get_default_graph()
+# [op.values() for op in graph.get_operations()]
+# res = model.predictor.evaluate(feed_dict=feed_dict, ops=['Reshape_2:0'], batch_size=1)
+
+# feed_dict = feed_dict_builder(X, Y, self.inputs, self.targets)
+# ops = [o.metric for o in self.train_ops]
+# return self.predictor.evaluate(feed_dict, ops, batch_size)
+print("hi")
+
+# with tf.Graph().as_default():
+#     with tf.Session() as sess:
+#         tflearn.is_training(False, session=sess)
+#         model = tflearn.DNN(ChampEmbeddings().build(), session=sess)
+#         sess.run(tf.global_variables_initializer())
+#         try:
+#             model.load('models/best/next_items/starter/my_model109', create_new_session=False)
+#         except Exception as e:
+#             print("Unable to open best model files")
+#             raise e
+#         print("hi")
