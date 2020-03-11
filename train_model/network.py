@@ -735,7 +735,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
+        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
         opp_champ_items = items_by_champ_k_hot[:, 5:10]
 
         target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
@@ -749,7 +749,8 @@ class StandardNextItemNetwork(NextItemNetwork):
             [
                 kda_diff,
                 lvl_diff,
-                cs_diff
+                cs_diff,
+                pos_one_hot
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
@@ -929,7 +930,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
+        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
 
         target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
         target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
@@ -938,13 +939,21 @@ class NextItemLateGameNetwork(NextItemNetwork):
         lvl_diff = opp_lvl - target_summ_lvl_exp
         cs_diff = opp_cs - target_summ_cs_exp
 
+        pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
+        pos_one_hot = tf.tile(pos_one_hot, multiples=[1, 5])
+        pos_one_hot = tf.reshape(pos_one_hot, (-1, 5, 5))
+        opp_champ_pos = tf.one_hot([0,1,2,3,4], depth=5)
+        opp_champ_pos = tf.reshape(opp_champ_pos, (1,5,5))
+        opp_champ_pos =  tf.tile(opp_champ_pos, multiples=[n, 1, 1])
         enemy_summ_strength_input = merge(
             [
                 kda_diff,
                 lvl_diff,
-                cs_diff
+                cs_diff,
+                pos_one_hot,
+                opp_champ_pos
             ], mode='concat', axis=2)
-        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
+        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 15))
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
@@ -1027,8 +1036,9 @@ class NextItemStarterNetwork(NextItemNetwork):
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
+        #0.01 seems to work best
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                           [0.05], pos_index, n, 1.0)
+                                                                           [0.01], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
 
@@ -1053,6 +1063,92 @@ class NextItemStarterNetwork(NextItemNetwork):
         # net = batch_normalization(fully_connected(net, 16, bias=False,
         #                                           activation='relu',
         #                                           regularizer="L2"))
+        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
+
+        is_training = tflearn.get_training_mode()
+        inference_output = tf.nn.softmax(logits)
+
+        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+
+        return regression(net, optimizer='adam', to_one_hot=True,
+                          n_classes=self.game_config["total_num_items"],
+                          shuffle_batches=True,
+                          learning_rate=self.network_config["learning_rate"],
+                          loss='softmax_categorical_crossentropy',
+                          name='target')
+
+
+class NextItemBootsNetwork(NextItemNetwork):
+
+    def build(self):
+        in_vec = input_data(shape=[None, 221], name='input')
+        #  1 elements long
+        pos = in_vec[:, 0]
+        pos = tf.cast(pos, tf.int32)
+
+        cs = in_vec[:, self.cs_start:self.cs_end]
+        neutral_cs = in_vec[:, self.neutral_cs_start:self.neutral_cs_end]
+        lvl = in_vec[:, self.lvl_start:self.lvl_end]
+        kda = in_vec[:, self.kda_start:self.kda_end]
+
+        total_cs = cs + neutral_cs
+
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+        pos_index = tf.transpose([batch_index, pos], (1, 0))
+        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
+        opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
+
+        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        my_team_champ_ints = champ_ints[:, :5]
+        opp_team_champ_ints = champ_ints[:, 5:]
+
+        #0.01 seems to work best
+        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
+                                                                             [0.01], pos_index, n, 1.0)
+        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+            opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
+
+        pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
+        opp_kda = kda[:, 5 * 3:10 * 3]
+        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
+        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
+        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
+
+        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
+        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
+        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
+        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
+        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
+        kda_diff = opp_kda - target_summ_kda_exp
+        lvl_diff = opp_lvl - target_summ_lvl_exp
+        cs_diff = opp_cs - target_summ_cs_exp
+
+        enemy_summ_strength_input = merge(
+            [
+                kda_diff,
+                lvl_diff,
+                cs_diff,
+                pos_one_hot
+            ], mode='concat', axis=2)
+        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
+        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
+                                                                          activation='linear', regularizer="L2"))
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
+
+        input_layer = merge(
+            [
+                target_summ_champ_emb_dropout_flat,
+                opp_summ_champ_emb_dropout_flat,
+                pos_one_hot,
+                # enemy_summs_strength_output,
+                opp_team_champ_embs_dropout_flat
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(input_layer, 16, bias=False,
+                                                  activation='relu',
+                                                  regularizer="L2"))
         logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
 
         is_training = tflearn.get_training_mode()

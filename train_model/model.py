@@ -757,10 +757,10 @@ class NextItemModel(Model):
     def __init__(self, early_or_late):
         super().__init__()
         self.early_or_late = early_or_late
-        if early_or_late == "early":
+        if early_or_late == "standard":
             self.network = network.StandardNextItemNetwork()
-            self.model_path = app_constants.model_paths["best"]["next_items_early"]
-            self.elements = "next_items_early"
+            self.model_path = app_constants.model_paths["best"]["next_items_standard"]
+            self.elements = "next_items_standard"
         elif early_or_late == "late":
             self.network = network.NextItemLateGameNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_late"]
@@ -773,6 +773,10 @@ class NextItemModel(Model):
             self.network = network.NextItemFirstItemNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_first_item"]
             self.elements = "next_items_first_item"
+        elif early_or_late == "boots":
+            self.network = network.NextItemBootsNetwork()
+            self.model_path = app_constants.model_paths["best"]["next_items_boots"]
+            self.elements = "next_items_boots"
 
         my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
         opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
