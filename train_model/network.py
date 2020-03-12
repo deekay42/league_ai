@@ -1110,17 +1110,20 @@ class NextItemBootsNetwork(NextItemNetwork):
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
-        #0.01 seems to work best
+
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.01], pos_index, n, 1.0)
+                                                                             [0.1], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
-            opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
+            opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
         opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
+
+        champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
 
         target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
         target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
@@ -1145,7 +1148,8 @@ class NextItemBootsNetwork(NextItemNetwork):
 
         input_layer = merge(
             [
-                target_summ_champ_emb_dropout_flat,
+                target_summ_one_hot,
+                # target_summ_champ_emb_dropout_flat,
                 opp_summ_champ_emb_dropout_flat,
                 pos_one_hot,
                 # enemy_summs_strength_output,

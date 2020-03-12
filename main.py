@@ -710,7 +710,7 @@ class Main(FileSystemEventHandler):
 m = Main()
 #m.run()
 
-m.process_image(f"Screen532.png")
+m.process_image(f"Screen312.png")
 # for i in range(200,300):
 #     m.process_image(f"Screen{i}.png")
 
