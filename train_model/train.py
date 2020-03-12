@@ -1168,6 +1168,8 @@ class BootsTrainer(NextItemsTrainer):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
+        self.X_test, self.Y_test = self.build_aux_test_data('test_data/boots_items_test.json')
+
 
         my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
         opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
@@ -1188,28 +1190,41 @@ class BootsTrainer(NextItemsTrainer):
 
         print("Loading elite train data first item")
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_boots)
-        print("Loading elite test data first item")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.only_boots)
         print("Loading lower train data first item")
         X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_boots)
-        print("Loading lower test data first item")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.only_boots)
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
-        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
 
-        self.train_y_distrib = Counter(self.Y)
-        self.test_y_distrib = Counter(self.Y_test)
+
         self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
         self.X = self.X.astype(np.float32)
         self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("starter")
+        model = NextItemModel("boots")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
         self.build_new_model()
+
+
+    def eval_model(self, model, epoch, x_test, y_test):
+        y_pred_prob = []
+        for chunk in utils.chunks(x_test, 1024):
+            y_pred_prob.extend(model.predict(np.array(chunk)))
+        y_pred_prob = np.array(y_pred_prob)
+        y_preds = np.argmax(y_pred_prob, axis=1)
+
+        for y_pred, y_actual, test_case in zip(y_preds, y_test, self.aux_test_raw.values()):
+            if y_pred not in y_actual:
+                print(f"test_case: {test_case}")
+                print(ItemManager().lookup_by('img_int', y_pred)['name'])
+                print("\n\n")
+
+        acc = sum([y_pred in y_actual for y_pred, y_actual in zip(y_preds, y_test)])/len(y_test)
+        self.log_output(acc, None, None, None, None, None, None,
+                        None, None, epoch)
+
+        return acc
 
 
 class ChampsEmbeddingTrainer(Trainer):
@@ -1438,10 +1453,10 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
-    # t = BootsTrainer()
-    # t.train()
+    # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
+    t = BootsTrainer()
+    t.train()
     # t = StarterItemsTrainer()
     # t.train()
 
