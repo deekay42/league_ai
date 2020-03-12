@@ -492,7 +492,7 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
     def __init__(self):
         self.model = ItemImgModel
         self.elements = "items"
-        self.num_epochs = 100
+
 
         self.epoch_size = 100
         super().__init__()
@@ -501,6 +501,7 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
                                                                                self.network_crop)
         self.network = ItemImgNetwork()
         self.X_test, self.Y_test = self.load_test_data()
+        self.num_epochs = 200
 
 
 class SelfTrainer(DynamicTrainingDataTrainer):
