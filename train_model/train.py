@@ -492,6 +492,7 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
     def __init__(self):
         self.model = ItemImgModel
         self.elements = "items"
+        self.num_epochs = 100
 
         self.epoch_size = 100
         super().__init__()
