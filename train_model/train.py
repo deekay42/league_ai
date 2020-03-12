@@ -273,12 +273,10 @@ class DynamicTrainingDataTrainer(Trainer):
                       in self.X_preprocessed_test]
         extra_eval = np.reshape(extra_eval, -1)
         self.log_output(main_eval, extra_eval, epoch)
-
         return main_eval, extra_eval
 
 
     def determine_best_eval(self, scores):
-
         max_main = -1
         max_pre = -1
         best_model_index = -1
@@ -356,6 +354,65 @@ class DynamicTrainingDataTrainer(Trainer):
         self.start_generating_train_data(3)
         self.build_new_model()
         self.stop_generating_train_data()
+
+
+    def train_neural_network(self):
+        with tf.device("/gpu:0"):
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(True, sess)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data()
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+
+
+                        # # for i, img in enumerate(self.X_test):
+                        # #     cv.imshow(str(i), img)
+                        # # cv.waitKey(0)
+                        y = model.predict(self.X_test)
+                        y = [np.argmax(y_) for y_ in y]
+                        # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+                        # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+                        y_actual = self.Y_test
+                        # print("Pred Actual")
+                        for i in range(len(y_actual)):
+                            a_text = self.manager.lookup_by('img_int', y[i])['name']
+                            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+                            a = y[i]
+                            b = y_actual[i]
+                            if not np.all(np.equal(a,b)):
+                                print(f"----->{i}: {a_text} {b_text}")
+                            else:
+                                print(f"{i}: {a_text} {b_text}")
+                        print("Raw test data predictions: {0}".format(y))
+                        print("Actual test data  values : {0}".format(y_actual))
+
+                        # y = model.predict(self.X_test)
+                        # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
+                        # y = to_categorical(y, 10).flatten()
+                        # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
+                        # y_test = to_categorical(y_test, 10).flatten()
+                        # print("Pred Actual")
+                        # for i in range(len(y)):
+                        #     a = self.self_manager.lookup_by('img_int', y[i])['name']
+                        #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
+                        #     if a != b:
+                        #         print(f"----->{i}: {a} {b}")
+                        #     else:
+                        #         print(f"{i}: {a} {b}")
+                        # print("Raw test data predictions: {0}".format(y))
+                        # print("Actual test data  values : {0}".format(self.Y_test))
+
+                        score = self.eval_model(model, epoch)
+                        scores.append(score)
+        return scores
 
 
 class KDATrainer(DynamicTrainingDataTrainer):
@@ -1455,10 +1512,12 @@ if __name__ == "__main__":
 
     # t = NextItemsTrainer()
     # t.build_next_items_standard_game_model()
-    t = BootsTrainer()
-    t.train()
+    # t = BootsTrainer()
+    # t.train()
     # t = StarterItemsTrainer()
     # t.train()
+    t = ItemImgTrainer()
+    t.build_new_img_model()
 
     #
     # t.build_champ_embeddings_model()
