@@ -253,6 +253,10 @@ class DynamicTrainingDataTrainer(Trainer):
                 result_y.extend(self.extract_y_data(test_image_y[self.elements]))
                 result_x.extend(self.model(res_cvt).extract_imgs(test_image_x))
 
+        # for i, img in enumerate(result_x):
+        #     cv.imshow(str(i), img)
+        # cv.waitKey(0)
+
         return result_x, result_y
 
 
@@ -373,9 +377,9 @@ class DynamicTrainingDataTrainer(Trainer):
                         model.save(self.train_path + self.model_name + str(epoch + 1))
 
 
-                        # # for i, img in enumerate(self.X_test):
-                        # #     cv.imshow(str(i), img)
-                        # # cv.waitKey(0)
+                        # for i, img in enumerate(self.X_test[280:]):
+                        #     cv.imshow(str(i), img)
+                        # cv.waitKey(0)
                         y = model.predict(self.X_test)
                         y = [np.argmax(y_) for y_ in y]
                         # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
@@ -501,7 +505,7 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
                                                                                self.network_crop)
         self.network = ItemImgNetwork()
         self.X_test, self.Y_test = self.load_test_data()
-        self.num_epochs = 200
+        self.num_epochs = 100
 
 
 class SelfTrainer(DynamicTrainingDataTrainer):
