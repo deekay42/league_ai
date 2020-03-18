@@ -5,6 +5,7 @@ import itertools
 from utils.artifact_manager import ItemManager
 import numpy as np
 from utils import build_path, cass_configured as cass
+from utils.utils import itemslots_left, iditem2intitems
 # def get_item_score(comp, curr_used, current_gold=None):
 #     total_discount = 0
 #     for i in curr_used:
@@ -15,7 +16,11 @@ from utils import build_path, cass_configured as cass
 #     else:
 #         return comp.gold.total / (comp.gold.total - total_discount)
 
+class InsufficientGold(Exception):
+    pass
 
+class NoPathFound(Exception):
+    pass
 
 # this method is not deterministic. there may be multiple paths to a given build
 def _build_path(prev_avail_items, next_i, abs_items):
@@ -170,21 +175,38 @@ def flatten(arr):
 
 # print("lulz")
 
-full_item_trees = dict()
-def brute_force_build_paths(item):
+# full_item_trees = dict()
+# def brute_force_build_paths(item, existing_items):
+#     c = item.name
+#     comps = list(item.builds_from)
+#     if not comps:
+#         if item.name not in full_item_trees:
+#             full_item_trees[item.id] = [item.id]
+#         return [item.id, None]
+#     comps_build_paths = [brute_force_build_paths(comp, existing_items) for comp in comps if comp.id not in
+#                          existing_items]
+#     if item.id not in full_item_trees:
+#         all_comp_trees = []
+#         for comp in comps:
+#             all_comp_trees.extend(full_item_trees[comp.id])
+#         full_item_trees[item.id] = all_comp_trees + [item.id]
+#
+#     result = list(itertools.product(*comps_build_paths)) + [item.id]
+#     return result
+
+def brute_force_build_paths(item, existing_items):
     c = item.name
     comps = list(item.builds_from)
-    if not comps:
-        if item.name not in full_item_trees:
-            full_item_trees[item.id] = [item.id]
-        return [item.id, None]
-    comps_build_paths = [brute_force_build_paths(comp) for comp in comps]
-    if item.id not in full_item_trees:
-        all_comp_trees = []
-        for comp in comps:
-            all_comp_trees.extend(full_item_trees[comp.id])
-        full_item_trees[item.id] = all_comp_trees + [item.id]
 
+    if not comps:
+        return [item.id, None]
+    comps_counter = Counter([comp.id for comp in comps])
+    intersec = comps_counter & existing_items
+    comps_counter -= intersec
+    existing_items -= intersec
+    comps_build_paths = [brute_force_build_paths(cass.Item(id=compid, region="EUW"), existing_items) for compid,
+                                                                                                    qty in comps_counter.items() for _
+                         in range(qty)]
     result = list(itertools.product(*comps_build_paths)) + [item.id]
     return result
 
@@ -200,26 +222,28 @@ def score_build_path(build_path, existing_items, current_gold):
         if not item:
             continue
         cass_item = cass.Item(id=item, region="EUW")
-        if item in existing_items_copy:
-            result_abs[-1] -= Counter({item:1})
-            already_used_items += Counter({item:1})
-            already_used_items_add_to_abs += [already_used_items.copy()]
-            existing_items_copy -= Counter({item:1})
-        else:
-            buy_seq, ex_i_used, abs_items, prev_avail_items = build_path_nogold(result_abs[-1].copy(), cass_item)
-            result_buy_seq += buy_seq
-            existing_items_copy -= Counter([i.id for i in ex_i_used])
-            result_abs += abs_items
-            already_used_items_add_to_abs += [already_used_items.copy()] * len(abs_items)
+        # if item in existing_items_copy:
+        #     result_abs[-1] -= Counter({item:1})
+        #     already_used_items += Counter({item:1})
+        #     already_used_items_add_to_abs += [already_used_items.copy()]
+        #     existing_items_copy -= Counter({item:1})
+        # else:
+        buy_seq, ex_i_used, abs_items, prev_avail_items = build_path_nogold(result_abs[-1].copy(), cass_item)
+        result_buy_seq += buy_seq
+        existing_items_copy -= Counter([i.id for i in ex_i_used])
+        result_abs += abs_items
+        already_used_items_add_to_abs += [already_used_items.copy()] * len(abs_items)
 
-            item_buy_cost = 0
-            for bi in buy_seq:
-                item_buy_cost += bi.gold.base
-            #
-            #
-            # item_recipe_cost, items_used = build_cost(cass_item, existing_items)
-            # existing_items_copy -= items_used
-            current_gold -= item_buy_cost
+        item_buy_cost = 0
+        for bi in buy_seq:
+            item_buy_cost += bi.gold.base
+        #
+        #
+        # item_recipe_cost, items_used = build_cost(cass_item, existing_items)
+        # existing_items_copy -= items_used
+        current_gold -= item_buy_cost
+
+
         multiplier = 1 + (cass_item.tier-1)/10
         # jg items must be finished first before enchantment
         if item==3706 or item==3715 or item==1400 or item==1401 or item==1402 or item==1412 or item==1413 or \
@@ -241,28 +265,32 @@ def is_super_path(path, current_items, final_item):
     for current_item, qty in current_items.items():
         if current_item not in full_item_trees[final_item.id]:
             continue
-        if current_item in full_comp_tree:
+        elif current_item in full_comp_tree:
             full_comp_tree -= Counter({current_item:qty})
     else:
         return full_comp_tree != Counter({})
 
 
-def normalize_bps(bps, current_items, item):
+def normalize_bps(bps):
     bps = [list(flatten((path,))) for path in bps]
     bps = [[i for i in bp if i] for bp in bps]
     bps = [bp for bp in bps if bp]
-    bps = [bp for bp in bps if is_super_path(bp, current_items, item)]
     bps = [sorted(bp, key=lambda a: cass.Item(id=a, region="EUW").gold.total, reverse=True) for bp in bps]
     try:
-        return np.unique(bps, axis=1).tolist()
+        return np.unique(bps, axis=0).tolist()
     except:
         return np.unique(bps).tolist()
 
 
 def build_path_for_gold(item, current_items, gold):
-    bps = brute_force_build_paths(item)
-    bps = normalize_bps(bps, current_items, item)
+    bps = brute_force_build_paths(item, current_items.copy())
+    bps = normalize_bps(bps)
     scores = [score_build_path(path, current_items, gold) for path in bps]
+    scores = [score for score in scores if itemslots_left(iditem2intitems(score[2][-1])) >= 0]
+    if not scores:
+        raise NoPathFound()
+    if np.all(np.array(scores)[:,0]<0):
+        raise InsufficientGold()
     max_score = -9999999
     max_score_index = -1
     for i, c_score in enumerate(scores):
@@ -273,5 +301,5 @@ def build_path_for_gold(item, current_items, gold):
 
     return buy_seq, abs_items
 
-# lol = build_path_for_gold(cass.Item(id=3153, region="EUW"), Counter({1036:3, 3133:2, 1042:1, 1053:1}), 1450)
+# lol = build_path_for_gold(cass.Item(id=3153, region="EUW"), Counter({1036:1, 3133:2, 1042:1, 1043:1}), 1450)
 # bc = build_cost(cass.Item(id=1401, region="EUW"), Counter({1039:1}))
