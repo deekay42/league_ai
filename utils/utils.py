@@ -6,6 +6,31 @@ from tkinter.filedialog import askdirectory
 import copy
 import sys
 import cv2 as cv
+from collections import Counter
+from utils.artifact_manager import ItemManager
+from constants import game_constants
+
+
+def num_itemslots(items):
+    if not items:
+        return 0
+    wards = ItemManager().lookup_by("name", "Control Ward")["int"]
+    hpots = ItemManager().lookup_by("name", "Health Potion")["int"]
+    redpot = ItemManager().lookup_by("name", "Elixir of Wrath")["int"]
+    bluepot = ItemManager().lookup_by("name", "Elixir of Sorcery")["int"]
+    ironpot = ItemManager().lookup_by("name", "Elixir of Iron")["int"]
+    num_single_slot_items = int(items.get(wards, 0)>0) + int(items.get(hpots, 0)>0)
+    reg_item_keys = (set(items.keys()) - {hpots, wards, redpot, bluepot, ironpot})
+    num_reg_items = sum([items[key] for key in reg_item_keys])
+    return num_single_slot_items + num_reg_items
+
+
+def itemslots_left(items=None):
+    return game_constants.MAX_ITEMS_PER_CHAMP - num_itemslots(items)
+
+
+def iditem2intitems(items):
+    return Counter({ItemManager().lookup_by("id", str(itemid))["int"]:qty for itemid, qty in items.items()})
 
 
 def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):

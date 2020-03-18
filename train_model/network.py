@@ -760,6 +760,8 @@ class StandardNextItemNetwork(NextItemNetwork):
                 opp_champ_pos
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 15))
+        enemy_summ_strength_input = dropout(enemy_summ_strength_input, 0.80)
+
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')
@@ -961,6 +963,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 opp_champ_pos
             ], mode='concat', axis=2)
         enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 15))
+        enemy_summ_strength_input = dropout(enemy_summ_strength_input, 0.80)
         # if bias=false this layer generates 0 values if kda diff, etc is 0. this causes null divison later because
         # the vector has no magnitude
         # enemy_summs_strength_output = fully_connected(enemy_summ_strength_input, 1, bias=True, activation='linear')

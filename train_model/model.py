@@ -873,22 +873,12 @@ class NextItemModel(Model):
             X[slice] = scaler.transform(X[slice])
         return X
 
+
     def fit_input(self, X, scaler_name):
         min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         return min_max_scaler
 
-
-    @staticmethod
-    def num_itemslots(items):
-        if not items:
-            return 0
-        wards = ItemManager().lookup_by("name", "Control Ward")["int"]
-        hpots = ItemManager().lookup_by("name", "Health Potion")["int"]
-        num_single_slot_items = int(items.get(wards, 0)>0) + int(items.get(hpots, 0)>0)
-        reg_item_keys = (set(items.keys()) - {hpots, wards})
-        num_reg_items = sum([items[key] for key in reg_item_keys])
-        return num_single_slot_items + num_reg_items
 
     @staticmethod
     def encode_items(items, artifact_manager):
