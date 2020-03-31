@@ -778,8 +778,8 @@ class NextItemModel(Model):
             self.model_path = app_constants.model_paths["best"]["next_items_boots"]
             self.elements = "next_items_boots"
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load(app_constants.asset_paths["my_champs_embeddings"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["opp_champs_embeddings"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 

@@ -4,7 +4,7 @@ from collections import Counter
 import itertools
 from utils.artifact_manager import ItemManager
 import numpy as np
-from utils import build_path, cass_configured as cass
+from utils import cass_configured as cass
 from utils.utils import itemslots_left, iditem2intitems
 # def get_item_score(comp, curr_used, current_gold=None):
 #     total_discount = 0
@@ -257,18 +257,18 @@ def score_build_path(build_path, existing_items, current_gold):
     else:
         return current_gold, result_buy_seq, [ai+aai for ai, aai in zip(result_abs, already_used_items_add_to_abs)]
 
-def is_super_path(path, current_items, final_item):
-    full_comp_tree = Counter()
-    for item in path:
-        full_comp_tree += Counter(full_item_trees[item])
+# def is_super_path(path, current_items, final_item):
+#     full_comp_tree = Counter()
+#     for item in path:
+#         full_comp_tree += Counter(full_item_trees[item])
 
-    for current_item, qty in current_items.items():
-        if current_item not in full_item_trees[final_item.id]:
-            continue
-        elif current_item in full_comp_tree:
-            full_comp_tree -= Counter({current_item:qty})
-    else:
-        return full_comp_tree != Counter({})
+#     for current_item, qty in current_items.items():
+#         if current_item not in full_item_trees[final_item.id]:
+#             continue
+#         elif current_item in full_comp_tree:
+#             full_comp_tree -= Counter({current_item:qty})
+#     else:
+#         return full_comp_tree != Counter({})
 
 
 def normalize_bps(bps):

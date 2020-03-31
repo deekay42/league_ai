@@ -91,7 +91,9 @@ train_paths["accountids"] = train_paths["next_items"] + "summoner_account_ids"
 train_paths["sorted_matches_path"] = train_paths["next_items"] + "matches_sorted.json"
 train_paths["presorted_matches_path"] = train_paths["next_items"] + "matches_presorted.json"
 
-train_paths["champ_vs_roles"] = train_paths["next_items"] + "champ_vs_roles.json"
+asset_paths["champ_vs_roles"] = asset_paths["jsons"] + "champ_vs_roles.json"
+asset_paths["my_champs_embeddings"] = asset_paths["jsons"] + "my_champ_embs_normed.npy"
+asset_paths["opp_champs_embeddings"] = asset_paths["jsons"] + "opp_champ_embs_normed.npy"
 
 
 jq_base_path = "jq_scripts" + os.sep

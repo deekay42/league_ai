@@ -3,7 +3,9 @@ REM it will also create cython.h in the include dir in the pythondir
 if [%1]==[] goto usage
 if [%2]==[] goto usage
 
-set PATH=C:\Program Files (x86)\Windows Kits\10\Redist\ucrt\DLLs\x64;%PATH%
+set PYTHONPATH=C:\Program Files\Python37\python37.zip;C:\Program Files\Python37\DLLs;C:\Program Files\Python37\lib;C:\Program Files\Python37;C:\Users\Dom\AppData\Roaming\Python\Python37\site-packages;C:\Program Files\Python37\lib\site-packages
+set PYTHONHOME=C:\Program Files\Python37
+set PATH=C:\Program Files (x86)\Windows Kits\10\Redist\10.0.17763.0\ucrt\DLLs\x64;%PATH%;%PYTHONPATH%
 call vcvars64.bat
 set INIT_DIR=%cd%
 CALL :NORMALIZEPATH %~1 
@@ -19,6 +21,8 @@ REM rmdir /s /q .\dist
 cd %PYTHONDIR%
 rmdir /s /q .\tmp_build
 mkdir tmp_build
+set TCL_LIBRARY=C:\Program Files\Python37\tcl\tcl8.6
+set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 
 
 python -m PyInstaller -d noarchive main.py --distpath tmp_build
@@ -55,6 +59,9 @@ COPY %PYTHONDIR%\..\assets\data\champ2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\item2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\self2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\kda2id.json %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\..\assets\data\my_champ_embs_normed.npy %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\..\assets\data\opp_champ_embs_normed.npy %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\..\assets\data\champ_vs_roles.json %OUT_DIR%\assets\data
 mkdir %OUT_DIR%\assets\tesseract
 COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 

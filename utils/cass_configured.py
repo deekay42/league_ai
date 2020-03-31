@@ -1,10 +1,10 @@
 from cassiopeia import *
 
 config = get_default_config()
-config['pipeline']['ChampionGG'] = {
-    "package": "cassiopeia_championgg",
-    "api_key": "496b4c2f287421a51a41aeb51a808f74"  # Your api.champion.gg API key (or an env var containing it)
-}
+# config['pipeline']['ChampionGG'] = {
+#     "package": "cassiopeia_championgg",
+#     "api_key": "496b4c2f287421a51a41aeb51a808f74"  # Your api.champion.gg API key (or an env var containing it)
+# }
 
 config['pipeline']['RiotAPI'] = {
     "api_key": "RGAPI-39e77a14-355a-4826-8cfb-6f5cc68bdc7c",
