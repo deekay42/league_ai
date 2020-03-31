@@ -113,10 +113,10 @@ def query_lol_dir():
 
 
 # no need to shuffle here. only costs time. shuffling will happen during training before each epoch
-@staticmethod
-def _uniformShuffle(l1, l2):
-    assert len(l1) == len(l2)
-    rng_state = np.random.get_state()
-    np.random.shuffle(l1)
-    np.random.set_state(rng_state)
-    np.random.shuffle(l2)
+# @staticmethod
+# def _uniformShuffle(l1, l2):
+#     assert len(l1) == len(l2)
+#     rng_state = np.random.get_state()
+#     np.random.shuffle(l1)
+#     np.random.set_state(rng_state)
+#     np.random.shuffle(l2)
