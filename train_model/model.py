@@ -838,11 +838,13 @@ class NextItemModel(Model):
         x[self.lvl_start:self.lvl_end] = lvl
         x[self.kda_start:self.kda_end] = np.ravel(kda)
         num_increments = 20
+        granularity = 10
+        start = -150
+        zero_offset = -start // granularity
         current_gold_list = np.zeros((num_increments,10))
-
-
-        current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(0,num_increments*100,100))
-
+        current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(start,
+                                                                                             start+num_increments*granularity,
+                                                                                             granularity))
         print(current_gold_list[:,role])
         x = np.tile(x,num_increments).reshape((num_increments,-1))
         x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
@@ -850,7 +852,8 @@ class NextItemModel(Model):
         lul = False
         if lul:
             self.output_logs(x)
-        return self.predict(x, blackout_indices)
+        result = self.predict(x, blackout_indices)
+        return result[zero_offset], result
 
 
     def scale_inputs(self, X):

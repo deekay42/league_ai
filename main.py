@@ -36,48 +36,48 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
-        
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-        
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-        
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-        
-        
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # try:
+        # # res = 1440,810
+        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     res = 1366, 768
+        #     print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
         self.next_item_model_standard = NextItemModel("standard")
@@ -91,16 +91,16 @@ class Main(FileSystemEventHandler):
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
 
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -208,9 +208,12 @@ class Main(FileSystemEventHandler):
                                   summ_owned_completes)
 
 
-    def build_path(self, next_item, items=None):
+    def build_path(self, next_item, current_gold=None, items=None):
         if items is None:
             items = self.items[self.role]
+
+        if current_gold is None:
+            current_gold = self.current_gold
 
         if next_item["name"] == "Empty":
             return [], [items], 0, False
@@ -220,7 +223,7 @@ class Main(FileSystemEventHandler):
         cass_item = cass.Item(id=(int(next_item["id"])), region="EUW")
         l = cass_item.name
         if not list(cass_item.builds_from):
-            if self.current_gold >= cass_item.gold.base:
+            if current_gold >= cass_item.gold.base:
                 return [next_item], [items + Counter({next_item["int"]: 1})], cass_item.gold.base, True
             else:
                 return [], [items], 0, False
@@ -232,7 +235,7 @@ class Main(FileSystemEventHandler):
                                                                   "main_img" in
                                                                   next_item else
                                                                   int(next_item["id"])), region="EUW"), items_by_id,
-                                                    self.current_gold)
+                                                    current_gold)
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [Counter([self.item_manager.lookup_by("id", str(item))["int"] for item, qty in
                               abs_items_counter.items() for _ in range(qty)]) for abs_items_counter in abs_items]
@@ -313,15 +316,25 @@ class Main(FileSystemEventHandler):
             self.items[self.role] = items_reduction
             delta_items = deltas
 
-            next_predicted_items = self.predict_next_item(items=self.items, delta_items=delta_items)
-            next_item = next_predicted_items[0]
+            next_item, next_predicted_items = self.predict_next_item(items=self.items, delta_items=delta_items)
+
+
+
+            try:
+                if self.network_type == "standard":
+                    next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
+                        next_predicted_items, self.current_gold, 30)
+                else:
+
+                    next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
+            except (NoPathFound, InsufficientGold) as e:
+                continue
+
+
 
             if next_item["name"] == "Empty":
                 continue
-            try:
-                next_items, abs_items, cost, item_reached = self.build_path(next_item, items=self.items[self.role])
-            except (NoPathFound, InsufficientGold) as e:
-                continue
+
             if itemslots_left(abs_items[-1]) >= 0:
                 break
         return next_item, delta_items, next_items, abs_items, cost, item_reached
@@ -355,20 +368,35 @@ class Main(FileSystemEventHandler):
                 print("USING FIRST ITEM GAME MODEL")
 
 
+    def select_affordable_item(self, items, current_gold, tolerance):
+        item_cost_lookup = dict()
+        for item in items[::-1]:
+            if item["int"] in item_cost_lookup:
+                item_cost = item_cost_lookup[item["int"]]
+            else:
+                next_items, abs_items, item_cost, item_reached = self.build_path(item, current_gold=10000)
+                item_cost_lookup[item["int"]] = item_cost
+            if item_cost <= current_gold + tolerance:
+                return item, next_items, abs_items, item_cost, item_reached
+
+
     def analyze_champ(self):
         if self.role > 4:
             self.swap_teams_all()
         result = []
-        while True:
+        while self.current_gold > 0:
             self.select_right_network()
             if itemslots_left(self.items[self.role]) <= 0:
                 next_item, delta_items, next_items, abs_items, cost, item_reached = self.try_item_reduction()
             else:
                 delta_items = None
-                next_predicted_items = self.predict_next_item()
-                next_item = next_predicted_items[0]
+                next_item, next_predicted_items = self.predict_next_item()
                 try:
-                    next_items, abs_items, cost, item_reached = self.build_path(next_item)
+                    if self.network_type == "standard":
+                        next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
+                            next_predicted_items, self.current_gold, 30)
+                    else:
+                        next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
                 except (ValueError, InsufficientGold, NoPathFound) as e:
                     print(e)
                     print("EXCEPTION")
@@ -383,6 +411,7 @@ class Main(FileSystemEventHandler):
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in self.items[self.role]]
             if delta_items:
                 self.add_deltas_back(delta_items)
+        return self.pad_result(result)
 
 
     def pad_result(self, result, next_items=None, abs_items=None):
@@ -394,7 +423,7 @@ class Main(FileSystemEventHandler):
 
     def is_end_of_buy(self, next_item, delta_items, next_items):
         return (self.network_type == "standard" and next_item["name"] == "Empty") \
-            or (self.items[self.role].get(self.ward_int, 0) >= 2 and next_item["int"] == self.ward_int) \
+            or (self.items[self.role].get(self.ward_int, 0) >= 1 and next_item["int"] == self.ward_int) \
             or (self.contains_elixir(self.items[self.role]) and self.contains_elixir(Counter({next_item["int"]: 1}))) \
             or delta_items and ((next_item["int"] in delta_items and (next_item['int'] != self.ward_int))
                                 or (next_item["name"] in self.removable_items)) \
@@ -665,8 +694,8 @@ class Main(FileSystemEventHandler):
         for summ_items in self.items:
             del summ_items[0]
 
-        if np.any(self.cs != 0):
-            self.current_gold += 30
+        # if np.any(self.cs != 0):
+        #     self.current_gold += 30
 
 
         try:
@@ -682,8 +711,8 @@ class Main(FileSystemEventHandler):
         except Exception as e:
             print("Unable to predict next item")
             print(e)
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
 
 
     @staticmethod
@@ -710,12 +739,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"Screen551.png")
+m.process_image(f"Screen685.png")
 # for i in range(600,700):
-    # m.process_image(f"Screen{i}.png")
+#     m.process_image(f"Screen{i}.png")
 
 # m.run_test_games()
 
