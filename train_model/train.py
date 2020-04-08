@@ -1516,14 +1516,14 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
+    t = NextItemsTrainer()
+    t.build_next_items_late_game_model()
     # t = BootsTrainer()
     # t.train()
     # t = StarterItemsTrainer()
     # t.train()
-    t = ItemImgTrainer()
-    t.build_new_img_model()
+    # t = ItemImgTrainer()
+    # t.build_new_img_model()
 
     #
     # t.build_champ_embeddings_model()
