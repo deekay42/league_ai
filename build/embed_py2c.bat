@@ -14,9 +14,8 @@ CALL :NORMALIZEPATH %~2
 set OUT_DIR=%RETVAL%
 echo %PYTHONDIR%
 echo %OUT_DIR%
-rmdir /s /q %OUT_DIR%\models\
-rmdir /s /q %OUT_DIR%\assets\
-rmdir /s /q %OUT_DIR%\py_libs\
+rmdir /s /q %OUT_DIR%
+mkdir %OUT_DIR%
 REM rmdir /s /q .\dist
 cd %PYTHONDIR%
 rmdir /s /q .\tmp_build
@@ -25,7 +24,7 @@ set TCL_LIBRARY=C:\Program Files\Python37\tcl\tcl8.6
 set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 
 
-python -m PyInstaller -d noarchive main.py --distpath tmp_build
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl8.6" --add-data "%TK_LIBRARY%;tk8.6"
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -54,6 +53,7 @@ SET tar_folder=%OUT_DIR%\models\best
 ROBOCOPY /NFL /NDL  %src_folder% %tar_folder% *.* /S
 del /Q /S %OUT_DIR%\models\*accuracies*
 
+COPY %INIT_DIR%\windows\google-services.json %OUT_DIR%
 mkdir %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\champ2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\item2id.json %OUT_DIR%\assets\data

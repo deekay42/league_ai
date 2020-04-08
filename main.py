@@ -36,48 +36,48 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        # self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        # try:
-        # # res = 1440,810
-        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     res = 1366, 768
-        #     print("Couldn't find Width or Height sections")
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        self.onTimeout = False
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        try:
+        # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        except KeyError as e:
+            print(repr(e))
+            res = 1366, 768
+            print("Couldn't find Width or Height sections")
+        
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
         self.next_item_model_standard = NextItemModel("standard")
@@ -91,16 +91,16 @@ class Main(FileSystemEventHandler):
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
 
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -147,7 +147,7 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def test_connection(timeout=0):
         try:
-            lol = cass.Item(id=3040, region="KR").name[-1]
+            lol = cass.Item(id=3040, region="EUW").name[-1]
         except Exception as e:
             print(f"Connection error. Retry in {timeout}")
             time.sleep(timeout)
@@ -241,7 +241,7 @@ class Main(FileSystemEventHandler):
                               abs_items_counter.items() for _ in range(qty)]) for abs_items_counter in abs_items]
         cost = sum([cass.Item(id=(int(item["main_img"]) if "main_img" in
                                                          item else int(item["id"])),
-                              region="KR").gold.base for item in next_items])
+                              region="EUW").gold.base for item in next_items])
         item_reached = next_item["id"] == next_items[-1]["id"]
         return next_items, abs_items, cost, item_reached
 
@@ -435,7 +435,7 @@ class Main(FileSystemEventHandler):
         if self.network_type == "starter":
             self.items[self.role] = abs_items
             result.extend(next_items)
-            self.current_gold -= cass.Item(id=(int(next_items[0]["id"])), region="KR").gold.base
+            self.current_gold -= cass.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
         if self.network_type == "first_item":
             if not np.any(np.isin(list(self.items[self.role].keys()), list(self.boots_ints))):
@@ -448,7 +448,7 @@ class Main(FileSystemEventHandler):
             elixir = self.predict_next_item(model=self.next_item_model_late)[0]
             if "Elixir" in elixir["name"]:
                 result.append(elixir)
-                self.current_gold -= cass.Item(id=(int(elixir["id"])), region="KR").gold.base
+                self.current_gold -= cass.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
         while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
             next_extra_item = self.predict_next_item(model=self.next_item_model_standard)[0]
@@ -462,7 +462,7 @@ class Main(FileSystemEventHandler):
 
     def buy_one_off_item(self, item, result):
         result.append(item)
-        self.current_gold -= cass.Item(id=(int(item["id"])), region="KR").gold.base
+        self.current_gold -= cass.Item(id=(int(item["id"])), region="EUW").gold.base
         self.items[self.role] += Counter({item["int"]: 1})
 
 
@@ -497,7 +497,7 @@ class Main(FileSystemEventHandler):
     def recipe_cost(self, next_items):
         return sum([cass.Item(id=(int(next_item["main_img"]) if "main_img" in
                                                                 next_item else int(next_item["id"])),
-                              region="KR").gold.base for next_item in next_items])
+                              region="EUW").gold.base for next_item in next_items])
 
 
     def on_created(self, event):
@@ -711,8 +711,8 @@ class Main(FileSystemEventHandler):
         except Exception as e:
             print("Unable to predict next item")
             print(e)
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
 
 
     @staticmethod
@@ -739,10 +739,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-m = Main()
+# m = Main()
 # m.run()
 
-m.process_image(f"Screen685.png")
+# m.process_image(f"Screen685.png")
 # for i in range(600,700):
 #     m.process_image(f"Screen{i}.png")
 
