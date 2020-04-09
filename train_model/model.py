@@ -234,7 +234,7 @@ class ImgModel(Model):
 
 class MultiTesseractModel:
     def __init__(self, tesseractmodels):
-        self.tess = PyTessBaseAPI(path=r"Tesseract-OCR\tessdata", lang='eng', psm=7, oem=1)
+        self.tess = PyTessBaseAPI(path=app_constants.tess_path, lang='eng', psm=7, oem=1)
         self.tess.SetVariable("tessedit_char_whitelist", "@0123456789")
         self.tesseractmodels = tesseractmodels
         self.config = "-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=@0123456789"
@@ -249,9 +249,9 @@ class MultiTesseractModel:
         for model in self.tesseractmodels:
             slide_imgs = model.extract_all_slide_imgs(whole_img)
             for img in slide_imgs:  
-                self.tess.SetImageBytes(np.ravel(img), *img.shape, 8, 8*img.shape[0])
-                text = baseapi.GetUTF8Text()
-                return self.tesseractmodels[i].convert(result)
+                self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
+                text = self.tess.GetUTF8Text()
+                yield model.convert(text)
 
 
     # def predict(self, whole_img):
@@ -353,7 +353,7 @@ class TesseractModel:
 
     def convert(self, tesseract_result):
         try:
-            return int(tesseract_result[2:-2])
+            return int(tesseract_result[2:-3])
         except ValueError as e:
             return 0
 

@@ -5,6 +5,8 @@ base_asset_path = "assets" + os.sep
 train_imgs_path = base_asset_path + "train_imgs" + os.sep
 asset_paths = dict()
 
+
+
 asset_paths["champs"] = train_imgs_path + "champs" + os.sep
 asset_paths["items"] = train_imgs_path + "items" + os.sep
 asset_paths["spells"] = train_imgs_path + "self" + os.sep
@@ -27,9 +29,11 @@ asset_paths["diamond_league_ids"] = asset_paths["jsons"] + os.sep + "diamond_lea
 if platform.system() == "Windows":
     asset_paths["tesseract_tmp_files"] = os.path.join(os.getenv('LOCALAPPDATA'),"League IQ", "tesseract")
     asset_paths["tesseract_list_file"] = os.path.join(asset_paths["tesseract_tmp_files"], "list")
+    tess_path = r"Tesseract-OCR\tessdata"
 else:
     asset_paths["tesseract_list_file"] = base_asset_path + "tesseract/list.txt"
     asset_paths["tesseract_tmp_files"] = base_asset_path + "tesseract/"
+    tess_path = "/usr/local/Cellar/tesseract/4.1.0/share/tessdata/"
 asset_paths["tesseract_separator"] = base_asset_path + "tesseract/sep.png"
 
 
