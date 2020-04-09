@@ -13,7 +13,7 @@ from tflearn.layers.normalization import batch_normalization
 from constants import game_constants, app_constants, ui_constants
 from train_model import network
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-import pytesseract
+# import pytesseract
 import json
 import itertools
 from tflearn.layers.embedding_ops import embedding
@@ -23,9 +23,10 @@ import platform
 import sklearn
 from sklearn.externals.joblib import dump, load
 from tflearn.layers.estimator import regression, regression_custom
+from tesserocr import PyTessBaseAPI
 
-if platform.system() == "Windows":
-    pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
+# if platform.system() == "Windows":
+#     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
 
 class Model(ABC):
 
@@ -233,29 +234,46 @@ class ImgModel(Model):
 
 class MultiTesseractModel:
     def __init__(self, tesseractmodels):
+        self.tess = PyTessBaseAPI(path=r"Tesseract-OCR\tessdata", lang='eng', psm=7, oem=1)
+        self.tess.SetVariable("tessedit_char_whitelist", "@0123456789")
         self.tesseractmodels = tesseractmodels
         self.config = "-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=@0123456789"
+    
+
+    def __del__(self): 
+        if self.tess:
+            self.tess.End()
+
 
     def predict(self, whole_img):
-        slide_imgs = [model.extract_all_slide_imgs(whole_img) for model in self.tesseractmodels]
-        with open(app_constants.asset_paths["tesseract_list_file"], "w") as f:
-            index = 0
-            for imgs in slide_imgs:
-                for slide_img in imgs:
-                    cv.imwrite(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png"), slide_img)
-                    f.write(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png\n"))
-                    index += 1
+        for model in self.tesseractmodels:
+            slide_imgs = model.extract_all_slide_imgs(whole_img)
+            for img in slide_imgs:  
+                self.tess.SetImageBytes(np.ravel(img), *img.shape, 8, 8*img.shape[0])
+                text = baseapi.GetUTF8Text()
+                return self.tesseractmodels[i].convert(result)
 
-        text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config,
-                                           output_type=pytesseract.Output.BYTES
-                                           ).decode('utf-8').split('\f')
-        text = [token.strip() for token in text]
-        offset = 0
-        for i in range(len(slide_imgs)):
-            yield np.array([self.tesseractmodels[i].convert(result) if result != '' else None for result in text[
-                                                                                                  offset:offset+len(slide_imgs[
-                                                                                                             i])]])
-            offset += len(slide_imgs[i])
+
+    # def predict(self, whole_img):
+    #     slide_imgs = [model.extract_all_slide_imgs(whole_img) for model in self.tesseractmodels]
+    #     with open(app_constants.asset_paths["tesseract_list_file"], "w") as f:
+    #         index = 0
+    #         for imgs in slide_imgs:
+    #             for slide_img in imgs:
+    #                 cv.imwrite(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png"), slide_img)
+    #                 f.write(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png\n"))
+    #                 index += 1
+
+    #     text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config,
+    #                                        output_type=pytesseract.Output.BYTES
+    #                                        ).decode('utf-8').split('\f')
+    #     text = [token.strip() for token in text]
+    #     offset = 0
+    #     for i in range(len(slide_imgs)):
+    #         yield np.array([self.tesseractmodels[i].convert(result) if result != '' else None for result in text[
+    #                                                                                               offset:offset+len(slide_imgs[
+    #                                                                                                          i])]])
+    #         offset += len(slide_imgs[i])
 
 
 class TesseractModel:
