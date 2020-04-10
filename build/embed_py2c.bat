@@ -24,7 +24,7 @@ set TCL_LIBRARY=C:\Program Files\Python37\tcl\tcl8.6
 set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 
 
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl8.6" --add-data "%TK_LIBRARY%;tk8.6"
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl8.6" --add-data "%TK_LIBRARY%;tk8.6" --path "C:\Program Files\Python37\Library"
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -65,7 +65,7 @@ COPY %PYTHONDIR%\..\assets\data\champ_vs_roles.json %OUT_DIR%\assets\data
 mkdir %OUT_DIR%\assets\tesseract
 COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 
-ROBOCOPY /NFL /NDL  %PYTHONDIR%\Tesseract-OCR %OUT_DIR%\Tesseract-OCR *.* /S
+ROBOCOPY /NFL /NDL  %PYTHONDIR%\tessdata %OUT_DIR%\tessdata *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\fonts %OUT_DIR%\assets\fonts *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\icons %OUT_DIR%\assets\icons *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
