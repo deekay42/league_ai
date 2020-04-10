@@ -127,14 +127,14 @@ class Res_8_5(ResolutionBase):
         self.coords["champs"]["x_start"] = 335
         self.coords["champs"]["y_start"] = 275
         self.coords["champs"]["x_diff"] = 478
-        self.coords["champs"]["y_diff"] = 62
+        self.coords["champs"]["y_diff"] = 62.5
         self.coords["champs"]["x_crop"] = 23
         self.coords["champs"]["y_crop"] = 23
 
         self.coords["items"]["x_start"] = 516
         self.coords["items"]["y_start"] = 276
         self.coords["items"]["x_diff"] = 476
-        self.coords["items"]["y_diff"] = 62
+        self.coords["items"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["items"]["x_crop"] = 24
         self.coords["items"]["y_crop"] = 24
         self.coords["items"]["x_inner_offset"] = 2
@@ -145,7 +145,7 @@ class Res_8_5(ResolutionBase):
         self.coords["self"]["x_start"] = 247
         self.coords["self"]["y_start"] = 300
         self.coords["self"]["x_diff"] = 476
-        self.coords["self"]["y_diff"] = 62
+        self.coords["self"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["self"]["x_crop"] = 15
         self.coords["self"]["y_crop"] = 15
 
@@ -165,7 +165,7 @@ class Res_8_5(ResolutionBase):
         self.coords["kda"]["y_height"] = 11
         self.coords["kda"]["x_width"] = 70
         self.coords["kda"]["x_diff"] = 479
-        self.coords["kda"]["y_diff"] = 62
+        self.coords["kda"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["kda"]["x_crop"] = 7
         self.coords["kda"]["y_crop"] = 10
 
@@ -179,14 +179,13 @@ class Res_8_5(ResolutionBase):
         self.coords["cs"]["y_crop"] = self.coords["kda"]["y_crop"]
 
 
-        self.coords["lvl"]["x_start"] = 354
-        self.coords["lvl"]["y_start"] = 299
-        self.coords["lvl"]["y_height"] = 14
-        self.coords["lvl"]["x_width"] = 15
+        self.coords["lvl"]["x_start"] = 355
+        self.coords["lvl"]["y_start"] = 301
+        self.coords["lvl"]["y_height"] = 11
+        self.coords["lvl"]["x_width"] = 12
         self.coords["lvl"]["x_diff"] = 479
         self.coords["lvl"]["y_diff"] = self.coords["kda"]["y_diff"]
-        self.coords["lvl"]["x_crop"] = 5
-        self.coords["lvl"]["y_crop"] = 10
+
 
 
 class Res_1366_768(ResolutionBase):
