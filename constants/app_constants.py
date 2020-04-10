@@ -29,7 +29,7 @@ asset_paths["diamond_league_ids"] = asset_paths["jsons"] + os.sep + "diamond_lea
 if platform.system() == "Windows":
     asset_paths["tesseract_tmp_files"] = os.path.join(os.getenv('LOCALAPPDATA'),"League IQ", "tesseract")
     asset_paths["tesseract_list_file"] = os.path.join(asset_paths["tesseract_tmp_files"], "list")
-    tess_path = r"Tesseract-OCR\tessdata"
+    tess_path = "tessdata"
 else:
     asset_paths["tesseract_list_file"] = base_asset_path + "tesseract/list.txt"
     asset_paths["tesseract_tmp_files"] = base_asset_path + "tesseract/"
