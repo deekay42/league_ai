@@ -220,6 +220,10 @@ class ImgModel(Model):
     def extract_imgs(self, whole_img):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
+        # from utils import utils
+        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
+        #                   self.res_converter.lookup(self.elements, "y_crop"))
+
         sub_imgs = [whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements,
                                                                                                   "y_crop"))),
                     int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_crop")))]
@@ -247,9 +251,13 @@ class MultiTesseractModel:
     def predict(self, whole_img):
         for model in self.tesseractmodels:
             slide_imgs = model.extract_all_slide_imgs(whole_img)
-            for img in slide_imgs:  
+            for img in slide_imgs:
+
                 self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
                 text = self.tess.GetUTF8Text()
+                print(text)
+                cv.imshow("f", img)
+                cv.waitKey(0)
                 yield model.convert(text)
 
 
@@ -298,6 +306,7 @@ class TesseractModel:
         inv = cv.bitwise_not(thresholded)
         img = np.concatenate([left_separator, left_separator, inv, right_separator, right_separator], axis=1)
         img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # cv.waitKey(0)
         return img
 
 
@@ -308,6 +317,8 @@ class TesseractModel:
     def get_raw_slide_imgs(self, whole_img):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
+        from utils import utils
+        utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
         slide_imgs = [
             whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
             int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_width")))]
@@ -316,8 +327,15 @@ class TesseractModel:
 
 
     def extract_all_slide_imgs(self, whole_img):
+
         slide_imgs = self.get_raw_slide_imgs(whole_img)
+        # for img in slide_imgs:
+        #     cv.imshow("f", img)
+        #     cv.waitKey(0)
         result = [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
+        # for img in result:
+        #     cv.imshow("f", img)
+        #     cv.waitKey(0)
         return result
 
 
@@ -667,6 +685,9 @@ class KDAImgModel(ImgModel):
     def extract_imgs(self, whole_img):
         coords = list(self.get_coords())
         coords = np.reshape(coords, (-1, 2))
+        from utils import utils
+        utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
+
         slide_imgs = [
             whole_img[coord[1]:int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
             coord[0]:int(round(coord[0] + self.res_converter.lookup(self.elements, "x_width")))]
