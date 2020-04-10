@@ -237,7 +237,6 @@ class MultiTesseractModel:
         self.tess = PyTessBaseAPI(path=app_constants.tess_path, lang='eng', psm=7, oem=1)
         self.tess.SetVariable("tessedit_char_whitelist", "@0123456789")
         self.tesseractmodels = tesseractmodels
-        self.config = "-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=@0123456789"
     
 
     def __del__(self): 
@@ -254,36 +253,15 @@ class MultiTesseractModel:
                 yield model.convert(text)
 
 
-    # def predict(self, whole_img):
-    #     slide_imgs = [model.extract_all_slide_imgs(whole_img) for model in self.tesseractmodels]
-    #     with open(app_constants.asset_paths["tesseract_list_file"], "w") as f:
-    #         index = 0
-    #         for imgs in slide_imgs:
-    #             for slide_img in imgs:
-    #                 cv.imwrite(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png"), slide_img)
-    #                 f.write(os.path.join(app_constants.asset_paths["tesseract_tmp_files"], str(index+1) + ".png\n"))
-    #                 index += 1
-
-    #     text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config,
-    #                                        output_type=pytesseract.Output.BYTES
-    #                                        ).decode('utf-8').split('\f')
-    #     text = [token.strip() for token in text]
-    #     offset = 0
-    #     for i in range(len(slide_imgs)):
-    #         yield np.array([self.tesseractmodels[i].convert(result) if result != '' else None for result in text[
-    #                                                                                               offset:offset+len(slide_imgs[
-    #                                                                                                          i])]])
-    #         offset += len(slide_imgs[i])
-
-
 class TesseractModel:
 
     def __init__(self, res_converter):
-        self.config = ("-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=@0123456789")
         self.res_converter = res_converter
         self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
-        self.separator = cv.copyMakeBorder(self.separator, 0, 0, 5, 5, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        _, self.separator = cv.threshold(self.separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        self.left_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 5, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        self.right_separator = cv.copyMakeBorder(self.separator, 0, 0, 5, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        _, self.right_separator = cv.threshold(self.right_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        _, self.left_separator = cv.threshold(self.left_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
 
 
     def extract_slide_img(self, slide_img):
@@ -313,17 +291,19 @@ class TesseractModel:
         y_top = np.min(bboxes[:, 1])
         y_bot = np.max(bboxes[:, 3])
         ratio = (y_bot - y_top) / self.separator.shape[0]
-        separator = cv.resize(self.separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
+        left_separator = cv.resize(self.left_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
+        right_separator = cv.resize(self.right_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
         blob_contour = gray[y_top:y_bot, x_left:x_right]
         ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
         inv = cv.bitwise_not(thresholded)
-        img = np.concatenate([separator, separator, inv, separator, separator], axis=1)
+        img = np.concatenate([left_separator, left_separator, inv, right_separator, right_separator], axis=1)
         img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
-
         return img
+
 
     def get_coords(self):
         return list(self.res_converter.generate_std_coords(self.elements))
+
 
     def get_raw_slide_imgs(self, whole_img):
         coords = self.get_coords()
@@ -339,16 +319,6 @@ class TesseractModel:
         slide_imgs = self.get_raw_slide_imgs(whole_img)
         result = [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
         return result
-
-
-    def predict(self, whole_img):
-
-        imgs = self.extract_all_slide_imgs(whole_img)
-        for i, img in enumerate(imgs):
-            cv.imwrite(app_constants.asset_paths["tesseract_tmp_files"] + str(i+1)+".png", img)
-        text = pytesseract.image_to_string(app_constants.asset_paths["tesseract_list_file"], config=self.config)
-        return self.convert(text)
-
 
 
     def convert(self, tesseract_result):
