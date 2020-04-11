@@ -240,6 +240,8 @@ class MultiTesseractModel:
     def __init__(self, tesseractmodels):
         self.tess = PyTessBaseAPI(path=app_constants.tess_path, lang='eng', psm=7, oem=1)
         self.tess.SetVariable("tessedit_char_whitelist", "@0123456789")
+        # self.tess.SetVariable("classify_bln_numeric_mode", "1")
+
         self.tesseractmodels = tesseractmodels
     
 
@@ -255,9 +257,10 @@ class MultiTesseractModel:
 
                 self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
                 text = self.tess.GetUTF8Text()
-                print(text)
-                cv.imshow("f", img)
-                cv.waitKey(0)
+
+                # print(text)
+                # cv.imshow("f", img)
+                # cv.waitKey(0)
                 yield model.convert(text)
 
 
@@ -265,19 +268,32 @@ class TesseractModel:
 
     def __init__(self, res_converter):
         self.res_converter = res_converter
+        sep_imgs = [cv.imread(app_constants.asset_paths["kda"]+str(i)+".png", cv.IMREAD_GRAYSCALE) for i in range(10)]
+        sep_img = np.concatenate(sep_imgs, axis=1)
+        sep_img = sep_img[2:-2]
+        sep_img = cv.bitwise_not(sep_img)
+        sep_img = cv.resize(sep_img, None, fx=5, fy=5, interpolation=cv.INTER_CUBIC)
+
         self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
-        self.left_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 5, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        self.right_separator = cv.copyMakeBorder(self.separator, 0, 0, 5, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # self.left_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # self.right_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        self.left_separator = sep_img
+        self.right_separator = sep_img
+        kernel = np.ones((2, 2 ), np.uint8)
+
+
+        # self.left_separator = cv.erode(self.left_separator,kernel,iterations = 1)
+        # self.right_separator = cv.erode(self.right_separator, kernel, iterations=1)
         _, self.right_separator = cv.threshold(self.right_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
         _, self.left_separator = cv.threshold(self.left_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
 
 
     def extract_slide_img(self, slide_img):
 
-        x_pad = y_pad = 20
-        img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
-        scale_factor = 5
-        img_bordered = cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
+        # x_pad = y_pad = 20
+        # img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        scale_factor = 3
+        img_bordered = cv.resize(slide_img, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
         gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
         # cv.imshow("gray", gray)
 
@@ -298,16 +314,23 @@ class TesseractModel:
         x_right = np.max(bboxes[:, 2])
         y_top = np.min(bboxes[:, 1])
         y_bot = np.max(bboxes[:, 3])
-        ratio = (y_bot - y_top) / self.separator.shape[0]
+        ratio = (y_bot - y_top) / self.left_separator.shape[0]
         left_separator = cv.resize(self.left_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
         right_separator = cv.resize(self.right_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
         blob_contour = gray[y_top:y_bot, x_left:x_right]
         ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
         inv = cv.bitwise_not(thresholded)
-        img = np.concatenate([left_separator, left_separator, inv, right_separator, right_separator], axis=1)
+        # inv = cv.copyMakeBorder(inv, 0, left_separator.shape[0]-inv.shape[0], 0, 0, cv.BORDER_CONSTANT,
+        #                         value=(255, 255, 255))
+        border = np.ones(shape=(left_separator.shape[0], 4), dtype=np.uint8)*255
+        img = np.concatenate([left_separator, border, inv, border, right_separator],
+                             axis=1)
+
         img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        _, img_binarized = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
+
         # cv.waitKey(0)
-        return img
+        return img_binarized
 
 
     def get_coords(self):
@@ -317,8 +340,8 @@ class TesseractModel:
     def get_raw_slide_imgs(self, whole_img):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
-        from utils import utils
-        utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
+        # from utils import utils
+        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
         slide_imgs = [
             whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
             int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_width")))]
@@ -341,9 +364,9 @@ class TesseractModel:
 
     def convert(self, tesseract_result):
         try:
-            return int(tesseract_result[2:-3])
+            return int(tesseract_result[10:-11])
         except ValueError as e:
-            return 0
+            return -1
 
 
 
@@ -685,8 +708,8 @@ class KDAImgModel(ImgModel):
     def extract_imgs(self, whole_img):
         coords = list(self.get_coords())
         coords = np.reshape(coords, (-1, 2))
-        from utils import utils
-        utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
+        # from utils import utils
+        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
 
         slide_imgs = [
             whole_img[coord[1]:int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
