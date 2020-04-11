@@ -36,48 +36,49 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
-        
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-        
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-        
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-        
-        
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # try:
+        # # res = 1440,810
+        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     res = 1366, 768
+        #     print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
         self.next_item_model_standard = NextItemModel("standard")
@@ -91,16 +92,16 @@ class Main(FileSystemEventHandler):
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
 
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
 
@@ -588,22 +589,22 @@ class Main(FileSystemEventHandler):
             self.kda[:, 0] = self.repair_failed_predictions(self.kda[:, 0], 0, 25)
             self.kda[:, 1] = self.repair_failed_predictions(self.kda[:, 1], 0, 25)
             self.kda[:, 2] = self.repair_failed_predictions(self.kda[:, 2], 0, 25)
-            tesseract_result = self.tesseract_models.predict(screenshot)
+            tesseract_result = list(self.tesseract_models.predict(screenshot))
             try:
-                self.lvl = next(tesseract_result)
+                self.lvl = tesseract_result[:10]
             except Exception as e:
                 print(e)
                 self.lvl = [0] * 10
             self.lvl = self.repair_failed_predictions(self.lvl, 1, 18)
 
             try:
-                self.cs = next(tesseract_result)
+                self.cs = tesseract_result[10:20]
             except Exception as e:
                 print(e)
                 self.cs = [0] * 10
             self.cs = self.repair_failed_predictions(self.cs, 0, 400)
             try:
-                self.current_gold = next(tesseract_result)[0]
+                self.current_gold = tesseract_result[-1]
             except Exception as e:
                 print(e)
                 self.current_gold = 500
@@ -711,8 +712,8 @@ class Main(FileSystemEventHandler):
         except Exception as e:
             print("Unable to predict next item")
             print(e)
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
 
 
     @staticmethod
@@ -739,12 +740,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"Screen685.png")
-# for i in range(600,700):
-#     m.process_image(f"Screen{i}.png")
+# m.process_image(f"Screen701.png")
+for i in range(680,700):
+    m.process_image(f"Screen{i}.png")
 
 # m.run_test_games()
 
