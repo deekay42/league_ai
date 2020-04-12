@@ -238,7 +238,7 @@ class ImgModel(Model):
 
 class MultiTesseractModel:
     def __init__(self, tesseractmodels):
-        self.tess = PyTessBaseAPI(path=app_constants.tess_path, lang='eng', psm=7, oem=1)
+        self.tess = PyTessBaseAPI(path=app_constants.tess_path, lang='eng', psm=6, oem=1)
         self.tess.SetVariable("tessedit_char_whitelist", "@0123456789")
         # self.tess.SetVariable("classify_bln_numeric_mode", "1")
 
@@ -255,20 +255,31 @@ class MultiTesseractModel:
         for model in self.tesseractmodels:
             slide_imgs.extend(model.extract_all_slide_imgs(whole_img))
         y_heights = [slide_img.shape[0] for slide_img in slide_imgs]
+
         y_height = Counter(y_heights).most_common(1)[0][0]
-        slide_imgs = [cv.resize(slide_img, None, fx=slide_img.shape[0]/y_height, fy=slide_img.shape[0]/y_height, interpolation=cv.INTER_CUBIC) for slide_img in slide_imgs]
-        con = np.concatenate(slide_imgs, axis=1)
-        cv.imshow("f", con)
-        cv.waitKey(0)
-        for img in slide_imgs:
 
-            self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
-            text = self.tess.GetUTF8Text()
 
-            # print(text)
-            # cv.imshow("f", img)
-            # cv.waitKey(0)
-            yield model.convert(text)
+        slide_imgs = [cv.resize(slide_img, None, fx=y_height/slide_img.shape[0], fy=y_height/slide_img.shape[
+            0],
+                                interpolation=cv.INTER_CUBIC) for slide_img in slide_imgs]
+
+        y_widths = [slide_img.shape[1] for slide_img in slide_imgs]
+        y_longest_width = max(y_widths)
+        slide_imgs_vert = [cv.copyMakeBorder(slide_img, 0, 5, 0, y_longest_width - slide_img.shape[1], cv.BORDER_CONSTANT,
+                                             value=(255, 255, 255)) for slide_img in slide_imgs]
+        img_vert = np.concatenate(slide_imgs_vert, axis=0)
+        img = cv.copyMakeBorder(img_vert, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # cv.imshow("f", img)
+        # cv.waitKey(0)
+        # img = np.concatenate(slide_imgs, axis=1)
+        # img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1 * img.shape[1])
+        text = self.tess.GetUTF8Text()
+        # result = text[10:]
+        # print(text)
+        str_result = [s[10:] for s in text.split("\n")][:-1]
+        for res in str_result:
+            yield model.convert(res)
 
 
 class TesseractModel:
@@ -329,11 +340,11 @@ class TesseractModel:
         inv = cv.bitwise_not(thresholded)
         # inv = cv.copyMakeBorder(inv, 0, left_separator.shape[0]-inv.shape[0], 0, 0, cv.BORDER_CONSTANT,
         #                         value=(255, 255, 255))
-        border = np.ones(shape=(left_separator.shape[0], 4), dtype=np.uint8)*255
+        border = np.ones(shape=(left_separator.shape[0], 3), dtype=np.uint8)*255
         img = np.concatenate([left_separator, border, inv, border],
                              axis=1)
 
-        img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
         _, img_binarized = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
 
         # cv.waitKey(0)
@@ -371,7 +382,7 @@ class TesseractModel:
 
     def convert(self, tesseract_result):
         try:
-            return int(tesseract_result[10:-11])
+            return int(tesseract_result)
         except ValueError as e:
             return -1
 
