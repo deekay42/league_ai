@@ -251,17 +251,24 @@ class MultiTesseractModel:
 
 
     def predict(self, whole_img):
+        slide_imgs = []
         for model in self.tesseractmodels:
-            slide_imgs = model.extract_all_slide_imgs(whole_img)
-            for img in slide_imgs:
+            slide_imgs.extend(model.extract_all_slide_imgs(whole_img))
+        y_heights = [slide_img.shape[0] for slide_img in slide_imgs]
+        y_height = Counter(y_heights).most_common(1)[0][0]
+        slide_imgs = [cv.resize(slide_img, None, fx=slide_img.shape[0]/y_height, fy=slide_img.shape[0]/y_height, interpolation=cv.INTER_CUBIC) for slide_img in slide_imgs]
+        con = np.concatenate(slide_imgs, axis=1)
+        cv.imshow("f", con)
+        cv.waitKey(0)
+        for img in slide_imgs:
 
-                self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
-                text = self.tess.GetUTF8Text()
+            self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1*img.shape[1])
+            text = self.tess.GetUTF8Text()
 
-                # print(text)
-                # cv.imshow("f", img)
-                # cv.waitKey(0)
-                yield model.convert(text)
+            # print(text)
+            # cv.imshow("f", img)
+            # cv.waitKey(0)
+            yield model.convert(text)
 
 
 class TesseractModel:
@@ -323,7 +330,7 @@ class TesseractModel:
         # inv = cv.copyMakeBorder(inv, 0, left_separator.shape[0]-inv.shape[0], 0, 0, cv.BORDER_CONSTANT,
         #                         value=(255, 255, 255))
         border = np.ones(shape=(left_separator.shape[0], 4), dtype=np.uint8)*255
-        img = np.concatenate([left_separator, border, inv, border, right_separator],
+        img = np.concatenate([left_separator, border, inv, border],
                              axis=1)
 
         img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
