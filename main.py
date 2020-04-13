@@ -72,8 +72,8 @@ class Main(FileSystemEventHandler):
         #     messagebox.showinfo("Error",
         #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
         #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
-        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
         # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
@@ -417,7 +417,17 @@ class Main(FileSystemEventHandler):
 
     def pad_result(self, result, next_items=None, abs_items=None):
         if not result and self.network_type not in ["starter", "first_item"]:
-            return [self.predict_next_item(model=self.next_item_model_late)[0]]
+            next_item = self.predict_next_item(model=self.next_item_model_late)[0]
+            try:
+                next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
+            except (ValueError, InsufficientGold, NoPathFound) as e:
+                print(e)
+                print("EXCEPTION")
+                return next_item
+            if next_items:
+                return next_items
+            else:
+                return next_item
         else:
             return self.add_aux_items(result, next_items, abs_items)
 
@@ -743,9 +753,9 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-# m.process_image(f"Screen701.png")
-for i in range(680,700):
-    m.process_image(f"Screen{i}.png")
+m.process_image(f"Screen849.png")
+# for i in range(680,700):
+#     m.process_image(f"Screen{i}.png")
 
 # m.run_test_games()
 
