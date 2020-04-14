@@ -36,77 +36,98 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        # self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        # try:
-        # # res = 1440,810
-        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     res = 1366, 768
-        #     print("Couldn't find Width or Height sections")
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        self.onTimeout = False
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        try:
+        # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        except KeyError as e:
+            print(repr(e))
+            res = 1366, 768
+            print("Couldn't find Width or Height sections")
+        
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
+        
+        print("Loading standard model...")
         self.next_item_model_standard = NextItemModel("standard")
         self.next_item_model_standard.load_model()
+        print("Done. \nLoading late game model")
+        if Main.shouldTerminate():
+            return
         self.next_item_model_late = NextItemModel("late")
         self.next_item_model_late.load_model()
+        print("Done. \nLoading starter game model")
+        if Main.shouldTerminate():
+            return
         self.next_item_model_starter = NextItemModel("starter")
         self.next_item_model_starter.load_model()
+        print("Done. \nLoading first item game model")
+        if Main.shouldTerminate():
+            return
         self.next_item_model_first_item = NextItemModel("first_item")
         self.next_item_model_first_item.load_model()
+        print("Done. \nLoading boots game model")
+        if Main.shouldTerminate():
+            return
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
-
-        # if Main.shouldTerminate():
-        #     return
+        print("Done. \nLoading champ img game model")
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        print("Done. \nLoading item img game model")
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        print("Done. \nLoading self img game model")
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
-
+        print("Done. \nLoading KDA img game model")
+        if Main.shouldTerminate():
+                    return
         self.kda_img_model = KDAImgModel(self.res_converter)
         self.kda_img_model.load_model()
+        print("Done. \nLoading tess img game model")
+        if Main.shouldTerminate():
+            return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -127,6 +148,7 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Sorcery"]
         thresholds = [0, 0.1, 0.25, .7, 1.1]
         num_full_items = [0, 1, 2, 3]
+        self.threshold = 0.35
         self.commonality_to_items = dict()
         for i in range(len(num_full_items)):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
@@ -268,31 +290,6 @@ class Main(FileSystemEventHandler):
         return items, delta_items, six_items, delta_six
 
 
-    #
-    # def simulate_game(self, items, champs):
-    #     count = 0
-    #     at_same_number = 0
-    #     last_number = 0
-    #     while count != 10:
-    #         count = 0
-    #         for summ_index in range(10):
-    #             if summ_index == 5:
-    #
-    #                 champs, items = self.swap_teams(champs, items)
-    #             count += int(self.next_item_for_champ(summ_index % 5, champs, items))
-    #
-    #         if count == last_number:
-    #             at_same_number += 1
-    #             if count > 6 and at_same_number >= 10:
-    #                 break
-    #         else:
-    #             at_same_number = 0
-    #             last_number = count
-    #         champs, items = self.swap_teams(champs, items)
-    #         for i, item in enumerate(items):
-    #             print(f"{divmod(i, 6)}: {item}")
-    #         pass
-
     def swap_teams_all(self):
         print("Switching teams!")
         self.champs = self.swap_teams(self.champs)
@@ -301,6 +298,17 @@ class Main(FileSystemEventHandler):
         self.cs = self.swap_teams(self.cs)
         self.kda = self.swap_teams(self.kda)
         self.role -= 5
+
+
+    def predict_with_threshold(self, delta_items=Counter()):
+        next_item, next_predicted_items, confidence = self.predict_next_item(delta_items=delta_items)
+        if confidence < self.threshold and self.network_type == "standard":
+            print("Super low confidence in that one. Falling back to late game network.")
+            self.network_type = "late"
+            self.model = self.next_item_model_late
+            return self.predict_next_item(model=self.next_item_model_late, delta_items=delta_items)[:2]
+        else:
+            return next_item, next_predicted_items
 
 
     def try_item_reduction(self):
@@ -317,21 +325,15 @@ class Main(FileSystemEventHandler):
             self.items[self.role] = items_reduction
             delta_items = deltas
 
-            next_item, next_predicted_items = self.predict_next_item(items=self.items, delta_items=delta_items)
-
-
-
+            next_item, next_predicted_items = self.predict_with_threshold(delta_items=delta_items)
             try:
                 if self.network_type == "standard":
                     next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
                         next_predicted_items, self.current_gold, 30)
                 else:
-
                     next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
             except (NoPathFound, InsufficientGold) as e:
                 continue
-
-
 
             if next_item["name"] == "Empty":
                 continue
@@ -379,6 +381,7 @@ class Main(FileSystemEventHandler):
                 item_cost_lookup[item["int"]] = item_cost
             if item_cost <= current_gold + tolerance:
                 return item, next_items, abs_items, item_cost, item_reached
+        raise InsufficientGold()
 
 
     def analyze_champ(self):
@@ -391,7 +394,7 @@ class Main(FileSystemEventHandler):
                 next_item, delta_items, next_items, abs_items, cost, item_reached = self.try_item_reduction()
             else:
                 delta_items = None
-                next_item, next_predicted_items = self.predict_next_item()
+                next_item, next_predicted_items = self.predict_with_threshold()
                 try:
                     if self.network_type == "standard":
                         next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
@@ -401,6 +404,7 @@ class Main(FileSystemEventHandler):
                 except (ValueError, InsufficientGold, NoPathFound) as e:
                     print(e)
                     print("EXCEPTION")
+                    print(traceback.print_exc())
                     return self.pad_result(result)
 
             if self.is_end_of_buy(next_item, delta_items, next_items):
@@ -423,11 +427,12 @@ class Main(FileSystemEventHandler):
             except (ValueError, InsufficientGold, NoPathFound) as e:
                 print(e)
                 print("EXCEPTION")
-                return next_item
+                print(traceback.print_exc())
+                return [next_item]
             if next_items:
                 return next_items
             else:
-                return next_item
+                return [next_item]
         else:
             return self.add_aux_items(result, next_items, abs_items)
 
@@ -722,8 +727,10 @@ class Main(FileSystemEventHandler):
         except Exception as e:
             print("Unable to predict next item")
             print(e)
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+            print(traceback.print_exc())
+            out_string = "0"
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
 
 
     @staticmethod
@@ -732,7 +739,6 @@ class Main(FileSystemEventHandler):
 
 
     def run(self):
-
         observer = Observer()
         ss_path = os.path.join(self.loldir, "Screenshots")
         print(f"Now listening for screenshots at: {ss_path}")
@@ -750,10 +756,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-m = Main()
+# m = Main()
 # m.run()
 
-m.process_image(f"Screen849.png")
+# m.process_image(f"Screen849.png")
 # for i in range(680,700):
 #     m.process_image(f"Screen{i}.png")
 
