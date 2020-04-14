@@ -902,8 +902,8 @@ class NextItemModel(Model):
         lul = False
         if lul:
             self.output_logs(x)
-        result = self.predict(x, blackout_indices)
-        return result[zero_offset], result
+        result, probabilities = self.predict(x, blackout_indices)
+        return result[zero_offset], result, probabilities[zero_offset]
 
 
     def scale_inputs(self, X):
@@ -1011,7 +1011,7 @@ class NextItemModel(Model):
         items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
         print([item["name"] for item in items])
         print("\n\n")
-        return items
+        return items, np.max(y, axis=1)
 
 
 class PositionsModel(Model):
