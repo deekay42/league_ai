@@ -36,60 +36,60 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.config = configparser.ConfigParser()
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
-        
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-        
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-        
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-        
-        
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.config = configparser.ConfigParser()
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        # try:
+        # # res = 1440,810
+        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     res = 1366, 768
+        #     print("Couldn't find Width or Height sections")
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        #
+        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        #
+        # if too_many_screenshots:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Warning",
+        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        #
+        #
+        #
 
-        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        
-        if too_many_screenshots:
-            Tk().withdraw()
-            messagebox.showinfo("Warning",
-                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-                
-            
-
-
-        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
         
@@ -97,48 +97,48 @@ class Main(FileSystemEventHandler):
         self.next_item_model_standard = NextItemModel("standard")
         self.next_item_model_standard.load_model()
         print("Done. \nLoading late game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late")
         self.next_item_model_late.load_model()
         print("Done. \nLoading starter game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter")
         self.next_item_model_starter.load_model()
         print("Done. \nLoading first item game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item")
         self.next_item_model_first_item.load_model()
         print("Done. \nLoading boots game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
         print("Done. \nLoading champ img game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
         print("Done. \nLoading item img game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
         print("Done. \nLoading self img game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
         print("Done. \nLoading KDA img game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.kda_img_model = KDAImgModel(self.res_converter)
         self.kda_img_model.load_model()
         print("Done. \nLoading tess img game model")
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -160,7 +160,10 @@ class Main(FileSystemEventHandler):
         thresholds = [0, 0.1, 0.25, .7, 1.1]
         num_full_items = [0, 1, 2, 3]
         self.threshold = 0.35
-        self.max_leftover_gold_threshold = 350
+        self.max_leftover_gold_threshold = 300
+        self.skipped = False
+        self.force_late_after_standard = False
+        self.force_boots_network_after_first_item = False
         self.commonality_to_items = dict()
         for i in range(len(num_full_items)):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
@@ -253,8 +256,8 @@ class Main(FileSystemEventHandler):
         if next_item["name"] == "Empty":
             return [], [items], 0, False
 
-        if self.network_type == "first_item":
-            return [next_item], [items], 0, False
+        # if self.network_type == "first_item":
+        #     return [next_item], [items], 0, False
         cass_item = cass.Item(id=(int(next_item["id"])), region="EUW")
         l = cass_item.name
         if not list(cass_item.builds_from):
@@ -381,6 +384,10 @@ class Main(FileSystemEventHandler):
                 self.network_type = "late"
                 self.next_item_model = self.next_item_model_late
                 print("USING LATE GAME MODEL")
+            elif self.force_boots_network_after_first_item:
+                self.network_type = "boots"
+                self.next_item_model = self.next_item_model_boots
+                print("USING BOOTS GAME MODEL")
             else:
                 self.network_type = "first_item"
                 self.next_item_model = self.next_item_model_first_item
@@ -422,21 +429,18 @@ class Main(FileSystemEventHandler):
                     print(e)
                     print("EXCEPTION")
                     print(traceback.print_exc())
-                    if self.current_gold > self.max_leftover_gold_threshold and self.true_completes_owned < 3:
-                        if self.network_type == "standard":
-                            self.force_late_after_standard = True
-                            continue
-                        else:
-                            abs_items = self.build_path(next_item, 4000)[1]
-                            self.items[self.role] = abs_items[-1].copy()
-                            continue
-                                
-
-
+                    if self.current_gold >= self.max_leftover_gold_threshold and self.true_completes_owned() < 4 and not self.skipped:
+                        self.skip_item(next_item)
+                        continue
                     return self.pad_result(result)
 
             if self.is_end_of_buy(next_item, delta_items, next_items):
-                return self.pad_result(result, next_items, abs_items[-1].copy())
+                if self.network_type != "starter" and self.current_gold >= self.max_leftover_gold_threshold and \
+                        self.true_completes_owned() < 4 and not self.skipped:
+                    self.skip_item(next_item)
+                    continue
+                else:
+                    return self.pad_result(result, next_items, abs_items[-1].copy())
 
             self.current_gold -= cost
             self.items[self.role] = abs_items[-1].copy()
@@ -445,6 +449,17 @@ class Main(FileSystemEventHandler):
             if delta_items:
                 self.add_deltas_back(delta_items)
         return self.pad_result(result)
+
+
+    def skip_item(self, next_item):
+        if self.network_type == "standard":
+            self.force_late_after_standard = True
+        elif self.network_type == "first_item":
+            self.force_boots_network_after_first_item = True
+        else:
+            self.skipped = True
+            abs_items = self.build_path(next_item, 4000)[1]
+            self.items[self.role] = abs_items[-1].copy()
 
 
     def pad_result(self, result, next_items=None, abs_items=None):
@@ -472,7 +487,7 @@ class Main(FileSystemEventHandler):
             or delta_items and ((next_item["int"] in delta_items and (next_item['int'] != self.ward_int))
                                 or (next_item["name"] in self.removable_items)) \
             or next_items == [] \
-            or self.network_type in ["starter", "first_item"]
+            or self.network_type in ["starter"]
 
 
     def add_aux_items(self, result, next_items, abs_items):
@@ -481,12 +496,6 @@ class Main(FileSystemEventHandler):
             result.extend(next_items)
             self.current_gold -= cass.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
-        if self.network_type == "first_item":
-            if not np.any(np.isin(list(self.items[self.role].keys()), list(self.boots_ints))):
-                next_boots = self.predict_next_item(model=self.next_item_model_boots)[0]
-                result.append(next_boots)
-            result.extend(next_items)
-            return result
 
         if not np.any(["Elixir" in item["name"] for item in result]) and self.current_gold >= 500:
             elixir = self.predict_next_item(model=self.next_item_model_late)[0]
@@ -757,8 +766,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
 
 
     @staticmethod
@@ -784,12 +793,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"Screen1016.png")
-# for i in range(680,700):
-#     m.process_image(f"Screen{i}.png")
+m.process_image(f"Screen04.png")
+# for i in range(1,9):
+#     m.process_image(f"Screen0{i}.png")
 
 # m.run_test_games()
 
