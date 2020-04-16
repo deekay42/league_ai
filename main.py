@@ -160,7 +160,7 @@ class Main(FileSystemEventHandler):
         thresholds = [0, 0.1, 0.25, .7, 1.1]
         num_full_items = [0, 1, 2, 3]
         self.threshold = 0.35
-        self.max_leftover_gold_threshold = 300
+        self.max_leftover_gold_threshold = 270
         self.skipped = False
         self.force_late_after_standard = False
         self.force_boots_network_after_first_item = False
@@ -429,14 +429,15 @@ class Main(FileSystemEventHandler):
                     print(e)
                     print("EXCEPTION")
                     print(traceback.print_exc())
-                    if self.current_gold >= self.max_leftover_gold_threshold and self.true_completes_owned() < 4 and not self.skipped:
+                    if self.current_gold >= self.max_leftover_gold_threshold and self.true_completes_owned() < 3 and \
+                            not self.skipped:
                         self.skip_item(next_item)
                         continue
                     return self.pad_result(result)
 
             if self.is_end_of_buy(next_item, delta_items, next_items):
                 if self.network_type != "starter" and self.current_gold >= self.max_leftover_gold_threshold and \
-                        self.true_completes_owned() < 4 and not self.skipped:
+                        self.true_completes_owned() < 3 and not self.skipped:
                     self.skip_item(next_item)
                     continue
                 else:
@@ -796,9 +797,9 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-m.process_image(f"Screen04.png")
-# for i in range(1,9):
-#     m.process_image(f"Screen0{i}.png")
+m.process_image(f"test_data/screenshots/Screen704.png")
+# for i in range(700,720):
+#     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
 
