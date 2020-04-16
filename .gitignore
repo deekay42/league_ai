@@ -14,3 +14,4 @@ sed*
 build/main/
 main.spec
 training_data/positions/*
+test_data/screenshots
