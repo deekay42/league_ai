@@ -22,9 +22,10 @@ rmdir /s /q .\tmp_build
 mkdir tmp_build
 set TCL_LIBRARY=C:\Program Files\Python37\tcl\tcl8.6
 set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
+set TFL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\tflearn
+set PKG_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pkg_resources
 
-
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl8.6" --add-data "%TK_LIBRARY%;tk8.6" --path "C:\Program Files\Python37\Library"
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=tensorflow_core --path "C:\Program Files\Python37\Library" --additional-hooks-dir=hooks
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils

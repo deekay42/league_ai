@@ -1,28 +1,91 @@
+import time
+starttime = time.time()
 import glob
+print("1.1")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import threading
+print("1.2")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from abc import ABC, abstractmethod
-
+print("1.3")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import cv2 as cv
+print("1.4")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import numpy as np
-import tensorflow as tf
+print("1.5")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+from tensorflow import  Graph, global_variables_initializer, ConfigProto, Session
+print("1.6")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import tflearn
+print("1.7")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tflearn.layers.merge_ops import merge
+print("1.8")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tflearn.layers.core import fully_connected, input_data, dropout
+print("1.9")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tflearn.layers.normalization import batch_normalization
+print("1.10")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 
 from constants import game_constants, app_constants, ui_constants
+print("1.11")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from train_model import network
+print("1.12")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 # import pytesseract
+print("1.13")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import json
+print("1.14")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import itertools
+print("1.15")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tflearn.layers.embedding_ops import embedding
+print("1.16")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from collections import Counter
+print("1.17")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import os
+print("1.18")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import platform
-import sklearn
-from sklearn.externals.joblib import dump, load
+print("1.19")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+from sklearn import preprocessing
+print("1.20")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tflearn.layers.estimator import regression, regression_custom
+print("1.22")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tesserocr import PyTessBaseAPI
 
 # if platform.system() == "Windows":
@@ -32,9 +95,9 @@ class Model(ABC):
 
     def __init__(self):
         self.network = None
-        self.graph = tf.Graph()
+        self.graph = Graph()
         with self.graph.as_default():
-            self.session = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+            self.session = Session(config=ConfigProto(allow_soft_placement=True))
         self.model = None
         self.model_path = None
         self.artifact_manager = None
@@ -48,7 +111,7 @@ class Model(ABC):
             tflearn.is_training(False, session=self.session)
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
-            self.session.run(tf.global_variables_initializer())
+            self.session.run(global_variables_initializer())
             try:
                 self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
                 self.model_path = self.model_path.rpartition('.')[0]
@@ -65,123 +128,123 @@ class Model(ABC):
             self.model = model
 
 
-    def output_logs(self, in_vec):
-        sess = tf.InteractiveSession()
-        sess.run(tf.global_variables_initializer())
-        tflearn.is_training(True, session=sess)
-        is_training = tflearn.get_training_mode()
-        game_config = \
-            {
-                "champs_per_game": game_constants.CHAMPS_PER_GAME,
-                "champs_per_team": game_constants.CHAMPS_PER_TEAM,
-                "total_num_champs": ChampManager().get_num("int"),
-                "total_num_items": ItemManager().get_num("int"),
-                "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
-            }
+    # def output_logs(self, in_vec):
+    #     sess = tf.InteractiveSession()
+    #     sess.run(tf.global_variables_initializer())
+    #     tflearn.is_training(True, session=sess)
+    #     is_training = tflearn.get_training_mode()
+    #     game_config = \
+    #         {
+    #             "champs_per_game": game_constants.CHAMPS_PER_GAME,
+    #             "champs_per_team": game_constants.CHAMPS_PER_TEAM,
+    #             "total_num_champs": ChampManager().get_num("int"),
+    #             "total_num_items": ItemManager().get_num("int"),
+    #             "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
+    #         }
 
-        network_config = \
-            {
-                "learning_rate": 0.00025,
-                "champ_emb_dim": 3,
-                "all_items_emb_dim": 6,
-                "champ_all_items_emb_dim": 8,
-                "class_weights": [1]
-            }
-        my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
-        opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
-        my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
+    #     network_config = \
+    #         {
+    #             "learning_rate": 0.00025,
+    #             "champ_emb_dim": 3,
+    #             "all_items_emb_dim": 6,
+    #             "champ_all_items_emb_dim": 8,
+    #             "class_weights": [1]
+    #         }
+    #     my_champ_embs_dst = np.load("my_champ_embs_dst.npy")
+    #     opp_champ_embs_dst = np.load("opp_champ_embs_dst.npy")
+    #     my_champ_embs_dst = np.concatenate([[[0, 0, 0, 0]], my_champ_embs_dst], axis=0)
 
-        self.champ_embs = my_champ_embs_dst[:, :3]
-        self.opp_champ_embs = opp_champ_embs_dst[:, :3]
+    #     self.champ_embs = my_champ_embs_dst[:, :3]
+    #     self.opp_champ_embs = opp_champ_embs_dst[:, :3]
 
-        network_config["my_champ_emb_scales"] = (np.repeat(my_champ_embs_dst[:, -1], network_config[
-            "champ_emb_dim"])/2).astype(np.float32)
-        network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_embs_dst[:, -1], network_config[
-            "champ_emb_dim"])/2).astype(np.float32)
+    #     network_config["my_champ_emb_scales"] = (np.repeat(my_champ_embs_dst[:, -1], network_config[
+    #         "champ_emb_dim"])/2).astype(np.float32)
+    #     network_config["opp_champ_emb_scales"] = (np.repeat(opp_champ_embs_dst[:, -1], network_config[
+    #         "champ_emb_dim"])/2).astype(np.float32)
 
-        champs_per_game = game_config["champs_per_game"]
-        total_num_champs = game_config["total_num_champs"]
-        total_num_items = game_config["total_num_items"]
-        items_per_champ = game_config["items_per_champ"]
-        champs_per_team = game_config["champs_per_team"]
+    #     champs_per_game = game_config["champs_per_game"]
+    #     total_num_champs = game_config["total_num_champs"]
+    #     total_num_items = game_config["total_num_items"]
+    #     items_per_champ = game_config["items_per_champ"]
+    #     champs_per_team = game_config["champs_per_team"]
 
-        learning_rate = network_config["learning_rate"]
-        champ_emb_dim = network_config["champ_emb_dim"]
+    #     learning_rate = network_config["learning_rate"]
+    #     champ_emb_dim = network_config["champ_emb_dim"]
 
-        all_items_emb_dim = network_config["all_items_emb_dim"]
-        champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
+    #     all_items_emb_dim = network_config["all_items_emb_dim"]
+    #     champ_all_items_emb_dim = network_config["champ_all_items_emb_dim"]
 
-        total_champ_dim = champs_per_game
-        total_item_dim = champs_per_game * items_per_champ
+    #     total_champ_dim = champs_per_game
+    #     total_item_dim = champs_per_game * items_per_champ
 
-        pos_start = 0
-        pos_end = pos_start + 1
-        champs_start = pos_end
-        champs_end = champs_start + champs_per_game
-        items_start = champs_end
-        items_end = items_start + items_per_champ * 2 * champs_per_game
-        total_gold_start = items_end
-        total_gold_end = total_gold_start + champs_per_game
-        cs_start = total_gold_end
-        cs_end = cs_start + champs_per_game
-        neutral_cs_start = cs_end
-        neutral_cs_end = neutral_cs_start + champs_per_game
-        xp_start = neutral_cs_end
-        xp_end = xp_start + champs_per_game
-        lvl_start = xp_end
-        lvl_end = lvl_start + champs_per_game
-        kda_start = lvl_end
-        kda_end = kda_start + champs_per_game * 3
-        current_gold_start = kda_end
-        current_gold_end = current_gold_start + champs_per_game
+    #     pos_start = 0
+    #     pos_end = pos_start + 1
+    #     champs_start = pos_end
+    #     champs_end = champs_start + champs_per_game
+    #     items_start = champs_end
+    #     items_end = items_start + items_per_champ * 2 * champs_per_game
+    #     total_gold_start = items_end
+    #     total_gold_end = total_gold_start + champs_per_game
+    #     cs_start = total_gold_end
+    #     cs_end = cs_start + champs_per_game
+    #     neutral_cs_start = cs_end
+    #     neutral_cs_end = neutral_cs_start + champs_per_game
+    #     xp_start = neutral_cs_end
+    #     xp_end = xp_start + champs_per_game
+    #     lvl_start = xp_end
+    #     lvl_end = lvl_start + champs_per_game
+    #     kda_start = lvl_end
+    #     kda_end = kda_start + champs_per_game * 3
+    #     current_gold_start = kda_end
+    #     current_gold_end = current_gold_start + champs_per_game
 
-        # in_vec = input_data(shape=[None, 221], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
+    #     # in_vec = input_data(shape=[None, 221], name='input')
+    #     #  1 elements long
+    #     pos = in_vec[:, 0]
+    #     pos = tf.cast(pos, tf.int32)
 
-        n = tf.shape(in_vec)[0]
-        batch_index = tf.range(n)
-        pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index = tf.transpose([batch_index, pos + champs_per_team], (1, 0))
-
-
-        item_ints = in_vec[:, items_start:items_end]
-
-        champ_ints = tf.cast(in_vec[:, champs_start:champs_end], tf.int32)
-        my_team_champ_ints = champ_ints[:, :5]
-        opp_team_champ_ints = champ_ints[:, 5:]
-
-        my_team_champs_embedded = tf.cast(tf.gather(self.champ_embs, my_team_champ_ints), tf.float32)
-        my_team_emb_noise_dist = tf.distributions.Normal(loc=[0.] * (total_num_champs) * champ_emb_dim,
-                                                         scale=network_config["my_champ_emb_scales"])
-        my_team_emb_noise = my_team_emb_noise_dist.sample([1])
-        my_team_emb_noise = tf.reshape(my_team_emb_noise, (-1, 3))
-        my_team_champs_embedded_noise = tf.cast(tf.gather(my_team_emb_noise,
-                                                  tf.cast(my_team_champ_ints, tf.int32)), tf.float32)
-        my_team_champs_embedded_noised = tf.cond(is_training, lambda: my_team_champs_embedded +
-                                                                 my_team_champs_embedded_noise,
-                                          lambda: my_team_champs_embedded)
+    #     n = tf.shape(in_vec)[0]
+    #     batch_index = tf.range(n)
+    #     pos_index = tf.transpose([batch_index, pos], (1, 0))
+    #     opp_index = tf.transpose([batch_index, pos + champs_per_team], (1, 0))
 
 
+    #     item_ints = in_vec[:, items_start:items_end]
+
+    #     champ_ints = tf.cast(in_vec[:, champs_start:champs_end], tf.int32)
+    #     my_team_champ_ints = champ_ints[:, :5]
+    #     opp_team_champ_ints = champ_ints[:, 5:]
+
+    #     my_team_champs_embedded = tf.cast(tf.gather(self.champ_embs, my_team_champ_ints), tf.float32)
+    #     my_team_emb_noise_dist = tf.distributions.Normal(loc=[0.] * (total_num_champs) * champ_emb_dim,
+    #                                                      scale=network_config["my_champ_emb_scales"])
+    #     my_team_emb_noise = my_team_emb_noise_dist.sample([1])
+    #     my_team_emb_noise = tf.reshape(my_team_emb_noise, (-1, 3))
+    #     my_team_champs_embedded_noise = tf.cast(tf.gather(my_team_emb_noise,
+    #                                               tf.cast(my_team_champ_ints, tf.int32)), tf.float32)
+    #     my_team_champs_embedded_noised = tf.cond(is_training, lambda: my_team_champs_embedded +
+    #                                                              my_team_champs_embedded_noise,
+    #                                       lambda: my_team_champs_embedded)
 
 
-        net = batch_normalization(fully_connected(my_team_champ_ints, 16, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
-        logits = fully_connected(net, total_num_items, activation='linear')
 
 
-        inference_output = tf.nn.softmax(logits)
+    #     net = batch_normalization(fully_connected(my_team_champ_ints, 16, bias=False,
+    #                                               activation='relu',
+    #                                               regularizer="L2"))
+    #     logits = fully_connected(net, total_num_items, activation='linear')
 
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
 
-        output = regression(net, optimizer='adam', to_one_hot=True,
-                          n_classes=total_num_items,
-                          shuffle_batches=True,
-                          learning_rate=learning_rate,
-                          loss='softmax_categorical_crossentropy',
-                          name='target')
+    #     inference_output = tf.nn.softmax(logits)
+
+    #     net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+
+    #     output = regression(net, optimizer='adam', to_one_hot=True,
+    #                       n_classes=total_num_items,
+    #                       shuffle_batches=True,
+    #                       learning_rate=learning_rate,
+    #                       loss='softmax_categorical_crossentropy',
+    #                       name='target')
 
 
 
@@ -928,7 +991,7 @@ class NextItemModel(Model):
 
 
     def fit_input(self, X, scaler_name):
-        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))
+        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         return min_max_scaler
 
@@ -1014,86 +1077,86 @@ class NextItemModel(Model):
         return items, np.max(y, axis=1)
 
 
-class PositionsModel(Model):
+# class PositionsModel(Model):
 
-    def __init__(self):
-        super().__init__()
-        self.network = network.PositionsNetwork()
-        self.model_path = app_constants.model_paths["best"]["positions"]
-        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-        self.champ_manager = ChampManager()
-        self.spell_manager = SimpleManager("spells")
-        self.elements = "positions"
-        self.load_model()
-        self.lock = threading.Lock()
-
-
-    def predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict([x])
-                with tf.Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)[0]
-            champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-            # the champ ids need to be ints, otherwise jq fails
-            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
-            return dict(zip(champ_roles, champ_ids))
+#     def __init__(self):
+#         super().__init__()
+#         self.network = network.PositionsNetwork()
+#         self.model_path = app_constants.model_paths["best"]["positions"]
+#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+#         self.champ_manager = ChampManager()
+#         self.spell_manager = SimpleManager("spells")
+#         self.elements = "positions"
+#         self.load_model()
+#         self.lock = threading.Lock()
 
 
-    def multi_predict_perm(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                with tf.Session() as sess:
-                    x = network.PositionsNetwork.permutate_inputs(x)
+#     def predict(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict([x])
+#                 with tf.Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)[0]
+#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-                    chunk_len = 1000
-                    x = tf.reshape(x, (-1,120,55))
-                    i = 0
-                    final_pred = []
-                    while i < int(x.shape[0]):
-                        print(i/int(x.shape[0]))
-                        next_chunk = x[i:i+chunk_len]
-                        next_chunk = tf.reshape(next_chunk, (-1,55))
-                        chunk_pred = self.model.predict(sess.run(next_chunk))
-                        i += chunk_len
-                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-                        final_pred.extend(sess.run(best_perms).tolist())
-
-        result = []
-        for sorted_team in final_pred:
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-        return result
+#             # the champ ids need to be ints, otherwise jq fails
+#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
+#             return dict(zip(champ_roles, champ_ids))
 
 
+#     def multi_predict_perm(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 with tf.Session() as sess:
+#                     x = network.PositionsNetwork.permutate_inputs(x)
 
-    def multi_predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict(x)
-                with tf.Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)
-        result = []
-        for sorted_team, unsorted_team in zip(final_pred, x):
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+#                     chunk_len = 1000
+#                     x = tf.reshape(x, (-1,120,55))
+#                     i = 0
+#                     final_pred = []
+#                     while i < int(x.shape[0]):
+#                         print(i/int(x.shape[0]))
+#                         next_chunk = x[i:i+chunk_len]
+#                         next_chunk = tf.reshape(next_chunk, (-1,55))
+#                         chunk_pred = self.model.predict(sess.run(next_chunk))
+#                         i += chunk_len
+#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+#                         final_pred.extend(sess.run(best_perms).tolist())
 
-            # the champ ids need to be ints, otherwise jq fails
-            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-            # result.append(dict(zip(champ_roles, champ_ids)))
+#         result = []
+#         for sorted_team in final_pred:
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#         return result
 
-        return result
 
-#
+
+#     def multi_predict(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict(x)
+#                 with Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)
+#         result = []
+#         for sorted_team, unsorted_team in zip(final_pred, x):
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+
+#             # the champ ids need to be ints, otherwise jq fails
+#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+#             # result.append(dict(zip(champ_roles, champ_ids)))
+
+#         return result
+
+# #

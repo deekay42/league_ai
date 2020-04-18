@@ -1,33 +1,112 @@
 #DONT CHANGE THESE IMPORTS. PYINSTALLER NEEDS THESE
-import configparser
-import os
+print("Importing stuff")
 import time
+starttime = time.time()
+print("1")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+import os
+print("2")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+import configparser
+print("3")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import traceback
+print("4")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tkinter import Tk
+print("5")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from tkinter import messagebox
+print("6")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import cv2 as cv
+print("7")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import numpy as np
+print("8")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import cProfile
+print("9")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import io
+print("10")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import pstats
+print("11")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import copy
+print("12")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import glob
+print("13")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import json
+print("14")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from collections import Counter
-
-import cassiopeia as cass
+print("15")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+from utils import cass_configured as cass
+print("16")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from range_key_dict import RangeKeyDict
+print("17")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from watchdog.events import FileSystemEventHandler
+print("18")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from watchdog.observers import Observer
-
+print("19")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from constants import ui_constants, game_constants, app_constants
+print("20")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
     KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel
+print("21")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager
+print("22")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from utils.build_path import build_path_for_gold, InsufficientGold, NoPathFound
+print("23")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from utils.utils import itemslots_left
+print("24")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 from utils import utils
+print("25")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
 import configparser
+print("26")
+print(f"Took {time.time() - starttime}")
+starttime = time.time()
+print("done importing stuff")
 
 class NoMoreItemSlots(Exception):
     pass
@@ -36,60 +115,60 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        # self.onTimeout = False
-        # self.loldir = utils.get_lol_dir()
-        # self.config = configparser.ConfigParser()
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        # try:
-        # # res = 1440,810
-        #     res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     res = 1366, 768
-        #     print("Couldn't find Width or Height sections")
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        #
-        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        #
-        # if too_many_screenshots:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Warning",
-        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        #
-        #
-        #
+        self.onTimeout = False
+        self.loldir = utils.get_lol_dir()
+        self.config = configparser.ConfigParser()
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        try:
+        # res = 1440,810
+            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        except KeyError as e:
+            print(repr(e))
+            res = 1366, 768
+            print("Couldn't find Width or Height sections")
+        
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        
+        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        
+        if too_many_screenshots:
+            Tk().withdraw()
+            messagebox.showinfo("Warning",
+                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        
+        
+        
 
-        self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
         
@@ -97,48 +176,48 @@ class Main(FileSystemEventHandler):
         self.next_item_model_standard = NextItemModel("standard")
         self.next_item_model_standard.load_model()
         print("Done. \nLoading late game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_late = NextItemModel("late")
         self.next_item_model_late.load_model()
         print("Done. \nLoading starter game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_starter = NextItemModel("starter")
         self.next_item_model_starter.load_model()
         print("Done. \nLoading first item game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_first_item = NextItemModel("first_item")
         self.next_item_model_first_item.load_model()
         print("Done. \nLoading boots game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_boots = NextItemModel("boots")
         self.next_item_model_boots.load_model()
         print("Done. \nLoading champ img game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter)
         self.champ_img_model.load_model()
         print("Done. \nLoading item img game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter)
         self.item_img_model.load_model()
         print("Done. \nLoading self img game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter)
         self.self_img_model.load_model()
         print("Done. \nLoading KDA img game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.kda_img_model = KDAImgModel(self.res_converter)
         self.kda_img_model.load_model()
         print("Done. \nLoading tess img game model")
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -767,8 +846,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
 
 
     @staticmethod
@@ -794,10 +873,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-m = Main()
+# m = Main()
 # m.run()
 
-m.process_image(f"test_data/screenshots/Screen704.png")
+# m.process_image(f"test_data/screenshots/Screen704.png")
 # for i in range(700,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
@@ -867,7 +946,7 @@ m.process_image(f"test_data/screenshots/Screen704.png")
 # feed_dict = feed_dict_builder(X, Y, self.inputs, self.targets)
 # ops = [o.metric for o in self.train_ops]
 # return self.predictor.evaluate(feed_dict, ops, batch_size)
-print("hi")
+# print("hi")
 
 # with tf.Graph().as_default():
 #     with tf.Session() as sess:

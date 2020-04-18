@@ -1,4 +1,4 @@
-from cassiopeia import *
+from cassiopeia import get_default_config, set_default_region, apply_settings, Item
 
 config = get_default_config()
 # config['pipeline']['ChampionGG'] = {
