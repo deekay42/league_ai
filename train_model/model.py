@@ -1064,9 +1064,10 @@ class NextItemModel(Model):
         #       0,23,37,0,0,0,0,15,41,0,0,0,0,3,3,3,37,0,0,23,0,0,0,0,0,150,0,0,0,0,0]]
         # self.output_logs(x)
 
-
+        # np.savetxt('lolfile.out', np.ravel(x[14]), delimiter=',', fmt='%1.4f')
         with self.graph.as_default():
             y = self.model.predict(x)
+            print(y[14])
             if blackout_indices:
                 y[:, blackout_indices] = 0
             item_ints = np.argmax(y, axis=len(y.shape) - 1)
