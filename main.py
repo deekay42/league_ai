@@ -52,13 +52,13 @@ class Main(FileSystemEventHandler):
             print(repr(e))
             res = 1366, 768
             print("Couldn't find Width or Height sections")
-        
+
         try:
             show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         except KeyError as e:
             print(repr(e))
             show_names_in_sb = False
-        
+
         try:
             flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         except KeyError as e:
@@ -70,23 +70,23 @@ class Main(FileSystemEventHandler):
         except KeyError as e:
             print(repr(e))
             hud_scale = 0.5
-        
-        
+
+
         if flipped_sb:
             Tk().withdraw()
             messagebox.showinfo("Error",
                                 "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
             raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        
+
         too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        
+
         if too_many_screenshots:
             Tk().withdraw()
             messagebox.showinfo("Warning",
                                 f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        
-        
-        
+
+
+
 
         # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
@@ -464,6 +464,7 @@ class Main(FileSystemEventHandler):
 
     def pad_result(self, result, next_items=None, abs_items=None):
         if not result and self.network_type not in ["starter", "first_item"]:
+            self.network_type = "late"
             next_item = self.predict_next_item(model=self.next_item_model_late)[0]
             try:
                 next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
@@ -796,10 +797,10 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen04.png")
+m.process_image(f"test_data/screenshots/Screen672.png")
 # for i in range(700,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
