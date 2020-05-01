@@ -8,7 +8,19 @@ import sys
 import cv2 as cv
 from collections import Counter
 from utils.artifact_manager import ItemManager
-from constants import game_constants
+from constants import game_constants, ui_constants
+import ctypes
+
+def str2cstr(string):
+    bytestring = bytes(string, 'utf-8')
+    return ctypes.c_char_p(bytestring)
+
+
+def strlist2cstrlist(strlist):
+    bytelist = [bytes(s, 'utf-8') for s in strlist]
+    result = (ctypes.c_char_p * (len(bytelist)+1))()
+    result[:-1] = bytelist
+    return result
 
 
 def num_itemslots(items):

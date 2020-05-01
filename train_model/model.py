@@ -1,117 +1,65 @@
 import time
 starttime = time.time()
 import glob
-print("1.1")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import threading
-print("1.2")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from abc import ABC, abstractmethod
-print("1.3")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import cv2 as cv
-print("1.4")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import numpy as np
-print("1.5")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tensorflow import  Graph, global_variables_initializer, ConfigProto, Session
-print("1.6")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-import tflearn
-print("1.7")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tflearn.layers.merge_ops import merge
-print("1.8")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tflearn.layers.core import fully_connected, input_data, dropout
-print("1.9")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tflearn.layers.normalization import batch_normalization
-print("1.10")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-
 from constants import game_constants, app_constants, ui_constants
-print("1.11")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from train_model import network
-print("1.12")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-# import pytesseract
-print("1.13")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
+from utils import utils
 import json
-print("1.14")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import itertools
-print("1.15")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tflearn.layers.embedding_ops import embedding
-print("1.16")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from collections import Counter
-print("1.17")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import os
-print("1.18")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import platform
-print("1.19")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from sklearn import preprocessing
-print("1.20")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-from tflearn.layers.estimator import regression, regression_custom
-print("1.22")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from tesserocr import PyTessBaseAPI
+import pathlib
+import ctypes
+from numpy.ctypeslib import ndpointer
+import importlib
+import logging
+import sys
+logger = logging.getLogger("main")
 
 # if platform.system() == "Windows":
 #     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
+tflearn = None
+tf = None
+network = None
 
 class Model(ABC):
 
-    def __init__(self):
-        self.network = None
-        self.graph = Graph()
-        with self.graph.as_default():
-            self.session = Session(config=ConfigProto(allow_soft_placement=True))
-        self.model = None
-        self.model_path = None
+    def __init__(self, dll_hook=None):
+        self.output_node_name = None
         self.artifact_manager = None
-
-        self.champ_embs = None
-        self.opp_champ_embs = None
+        self.dll_hook = dll_hook
+        if not dll_hook:
+            global tf, tflearn, network
+            tf = importlib.import_module("tensorflow")
+            tflearn = importlib.import_module("tflearn")
+            network = importlib.import_module("train_model.network")
+            self.network = None
+            self.graph = tf.Graph()
+            with self.graph.as_default():
+                self.session = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+            self.model = None
+            self.model_path = None
+            self.champ_embs = None
+            self.opp_champ_embs = None
 
 
     def load_model(self):
+
+        if self.dll_hook:
+            return
         with self.graph.as_default():
             tflearn.is_training(False, session=self.session)
+            
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
-            self.session.run(global_variables_initializer())
+            self.session.run(tf.global_variables_initializer())
             try:
                 self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
                 self.model_path = self.model_path.rpartition('.')[0]
@@ -121,11 +69,70 @@ class Model(ABC):
                     model.set_weights(embeddingWeights, self.champ_embs)
                     embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
                     model.set_weights(embeddingWeights, self.opp_champ_embs)
-                print(f"{self.model_path} model loaded")
             except Exception as e:
                 print("Unable to open best model files")
                 raise e
             self.model = model
+
+
+    def export(self):
+        from tensorflow.python.framework import graph_util
+        with self.graph.as_default():
+            tflearn.is_training(False, session=self.session)
+        gd = self.session.graph.as_graph_def()
+        for node in gd.node:
+             if node.op == 'RefSwitch':
+                   node.op = 'Switch'
+                   for index in range(len(node.input)):
+                           if 'moving_' in node.input[index]:
+                                 node.input[index] = node.input[index] + '/read'
+             elif node.op == 'AssignSub':
+                   node.op = 'Sub'
+                   if 'use_locking' in node.attr: del node.attr['use_locking']
+             elif node.op == 'AssignAdd':
+                   node.op = 'Add'
+                   if 'use_locking' in node.attr: del node.attr['use_locking']
+             elif node.op == 'Assign':
+                   node.op = 'Identity'
+                   if 'use_locking' in node.attr: del node.attr['use_locking']
+                   if 'validate_shape' in node.attr: del node.attr['validate_shape']
+                   if len(node.input) == 2:
+                           # input0: ref: Should be from a Variable node. May be uninitialized.
+                           # input1: value: The value to be assigned to the variable.
+                           node.input[0] = node.input[1]
+                           del node.input[1]
+
+
+        converted_graph_def = graph_util.convert_variables_to_constants(self.session, gd, [self.output_node_name])
+        tf.train.write_graph(converted_graph_def, app_constants.model_paths["best"][self.elements], "model.pb", as_text=False)
+
+
+        # gd = self.session.graph.as_graph_def()
+        # for node in gd.node:
+        #     if node.op == 'RefSwitch':
+        #         node.op = 'Switch'
+        #         for index in range(len(node.input)):
+        #             if 'moving_' in node.input[index]:
+        #                 node.input[index] = node.input[index] + '/read'
+        #     elif node.op == 'AssignSub':
+        #         node.op = 'Sub'
+        #         if 'use_locking' in node.attr: 
+        #             del node.attr['use_locking']
+        #     elif node.op == 'AssignAdd':
+        #         node.op = 'Add'
+        #         if 'use_locking' in node.attr: 
+        #             del node.attr['use_locking']
+        #     elif node.op == 'Assign':
+        #         node.op = 'Identity'
+        #         if 'use_locking' in node.attr: 
+        #             del node.attr['use_locking']
+        #         if 'validate_shape' in node.attr: 
+        #             del node.attr['validate_shape']
+        #         if len(node.input) == 2:
+        #             node.input[0] = node.input[1]
+        #             del node.input[1]
+        # converted_graph_def = graph_util.convert_variables_to_constants(self.session, gd, [self.output_node_name])
+        # tf.train.write_graph(converted_graph_def, app_constants.model_paths["best"][self.elements], "model.pb", as_text=False)
 
 
     # def output_logs(self, in_vec):
@@ -249,11 +256,17 @@ class Model(ABC):
 
 
 
+
+
     def predict2int(self, x):
-        with self.graph.as_default():
-            y = self.model.predict(x)
-            y_int = np.argmax(y, axis=len(y.shape) - 1)
-            return y_int
+        if self.dll_hook:
+            flat_x = np.ravel(x)
+            y = self.dll_hook.predict(flat_x, self.elements, (x.shape[0], self.artifact_manager.get_num("img_int")))
+        else:     
+            with self.graph.as_default():
+                y = self.model.predict(x)
+        y_int = np.argmax(y, axis=len(y.shape) - 1)
+        return y_int
 
 
     @abstractmethod
@@ -261,12 +274,43 @@ class Model(ABC):
         pass
 
 
+class CPredict:
+    def __init__(self):
+        models = [NextItemModel("standard", dll_hook=self),
+            NextItemModel("late", dll_hook=self),
+            NextItemModel("starter", dll_hook=self),
+            NextItemModel("first_item", dll_hook=self), 
+            NextItemModel("boots", dll_hook=self), 
+            ChampImgModel(dll_hook=self),
+            ItemImgModel(dll_hook=self), 
+            SelfImgModel(dll_hook=self), 
+            KDAImgModel(ui_constants.ResConverter(1024,768), dll_hook=self)]
+        model_ids = [model.elements for model in models]
+        model_paths = [app_constants.model_paths["best"][model]+"model.pb" for model in model_ids]
+        model_output_nodes = [model.output_node_name for model in models]
+        libname = pathlib.Path().absolute() / "cpredict"
+
+        self.cpredict = ctypes.CDLL(str(libname))
+        self.cpredict.initialize(utils.strlist2cstrlist(model_paths), utils.strlist2cstrlist(model_ids), utils.strlist2cstrlist(model_output_nodes), len(models))
+
+
+    def predict(self, x, model_id, dims):
+        result_len = 1
+        for i in dims:
+            result_len *= i
+        self.cpredict.predict.restype = ndpointer(dtype=ctypes.c_float, shape=(result_len,))
+        result = self.cpredict.predict((ctypes.c_float * len(x))(*x), len(x), utils.str2cstr(model_id))
+        return np.reshape(result, dims)
+        
+
 class ImgModel(Model):
 
-    def __init__(self, res_converter):
-        super().__init__()
-        self.network_crop = res_converter.network_crop[self.elements]
-        self.res_converter = res_converter
+    def __init__(self, res_converter=None, dll_hook=None):
+        super().__init__(dll_hook)
+        self.output_node_name = "FullyConnected_1/Softmax"
+        if res_converter:
+            self.network_crop = res_converter.network_crop[self.elements]
+            self.res_converter = res_converter
 
 
     def predict(self, img):
@@ -296,7 +340,7 @@ class ImgModel(Model):
         # for i, img in enumerate(sub_imgs):
         #     cv.imshow(str(i), img)
         # cv.waitKey(0)
-        return sub_imgs
+        return np.array(sub_imgs)
 
 
 class MultiTesseractModel:
@@ -450,244 +494,11 @@ class TesseractModel:
             return -1
 
 
-
-# class SlideImgModel(ImgModel):
-#
-#     def __init__(self, res_converter):
-#         super().__init__(res_converter)
-#
-#         self.manager = SimpleManager(self.elements)
-#         self.network = network.DigitRecognitionNetwork(lambda: self.manager.get_num("img_int"), self.network_crop)
-#         self.model_path = app_constants.model_paths["best"][self.elements]
-#
-#
-#     def predict(self, x):
-#         img = x
-#         predicted_artifact_ints = [it["img_int"] for it in self.predict(img)]
-#         return self.list2decimal(predicted_artifact_ints[::-1])
-#
-#
-#     def list2decimal(self, list_):
-#         result = 0
-#         for power_ten, artifact in enumerate(list_):
-#             result += artifact * 10 ** power_ten
-#         return result
-#     #
-#     # def break_up_into_sub_imgs(self, slide_img):
-#     #
-#     #     x_pad = y_pad = 20
-#     #     img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
-#     #
-#     #     gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-#     #
-#     #     # cv.imshow("gray", gray)
-#     #
-#     #     cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU, gray)
-#     #
-#     #     # cv.imshow("gray2", gray)
-#     #     contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-#     #     x_l, y_l, w_l, h_l = cv.boundingRect(contours[-1])
-#     #     x_r, y_r, w_r, h_r = cv.boundingRect(contours[0])
-#     #     y_top = min(y_l, y_r)
-#     #     height = max(h_l, h_r)
-#     #
-#     #     width = x_r - x_l + w_r
-#     #
-#     #     blob_contour = gray[y_top:y_top+height, x_l:x_r + w_r]
-#     #
-#     #     cv.imshow("blob", blob_contour)
-#     #
-#     #     num_digits = 1
-#     #     single_digit_width = width
-#     #     if width >= self.res_converter.lookup(self.elements, "triple_digit_x_width"):
-#     #         single_digit_width /= 3
-#     #         num_digits = 3
-#     #     elif width >= self.res_converter.lookup(self.elements, "double_digit_x_width"):
-#     #         single_digit_width /= 2
-#     #         num_digits = 2
-#     #
-#     #     x = x_l
-#     #     for i in range(num_digits):
-#     #         # get the bounding rect
-#     #         w = single_digit_width
-#     #         h = height
-#     #         y = y_top
-#     #
-#     #         # cv.rectangle(img_bordered, (x, y), (x + w, y + h), (0, 0, 255), 1)
-#     #
-#     #         center_x = x + w / 2
-#     #         center_y = y + h / 2
-#     #         crop_start_x = int(round(center_x - self.res_converter.lookup(self.elements, "x_crop") / 2))
-#     #         crop_start_y = int(round(center_y - self.res_converter.lookup(self.elements, "y_crop") / 2))
-#     #         if crop_start_x < 0 or crop_start_y < 0:
-#     #             print("less than 0")
-#     #
-#     #         y_height = self.res_converter.lookup(self.elements, "y_crop")
-#     #         x_width = self.res_converter.lookup(self.elements, "x_crop")
-#     #         sub_image = img_bordered[crop_start_y:int(round(crop_start_y + y_height)),
-#     #                     crop_start_x:int(round(crop_start_x + x_width))]
-#     #
-#     #         cv.rectangle(img_bordered, (crop_start_x, crop_start_y), (int(round(crop_start_x + x_width)),
-#     #                                                                   int(round(crop_start_y +
-#     #                                                                   y_height))), (0, 255,0), 1)
-#     #         yield sub_image
-#     #         x += single_digit_width
-#     #     cv.imshow("fds", img_bordered)
-#     #     cv.waitKey(0)
-#
-#
-#     def break_up_into_sub_imgs(self, slide_img):
-#
-#         x_pad = y_pad = 20
-#         img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
-#         scale_factor = 5
-#         img_bordered = cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
-#
-#         gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-#
-#         cv.imshow("gray", gray)
-#         cutoff_ratio = 2/5
-#         ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-#         sorted_thresholds = sorted(gray[thresholded > 0])
-#         thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
-#         gray[gray < thresh] = 0
-#
-#         # ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-#         # thresh = np.mean(gray[thresholded > 0])
-#         # gray[gray < thresh] = 0
-#
-#         # cv.imshow("gray2", gray)
-#         contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-#         sorted_bboxes = sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0])
-#
-#         x_l, y_l, w_l, h_l = sorted_bboxes[0]
-#         x_r, y_r, w_r, h_r = sorted_bboxes[-1]
-#         y_top = min(y_l, y_r)
-#         height = max(h_l, h_r)
-#
-#         width = x_r - x_l + w_r
-#
-#         blob_contour = gray[y_top:y_top + height, x_l:x_r + w_r]
-#         blob_contour = cv.copyMakeBorder(blob_contour, 10, 10, 3, 3, cv.BORDER_CONSTANT, value=(0, 0, 0))
-#
-#         blob_contour = cv.bitwise_not(blob_contour)
-#         blob_contour = np.concatenate([blob_contour for i in range(5)], axis=1)
-#
-#         cv.imshow("blob", blob_contour)
-#
-#         config = ("-l eng --oem 1 --psm 7 -c tessedit_char_whitelist=0123456789")
-#         text = pytesseract.image_to_string(blob_contour, config=config)
-#         print(text)
-#
-#         cv.waitKey(0)
-#
-#     #
-#     # def break_up_into_sub_imgs(self, slide_img):
-#     #
-#     #     x_pad = y_pad = 20
-#     #     img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
-#     #     scale_factor = 5
-#     #     img_bordered = cv.resize(img_bordered, None,fx=scale_factor,fy=scale_factor, interpolation=cv.INTER_CUBIC)
-#     #
-#     #     gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-#     #
-#     #     # cv.imshow("gray", gray)
-#     #     # cutoff_ratio = 2/5
-#     #     # ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-#     #     # sorted_thresholds = sorted(gray[thresholded > 0])
-#     #     # thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
-#     #     # gray[gray < thresh] = 0
-#     #
-#     #
-#     #     ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-#     #     thresh = np.mean(gray[thresholded>0])
-#     #     gray[gray < thresh] = 0
-#     #
-#     #
-#     #
-#     #     # cv.imshow("gray2", gray)
-#     #     contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-#     #     sorted_bboxes = sorted([cv.boundingRect(contour) for contour in contours], key=lambda a:a[0])
-#     #
-#     #     x_l, y_l, w_l, h_l = sorted_bboxes[0]
-#     #     x_r, y_r, w_r, h_r = sorted_bboxes[-1]
-#     #     y_top = min(y_l, y_r)
-#     #     height = max(h_l, h_r)
-#     #
-#     #     width = x_r - x_l + w_r
-#     #     blob_contour = gray[y_top:y_top+height, x_l:x_r + w_r]
-#     #
-#     #     cv.imshow("blob", blob_contour)
-#     #
-#     #     if width > height:
-#     #         line_threshold = .20
-#     #     else:
-#     #         line_threshold = 0
-#     #
-#     #     vert_sum = np.sum(blob_contour, axis=0)
-#     #     vert_sum_indexed = np.transpose([vert_sum, range(len(vert_sum))], (1,0))
-#     #     vert_sum_sorted = np.array(sorted(vert_sum_indexed, key=lambda a: a[0]), dtype=np.int32)
-#     #     blob_contour[:,vert_sum_sorted[:int(round(len(vert_sum)*line_threshold)), 1]] = 0
-#     #
-#     #     cv.imshow("blob_vertical_lines", blob_contour)
-#     #
-#     #
-#     #     contours, hier = cv.findContours(blob_contour, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-#     #
-#     #     for c in contours[::-1]:
-#     #         # get the bounding rect
-#     #         x, y, w, h = cv.boundingRect(c)
-#     #         x += x_l
-#     #         y += y_top
-#     #
-#     #         # cv.rectangle(img_bordered, (x, y), (x + w, y + h), (0, 0, 255), 1)
-#     #
-#     #         center_x = x + w / 2
-#     #         center_y = y + h / 2
-#     #         crop_start_x = round(center_x - scale_factor * self.res_converter.lookup(self.elements, "x_crop") / 2)
-#     #         crop_start_y = round(center_y - scale_factor * self.res_converter.lookup(self.elements, "y_crop") / 2)
-#     #         if crop_start_x < 0 or crop_start_y < 0:
-#     #             print("less than 0")
-#     #
-#     #         y_height = scale_factor * self.res_converter.lookup(self.elements, "y_crop")
-#     #         x_width = scale_factor * self.res_converter.lookup(self.elements, "x_crop")
-#     #         sub_image = img_bordered[crop_start_y:int(round(crop_start_y + y_height)),
-#     #                     crop_start_x:int(round(crop_start_x + x_width))]
-#     #
-#     #         cv.rectangle(img_bordered, (crop_start_x, crop_start_y), (int(round(crop_start_x + x_width)), int(round(crop_start_y +
-#     #                                                                   y_height))), (0, 255,0), 1)
-#     #         yield sub_image
-#     #     cv.imshow("fds", img_bordered)
-#     #     cv.waitKey(0)
-#
-#
-#     def extract_imgs(self, whole_img):
-#         coords = list(self.generate_coords())
-#         coords = np.reshape(coords, (-1, 2))
-#         slide_imgs = [
-#             whole_img[coord[1]:int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
-#             coord[0]:int(round(coord[0] + self.res_converter.lookup(self.elements, "x_width")))]
-#             for coord in coords]
-#
-#         sub_imgs = []
-#         for img in slide_imgs:
-#             # sub_imgs.extend(list(self.break_up_into_sub_imgs(img)))
-#             self.break_up_into_sub_imgs(img)
-#
-#         sub_imgs = [cv.resize(img, (self.res_converter.network_crop[self.elements][1],
-#                               self.res_converter.network_crop[self.elements][0]), cv.INTER_AREA) for img in
-#                     sub_imgs]
-#         return sub_imgs
-
-
-
 class CSImgModel(TesseractModel):
 
     def __init__(self, res_converter):
         self.elements = "cs"
         super().__init__(res_converter)
-
-
 
 
 class LvlImgModel(TesseractModel):
@@ -706,11 +517,12 @@ class LvlImgModel(TesseractModel):
 
 class KDAImgModel(ImgModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None, dll_hook=None):
         self.elements = "kda"
-
-        super().__init__(res_converter)
+        super().__init__(res_converter, dll_hook)
         self.artifact_manager = SimpleManager(self.elements)
+        if dll_hook:
+            return
         self.network = network.DigitRecognitionNetwork(lambda: self.artifact_manager.get_num("img_int"),
                                                        self.network_crop)
         self.model_path = app_constants.model_paths["best"][self.elements]
@@ -826,22 +638,26 @@ class CurrentGoldImgModel(TesseractModel):
 
 class ChampImgModel(ImgModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None, dll_hook=None):
         self.elements = "champs"
-        super().__init__(res_converter)
-        self.network = network.ChampImgNetwork()
+        super().__init__(res_converter, dll_hook)
+        
         self.artifact_manager = ChampManager()
+        if dll_hook:
+            return
+        self.network = network.ChampImgNetwork()
 
 
 
 class ItemImgModel(ImgModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None, dll_hook=None):
         self.elements = "items"
-        super().__init__(res_converter)
-        self.network = network.ItemImgNetwork()
+        super().__init__(res_converter, dll_hook)
         self.artifact_manager = ItemManager()
-
+        if dll_hook:
+            return
+        self.network = network.ItemImgNetwork()
 
 
     def get_coords(self):
@@ -850,55 +666,50 @@ class ItemImgModel(ImgModel):
 
 class SelfImgModel(ImgModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None, dll_hook=None):
         self.elements = "self"
-        super().__init__(res_converter)
-        self.network = network.SelfImgNetwork()
+        super().__init__(res_converter, dll_hook)
+        self.output_node_name = "FullyConnected/Sigmoid"
         self.artifact_manager = SimpleManager(self.elements)
+        if dll_hook:
+            return
+        self.network = network.SelfImgNetwork()
 
 
     def predict(self, img):
         x = self.extract_imgs(img)
-        with self.graph.as_default():
-            y = self.model.predict(x)
-            role_index = np.argmax(y)
+        if self.dll_hook:
+            flat_x = np.ravel(x)
+            y = self.dll_hook.predict(flat_x, self.elements, (x.shape[0],))
+        else:
+            with self.graph.as_default():
+                y = self.model.predict(x)
+        role_index = np.argmax(y)
         return role_index
 
 
 class NextItemModel(Model):
 
-    def __init__(self, early_or_late):
-        super().__init__()
+    def __init__(self, early_or_late, dll_hook=None):
+        super().__init__(dll_hook)
+
+
         self.early_or_late = early_or_late
         if early_or_late == "standard":
-            self.network = network.StandardNextItemNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_standard"]
             self.elements = "next_items_standard"
         elif early_or_late == "late":
-            self.network = network.NextItemLateGameNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_late"]
             self.elements = "next_items_late"
         elif early_or_late == "starter":
-            self.network = network.NextItemStarterNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_starter"]
             self.elements = "next_items_starter"
         elif early_or_late == "first_item":
-            self.network = network.NextItemFirstItemNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_first_item"]
             self.elements = "next_items_first_item"
         elif early_or_late == "boots":
-            self.network = network.NextItemBootsNetwork()
             self.model_path = app_constants.model_paths["best"]["next_items_boots"]
             self.elements = "next_items_boots"
-
-        my_champ_embs_normed = np.load(app_constants.asset_paths["my_champs_embeddings"])
-        opp_champ_embs_normed = np.load(app_constants.asset_paths["opp_champs_embeddings"])
-        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
-        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
-
-        self.champ_embs = my_champ_embs_normed
-        self.opp_champ_embs = opp_champ_embs_normed
-
 
         self.artifact_manager = ItemManager()
 
@@ -939,6 +750,36 @@ class NextItemModel(Model):
         self.kda_end = self.kda_start + champs_per_game * 3
         self.current_gold_start = self.kda_end
         self.current_gold_end = self.current_gold_start + champs_per_game
+        
+        self.input_len = self.current_gold_end
+        
+        self.output_node_name = "Softmax"
+        
+        if dll_hook:
+            return
+
+        if early_or_late == "standard":
+            self.network = network.StandardNextItemNetwork()
+        elif early_or_late == "late":
+            self.network = network.NextItemLateGameNetwork()
+        elif early_or_late == "starter":
+            self.network = network.NextItemStarterNetwork()
+        elif early_or_late == "first_item":
+            self.network = network.NextItemFirstItemNetwork()
+        elif early_or_late == "boots":
+            self.network = network.NextItemBootsNetwork()
+        
+
+        my_champ_embs_normed = np.load(app_constants.asset_paths["my_champs_embeddings"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["opp_champs_embeddings"])
+        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
+
+        self.champ_embs = my_champ_embs_normed
+        self.opp_champ_embs = opp_champ_embs_normed
+
+
+        
 
 
     def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold, blackout_indices):
@@ -958,7 +799,8 @@ class NextItemModel(Model):
         current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(start,
                                                                                              start+num_increments*granularity,
                                                                                              granularity))
-        print(current_gold_list[:,role])
+ 
+        logger.info(current_gold_list[:,role])
         x = np.tile(x,num_increments).reshape((num_increments,-1))
         x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
         x = self.scale_inputs(np.array(x).astype(np.float32))
@@ -1065,16 +907,20 @@ class NextItemModel(Model):
         # self.output_logs(x)
 
         # np.savetxt('lolfile.out', np.ravel(x[14]), delimiter=',', fmt='%1.4f')
-        with self.graph.as_default():
-            y = self.model.predict(x)
-            print(y[14])
-            if blackout_indices:
-                y[:, blackout_indices] = 0
-            item_ints = np.argmax(y, axis=len(y.shape) - 1)
-        print(f"Confidence: {np.max(y, axis=1)}")
+        if self.dll_hook:
+            flat_x = np.ravel(x).astype(np.float)
+            y = self.dll_hook.predict(flat_x, self.elements, (x.shape[0], self.artifact_manager.get_num("int")))
+        else:
+            with self.graph.as_default():
+                y = self.model.predict(x)
+            # print(y[14])
+        if blackout_indices:
+            y[:, blackout_indices] = 0
+        item_ints = np.argmax(y, axis=len(y.shape) - 1)
+        logger.info(f"Confidence: {np.max(y, axis=1)}")
         items = [self.artifact_manager.lookup_by("int", item_int) for item_int in item_ints]
-        print([item["name"] for item in items])
-        print("\n\n")
+        logger.info([item["name"] for item in items])
+        logger.info("\n\n")
         return items, np.max(y, axis=1)
 
 
@@ -1161,3 +1007,17 @@ class NextItemModel(Model):
 #         return result
 
 # #
+
+def export_models():
+    models = [NextItemModel("standard"),
+        NextItemModel("late"),
+        NextItemModel("starter"),
+        NextItemModel("first_item"), 
+        NextItemModel("boots"), 
+        ChampImgModel(),
+        ItemImgModel(), 
+        SelfImgModel(), 
+        KDAImgModel(ui_constants.ResConverter(1024,768))]
+    for model in models:
+        model.load_model()
+        model.export()

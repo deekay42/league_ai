@@ -25,7 +25,7 @@ set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 set TFL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\tflearn
 set PKG_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pkg_resources
 
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=tensorflow_core --path "C:\Program Files\Python37\Library" --additional-hooks-dir=hooks
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library" --additional-hooks-dir=hooks
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -39,7 +39,7 @@ del /Q /S .\tmp_build\tmp\*.pyc
 ROBOCOPY /NFL /NDL  tmp_build\tmp tmp_build\main *.* /S /MOVE
 MOVE tmp_build\main tmp_build\py_libs
 echo #cython: language_level=3 >cython_main.pyx
-echo import os; os.environ["TCL_LIBRARY"]="py_libs\\tcl"; os.environ["TK_LIBRARY"]="py_libs\\tk"; import sys; sys.path = ["py_libs/base_library.zip", "py_libs"]; sys.argv = ["cython_main.pyx"]; import main; m = main.Main(); m.run()>>cython_main.pyx
+echo import os; os.environ["TCL_LIBRARY"]="py_libs\\tcl"; os.environ["TK_LIBRARY"]="py_libs\\tk"; import sys; sys.path = ["py_libs/base_library.zip", "py_libs"]; sys.argv = ["cython_main.pyx"]; import main; main.debug = False; m = main.Main(); m.run()>>cython_main.pyx
 cython cython_main.pyx --embed
 del /Q cython_main.pyx
 
@@ -63,6 +63,10 @@ COPY %PYTHONDIR%\..\assets\data\kda2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\my_champ_embs_normed.npy %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\opp_champ_embs_normed.npy %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\champ_vs_roles.json %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\tensorflow.dll %OUT_DIR%
+COPY %PYTHONDIR%\cpredict.dll %OUT_DIR%
+
+
 mkdir %OUT_DIR%\assets\tesseract
 COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 
