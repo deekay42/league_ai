@@ -1,116 +1,42 @@
 #DONT CHANGE THESE IMPORTS. PYINSTALLER NEEDS THESE
-print("Importing stuff")
+
 import time
-starttime = time.time()
-print("1")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import os
-print("2")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import configparser
-print("3")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import traceback
-print("4")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from tkinter import Tk
-print("5")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from tkinter import messagebox
-print("6")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import cv2 as cv
-print("7")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import numpy as np
-print("8")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import cProfile
-print("9")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import io
-print("10")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import pstats
-print("11")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import copy
-print("12")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import glob
-print("13")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import json
-print("14")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from collections import Counter
-print("15")
-print(f"Took {time.time() - starttime}")
 starttime = time.time()
 from utils import cass_configured as cass
-print("16")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from range_key_dict import RangeKeyDict
-print("17")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from watchdog.events import FileSystemEventHandler
-print("18")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from watchdog.observers import Observer
-print("19")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from constants import ui_constants, game_constants, app_constants
-print("20")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
-    KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel
-print("21")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
+    KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel, CPredict
 from utils.artifact_manager import ChampManager, ItemManager
-print("22")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from utils.build_path import build_path_for_gold, InsufficientGold, NoPathFound
-print("23")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from utils.utils import itemslots_left
-print("24")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 from utils import utils
-print("25")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
 import configparser
-print("26")
-print(f"Took {time.time() - starttime}")
-starttime = time.time()
-print("done importing stuff")
+import logging
+import sys
+logger = logging.getLogger("main")
+logger.setLevel(logging.INFO)
+# logger.addHandler(logging.StreamHandler(sys.stdout))
+
 
 class NoMoreItemSlots(Exception):
     pass
-
 
 class Main(FileSystemEventHandler):
 
@@ -138,7 +64,7 @@ class Main(FileSystemEventHandler):
         except KeyError as e:
             print(repr(e))
             flipped_sb = False
-        
+
         try:
             hud_scale = float(self.config['HUD']['GlobalScale'])
         except KeyError as e:
@@ -171,51 +97,45 @@ class Main(FileSystemEventHandler):
             return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
+
+
+        dll_hook = CPredict()
+        # dll_hook = None
         
-        print("Loading standard model...")
-        self.next_item_model_standard = NextItemModel("standard")
+        self.next_item_model_standard = NextItemModel("standard", dll_hook)
         self.next_item_model_standard.load_model()
-        print("Done. \nLoading late game model")
         if Main.shouldTerminate():
             return
-        self.next_item_model_late = NextItemModel("late")
+        self.next_item_model_late = NextItemModel("late", dll_hook)
         self.next_item_model_late.load_model()
-        print("Done. \nLoading starter game model")
         if Main.shouldTerminate():
             return
-        self.next_item_model_starter = NextItemModel("starter")
+        self.next_item_model_starter = NextItemModel("starter", dll_hook)
         self.next_item_model_starter.load_model()
-        print("Done. \nLoading first item game model")
         if Main.shouldTerminate():
             return
-        self.next_item_model_first_item = NextItemModel("first_item")
+        self.next_item_model_first_item = NextItemModel("first_item", dll_hook)
         self.next_item_model_first_item.load_model()
-        print("Done. \nLoading boots game model")
         if Main.shouldTerminate():
             return
-        self.next_item_model_boots = NextItemModel("boots")
+        self.next_item_model_boots = NextItemModel("boots", dll_hook)
         self.next_item_model_boots.load_model()
-        print("Done. \nLoading champ img game model")
         if Main.shouldTerminate():
             return
-        self.champ_img_model = ChampImgModel(self.res_converter)
+        self.champ_img_model = ChampImgModel(self.res_converter, dll_hook)
         self.champ_img_model.load_model()
-        print("Done. \nLoading item img game model")
         if Main.shouldTerminate():
             return
-        self.item_img_model = ItemImgModel(self.res_converter)
+        self.item_img_model = ItemImgModel(self.res_converter, dll_hook)
         self.item_img_model.load_model()
-        print("Done. \nLoading self img game model")
         if Main.shouldTerminate():
             return
-        self.self_img_model = SelfImgModel(self.res_converter)
+        self.self_img_model = SelfImgModel(self.res_converter, dll_hook)
         self.self_img_model.load_model()
-        print("Done. \nLoading KDA img game model")
         if Main.shouldTerminate():
             return
-        self.kda_img_model = KDAImgModel(self.res_converter)
+        self.kda_img_model = KDAImgModel(self.res_converter, dll_hook)
         self.kda_img_model.load_model()
-        print("Done. \nLoading tess img game model")
         if Main.shouldTerminate():
             return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
@@ -385,7 +305,7 @@ class Main(FileSystemEventHandler):
 
 
     def swap_teams_all(self):
-        print("Switching teams!")
+        logger.info("Switching teams!")
         self.champs = self.swap_teams(self.champs)
         self.items = self.swap_teams(self.items)
         self.lvl = self.swap_teams(self.lvl)
@@ -397,7 +317,7 @@ class Main(FileSystemEventHandler):
     def predict_with_threshold(self, delta_items=Counter()):
         next_item, next_predicted_items, confidence = self.predict_next_item(delta_items=delta_items)
         if confidence < self.threshold and self.network_type == "standard":
-            print("Super low confidence in that one. Falling back to late game network.")
+            logger.info("Super low confidence in that one. Falling back to late game network.")
             self.network_type = "late"
             self.model = self.next_item_model_late
             return self.predict_next_item(model=self.next_item_model_late, delta_items=delta_items)[:2]
@@ -445,32 +365,31 @@ class Main(FileSystemEventHandler):
         num_true_completes_owned = self.true_completes_owned()
         champ_vs_role_commonality = self.champ_vs_roles[str(self.champs[self.role]["int"])].get(
             game_constants.ROLE_ORDER[self.role], 0)
-        print(f"champ vs roles commonality: {champ_vs_role_commonality}")
+        logger.info(f"champ vs roles commonality: {champ_vs_role_commonality}")
         allowed_items = self.commonality_to_items[champ_vs_role_commonality]
         if self.role == 4:
             allowed_items -= 1
-
         if num_true_completes_owned < allowed_items and not self.force_late_after_standard:
             self.network_type = "standard"
             self.next_item_model = self.next_item_model_standard
-            print("USING STANDARD GAME MODEL")
+            logger.info("USING STANDARD GAME MODEL")
         else:
             if self.items[self.role] == Counter():
                 self.network_type = "starter"
                 self.next_item_model = self.next_item_model_starter
-                print("USING STARTER GAME MODEL")
+                logger.info("USING STARTER GAME MODEL")
             elif np.any(np.isin(list(self.items[self.role].keys()), list(ItemManager().get_full_item_ints()))) or self.force_late_after_standard:
                 self.network_type = "late"
                 self.next_item_model = self.next_item_model_late
-                print("USING LATE GAME MODEL")
+                logger.info("USING LATE GAME MODEL")
             elif self.force_boots_network_after_first_item:
                 self.network_type = "boots"
                 self.next_item_model = self.next_item_model_boots
-                print("USING BOOTS GAME MODEL")
+                logger.info("USING BOOTS GAME MODEL")
             else:
                 self.network_type = "first_item"
                 self.next_item_model = self.next_item_model_first_item
-                print("USING FIRST ITEM GAME MODEL")
+                logger.info("USING FIRST ITEM GAME MODEL")
 
 
     def select_affordable_item(self, items, current_gold, tolerance):
@@ -505,9 +424,9 @@ class Main(FileSystemEventHandler):
                     else:
                         next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
                 except (ValueError, InsufficientGold, NoPathFound) as e:
-                    print(e)
-                    print("EXCEPTION")
-                    print(traceback.print_exc())
+                    logger.info(e)
+                    logger.info("EXCEPTION")
+                    logger.info(traceback.print_exc())
                     if self.current_gold >= self.max_leftover_gold_threshold and self.true_completes_owned() < 3 and \
                             not self.skipped:
                         self.skip_item(next_item)
@@ -549,9 +468,9 @@ class Main(FileSystemEventHandler):
             try:
                 next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
             except (ValueError, InsufficientGold, NoPathFound) as e:
-                print(e)
-                print("EXCEPTION")
-                print(traceback.print_exc())
+                logger.info(e)
+                logger.info("EXCEPTION")
+                logger.info(traceback.print_exc())
                 return [next_item]
             if next_items:
                 return next_items
@@ -641,7 +560,7 @@ class Main(FileSystemEventHandler):
         if self.onTimeout:
             return
         file_path = event.src_path
-        print("Got event for file %s" % file_path)
+        logger.info("Got event for file %s" % file_path)
         # stupid busy waiting until file finishes writing
         oldsize = -1
         while True:
@@ -702,22 +621,22 @@ class Main(FileSystemEventHandler):
 
     def process_image(self, img_path):
 
-        print('you pressed tab + f12 ' + img_path)
+        logger.info('you pressed tab + f12 ' + img_path)
 
         try:
-            print("Now trying to predict image")
+            logger.info("Now trying to predict image")
             screenshot = cv.imread(img_path)
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
-            print("Trying to predict champ imgs")
+            logger.info("Trying to predict champ imgs")
 
             self.champs = list(self.champ_img_model.predict(screenshot))
-            print(f"Champs: {self.champs}\n")
+            logger.info(f"Champs: {self.champs}\n")
 
             try:
                 self.kda = list(self.kda_img_model.predict(screenshot))
             except Exception as e:
                 self.kda = [[0, 0, 0]] * 10
-            print(f"KDA:\n {self.kda}\n")
+            logger.info(f"KDA:\n {self.kda}\n")
             self.kda = np.array(self.kda)
             self.kda[:, 0] = self.repair_failed_predictions(self.kda[:, 0], 0, 25)
             self.kda[:, 1] = self.repair_failed_predictions(self.kda[:, 1], 0, 25)
@@ -726,20 +645,20 @@ class Main(FileSystemEventHandler):
             try:
                 self.lvl = tesseract_result[:10]
             except Exception as e:
-                print(e)
+                logger.info(e)
                 self.lvl = [0] * 10
             self.lvl = self.repair_failed_predictions(self.lvl, 1, 18)
 
             try:
                 self.cs = tesseract_result[10:20]
             except Exception as e:
-                print(e)
+                logger.info(e)
                 self.cs = [0] * 10
             self.cs = self.repair_failed_predictions(self.cs, 0, 400)
             try:
                 self.current_gold = tesseract_result[-1]
             except Exception as e:
-                print(e)
+                logger.info(e)
                 self.current_gold = 500
 
             if self.current_gold > 4000:
@@ -747,18 +666,18 @@ class Main(FileSystemEventHandler):
             elif self.current_gold < 0 or self.current_gold is None:
                 self.current_gold = 500
 
-            print(f"Lvl:\n {self.lvl}\n")
-            print(f"CS:\n {self.cs}\n")
-            print(f"Current Gold:\n {self.current_gold}\n")
-            print("Trying to predict item imgs. \nHere are the raw items: ")
+            logger.info(f"Lvl:\n {self.lvl}\n")
+            logger.info(f"CS:\n {self.cs}\n")
+            logger.info(f"Current Gold:\n {self.current_gold}\n")
+            logger.info("Trying to predict item imgs. \nHere are the raw items: ")
             self.items = list(self.item_img_model.predict(screenshot))
             self.items = [self.item_manager.lookup_by("int", item["int"]) for item in self.items]
-            print("Here are the converted items:")
+            logger.info("Here are the converted items:")
             for i, item in enumerate(self.items):
-                print(f"{divmod(i, 7)}: {item}")
-            print("Trying to predict self imgs")
+                logger.info(f"{divmod(i, 7)}: {item}")
+            logger.info("Trying to predict self imgs")
             self.role = self.self_img_model.predict(screenshot)
-            print(self.role)
+            logger.info(self.role)
 
 
             def prev_champs2champs(prev_champs):
@@ -835,8 +754,8 @@ class Main(FileSystemEventHandler):
         try:
             items_to_buy = self.analyze_champ()
             items_to_buy = self.deflate_items(items_to_buy)
-            print(f"This is the result for summ_index {self.role}: ")
-            print(items_to_buy)
+            logger.info(f"This is the result for summ_index {self.role}: ")
+            logger.info(items_to_buy)
             out_string = ""
             if items_to_buy and items_to_buy[0]:
                 out_string += str(items_to_buy[0]["id"])
@@ -849,6 +768,10 @@ class Main(FileSystemEventHandler):
             out_string = "0"
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
             f.write(out_string)
+        
+        self.skipped = False
+        self.force_late_after_standard = False
+        self.force_boots_network_after_first_item = False
 
 
     @staticmethod
@@ -859,7 +782,7 @@ class Main(FileSystemEventHandler):
     def run(self):
         observer = Observer()
         ss_path = os.path.join(self.loldir, "Screenshots")
-        print(f"Now listening for screenshots at: {ss_path}")
+        logger.info(f"Now listening for screenshots at: {ss_path}")
         observer.schedule(self, path=ss_path)
         observer.start()
         try:
@@ -873,9 +796,8 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-
-m = Main()
-m.run()
+# m = Main()
+# m.run()
 
 # m.process_image(f"test_data/screenshots/Screen04.png")
 # for i in range(700,720):
