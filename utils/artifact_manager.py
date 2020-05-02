@@ -1,6 +1,7 @@
 import json
 import traceback
 from abc import ABC
+from utils import cass_configured as cass
 
 import cv2 as cv
 
@@ -220,6 +221,13 @@ class ItemManager:
             for item in summ_items_counter:
                 item_full = self.lookup_by("int", item)
                 if item in completes and not ("multiples_allowed" in item_full and item_full["multiples_allowed"]):
+                    subcomponents = cass.Item(id=(int(item_full["id"])), region="EUW").builds_from
+                    # print(subcomponents)
+                    for subcomponent in subcomponents:
+                        # print(subcomponent)
+                        sub = self.lookup_by("id", str(subcomponent.id))["int"]
+                        if sub in completes:
+                            yield sub
                     yield item
 
 

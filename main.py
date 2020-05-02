@@ -158,7 +158,7 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Sorcery"]
         thresholds = [0, 0.1, 0.25, .7, 1.1]
         num_full_items = [0, 1, 2, 3]
-        self.threshold = 0.35
+        self.threshold = 0.40
         self.max_leftover_gold_threshold = 270
         self.skipped = False
         self.force_late_after_standard = False
@@ -453,13 +453,16 @@ class Main(FileSystemEventHandler):
     def skip_item(self, next_item):
         if self.network_type == "standard":
             self.force_late_after_standard = True
+            logger.info("skip from standard to late")
         elif self.network_type == "first_item":
             self.force_boots_network_after_first_item = True
             self.skipped = True
+            logger.info("skip first_item  to boots")
         else:
             self.skipped = True
             abs_items = self.build_path(next_item, 4000)[1]
             self.items[self.role] = abs_items[-1].copy()
+            logger.info("skip from late to next late")
 
 
     def pad_result(self, result, next_items=None, abs_items=None):
@@ -797,10 +800,10 @@ class Main(FileSystemEventHandler):
             observer.stop()
         observer.join()
 
-m = Main()
+# m = Main()
 # m.run()
 
-m.process_image(f"test_data/screenshots/Screen672.png")
+# m.process_image(f"test_data/screenshots/Screen687.png")
 # for i in range(700,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
