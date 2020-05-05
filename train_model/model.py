@@ -399,7 +399,7 @@ class TesseractModel:
         sep_img = cv.bitwise_not(sep_img)
         sep_img = cv.resize(sep_img, None, fx=5, fy=5, interpolation=cv.INTER_CUBIC)
 
-        self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
+        # self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
         # self.left_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
         # self.right_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
         self.left_separator = sep_img
