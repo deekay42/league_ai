@@ -31,7 +31,7 @@ import configparser
 import logging
 import sys
 logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.CRITICAL)
 # logger.addHandler(logging.StreamHandler(sys.stdout))
 
 
@@ -378,7 +378,7 @@ class Main(FileSystemEventHandler):
                 self.network_type = "starter"
                 self.next_item_model = self.next_item_model_starter
                 logger.info("USING STARTER GAME MODEL")
-            elif np.any(np.isin(list(self.items[self.role].keys()), list(ItemManager().get_full_item_ints()))) or self.force_late_after_standard:
+            elif np.any(np.isin(list(self.items[self.role].keys()), list(ItemManager().get_full_item_ints()))):
                 self.network_type = "late"
                 self.next_item_model = self.next_item_model_late
                 logger.info("USING LATE GAME MODEL")

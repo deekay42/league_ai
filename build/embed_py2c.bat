@@ -25,7 +25,7 @@ set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 set TFL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\tflearn
 set PKG_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pkg_resources
 
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library" --additional-hooks-dir=hooks
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -49,10 +49,7 @@ SET src_folder=tmp_build
 SET tar_folder=%OUT_DIR%
 ROBOCOPY /NFL /NDL %src_folder% %tar_folder% *.* /S /MOVE
 cd %INIT_DIR%
-SET src_folder=%PYTHONDIR%\models\best
-SET tar_folder=%OUT_DIR%\models\best
-ROBOCOPY /NFL /NDL  %src_folder% %tar_folder% *.* /S
-del /Q /S %OUT_DIR%\models\*accuracies*
+
 
 COPY %INIT_DIR%\windows\google-services.json %OUT_DIR%
 mkdir %OUT_DIR%\assets\data
@@ -65,14 +62,28 @@ COPY %PYTHONDIR%\..\assets\data\opp_champ_embs_normed.npy %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\champ_vs_roles.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\tensorflow.dll %OUT_DIR%
 COPY %PYTHONDIR%\cpredict.dll %OUT_DIR%
+ECHO F | XCOPY %PYTHONDIR%\models\best\imgs\items\model.pb %OUT_DIR%\models\best\imgs\items\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\imgs\champs\model.pb %OUT_DIR%\models\best\imgs\champs\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\imgs\kda\model.pb %OUT_DIR%\models\best\imgs\kda\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\imgs\self\model.pb %OUT_DIR%\models\best\imgs\self\model.pb
+
+ECHO F | XCOPY %PYTHONDIR%\models\best\next_items\boots\model.pb %OUT_DIR%\models\best\next_items\boots\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\next_items\standard\model.pb %OUT_DIR%\models\best\next_items\standard\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\next_items\late\model.pb %OUT_DIR%\models\best\next_items\late\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\next_items\first_item\model.pb %OUT_DIR%\models\best\next_items\first_item\model.pb
+ECHO F | XCOPY %PYTHONDIR%\models\best\next_items\starter\model.pb %OUT_DIR%\models\best\next_items\starter\model.pb
+
+ECHO F | XCOPY %PYTHONDIR%\..\assets\icons\logo_head_only.png %OUT_DIR%\assets\icons\logo_head_only.png
+ECHO F | XCOPY %PYTHONDIR%\..\assets\icons\logo_head_small.png %OUT_DIR%\assets\icons\logo_head_small.png
+ECHO F | XCOPY %PYTHONDIR%\..\assets\icons\logo.png %OUT_DIR%\assets\icons\logo.png
 
 
-mkdir %OUT_DIR%\assets\tesseract
-COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
+REM mkdir %OUT_DIR%\assets\tesseract
+REM COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\tessdata %OUT_DIR%\tessdata *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\fonts %OUT_DIR%\assets\fonts *.* /S
-ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\icons %OUT_DIR%\assets\icons *.* /S
+REM ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\icons %OUT_DIR%\assets\icons *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\item_imgs %OUT_DIR%\assets\item_imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\kda %OUT_DIR%\assets\train_imgs\kda *.* /S
