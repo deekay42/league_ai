@@ -6,6 +6,7 @@ from functools import reduce
 from itertools import compress
 from multiprocessing import Process, Queue
 
+import glob
 import numpy as np
 from jq import jq
 
@@ -18,6 +19,7 @@ import arrow
 from utils import utils
 from train_model.model import NextItemModel
 from train_model.train import NextItemsTrainer
+from train_model.input_vector import Input
 import uuid
 
 
@@ -72,11 +74,12 @@ class ProcessTrainingDataWorker(Process):
 
 class WriteResultWorker(Process):
 
-    def __init__(self, out_queue, chunksize, out_dir):
+    def __init__(self, out_queue, chunksize, out_dir, region):
         super().__init__()
         self.out_queue = out_queue
         self.chunksize = chunksize
         self.out_dir = out_dir
+        self.region = region
 
 
     def split_into_train_test(train_test_split):
@@ -98,7 +101,7 @@ class WriteResultWorker(Process):
 
 
     def write_chunk(self, data, chunk_counter, out_dir):
-        filename = out_dir + f"train_{uuid.uuid4()}.npz"
+        filename = out_dir + f"train_{self.region}_{uuid.uuid4()}.npz"
         with open(filename, "wb") as writer:
             np.savez_compressed(writer, **data)
 
@@ -123,11 +126,12 @@ class WriteResultWorker(Process):
 
 
 class NextItemsWriteResultWorker(WriteResultWorker):
-    def __init__(self, out_queue, chunksize, out_dir_inf, out_dir_uninf, out_dir_comp):
-        super().__init__(out_queue, chunksize, None)
+    def __init__(self, out_queue, chunksize, out_dir_inf, out_dir_uninf, out_dir_comp, region):
+        super().__init__(out_queue, chunksize, None, region)
         self.out_dir_inf = out_dir_inf
         self.out_dir_uninf = out_dir_uninf
         self.out_dir_comp = out_dir_comp
+
 
     def run(self):
         chunk_counter = 0
@@ -194,10 +198,11 @@ class ProcessNextItemsTrainingData:
 
 
     # input is a list of games
-    def run_next_item_transformations(self, training_data):
-        transformations = [self.sort_equal_timestamps, self.remove_undone_items, self.insert_null_items,
+    def run_next_item_transformations(self, training_data, region):
+        transformations = [self.sort_equal_timestamps, lambda x: self.remove_undone_items(x, region),
+                           self.insert_null_items,
                            self.build_abs_timeline,
-                           self.post_process]
+                           lambda x: self.post_process(x, region)]
         result = training_data
         for transformation in transformations:
             result = transformation(result)
@@ -373,7 +378,7 @@ class ProcessNextItemsTrainingData:
             1 / 0
 
 
-    def remove_undone_items(self, matches):
+    def remove_undone_items(self, matches, region):
         progress_counter = 0
 
         for match in matches:
@@ -487,7 +492,7 @@ class ProcessNextItemsTrainingData:
             self.update_roles_by_dataset(gameId2roles, unsorted_data,sorted_data)
             if i == 0:
                 champs_vs_roles_rel = self.calc_champ_role_stats()[0]
-                with open(app_constants.train_paths["champ_vs_roles"], "w") as f:
+                with open(app_constants.asset_paths["champ_vs_roles"], "w") as f:
                     f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
 
 
@@ -562,59 +567,52 @@ class ProcessNextItemsTrainingData:
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
-        pos_start = 0
-        pos_end = pos_start + 1
-        champs_start = pos_end
-        champs_end = champs_start + champs_per_game
-        items_start = champs_end
-        items_end = items_start + items_per_champ * 2 * champs_per_game
-        total_gold_start = items_end
-        total_gold_end = total_gold_start + champs_per_game
-        cs_start = total_gold_end
-        cs_end = cs_start + champs_per_game
-        neutral_cs_start = cs_end
-        neutral_cs_end = neutral_cs_start + champs_per_game
-        xp_start = neutral_cs_end
-        xp_end = xp_start + champs_per_game
-        lvl_start = xp_end
-        lvl_end = lvl_start + champs_per_game
-        kda_start = lvl_end
-        kda_end = kda_start + champs_per_game * 3
-        current_gold_start = kda_end
-        current_gold_end = current_gold_start + champs_per_game
 
         for gameId in unsorted_processed:
             try:
                 current_game = unsorted_processed[gameId]
+                if current_game == []:
+                    continue
                 gameIds = [[int(gameId)]] * current_game.shape[0]
                 #this will throw a keyerror if the game is already sorted
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
-                updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, pos_start:pos_end]]
+                updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, Input.pos_start:Input.pos_end]]
 
 
                 reordered_result = np.concatenate([gameIds, updated_positions,
-                                                   current_game[:, champs_start:champs_end][:, permutation],
-                                                   current_game[:, items_start:items_end].reshape((-1, champs_per_game,
+                                                   current_game[:, Input.champs_start:Input.champs_end][:, permutation],
+                                                   current_game[:, Input.items_start:Input.items_end].reshape((-1, champs_per_game,
                                                                                                    items_per_champ * 2))[
                                                    :,
                                                    permutation].reshape(-1, champs_per_game * items_per_champ * 2),
-                                                   current_game[:, total_gold_start:total_gold_end][:, permutation],
-                                                   current_game[:, cs_start:cs_end][:, permutation],
-                                                   current_game[:, neutral_cs_start:neutral_cs_end][:, permutation],
-                                                   current_game[:, xp_start:xp_end][:, permutation],
-                                                   current_game[:, lvl_start:lvl_end][:, permutation],
-                                                   current_game[:, kda_start:kda_end].reshape((-1, champs_per_game,
+                                                   current_game[:, Input.total_gold_start:Input.total_gold_end][:, permutation],
+                                                   current_game[:, Input.cs_start:Input.cs_end][:, permutation],
+                                                   current_game[:, Input.neutral_cs_start:Input.neutral_cs_end][:, permutation],
+                                                   current_game[:, Input.xp_start:Input.xp_end][:, permutation],
+                                                   current_game[:, Input.lvl_start:Input.lvl_end][:, permutation],
+                                                   current_game[:, Input.kda_start:Input.kda_end].reshape((-1, champs_per_game,
                                                                                                3))[:,
                                                    permutation].reshape((-1,
                                                                          champs_per_game * 3)),
-                                                   current_game[:, current_gold_start:current_gold_end][:, permutation],
+                                                   current_game[:, Input.current_gold_start:Input.current_gold_end][:, permutation],
+                                                   current_game[:, Input.baron_start:Input.baron_end],
+                                                   current_game[:, Input.elder_start:Input.elder_end],
+                                                   current_game[:, Input.dragons_killed_start:Input.dragons_killed_end],
+                                                   current_game[:, Input.dragon_soul_start:Input.dragon_soul_end],
+                                                   current_game[:,
+                                                   Input.dragon_soul_type_start:Input.dragon_soul_type_end],
+                                                   current_game[:, Input.turrets_start:Input.turrets_end],
+                                                   current_game[:,
+                                                   Input.first_team_blue_start:Input.first_team_blue_end],
+
+
                                                    current_game[:, -1:]], axis=1)
-                sorted_champs = reordered_result[:, champs_start+1:champs_end+1][0]
+                sorted_champs = reordered_result[:, Input.champs_start+1:Input.champs_end+1][0]
                 self.stat_champs_vs_roles(sorted_champs)
                 yield reordered_result
             except KeyError as e:
-                sorted_champs = current_game[:, champs_start:champs_end][0]
+                sorted_champs = current_game[:, Input.champs_start:Input.champs_end][0]
                 self.stat_champs_vs_roles(sorted_champs)
                 yield np.concatenate([gameIds, current_game], axis=1)
 
@@ -629,8 +627,7 @@ class ProcessNextItemsTrainingData:
                     self.champs_vs_roles[current_champ] = Counter({game_constants.ROLE_ORDER[position]: 1})
 
 
-    def post_process(self, matches):
-
+    def post_process(self, matches, region):
         for i, game in enumerate(matches):
             out_uninf = []
             out_inf = []
@@ -698,6 +695,13 @@ class ProcessNextItemsTrainingData:
                                                      np.around(event['lvl']).astype(int),
                                                      np.ravel(event['kda']).tolist(),
                                                      np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
+                                                     np.ravel(event["baron_active"]).astype(int),
+                                                     np.ravel(event["elder_active"]).astype(int),
+                                                     np.ravel(event["dragons_killed"]).astype(int),
+                                                     np.ravel(event["dragon_soul_obtained"]).astype(int),
+                                                     np.ravel(event["dragon_soul_type"]).astype(int),
+                                                     np.ravel(event["turrets_destroyed"]).astype(int),
+                                                     np.ravel(event["first_team_blue"]).astype(int),
                                                      [y]
                                                      ]
                     out_uninf.append(np.concatenate(uninf_example, 0))
@@ -719,6 +723,13 @@ class ProcessNextItemsTrainingData:
                                              np.ravel(event['kda']).tolist(),
                                              np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(
                                                  int),
+                                                np.ravel(event["baron_active"]).astype(int),
+                                                np.ravel(event["elder_active"]).astype(int),
+                                                np.ravel(event["dragons_killed"]).astype(int),
+                                                np.ravel(event["dragon_soul_obtained"]).astype(int),
+                                                np.ravel(event["dragon_soul_type"]).astype(int),
+                                                np.ravel(event["turrets_destroyed"]).astype(int),
+                                                np.ravel(event["first_team_blue"]).astype(int),
                                              [next_complete_item["int"]]
                                              ]
                             out_complete.append(np.concatenate(complete_example, 0))
@@ -726,10 +737,10 @@ class ProcessNextItemsTrainingData:
 
 
                     #now do the inflated item path
-                    component_items,_, insert_item_states,_ = build_path.build_path(participant_current_items, new_item)
+                    component_items,_, insert_item_states,_ = build_path.build_path_nogold(participant_current_items, new_item)
                     prev_event = event
                     for i, (component_item, insert_item_state) in enumerate(zip(component_items, insert_item_states)):
-                        if NextItemModel.num_itemslots(Counter(insert_item_state)) > \
+                        if utils.num_itemslots(Counter(insert_item_state)) > \
                                 game_constants.MAX_ITEMS_PER_CHAMP:
                             continue
                         event_copy = prev_event.copy()
@@ -751,6 +762,14 @@ class ProcessNextItemsTrainingData:
                                                            np.ravel(event_copy['kda']).tolist(),
                                                            np.around(event_copy['current_gold_sloped'] + np.array(
                                                                delta_current_gold)).astype(int),
+                                                           np.ravel(event["baron_active"]).astype(int),
+                                                           np.ravel(event["elder_active"]).astype(int),
+                                                           np.ravel(event["dragons_killed"]).astype(int),
+                                                           np.ravel(event["dragon_soul_obtained"]).astype(int),
+                                                           np.ravel(event["dragon_soul_type"]).astype(int),
+                                                           np.ravel(event["turrets_destroyed"]).astype(int),
+                                                           np.ravel(event["first_team_blue"]).astype(int),
+
                                                            [y]
                                                            ], 0))
                         except ValueError as e:
@@ -802,63 +821,69 @@ class ProcessNextItemsTrainingData:
             yield {"gameId": inf_game['gameId'], "participants": inf_game['participants'], "itemsTimeline": result}
 
 
-    def start(self, number_of_top_games, number_of_lower_games, region, start_date):
+    def start(self, number_of_top_games, number_of_lower_games, regions, start_date):
+        out_paths_positions = [app_constants.train_paths["positions_processed"],
+                               app_constants.train_paths["positions_to_be_pred"]]
+        # out_paths_elite = [app_constants.train_paths["next_items_processed_elite_unsorted_inf"],
+        #                    app_constants.train_paths["next_items_processed_elite_unsorted_uninf"],
+        #                    app_constants.train_paths["next_items_processed_elite_unsorted_complete"]]
+        out_paths_elite = []
+        out_paths_lower = [app_constants.train_paths["next_items_processed_lower_unsorted_inf"],
+                           app_constants.train_paths["next_items_processed_lower_unsorted_uninf"],
+                           app_constants.train_paths["next_items_processed_lower_unsorted_complete"]]
+        for path in out_paths_elite + out_paths_lower + out_paths_positions:
+            utils.remove_old_files(path)
 
-        utils.remove_old_files(app_constants.train_paths["positions_processed"])
-        utils.remove_old_files(app_constants.train_paths["positions_to_be_pred"])
+        # number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
+        number_of_top_games = [10000,0,0]
+        number_of_lower_games = [number_of_lower_games//(game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)]*(
+                game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)
 
-        elite_league_cutoff = 4
-        number_of_top_games = [number_of_top_games//elite_league_cutoff]*elite_league_cutoff
-        # 19+4 is the number of leagues in total
-        number_of_lower_games = [number_of_lower_games//(23-elite_league_cutoff)]*(23-elite_league_cutoff)
-
-        elite_match_ids, lower_match_ids = self.scraper.get_match_ids(number_of_top_games + number_of_lower_games,
-                                                                      region, start_date, elite_league_cutoff)
-        with open(app_constants.train_paths["elite_matchids"], "w") as f:
-            f.write(json.dumps(list(elite_match_ids)))
-        with open(app_constants.train_paths["lower_matchids"], "w") as f:
-            f.write(json.dumps(list(lower_match_ids)))
-        # with open(app_constants.train_paths["elite_matchids"], "r") as f:
-        #     elite_match_ids = json.load(f)
-        # with open(app_constants.train_paths["lower_matchids"], "r") as f:
-        #     lower_match_ids = json.load(f)
-        # return , get_matches(lower_match_ids, region)
-
-        # return get_matches([4359085131], region)
+        # self.scraper.get_match_ids(number_of_top_games, number_of_lower_games,
+        #                                                               regions, start_date)
 
 
-        self.start_processing(elite_match_ids, region, app_constants.train_paths[
-            "next_items_processed_elite_unsorted_inf"], app_constants.train_paths[
-            "next_items_processed_elite_unsorted_uninf"], app_constants.train_paths[
-            "next_items_processed_elite_unsorted_complete"])
+        # elite_match_ids = [4585558064]
+        match_ids = {"elite":{}, "lower":{}}
+        elite_files = glob.glob(app_constants.train_paths["elite_matchids"]+"_*")
+        lower_files = glob.glob(app_constants.train_paths["lower_matchids"] + "_*")
+        for tier, files in zip(match_ids.keys(), [elite_files, lower_files]):
+            for file in files:
+                with open(file, "r") as f:
+                    tmp_match_ids = json.load(f)
+                    underscoreindex = file.rfind("_")
+                    if underscoreindex == -1:
+                        continue
+                    region = file[file.rfind("_") + 1:]
+                    match_ids[tier][region] = tmp_match_ids
+        total_num_games = sum([len(matches) for matches in match_ids["elite"].values()]) + \
+                          sum([len(matches) for matches in match_ids["lower"].values()])
 
-        self.start_processing(lower_match_ids, region, app_constants.train_paths[
-            "next_items_processed_lower_unsorted_inf"], app_constants.train_paths[
-                                  "next_items_processed_lower_unsorted_uninf"], app_constants.train_paths[
-                                  "next_items_processed_lower_unsorted_complete"])
+        offset = 0
+        for tier, paths in zip(match_ids, [out_paths_elite, out_paths_lower]):
+            for region in match_ids[tier]:
+                self.start_processing(match_ids[tier][region], region, paths[0], paths[1], paths[2], total_num_games,
+                                      offset, tier)
+                offset += len(match_ids[tier][region])
+
+
 
     # chunklen is the total number of games the thread pool(typically 4) are processing together, so chunklen/4 per
     # thread
-    def start_processing(self, match_ids, region, inf_path, uninf_path, complete_path,
-                         num_threads=os.cpu_count(
+    def start_processing(self, match_ids, region, inf_path, uninf_path, complete_path, total_num_games, offset, tier,
+                         num_threads=os.cpu_count(), chunklen=400):
 
-    ), \
-                                                                                           chunklen=400):
-
-        utils.remove_old_files(inf_path)
-        utils.remove_old_files(uninf_path)
-        utils.remove_old_files(complete_path)
         in_queue = Queue()
         out_queues = [Queue(), Queue(), Queue()]
-        transformations = [self.run_next_item_transformations,
+        transformations = [lambda a: self.run_next_item_transformations(a, region),
                            lambda a: self.run_positions_transformations(a, 1),
                            lambda a: self.run_positions_transformations(a, 0)]
         out_keys = ["positions_processed", "positions_to_be_pred"]
         workers = [ProcessTrainingDataWorker(in_queue, out_queues, transformations, i) for i in range(num_threads)]
 
         writers = [NextItemsWriteResultWorker(out_queues[0], chunklen, inf_path, uninf_path,
-                   complete_path)]
-        writers.extend([WriteResultWorker(out_queue, chunklen, app_constants.train_paths[out_key]) for out_key,
+                   complete_path, region)]
+        writers.extend([WriteResultWorker(out_queue, chunklen, app_constants.train_paths[out_key], region) for out_key,
                                                                                                        out_queue
                    in zip(out_keys, out_queues[1:])])
 
@@ -868,7 +893,8 @@ class ProcessNextItemsTrainingData:
 
         for i, match in enumerate(self.scraper.get_matches(match_ids, region)):
             in_queue.put([match])
-            print(f"Match {i}")
+            print(f"\n\nTOTAL: Match {i + offset} out of {total_num_games} ({100*(i+offset)/total_num_games:.2f}%)")
+            print(f"{tier} {region}: Match {i} out of {len(match_ids)} ({100 * (i) / len(match_ids):.2f}%)")
 
 
         print("Trying to stop workers.")
@@ -892,7 +918,8 @@ class ProcessNextItemsTrainingData:
 if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
     # p.start()
-    region = "EUW"
+
+    regions = ["KR", "EUW", "NA", "EUNE", "BR", "TR", "LAS", "LAN", "RU", "JP", "OCE"]
     l = ProcessNextItemsTrainingData()
 
     # games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
@@ -902,13 +929,14 @@ if __name__ == "__main__":
 
 
     #takes roughly 1 hour to download 1000 games
-    number_of_top_games = 8000
-    number_of_lower_games = 8000
+    #about 1800 pure challenger games are played across all regions in a day
+    number_of_top_games = 10000
+    number_of_lower_games = 20000
 
-    start_date = cass.Patch.latest(region="EUW").start
+    start_date = cass.Patch.latest(region="NA").start
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    # l.start(number_of_top_games, number_of_lower_games,region=region, start_date=start_date)
-    # s = train.PositionsTrainer()
+    # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
+    #  s = train.PositionsTrainer()
     # s.train()
     l.update_roles()
     t = NextItemsTrainer()

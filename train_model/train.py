@@ -102,7 +102,7 @@ class Trainer(ABC):
                     self.network = self.network.build()
                     model = tflearn.DNN(self.network, session=sess)
                     sess.run(tf.global_variables_initializer())
-                    if self.champ_embs is not None:
+                    if hasattr(self, 'champ_embs') and self.champ_embs is not None:
                         embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
                         model.set_weights(embeddingWeights, self.champ_embs)
                         embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
@@ -207,6 +207,129 @@ class Trainer(ABC):
         print("Epoch {0}:\nRaw test accuracy {1:.4f} | ".format(epoch_counter + 1, main_test_eval), end='')
         self.logfile.write(
             "Raw test accuracy {1:.4f} | ".format(epoch_counter + 1, main_test_eval))
+
+
+class WinPredTrainer(Trainer):
+
+    def train(self):
+        # my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
+        # opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        # my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        # opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
+        #
+        # self.champ_embs = my_champ_embs_normed
+        # self.opp_champ_embs = opp_champ_embs_normed
+        self.network = WinPredNetwork()
+
+        self.train_path = app_constants.model_paths["train"]["win_pred"]
+        self.best_path = app_constants.model_paths["best"]["win_pred"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_complete"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_complete"])
+        print("Loading elite train data")
+        X_elite, _ = dataloader_elite.get_train_data()
+        print("Loading elite test data")
+        X_test_elite, _ = dataloader_elite.get_test_data()
+        print("Loading lower train data")
+        X_lower, _ = dataloader_lower.get_train_data()
+        print("Loading lower test data")
+        X_test_lower, _ = dataloader_lower.get_test_data()
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+
+        #this isn't really necessary because gold, xp, cs make the data unredundant
+        # self.X[:, Input.pos_start:Input.pos_end] = 0
+        # self.X[:, Input.items_start:Input.items_end] = 0
+        #
+
+
+        self.X = self.X.astype(np.float32)
+        self.X_test = self.X_test.astype(np.float32)
+        model = NextItemModel("standard")
+        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = np.concatenate([self.X, self.flip_teams(self.X)], axis=0)
+        self.X_test = np.concatenate([self.X_test, self.flip_teams(self.X_test)], axis=0)
+        self.Y = [1] * (len(self.X)//2) + [0] * (len(self.X)//2)
+        self.Y = np.array(self.Y)[:,np.newaxis]
+        self.Y_test = [1] * (len(self.X_test) // 2) + [0] * (len(self.X_test) // 2)
+        self.Y_test = np.array(self.Y_test)[:, np.newaxis]
+
+        self.build_new_model()
+
+    def eval_model(self, model, epoch, X_test, Y_test):
+        acc = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
+        self.log_output(acc, epoch)
+        return acc
+
+
+    def determine_best_eval(self, scores):
+        max_main = -1
+        best_model_index = -1
+        for i, main in enumerate(scores):
+            if main >= max_main:
+                max_main = main
+                best_model_index = i
+        # epoch counter is 1 based
+        return best_model_index + 1
+
+
+    def flip_teams(self, X):
+        X_copy = np.copy(X)
+        X_copy[:, Input.champs_start:Input.champs_half] = X[:, Input.champs_half:Input.champs_end]
+        X_copy[:,Input.champs_half:Input.champs_end] = X[:, Input.champs_start:Input.champs_half]
+
+        X_copy[:, Input.items_start:Input.items_half] = X[:, Input.items_half:Input.items_end]
+        X_copy[:, Input.items_half:Input.items_end] = X[:, Input.items_start:Input.items_half]
+
+        X_copy[:, Input.total_gold_start:Input.total_gold_half] = X[:, Input.total_gold_half:Input.total_gold_end]
+        X_copy[:, Input.total_gold_half:Input.total_gold_end] = X[:, Input.total_gold_start:Input.total_gold_half]
+
+        X_copy[:, Input.cs_start:Input.cs_half] = X[:, Input.cs_half:Input.cs_end]
+        X_copy[:, Input.cs_half:Input.cs_end] = X[:, Input.cs_start:Input.cs_half]
+
+        X_copy[:, Input.neutral_cs_start:Input.neutral_cs_half] = X[:, Input.neutral_cs_half:Input.neutral_cs_end]
+        X_copy[:, Input.neutral_cs_half:Input.neutral_cs_end] = X[:, Input.neutral_cs_start:Input.neutral_cs_half]
+
+        X_copy[:, Input.xp_start:Input.xp_half] = X[:, Input.xp_half:Input.xp_end]
+        X_copy[:, Input.xp_half:Input.xp_end] = X[:, Input.xp_start:Input.xp_half]
+
+        X_copy[:, Input.lvl_start:Input.lvl_half] = X[:, Input.lvl_half:Input.lvl_end]
+        X_copy[:, Input.lvl_half:Input.lvl_end] = X[:, Input.lvl_start:Input.lvl_half]
+
+        X_copy[:, Input.kda_start:Input.kda_half] = X[:, Input.kda_half:Input.kda_end]
+        X_copy[:, Input.kda_half:Input.kda_end] = X[:, Input.kda_start:Input.kda_half]
+
+        X_copy[:, Input.current_gold_start:Input.current_gold_half] = X[:, Input.current_gold_half:Input.current_gold_end]
+        X_copy[:, Input.current_gold_half:Input.current_gold_end] = X[:, Input.current_gold_start:Input.current_gold_half]
+
+        X_copy[:, Input.baron_start:Input.baron_half] = X[:, Input.baron_half:Input.baron_end]
+        X_copy[:, Input.baron_half:Input.baron_end] = X[:, Input.baron_start:Input.baron_half]
+
+        X_copy[:, Input.elder_start:Input.elder_half] = X[:, Input.elder_half:Input.elder_end]
+        X_copy[:, Input.elder_half:Input.elder_end] = X[:, Input.elder_start:Input.elder_half]
+
+        X_copy[:, Input.dragons_killed_start:Input.dragons_killed_half] = X[:, Input.dragons_killed_half:Input.dragons_killed_end]
+        X_copy[:, Input.dragons_killed_half:Input.dragons_killed_end] = X[:, Input.dragons_killed_start:Input.dragons_killed_half]
+
+        X_copy[:, Input.dragon_soul_start:Input.dragon_soul_half] = X[:, Input.dragon_soul_half:Input.dragon_soul_end]
+        X_copy[:, Input.dragon_soul_half:Input.dragon_soul_end] = X[:, Input.dragon_soul_start:Input.dragon_soul_half]
+
+        X_copy[:, Input.dragon_soul_type_start:Input.dragon_soul_type_half] = X[:, Input.dragon_soul_type_half:Input.dragon_soul_type_end]
+        X_copy[:, Input.dragon_soul_type_half:Input.dragon_soul_type_end] = X[:, Input.dragon_soul_type_start:Input.dragon_soul_type_half]
+
+        X_copy[:, Input.turrets_start:Input.turrets_half] = X[:, Input.turrets_half:Input.turrets_end]
+        X_copy[:, Input.turrets_half:Input.turrets_end] = X[:, Input.turrets_start:Input.turrets_half]
+
+        X_copy[:, Input.first_team_blue_start:Input.first_team_blue_end] = np.logical_not(X[:,
+                                                                                   Input.first_team_blue_start:Input.first_team_blue_end].astype(np.bool)).astype(np.float)
+
+        return X_copy
+
 
 
 class DynamicTrainingDataTrainer(Trainer):
@@ -538,6 +661,28 @@ class PositionsTrainer(Trainer):
         return acc
 
 
+    def train_neural_network(self):
+        with tf.device("/gpu:0"):
+            with tf.Graph().as_default():
+                with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+                    tflearn.is_training(True, sess)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=sess)
+                    sess.run(tf.global_variables_initializer())
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data()
+
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size,
+                                  run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+                        score = self.eval_model(model, epoch)
+                        scores.append(score)
+        return scores
+
+
     def log_output(self, main_test_eval, epoch_counter):
         super().log_output(main_test_eval, epoch_counter)
         self.logfile.write("\n\n")
@@ -820,14 +965,6 @@ class NextItemsTrainer(Trainer):
         self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
 
         self.build_new_model()
-
-
-    def fit_input(self, X, scaler_name):
-        min_max_scaler = sklearn.preprocessing.MinMaxScaler(feature_range=(-1, 1))
-        min_max_scaler.fit(np.reshape(X, (-1, 1)))
-        # dump(min_max_scaler, self.train_path + scaler_name +"_scaler", compress=True)
-        # dump(min_max_scaler, self.best_path + scaler_name + "_scaler", compress=True)
-        return min_max_scaler
 
 
     @staticmethod
@@ -1516,8 +1653,11 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_late_game_model()
+
+    t = WinPredTrainer()
+    t.train()
     # t = BootsTrainer()
     # t.train()
     # t = StarterItemsTrainer()

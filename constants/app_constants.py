@@ -87,8 +87,8 @@ train_paths["next_items_processed_lower_sorted_complete"] = train_paths["next_it
 train_paths["positions_processed"] = train_paths["positions"] + "processed" + os.sep
 train_paths["positions_to_be_pred"] = train_paths["positions"] + "to_be_pred" + os.sep
 
-train_paths["elite_matchids"] = train_paths["next_items"] + "elite_matchids.json"
-train_paths["lower_matchids"] = train_paths["next_items"] + "lower_matchids.json"
+train_paths["elite_matchids"] = train_paths["next_items"] + "elitematchids"
+train_paths["lower_matchids"] = train_paths["next_items"] + "lowermatchids"
 
 train_paths["accountids"] = train_paths["next_items"] + "summoner_account_ids"
 
@@ -114,6 +114,7 @@ for label in ["train", "best"]:
         "next_items_starter": paths["base"] + "next_items" + os.sep + "starter" + os.sep,
         "next_items_first_item": paths["base"] + "next_items" + os.sep + "first_item" + os.sep,
         "next_items_boots": paths["base"] + "next_items" + os.sep + "boots" + os.sep,
+        "win_pred": paths["base"] + "win_pred" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
     paths.update({"champs": paths["imgs"] + "champs" + os.sep,
