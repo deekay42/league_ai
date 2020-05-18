@@ -824,10 +824,10 @@ class ProcessNextItemsTrainingData:
     def start(self, number_of_top_games, number_of_lower_games, regions, start_date):
         out_paths_positions = [app_constants.train_paths["positions_processed"],
                                app_constants.train_paths["positions_to_be_pred"]]
-        # out_paths_elite = [app_constants.train_paths["next_items_processed_elite_unsorted_inf"],
-        #                    app_constants.train_paths["next_items_processed_elite_unsorted_uninf"],
-        #                    app_constants.train_paths["next_items_processed_elite_unsorted_complete"]]
-        out_paths_elite = []
+        out_paths_elite = [app_constants.train_paths["next_items_processed_elite_unsorted_inf"],
+                           app_constants.train_paths["next_items_processed_elite_unsorted_uninf"],
+                           app_constants.train_paths["next_items_processed_elite_unsorted_complete"]]
+        
         out_paths_lower = [app_constants.train_paths["next_items_processed_lower_unsorted_inf"],
                            app_constants.train_paths["next_items_processed_lower_unsorted_uninf"],
                            app_constants.train_paths["next_items_processed_lower_unsorted_complete"]]
@@ -935,9 +935,9 @@ if __name__ == "__main__":
 
     start_date = cass.Patch.latest(region="NA").start
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
-    #  s = train.PositionsTrainer()
-    # s.train()
+    l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
+    s = train.PositionsTrainer()
+    s.train()
     l.update_roles()
     t = NextItemsTrainer()
     print("NOW TRAINING EARLY GAME")
