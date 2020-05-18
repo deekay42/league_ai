@@ -469,7 +469,7 @@ class Scraper:
                 teams_sorted = [1,1] if winning_team_sorted and losing_team_sorted \
                     else [1,0] if winning_team_sorted else [0,1] if losing_team_sorted else [0,0]
 
-                yield {"gameId": region + "_" + match_id, "sorted": teams_sorted, "participants": teams,
+                yield {"gameId": region + "_" + str(match_id), "sorted": teams_sorted, "participants": teams,
                        "itemsTimeline": events}
 
                 print(f"Processing complete {match_id}")

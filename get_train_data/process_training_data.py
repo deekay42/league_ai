@@ -827,7 +827,7 @@ class ProcessNextItemsTrainingData:
         out_paths_elite = [app_constants.train_paths["next_items_processed_elite_unsorted_inf"],
                            app_constants.train_paths["next_items_processed_elite_unsorted_uninf"],
                            app_constants.train_paths["next_items_processed_elite_unsorted_complete"]]
-        
+
         out_paths_lower = [app_constants.train_paths["next_items_processed_lower_unsorted_inf"],
                            app_constants.train_paths["next_items_processed_lower_unsorted_uninf"],
                            app_constants.train_paths["next_items_processed_lower_unsorted_complete"]]
