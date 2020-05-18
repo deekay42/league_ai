@@ -22,6 +22,7 @@ import importlib
 import logging
 import sys
 logger = logging.getLogger("main")
+from train_model.input_vector import Input
 
 # if platform.system() == "Windows":
 #     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
@@ -722,36 +723,17 @@ class NextItemModel(Model):
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
-        self.cont_slices_by_name = {'total_gold': np.s_[:, -90:-80],
-         'cs': np.s_[:, -80:-70],
-         'neutral_cs': np.s_[:, -70:-60],
-         'xp': np.s_[:, -60:-50],
-         'lvl': np.s_[:, -50:-40],
-         'kda': np.s_[:, -40:-10],
-         'cg': np.s_[:, -10:]}
 
-        self.pos_start = 0
-        self.pos_end = self.pos_start + 1
-        self.champs_start = self.pos_end
-        self.champs_end = self.champs_start + champs_per_game
-        self.items_start = self.champs_end
-        self.items_end = self.items_start + items_per_champ * 2 * champs_per_game
-        self.total_gold_start = self.items_end
-        self.total_gold_end = self.total_gold_start + champs_per_game
-        self.cs_start = self.total_gold_end
-        self.cs_end = self.cs_start + champs_per_game
-        self.neutral_cs_start = self.cs_end
-        self.neutral_cs_end = self.neutral_cs_start + champs_per_game
-        self.xp_start = self.neutral_cs_end
-        self.xp_end = self.xp_start + champs_per_game
-        self.lvl_start = self.xp_end
-        self.lvl_end = self.lvl_start + champs_per_game
-        self.kda_start = self.lvl_end
-        self.kda_end = self.kda_start + champs_per_game * 3
-        self.current_gold_start = self.kda_end
-        self.current_gold_end = self.current_gold_start + champs_per_game
+        self.cont_slices_by_name = {'total_gold': np.s_[:, Input.total_gold_start:Input.total_gold_end],
+                                    'cs': np.s_[:, Input.cs_start:Input.cs_end],
+                                    'neutral_cs': np.s_[:, Input.neutral_cs_start:Input.neutral_cs_end],
+                                    'xp': np.s_[:, Input.xp_start:Input.xp_end],
+                                    'lvl': np.s_[:, Input.lvl_start:Input.lvl_end],
+                                    'kda': np.s_[:, Input.kda_start:Input.kda_end],
+                                    'cg': np.s_[:, Input.current_gold_start:Input.current_gold_end],
+                                    'turrets': np.s_[:, Input.turrets_start:Input.turrets_end], }
         
-        self.input_len = self.current_gold_end
+        self.input_len = Input.first_team_blue_end
         
         self.output_node_name = "Softmax"
         
@@ -783,14 +765,14 @@ class NextItemModel(Model):
 
 
     def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold, blackout_indices):
-        x = np.zeros(shape=self.current_gold_end, dtype=np.int32)
-        x[self.pos_start:self.pos_end] = [role]
-        x[self.champs_start:self.champs_end] = champs_int
+        x = np.zeros(shape=self.input_len, dtype=np.int32)
+        x[Input.pos_start:Input.pos_end] = [role]
+        x[Input.champs_start:Input.champs_end] = champs_int
         encoded_items = np.ravel(self.encode_items(items_id, self.artifact_manager))
-        x[self.items_start:self.items_end] = encoded_items
-        x[self.cs_start:self.cs_end] = cs
-        x[self.lvl_start:self.lvl_end] = lvl
-        x[self.kda_start:self.kda_end] = np.ravel(kda)
+        x[Input.items_start:Input.items_end] = encoded_items
+        x[Input.cs_start:Input.cs_end] = cs
+        x[Input.lvl_start:Input.lvl_end] = lvl
+        x[Input.kda_start:Input.kda_end] = np.ravel(kda)
         num_increments = 20
         granularity = 10
         start = -150
@@ -802,7 +784,7 @@ class NextItemModel(Model):
  
         logger.info(current_gold_list[:,role])
         x = np.tile(x,num_increments).reshape((num_increments,-1))
-        x[:, self.current_gold_start:self.current_gold_end] = current_gold_list
+        x[:, Input.current_gold_start:Input.current_gold_end] = current_gold_list
         x = self.scale_inputs(np.array(x).astype(np.float32))
         lul = False
         if lul:
@@ -826,6 +808,8 @@ class NextItemModel(Model):
                 scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
             elif slice_name == 'xp':
                 scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
+            elif slice_name == 'turrets':
+                scaler = self.fit_input(np.array([[0.0, 11.0]]), slice_name)
             else:
                 print("WTFFFFFFFF")
             X[slice] = scaler.transform(X[slice])
@@ -924,89 +908,89 @@ class NextItemModel(Model):
         return items, np.max(y, axis=1)
 
 
-# class PositionsModel(Model):
+class PositionsModel(Model):
 
-#     def __init__(self):
-#         super().__init__()
-#         self.network = network.PositionsNetwork()
-#         self.model_path = app_constants.model_paths["best"]["positions"]
-#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-#         self.champ_manager = ChampManager()
-#         self.spell_manager = SimpleManager("spells")
-#         self.elements = "positions"
-#         self.load_model()
-#         self.lock = threading.Lock()
-
-
-#     def predict(self, x):
-#         with self.lock:
-#             with self.graph.as_default():
-#                 pred = self.model.predict([x])
-#                 with tf.Session() as sess:
-#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-#                     final_pred = sess.run(final_pred)[0]
-#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-#             # the champ ids need to be ints, otherwise jq fails
-#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
-#             return dict(zip(champ_roles, champ_ids))
+    def __init__(self):
+        super().__init__()
+        self.network = network.PositionsNetwork()
+        self.model_path = app_constants.model_paths["best"]["positions"]
+        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+        self.champ_manager = ChampManager()
+        self.spell_manager = SimpleManager("spells")
+        self.elements = "positions"
+        self.load_model()
+        self.lock = threading.Lock()
 
 
-#     def multi_predict_perm(self, x):
-#         with self.lock:
-#             with self.graph.as_default():
-#                 with tf.Session() as sess:
-#                     x = network.PositionsNetwork.permutate_inputs(x)
+    def predict(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                pred = self.model.predict([x])
+                with tf.Session() as sess:
+                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+                    final_pred = sess.run(final_pred)[0]
+            champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-#                     chunk_len = 1000
-#                     x = tf.reshape(x, (-1,120,55))
-#                     i = 0
-#                     final_pred = []
-#                     while i < int(x.shape[0]):
-#                         print(i/int(x.shape[0]))
-#                         next_chunk = x[i:i+chunk_len]
-#                         next_chunk = tf.reshape(next_chunk, (-1,55))
-#                         chunk_pred = self.model.predict(sess.run(next_chunk))
-#                         i += chunk_len
-#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-#                         final_pred.extend(sess.run(best_perms).tolist())
-
-#         result = []
-#         for sorted_team in final_pred:
-#             sorted_team_perm = [0] * 5
-#             for i, pos in enumerate(sorted_team):
-#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
-#             result.append(sorted_team_perm)
-#         return result
+            # the champ ids need to be ints, otherwise jq fails
+            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
+            return dict(zip(champ_roles, champ_ids))
 
 
+    def multi_predict_perm(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                with tf.Session() as sess:
+                    x = network.PositionsNetwork.permutate_inputs(x)
 
-#     def multi_predict(self, x):
-#         with self.lock:
-#             with self.graph.as_default():
-#                 pred = self.model.predict(x)
-#                 with Session() as sess:
-#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-#                     final_pred = sess.run(final_pred)
-#         result = []
-#         for sorted_team, unsorted_team in zip(final_pred, x):
-#             sorted_team_perm = [0] * 5
-#             for i, pos in enumerate(sorted_team):
-#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
-#             result.append(sorted_team_perm)
-#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+                    chunk_len = 1000
+                    x = tf.reshape(x, (-1,120,55))
+                    i = 0
+                    final_pred = []
+                    while i < int(x.shape[0]):
+                        print(i/int(x.shape[0]))
+                        next_chunk = x[i:i+chunk_len]
+                        next_chunk = tf.reshape(next_chunk, (-1,55))
+                        chunk_pred = self.model.predict(sess.run(next_chunk))
+                        i += chunk_len
+                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+                        final_pred.extend(sess.run(best_perms).tolist())
 
-#             # the champ ids need to be ints, otherwise jq fails
-#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-#             # result.append(dict(zip(champ_roles, champ_ids)))
+        result = []
+        for sorted_team in final_pred:
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+        return result
 
-#         return result
 
-# #
+
+    def multi_predict(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                pred = self.model.predict(x)
+                with Session() as sess:
+                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+                    final_pred = sess.run(final_pred)
+        result = []
+        for sorted_team, unsorted_team in zip(final_pred, x):
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+
+            # the champ ids need to be ints, otherwise jq fails
+            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+            # result.append(dict(zip(champ_roles, champ_ids)))
+
+        return result
+
+
 
 def export_models():
     models = [NextItemModel("standard"),

@@ -14,6 +14,7 @@ from tflearn.layers.normalization import batch_normalization
 from constants import game_constants
 from constants.ui_constants import ResConverter
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
+from train_model.input_vector import Input
 
 
 class Network(ABC):
@@ -322,7 +323,7 @@ class PositionsNetwork(Network):
                           loss='binary_crossentropy', name='target', metric=PositionsNetwork.multi_class_acc_positions)
 
 
-class NextItemNetwork(Network):
+class LolNetwork(Network):
 
     def __init__(self, my_champ_emb_scales=None, opp_champ_emb_scales=None):
         self.game_config = \
@@ -354,28 +355,165 @@ class NextItemNetwork(Network):
             self.network_config["opp_champ_emb_scales"] = (np.repeat([0.]*ChampManager().get_num("int"), self.network_config[
                 "champ_emb_dim"])).astype(np.float32)
 
-        self.pos_start = 0
-        self.pos_end = self.pos_start + 1
-        self.champs_start = self.pos_end
-        self.champs_end = self.champs_start + self.game_config["champs_per_game"]
-        self.items_start = self.champs_end
-        self.items_end = self.items_start + self.game_config["items_per_champ"] * 2 * self.game_config[
-            "champs_per_game"]
-        self.total_gold_start = self.items_end
-        self.total_gold_end = self.total_gold_start + self.game_config["champs_per_game"]
-        self.cs_start = self.total_gold_end
-        self.cs_end = self.cs_start + self.game_config["champs_per_game"]
-        self.neutral_cs_start = self.cs_end
-        self.neutral_cs_end = self.neutral_cs_start + self.game_config["champs_per_game"]
-        self.xp_start = self.neutral_cs_end
-        self.xp_end = self.xp_start + self.game_config["champs_per_game"]
-        self.lvl_start = self.xp_end
-        self.lvl_end = self.lvl_start + self.game_config["champs_per_game"]
-        self.kda_start = self.lvl_end
-        self.kda_end = self.kda_start + self.game_config["champs_per_game"] * 3
-        self.current_gold_start = self.kda_end
-        self.current_gold_end = self.current_gold_start + self.game_config["champs_per_game"]
 
+
+
+class WinPredNetwork(LolNetwork):
+
+    def build(self):
+
+        in_vec = input_data(shape=[None, Input.len], name='input')
+        #  1 elements long
+        pos = in_vec[:, 0]
+        pos = tf.cast(pos, tf.int32)
+
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+        pos_index = tf.transpose([batch_index, pos], (1, 0))
+        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
+        opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
+
+        # Make tensor of indices for the first dimension
+
+        #  10 elements long
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
+        my_team_champ_ints = champ_ints[:, :5]
+        opp_team_champ_ints = champ_ints[:, 5:]
+        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
+                                                             self.game_config["champs_per_game"]))
+
+        # champ_ints = dropout(champ_ints, 0.8)
+        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
+        # 60 elements long
+        item_ints = in_vec[:, Input.items_start:Input.items_end]
+        cs = in_vec[:, Input.cs_start:Input.cs_end]
+        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
+        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
+        kda = in_vec[:, Input.kda_start:Input.kda_end]
+        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
+        total_cs = cs + neutral_cs
+
+        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
+        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
+        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
+
+        # my_team_champ_embs = self.noise_embeddings(my_team_champ_ints, "my_champ_emb_scales",
+        #                                                      "my_champ_embs", 1/4)
+        # opp_team_champ_embs = self.noise_embeddings(opp_team_champ_ints, "opp_champ_emb_scales",
+        #                                                   "opp_champ_embs", 1/4)
+        # target_summ_champ_emb_dropout_flat = tf.gather_nd(my_team_champ_embs, pos_index)
+        # opp_summ_champ_emb_dropout_flat = tf.gather_nd(opp_team_champ_embs, opp_index_no_offset)
+        # opp_team_champ_embs_dropout_flat = tf.reshape(opp_team_champ_embs, (-1, 5*3))
+
+        # target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
+        #                                                                      [0.05], pos_index, n, 1.0)
+        # opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+        #     opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
+
+
+        kd = kda[:, 0::3] - kda[:, 1::3]
+        opp_kda = kda[:, 5 * 3:10 * 3]
+        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
+        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
+        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
+
+        my_kda = kda[:, :5 * 3]
+        my_kda = tf.reshape(my_kda, (-1, 5, 3))
+        my_lvl = tf.expand_dims(lvl[:, :5], -1)
+        my_cs = tf.expand_dims(total_cs[:, :5], -1)
+
+        kda_diff = opp_kda - my_kda
+        lvl_diff = opp_lvl - my_lvl
+        cs_diff = opp_cs - my_cs
+
+        kda_diff = tf.reshape(kda_diff, (-1, 5 * 3))
+        lvl_diff = tf.reshape(lvl_diff, (-1, 5))
+        cs_diff = tf.reshape(cs_diff, (-1, 5))
+
+        total_gold = in_vec[:,Input.total_gold_start:Input.total_gold_end]
+        baron_active = in_vec[:,Input.baron_start:Input.baron_end]
+        elder_active = in_vec[:, Input.elder_start:Input.elder_end]
+        dragons_killed = in_vec[:, Input.dragons_killed_start:Input.dragons_killed_end]
+        dragons_killed_sum = tf.reduce_sum(tf.reshape(dragons_killed, (-1,2,4)), axis=2)
+        dragon_soul_obtained = in_vec[:, Input.dragon_soul_start:Input.dragon_soul_end]
+        dragon_soul_type = in_vec[:, Input.dragon_soul_type_start:Input.dragon_soul_type_end]
+        turrets_destroyed = in_vec[:, Input.turrets_start:Input.turrets_end]
+        first_team_has_blue_side = in_vec[:, Input.first_team_blue_start:Input.first_team_blue_end]
+
+        team1_total_kills = tf.reduce_sum(kda[:, 0:15:3], axis=1)
+        team1_total_kills = tf.expand_dims(team1_total_kills, (-1))
+        team2_total_kills = tf.reduce_sum(kda[:, 15:30:3], axis=1)
+        team2_total_kills = tf.expand_dims(team2_total_kills, (-1))
+        team_kills_diff = team1_total_kills - team2_total_kills
+        kd = kda[:, 0::3] - kda[:, 1::3]
+
+
+        final_input_layer = merge(
+            [
+                # all_champs_one_hot,
+                # # all_champs_embedded,
+                total_gold,
+                team1_total_kills,
+                team2_total_kills,
+                team_kills_diff,
+                kd,
+                kda_diff,
+                lvl_diff,
+                cs_diff,
+                kda,
+                lvl,
+                cs,
+                baron_active,
+                elder_active,
+                dragons_killed,
+                dragons_killed_sum,
+                dragon_soul_obtained,
+                dragon_soul_type,
+                turrets_destroyed,
+                first_team_has_blue_side
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        # net = dropout(net, 0.85)
+        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu', regularizer="L2"))
+        # net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
+        net = fully_connected(net, 1, activation='sigmoid')
+
+        return regression(net, optimizer='adam',
+                                 shuffle_batches=True,
+                                 learning_rate=self.network_config["learning_rate"],
+                                 loss='binary_crossentropy',
+                                 name='target', metric=self.bin_acc)
+
+
+    # @staticmethod
+    # def bin_acc(preds, targets, input_):
+    #     preds = tf.reshape(preds, (-1,))
+    #     targets = tf.reshape(targets, (-1,))
+    #     preds = tf.round(preds)
+    #     correct_prediction = tf.equal(preds, targets)
+    #     # all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
+    #     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    #
+    #     return acc
+
+    @staticmethod
+    def bin_acc(preds, targets, input_):
+        preds = tf.reshape(preds, (-1,))
+        targets = tf.reshape(targets, (-1,))
+        error = tf.abs(targets - preds)
+        score = 1-error
+        acc = tf.reduce_mean(score)
+
+        return acc
+
+
+
+class NextItemNetwork(LolNetwork):
 
     @abstractmethod
     def build(self):
@@ -657,7 +795,7 @@ class StandardNextItemNetwork(NextItemNetwork):
 
     def build(self):
 
-        in_vec = input_data(shape=[None, 221], name='input')
+        in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -671,18 +809,18 @@ class StandardNextItemNetwork(NextItemNetwork):
         # Make tensor of indices for the first dimension
 
         #  10 elements long
-        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
         # champ_ints = dropout(champ_ints, 0.8)
         # this does not work since dropout scales inputs, hence embedding lookup fails after that.
         # 60 elements long
-        item_ints = in_vec[:, self.items_start:self.items_end]
-        cs = in_vec[:, self.cs_start:self.cs_end]
-        neutral_cs = in_vec[:, self.neutral_cs_start:self.neutral_cs_end]
-        lvl = in_vec[:, self.lvl_start:self.lvl_end]
-        kda = in_vec[:, self.kda_start:self.kda_end]
-        current_gold = in_vec[:, self.current_gold_start:self.current_gold_end]
+        item_ints = in_vec[:, Input.items_start:Input.items_end]
+        cs = in_vec[:, Input.cs_start:Input.cs_end]
+        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
+        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
+        kda = in_vec[:, Input.kda_start:Input.kda_end]
+        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
         total_cs = cs + neutral_cs
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
@@ -870,7 +1008,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
 
     def build(self):
-        in_vec = input_data(shape=[None, 221], name='input')
+        in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -884,19 +1022,19 @@ class NextItemLateGameNetwork(NextItemNetwork):
         # Make tensor of indices for the first dimension
 
         #  10 elements long
-        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
         # champ_ints = dropout(champ_ints, 0.8)
         # this does not work since dropout scales inputs, hence embedding lookup fails after that.
         # 60 elements long
-        item_ints = in_vec[:, self.items_start:self.items_end]
-        cs = in_vec[:, self.cs_start:self.cs_end]
-        neutral_cs = in_vec[:, self.neutral_cs_start:self.neutral_cs_end]
-        lvl = in_vec[:, self.lvl_start:self.lvl_end]
-        kda = in_vec[:, self.kda_start:self.kda_end]
-        current_gold = in_vec[:, self.current_gold_start:self.current_gold_end]
+        item_ints = in_vec[:, Input.items_start:Input.items_end]
+        cs = in_vec[:, Input.cs_start:Input.cs_end]
+        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
+        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
+        kda = in_vec[:, Input.kda_start:Input.kda_end]
+        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
         total_cs = cs + neutral_cs
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
@@ -1031,7 +1169,7 @@ class NextItemStarterNetwork(NextItemNetwork):
 
 
     def build(self):
-        in_vec = input_data(shape=[None, 221], name='input')
+        in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -1042,7 +1180,7 @@ class NextItemStarterNetwork(NextItemNetwork):
         opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
 
-        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
@@ -1091,7 +1229,7 @@ class NextItemStarterNetwork(NextItemNetwork):
 class NextItemBootsNetwork(NextItemNetwork):
 
     def build(self):
-        in_vec = input_data(shape=[None, 221], name='input')
+        in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -1109,7 +1247,7 @@ class NextItemBootsNetwork(NextItemNetwork):
         opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
 
-        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
@@ -1184,7 +1322,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
 
 
     def build(self):
-        in_vec = input_data(shape=[None, 221], name='input')
+        in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
@@ -1198,19 +1336,19 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         # Make tensor of indices for the first dimension
 
         #  10 elements long
-        champ_ints = in_vec[:, self.champs_start:self.champs_end]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
 
         # champ_ints = dropout(champ_ints, 0.8)
         # this does not work since dropout scales inputs, hence embedding lookup fails after that.
         # 60 elements long
-        item_ints = in_vec[:, self.items_start:self.items_end]
-        cs = in_vec[:, self.cs_start:self.cs_end]
-        neutral_cs = in_vec[:, self.neutral_cs_start:self.neutral_cs_end]
-        lvl = in_vec[:, self.lvl_start:self.lvl_end]
-        kda = in_vec[:, self.kda_start:self.kda_end]
-        current_gold = in_vec[:, self.current_gold_start:self.current_gold_end]
+        item_ints = in_vec[:, Input.items_start:Input.items_end]
+        cs = in_vec[:, Input.cs_start:Input.cs_end]
+        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
+        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
+        kda = in_vec[:, Input.kda_start:Input.kda_end]
+        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
         total_cs = cs + neutral_cs
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)

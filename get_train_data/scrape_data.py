@@ -9,6 +9,7 @@ from constants import game_constants, app_constants
 from utils import cass_configured as cass
 import arrow
 import time
+import itertools
 
 class AllGamesCollected(Exception): pass
 
@@ -82,49 +83,96 @@ class Scraper:
         self.elite_match_ids = set()
         self.lower_match_ids = set()
 
-    def get_match_ids(self, countdowns, region, start_date, elite_league_cutoff):
+
+    def get_league_generators(self, regions):
         leagues = [cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond, cass.Tier.diamond, cass.Tier.platinum,
                    cass.Tier.platinum, cass.Tier.platinum, cass.Tier.platinum, cass.Tier.gold, cass.Tier.gold,
                    cass.Tier.gold, cass.Tier.gold, cass.Tier.silver, cass.Tier.silver,
                    cass.Tier.silver, cass.Tier.silver, cass.Tier.bronze, cass.Tier.bronze,
                    cass.Tier.bronze, cass.Tier.bronze, cass.Tier.iron, cass.Tier.iron,
                    cass.Tier.iron, cass.Tier.iron]
-        divisions = [cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four]
-        lower_league_generators = [iter(cass.LeagueEntries(region=region, queue=cass.Queue.ranked_solo_fives, tier=league,
-                           division=division)) for league, division in zip(leagues, divisions)]
-        elite_league_generators = [iter(cass.get_challenger_league(cass.Queue.ranked_solo_fives, region).entries),
-                                   iter(cass.get_grandmaster_league(cass.Queue.ranked_solo_fives, region).entries),
-                                   iter(cass.get_master_league(cass.Queue.ranked_solo_fives, region).entries)]
+        divisions = [cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one,
+                     cass.Division.two, cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two,
+                     cass.Division.three, cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three,
+                     cass.Division.four, cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four,
+                     cass.Division.one, cass.Division.two, cass.Division.three, cass.Division.four]
+        lower_league_generators = [
+            {region: iter(cass.LeagueEntries(region=region, queue=cass.Queue.ranked_solo_fives, tier=league,
+                                    division=division)) for region in regions} for league, division in
+            zip(leagues, divisions)]
+        elite_league_generators = [{region:iter(cass.get_challenger_league(cass.Queue.ranked_solo_fives,
+                                                                          region).entries) for region in regions},
+                                   {region: iter(cass.get_grandmaster_league(cass.Queue.ranked_solo_fives,
+                                                                          region).entries) for region in regions},
+                                   {region: iter(cass.get_master_league(cass.Queue.ranked_solo_fives, region).entries)
+                                    for \
+                region in regions}]
+        return elite_league_generators, lower_league_generators
 
-        league_generators = elite_league_generators + lower_league_generators
 
-        for i, (generator, countdown) in enumerate(zip(league_generators, countdowns)):
-            while countdown >= 0:
-                try:
+
+    def get_match_ids_for_tier(self, leagues, num_games_per_league, regions, start_date, out_path, logs,
+                                  spillover=True):
+        if spillover:
+            spillover_log = open(out_path + "SPILLOVERS", "w")
+        match_ids_by_region = {region:set() for region in regions}
+        for i, league in enumerate(leagues):
+            regions_copy = regions.copy()
+            regions_priorities = [4, 3, 3, 3, 2, 2, 2, 1, 1, 1, 1]
+            while num_games_per_league[i] >= 0:
+                if sum(regions_priorities) <= 0:
+                    print(f"This league is done: Queue {i} {logs[i]}. Countdown left:"
+                          f" {num_games_per_league[i]}")
+                    if spillover and i+1 < len(leagues):
+                        num_games_per_league[i+1] += num_games_per_league[i]
+                        print(f"Spillover {num_games_per_league[i]} from {logs[i]} to {logs[i + 1]}")
+                        spillover_log.write(f"Spillover {num_games_per_league[i]} from {logs[i]} to {logs[i + 1]}")
+                    break
+
+                regions_prioritized = np.concatenate([[regions_copy[region_index]]*prio for region_index,
+                                                                                         prio in enumerate(
+                        regions_priorities)], axis=0)
+
+                for region in regions_prioritized:
+                    print(f"\n\nLeague {logs[i]} Counter: {num_games_per_league[i]}")
                     try:
-                        summoner = next(generator).summoner
-                    except StopIteration as e:
-                        print(f"StopIteration: Queue {i}. Countdown left: {countdown}")
-                        break
+                        try:
+                            summoner = next(league[region]).summoner
+                        except StopIteration as e:
+                            print(f"This region is done: Queue {i} {region} {logs[i]}. Countdown left:"
+                                  f" {num_games_per_league[i]}")
+                            regions_priorities[regions.index(region)] = 0
 
-                    summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
-                                                         begin_time=start_date)
-                    next_matches = [match.id for match in summ_match_hist]
+                            break
 
-                    #elite matches
-                    if i < elite_league_cutoff:
-                        prev_len = len(self.elite_match_ids)
-                        self.elite_match_ids.update(next_matches)
-                        countdown -= len(self.elite_match_ids) - prev_len
-                    else:
-                        prev_len = len(self.lower_match_ids)
-                        self.lower_match_ids.update([next_match for next_match in next_matches if next_match not in self.elite_match_ids])
-                        countdown -= len(self.lower_match_ids) - prev_len
+                        summ_match_hist = summoner.match_history(queues={cass.Queue.ranked_solo_fives},
+                                                                 begin_time=start_date)
+                        next_matches = [match.id for match in summ_match_hist]
 
-                except Exception as e:
-                    print("Error downloading this summoner. Skip.")
-                    time.sleep(5)
-        return self.elite_match_ids, self.lower_match_ids
+                        prev_len = len(match_ids_by_region[region])
+                        match_ids_by_region[region].update(next_matches)
+                        num_games_per_league[i] -= len(match_ids_by_region[region]) - prev_len
+
+                    except Exception as e:
+                        print("Error downloading this summoner. Skip.")
+                        time.sleep(2)
+
+        for region in regions:
+            with open(out_path + "_" + region, "w") as f:
+                f.write(json.dumps(list(match_ids_by_region[region])))
+        if spillover:
+            spillover_log.close()
+
+
+    def get_match_ids(self, elite_counters, lower_counters, regions, start_date):
+        elite_leagues, lower_leagues = self.get_league_generators(regions)
+
+        self.get_match_ids_for_tier(elite_leagues, elite_counters, regions, start_date,
+                                       app_constants.train_paths[
+            "elite_matchids"], game_constants.ELITE_LEAGUES, True)
+        self.get_match_ids_for_tier(lower_leagues, lower_counters, regions, start_date,
+                                       app_constants.train_paths[
+            "lower_matchids"], game_constants.LOWER_LEAGUES)
 
 
     def sort_if_complete(self, team):
@@ -186,10 +234,13 @@ class Scraper:
                     champ_id = participant.champion.id
                     part_id = participant.id
                     champ2participant[champ_id] = part_id
+
                 winning_team = match.blue_team
                 losing_team = match.red_team
+                first_team_blue = 1
                 if losing_team.win:
                     winning_team, losing_team = losing_team, winning_team
+                    first_team_blue = 0
                 print("Determine win team complete")
                 teams = []
                 for team in [winning_team, losing_team]:
@@ -234,6 +285,16 @@ class Scraper:
                                                             in
                                                             enumerate(teams)}
                 kda = np.zeros((10, 3), dtype=np.int32)
+                dragon2index = {"AIR_DRAGON":0, "EARTH_DRAGON":1, "FIRE_DRAGON":2, "WATER_DRAGON":3}
+                dragon_kills = [[0,0,0,0],[0,0,0,0]]
+                dragon_soul_type = [[0,0,0,0],[0,0,0,0]]
+                dragon_soul_obtained = [0,0]
+                elder_active = [0,0]
+                elder_start_timer = None
+                baron_start_timer = None
+                baron_active = [0,0]
+                turrets_destroyed = [0,0]
+                rift_type = [0,0,0,0]
 
                 event_counter = 0
 
@@ -279,17 +340,60 @@ class Scraper:
                     for event in frame.events:
                         event_type = event.type
 
-                        if event_type == "CHAMPION_KILL":
+                        if (baron_active[0] or baron_active[1]) and event.timestamp.seconds > baron_start_timer + \
+                                game_constants.BARON_DURATION:
+                            baron_active = [0,0]
+                        if (elder_active[0] or elder_active[1]) and event.timestamp.seconds > elder_start_timer + \
+                                game_constants.ELDER_DURATION:
+                            elder_active = [0, 0]
+
+
+                        if event_type == "ELITE_MONSTER_KILL" and event.monster_type != "RIFTHERALD":
+                            team = int(participant_id2header_participants_index[event.killer_id] >= 5)
+                            if event.monster_type == "DRAGON":
+                                if event.monster_sub_type == "ELDER_DRAGON":
+                                    elder_active[team] = 1
+                                    elder_start_timer = event.timestamp.seconds
+                                else:
+                                    dragon_index = dragon2index[event.monster_sub_type]
+                                    dragon_kills[team][dragon_index] += 1
+                                    #this one determines the type of rift
+                                    if sum(dragon_kills[0]) + sum(dragon_kills[1]) == 3:
+                                        rift_type[dragon2index[event.monster_sub_type]] = 1
+                                    #this was the soul
+                                    if sum(dragon_kills[team]) == 4:
+                                        dragon_soul_obtained[team] = 1
+                                        dragon_soul_type[team] = rift_type
+                            elif event.monster_type == "BARON_NASHOR":
+                                baron_active[team] = 1
+                                baron_start_timer = event.timestamp.seconds
+                            #don't care about harold
+
+                        elif event_type == "BUILDING_KILL":
+                            if event.killer_id == 0:
+                                pass
+                                # if event.team_id == 100 and blue_team_wins:
+                                if event._data[cass.EventData].side == 100 and first_team_blue or \
+                                    event._data[cass.EventData].side == 200 and not first_team_blue:
+                                    team = 1
+                                else:
+                                    team = 0
+                            else:
+                                team = int(participant_id2header_participants_index[event.killer_id] >= 5)
+                            if event.building_type == "TOWER_BUILDING":
+                                turrets_destroyed[team] += 1
+
+
+
+                        elif event_type == "CHAMPION_KILL":
                             for assister in event.assisting_participants:
                                 kda[participant_id2header_participants_index[assister]][2] += 1
                             victim_kda = kda[participant_id2header_participants_index[event.victim_id]]
                             victim_kda[1] += 1
                             # champ died to turret or jg, etc.
-                            if event.killer_id == 0:
-                                continue
-
-                            killer_kda = kda[participant_id2header_participants_index[event.killer_id]]
-                            killer_kda[0] += 1
+                            if event.killer_id != 0:
+                                killer_kda = kda[participant_id2header_participants_index[event.killer_id]]
+                                killer_kda[0] += 1
 
 
                         elif event_type == "ITEM_DESTROYED" or event_type == "ITEM_PURCHASED" or event_type == \
@@ -338,8 +442,15 @@ class Scraper:
                                      "neutral_cs": np.around(event_neutral_cs.copy(), 2).tolist(),
                                      "xp": np.around(event_xp.copy(), 2).tolist(),
                                      "lvl": event_lvl.copy(),
-                                     "kda": kda.tolist().copy(),
-                                     "frame_index": frame_index + 1
+                                     "kda": np.ravel(kda).tolist().copy(),
+                                     "frame_index": frame_index + 1,
+                                     "baron_active": baron_active.copy(),
+                                     "elder_active": elder_active.copy(),
+                                     "dragons_killed": np.ravel(dragon_kills).tolist().copy(),
+                                     "dragon_soul_obtained": dragon_soul_obtained.copy(),
+                                     "dragon_soul_type": np.ravel(dragon_soul_type).tolist().copy(),
+                                     "turrets_destroyed": turrets_destroyed.copy(),
+                                     "first_team_blue": first_team_blue
                                      })
 
 
@@ -358,7 +469,7 @@ class Scraper:
                 teams_sorted = [1,1] if winning_team_sorted and losing_team_sorted \
                     else [1,0] if winning_team_sorted else [0,1] if losing_team_sorted else [0,0]
 
-                yield {"gameId": match_id, "sorted": teams_sorted, "participants": teams,
+                yield {"gameId": region + "_" + match_id, "sorted": teams_sorted, "participants": teams,
                        "itemsTimeline": events}
 
                 print(f"Processing complete {match_id}")

@@ -104,6 +104,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         X, Y = self.test[:, 1:-1], self.test[:, -1]
         return X,Y
 
+
     def get_train_data(self, cond=None):
         if not self.train:
             self.read_train_from_np_files()

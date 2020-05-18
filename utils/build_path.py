@@ -39,7 +39,7 @@ def _build_path(prev_avail_items, next_i, abs_items):
 
     result_buy_seq, result_ex_i_used, to_remove, result_abs, best_prev_avail_items_result = [], [], [], [], []
     while comps:
-        max_comp_score = -999999999
+        max_comp_score = -1
         max_ex_i_used = buy_seq = best_next_cmp = best_abs = prev_avail_items_result = None
 
         for comp in comps.elements():
@@ -48,7 +48,7 @@ def _build_path(prev_avail_items, next_i, abs_items):
 
             # is the current component closest to completion?
             comp_score = get_item_score(comp, curr_used)
-            if comp_score > max_comp_score or (comp_score == max_comp_score and random.random() > 0.5):
+            if comp_score > max_comp_score or comp_score == max_comp_score and random.random() > 0.5:
                 max_comp_score = comp_score
                 max_ex_i_used = curr_used
                 buy_seq = curr_seq
@@ -81,29 +81,24 @@ def _build_path(prev_avail_items, next_i, abs_items):
 
 
 def build_path_nogold(prev_avail_items, next_item):
-    occ = prev_avail_items[next_item.id]
+    occ = prev_avail_items.count(next_item.id)
+    prev_avail_items = Counter(prev_avail_items)
     if occ:
         del prev_avail_items[next_item.id]
     result_buy_seq, result_ex_i_used, result_abs, prev_avail_items = _build_path(prev_avail_items, next_item, [
         Counter(prev_avail_items)])
-    prev_avail_items += Counter({next_item.id:occ})
-    result_abs = [Counter(item_state.elements()) + Counter({next_item.id: occ}) for item_state in result_abs]
+    prev_avail_items[next_item.id] += occ
+    result_abs = [list(item_state.elements()) + [next_item.id] * occ for item_state in result_abs]
     return result_buy_seq, result_ex_i_used, result_abs, prev_avail_items
 
 
-def get_item_score(comp, curr_used, current_gold=None):
+def get_item_score(comp, curr_used):
     total_discount = 0
     for i in curr_used:
         # curr_used_score += i.tier
         total_discount += i.gold.total
     if total_discount == comp.gold.total:
-        return -10000
-    elif current_gold:
-        leftover_gold = current_gold - (comp.gold.total - total_discount)
-        if leftover_gold >= 0:
-            return comp.gold.total - leftover_gold
-        else:
-            return leftover_gold
+        return 0
     else:
         return comp.gold.total / (comp.gold.total - total_discount)
 
