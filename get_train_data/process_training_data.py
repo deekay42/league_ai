@@ -946,9 +946,9 @@ if __name__ == "__main__":
 
     start_date = cass.Patch.latest(region="NA").start
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
-    s = train.PositionsTrainer()
-    s.train()
+    # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
+    # s = train.PositionsTrainer()
+    # s.train()
     l.update_roles()
     t = NextItemsTrainer()
     print("NOW TRAINING EARLY GAME")
