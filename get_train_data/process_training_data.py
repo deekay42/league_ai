@@ -573,7 +573,7 @@ class ProcessNextItemsTrainingData:
                 current_game = unsorted_processed[gameId]
                 if current_game == []:
                     continue
-                gameIds = [[int(gameId)]] * current_game.shape[0]
+                gameIds = [[str(gameId)]] * current_game.shape[0]
                 #this will throw a keyerror if the game is already sorted
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
