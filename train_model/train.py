@@ -19,6 +19,7 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import sklearn
 from tflearn.data_utils import to_categorical
 from scipy import spatial
+from train_model.input_vector import Input
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -728,6 +729,7 @@ class NextItemsTrainer(Trainer):
         self.opp_champ_embs = None
         self.num_epochs = 200
 
+
     def build_aux_test_data(self, sourcepath):
         with open(sourcepath, "r") as f:
             self.aux_test_raw = json.load(f)
@@ -737,7 +739,7 @@ class NextItemsTrainer(Trainer):
             my_team_champs[test_case["role"]] = ChampManager().lookup_by("name", test_case["target_summ"])["int"]
             opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
                 "opp_team"]]
-            complete_example = [0]*221
+            complete_example = [0]*Input.len
             complete_example[0] = test_case["role"]
             complete_example[1:11] = my_team_champs + opp_team_champs
 
@@ -1396,9 +1398,9 @@ class BootsTrainer(NextItemsTrainer):
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_uninf"])
 
-        print("Loading elite train data first item")
+        print("Loading elite train data boots")
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_boots)
-        print("Loading lower train data first item")
+        print("Loading lower train data boots")
         X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_boots)
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
@@ -1664,13 +1666,13 @@ if __name__ == "__main__":
     # t = NextItemsTrainer()
     # t.build_next_items_standard_game_model()
 
-    t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_late_game_model()
 
     # t = WinPredTrainer()
     # t.train()
-    # t = BootsTrainer()
-    # t.train()
+    t = BootsTrainer()
+    t.train()
     # t = StarterItemsTrainer()
     # t.train()
     # t = ItemImgTrainer()

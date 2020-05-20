@@ -733,7 +733,7 @@ class NextItemModel(Model):
                                     'cg': np.s_[:, Input.current_gold_start:Input.current_gold_end],
                                     'turrets': np.s_[:, Input.turrets_start:Input.turrets_end], }
         
-        self.input_len = Input.first_team_blue_end
+        self.input_len = Input.len
         
         self.output_node_name = "Softmax"
         

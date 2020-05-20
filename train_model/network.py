@@ -1234,10 +1234,10 @@ class NextItemBootsNetwork(NextItemNetwork):
         pos = in_vec[:, 0]
         pos = tf.cast(pos, tf.int32)
 
-        cs = in_vec[:, self.cs_start:self.cs_end]
-        neutral_cs = in_vec[:, self.neutral_cs_start:self.neutral_cs_end]
-        lvl = in_vec[:, self.lvl_start:self.lvl_end]
-        kda = in_vec[:, self.kda_start:self.kda_end]
+        cs = in_vec[:, Input.cs_start:Input.cs_end]
+        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
+        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
+        kda = in_vec[:, Input.kda_start:Input.kda_end]
 
         total_cs = cs + neutral_cs
 
