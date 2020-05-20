@@ -911,9 +911,9 @@ class NextItemsTrainer(Trainer):
 
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_complete"])
+                                                                     "next_items_processed_elite_sorted_inf"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_complete"])
+                                                                     "next_items_processed_lower_sorted_inf"])
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_full_items_completed)
         print("Loading test data")
         X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.only_full_items_completed)
@@ -932,7 +932,11 @@ class NextItemsTrainer(Trainer):
 
         total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
-        print(f"missing items are: {missing_items}")
+        # missing_items_mapped = dict()
+        # for missing_item_int in missing_items:
+        #     try:
+        #         ItemMana missing_item
+        # print(f"missing items are: {missing_items_mapped}")
         # assert(missing_items == Counter([0]))
         total_y = sum(list(total_y_distrib.values()))
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
