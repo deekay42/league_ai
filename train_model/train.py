@@ -914,13 +914,13 @@ class NextItemsTrainer(Trainer):
                                                                      "next_items_processed_elite_sorted_inf"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_inf"])
-        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_full_items_completed)
+        X_elite, Y_elite = dataloader_elite.get_train_data()
         print("Loading test data")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data(NextItemsTrainer.only_full_items_completed)
+        X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
 
-        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_full_items_completed)
+        X_lower, Y_lower = dataloader_lower.get_train_data()
         print("Loading test data")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data(NextItemsTrainer.only_full_items_completed)
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
