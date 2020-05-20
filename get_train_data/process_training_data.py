@@ -567,13 +567,24 @@ class ProcessNextItemsTrainingData:
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
-
+        region2int = {"KR":100, "EUW":200, "NA":300, "EUNE":400, "BR":500, "TR":600, "LAS":700, "LAN":800, "RU":900, \
+                     "JP":1000, "OCE":1100}
         for gameId in unsorted_processed:
             try:
                 current_game = unsorted_processed[gameId]
                 if current_game == []:
                     continue
-                gameIds = [[str(gameId)]] * current_game.shape[0]
+                underscoreindex = gameId.rfind("_")
+                if underscoreindex == -1:
+                    region_prefix = "000"
+                region = gameId[:underscoreindex]
+                try:
+                    region_prefix = region2int[region]
+                except KeyError:
+                    region_prefix = "000"
+                gameId = region_prefix + gameId[underscoreindex+1:]
+                gameId = int(gameId)
+                gameIds = [[gameId]] * current_game.shape[0]
                 #this will throw a keyerror if the game is already sorted
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
