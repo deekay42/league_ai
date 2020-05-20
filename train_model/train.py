@@ -226,9 +226,9 @@ class WinPredTrainer(Trainer):
 
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_complete"])
+                                                                     "next_items_processed_elite_sorted_uninf"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_complete"])
+                                                                     "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
         X_elite, _ = dataloader_elite.get_train_data()
         print("Loading elite test data")
@@ -648,7 +648,7 @@ class PositionsTrainer(Trainer):
 
     def __init__(self):
         super().__init__()
-        self.num_epochs = 30
+        self.num_epochs = 20
 
 
     def eval_model(self, model, epoch):
@@ -919,6 +919,11 @@ class NextItemsTrainer(Trainer):
         self.X_test, self.Y_test = dataloader.get_test_data()
         X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)
 
@@ -955,8 +960,6 @@ class NextItemsTrainer(Trainer):
 
 
         self.X = self.X.astype(np.float32)
-        self.X_test = np.concatenate([self.X_test, X_test_lower], axis=0)
-        self.Y_test = np.concatenate([self.Y_test, Y_test_lower], axis=0)
 
         self.X_test = self.X_test.astype(np.float32)
 
