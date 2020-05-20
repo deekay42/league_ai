@@ -574,7 +574,6 @@ class ProcessNextItemsTrainingData:
                 current_game = unsorted_processed[gameId]
                 if current_game.size == 0:
                     continue
-                permutation = match_id2perm[gameId]
                 underscoreindex = gameId.rfind("_")
                 if underscoreindex == -1:
                     region_prefix = "000"
@@ -583,11 +582,11 @@ class ProcessNextItemsTrainingData:
                     region_prefix = region2int[region]
                 except KeyError:
                     region_prefix = "000"
-                gameId = str(region_prefix) + gameId[underscoreindex+1:]
-                gameId = int(gameId)
-                gameIds = [[gameId]] * current_game.shape[0]
+                gameId_int = str(region_prefix) + gameId[underscoreindex+1:]
+                gameId_int = int(gameId_int)
+                gameIds = [[gameId_int]] * current_game.shape[0]
                 #this will throw a keyerror if the game is already sorted
-
+                permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
                 updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, Input.pos_start:Input.pos_end]]
 
