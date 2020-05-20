@@ -932,11 +932,9 @@ class NextItemsTrainer(Trainer):
 
         total_y_distrib = self.train_y_distrib + self.test_y_distrib
         missing_items = Counter(list(range(len(self.target_names)))) - total_y_distrib
-        # missing_items_mapped = dict()
-        # for missing_item_int in missing_items:
-        #     try:
-        #         ItemMana missing_item
-        # print(f"missing items are: {missing_items_mapped}")
+        missing_items_mapped = [ItemManager().lookup_by("int", missing_item_int) for missing_item_int in missing_items]
+
+        print(f"missing items are: {missing_items_mapped}")
         # assert(missing_items == Counter([0]))
         total_y = sum(list(total_y_distrib.values()))
         total_y_distrib_sorted = np.array([count for count in np.array(sorted(list((total_y_distrib +
