@@ -379,9 +379,7 @@ class WinPredNetwork(LolNetwork):
         champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
-        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
-        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
-                                                             self.game_config["champs_per_game"]))
+
 
         # champ_ints = dropout(champ_ints, 0.8)
         # this does not work since dropout scales inputs, hence embedding lookup fails after that.
@@ -449,6 +447,12 @@ class WinPredNetwork(LolNetwork):
         team_kills_diff = team1_total_kills - team2_total_kills
         kd = kda[:, 0::3] - kda[:, 1::3]
 
+        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        all_champs_one_hot = dropout(all_champs_one_hot, 0.5, noise_shape=[n, self.game_config["champs_per_game"], 1])
+        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
+                                                             self.game_config["champs_per_game"]))
+
+
 
         final_input_layer = merge(
             [
@@ -475,11 +479,12 @@ class WinPredNetwork(LolNetwork):
                 first_team_has_blue_side
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
+                                                  regularizer="L2"))
         # net = dropout(net, 0.85)
-        # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
         # # net = dropout(net, 0.9)
-        # net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
