@@ -240,8 +240,6 @@ class WinPredTrainer(Trainer):
         X_test_raw = X_test_raw.astype(np.float32)
         model = NextItemModel("standard")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-
-
         self.X, self.Y = self.flip_data(self.X)
         self.test_sets = {}
 
