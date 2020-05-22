@@ -577,11 +577,12 @@ class ProcessNextItemsTrainingData:
                 underscoreindex = gameId.rfind("_")
                 if underscoreindex == -1:
                     region_prefix = "000"
-                region = gameId[:underscoreindex]
-                try:
-                    region_prefix = region2int[region]
-                except KeyError:
-                    region_prefix = "000"
+                else:
+                    region = gameId[:underscoreindex]
+                    try:
+                        region_prefix = region2int[region]
+                    except KeyError:
+                        region_prefix = "000"
                 gameId_int = str(region_prefix) + gameId[underscoreindex+1:]
                 gameId_int = int(gameId_int)
                 gameIds = [[gameId_int]] * current_game.shape[0]

@@ -686,7 +686,7 @@ item_config = \
         "num_circles": 3,
         "circle_size": 1.0,
         "darkness_rate": 0.4,
-        "color_change_rate": 0.05,
+        "color_change_rate": 0.25,
         "blur_rate": 6,
         "pixelate_rate": 0.4,
         "brightness_rate": 20,
@@ -1172,10 +1172,11 @@ def generate_training_data_rect(imgs, epochs, new_size):
 if __name__ == "__main__":
     import copy
 
-    img_orig = cv.imread('../assets/train_imgs/champs/Kaisa.png')
+    img_orig = cv.imread('../assets/train_imgs/items/0.png')
     cv.imshow("original", img_orig)
     while True:
         img = copy.deepcopy(img_orig)
-        img = generate_training_data_champs({"lol": img}, 1, (20, 20))[0][0]
+        # img = generate_training_data_champs({"lol": img}, 1, (20, 20))[0][0]
+        img = generate_training_data({"lol": img}, 1, (20, 20))[0][0]
         cv.imshow("text", img)
         cv.waitKey(0)

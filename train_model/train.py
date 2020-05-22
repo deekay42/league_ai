@@ -228,44 +228,97 @@ class WinPredTrainer(Trainer):
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_uninf"])
-        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_uninf"])
+        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
-        X_elite, _ = dataloader_elite.get_train_data()
+        self.X, _ = dataloader_elite.get_train_data()
+        # self.X = self.X[:50000]
         print("Loading elite test data")
-        X_test_elite, _ = dataloader_elite.get_test_data()
-        print("Loading lower train data")
-        X_lower, _ = dataloader_lower.get_train_data()
-        print("Loading lower test data")
-        X_test_lower, _ = dataloader_lower.get_test_data()
-
-        self.X = np.concatenate([X_elite, X_lower], axis=0)
-        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
-
-        #this isn't really necessary because gold, xp, cs make the data unredundant
-        # self.X[:, Input.pos_start:Input.pos_end] = 0
-        # self.X[:, Input.items_start:Input.items_end] = 0
-        #
-
-
+        X_test_raw, _ = dataloader_elite.get_test_data_raw()
+        # X_test_raw = X_test_raw[:10000]
         self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
+        X_test_raw = X_test_raw.astype(np.float32)
         model = NextItemModel("standard")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
-        self.X = np.concatenate([self.X, self.flip_teams(self.X)], axis=0)
-        self.X_test = np.concatenate([self.X_test, self.flip_teams(self.X_test)], axis=0)
-        self.Y = [1] * (len(self.X)//2) + [0] * (len(self.X)//2)
-        self.Y = np.array(self.Y)[:,np.newaxis]
-        self.Y_test = [1] * (len(self.X_test) // 2) + [0] * (len(self.X_test) // 2)
-        self.Y_test = np.array(self.Y_test)[:, np.newaxis]
 
+
+        self.X, self.Y = self.flip_data(self.X)
+        self.test_sets = {}
+
+        X_test_all = X_test_raw[:, 1:]
+
+        self.test_sets["all"] = self.flip_data(X_test_all)
+        self.test_sets["all"] = model.scale_inputs(np.array(self.test_sets["all"][0]).astype(np.float32)), \
+                                self.test_sets["all"][1]
+
+        X_test_init = X_test_all.copy()
+        X_test_init[:, Input.champs_end:Input.first_team_blue_start] = 0
+        X_test_init[:, Input.pos_start:Input.pos_end] = 0
+        X_test_init = np.unique(X_test_init, axis=0)
+        self.test_sets["init"] = self.flip_data(X_test_init)
+
+        num_drags_killed = np.sum(X_test_raw[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
+        num_kills = np.sum(X_test_raw[:, Input.kda_start + 1:Input.kda_end + 1:3], axis=1)
+        num_towers = np.sum(X_test_raw[:, Input.turrets_start + 1:Input.turrets_end + 1], axis=1)
+        max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+
+        self.test_sets["first_drag"] = self.process_win_pred_measure(X_test_raw, model, num_drags_killed == 1)
+        self.test_sets["first_kill"] = self.process_win_pred_measure(X_test_raw, model, num_kills == 1)
+        self.test_sets["first_tower"] = self.process_win_pred_measure(X_test_raw, model, num_towers == 1)
+
+        self.test_sets["first_lvl_6"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 6)
+        self.test_sets["first_lvl_11"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 11)
+        self.test_sets["first_lvl_16"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 16)
+
+        self.Y_test = self.X_test = []
         self.build_new_model()
 
+
+    def process_win_pred_measure(self, X, model, cond):
+        X_result = self.extract_first_occurence_per_match(X, cond)
+        X_result = model.scale_inputs(np.array(X_result).astype(np.float32))
+        return self.flip_data(X_result)
+
+
+    def eval_model_single(self, model, X_test, Y_test):
+        return model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
+
+
     def eval_model(self, model, epoch, X_test, Y_test):
-        acc = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
-        self.log_output(acc, epoch)
-        return acc
+        accs = []
+        for output in [sys.stdout, self.logfile]:
+            output.write("Epoch {0}\n".format(epoch + 1))
+
+        for name, (X,Y) in self.test_sets.items():
+            accs.append(self.eval_model_single(model, X, Y))
+            for output in [sys.stdout, self.logfile]:
+                output.write("{0} {1:.4f}\n".format(name, accs[-1]))
+
+        for output in [sys.stdout, self.logfile]:
+            output.write("\n\n")
+            output.flush()
+
+        return accs
+
+
+    def extract_first_occurence_per_match(self, X, cond):
+        X_result = []
+        match_id_blacklist = set()
+        for example in X[cond]:
+            if example[0] in match_id_blacklist:
+                continue
+            else:
+                match_id_blacklist.add(example[0])
+                X_result.append(example[1:])
+        return np.array(X_result)
+
+
+    def flip_data(self, X):
+        X_result = np.concatenate([X, self.flip_teams(X)], axis=0)
+        Y_result = [1] * (len(X_result) // 2) + [0] * (len(X_result) // 2)
+        Y_result = np.array(Y_result)[:, np.newaxis]
+
+        return X_result, Y_result
 
 
     def determine_best_eval(self, scores):
@@ -1334,8 +1387,8 @@ class StarterItemsTrainer(NextItemsTrainer):
                                                                      "next_items_processed_elite_sorted_uninf"])
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_uninf"])
-        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_starters())
-        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_starters())
+        X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_starters)
+        X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_starters)
 
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
@@ -1669,14 +1722,16 @@ if __name__ == "__main__":
     # t = NextItemsTrainer()
     # t.build_next_items_late_game_model()
 
-    # t = WinPredTrainer()
-    # t.train()
-    t = BootsTrainer()
+    t = WinPredTrainer()
     t.train()
+    # t = BootsTrainer()
+    # t.train()
     # t = StarterItemsTrainer()
     # t.train()
     # t = ItemImgTrainer()
     # t.build_new_img_model()
+    # s = ChampImgTrainer()
+    # s.build_new_img_model()
 
     #
     # t.build_champ_embeddings_model()
@@ -1720,8 +1775,7 @@ if __name__ == "__main__":
     # print("Raw test data predictions: {0}".format(y))
     # print("Actual test data  values : {0}".format(Y_test))
     #
-    # s = ChampImgTrainer()
-    # s.build_new_img_model()
+
 
 
     # from mpl_toolkits.mplot3d import Axes3D
