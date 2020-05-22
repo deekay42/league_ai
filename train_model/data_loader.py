@@ -109,10 +109,11 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         if not self.train:
             self.read_train_from_np_files()
         if cond:
-
             self.train = self.train[cond(self.train)]
-        X,Y = self.train[:, 1:-1], self.train[:, -1]
-        return X,Y
+        X, Y = self.train[:, 1:-1], self.train[:, -1]
+        return X, Y
+
+
 
 
     def get_item_distrib_by_champ(self):
@@ -215,15 +216,11 @@ class SortedNextItemsDataLoader(DataLoaderBase):
 
 
     def get_test_data_raw(self):
-        if not self.test_x:
+        if not self.test:
             self.read_test_from_np_files()
-        return self.test_x, self.test_y
 
-
-    def get_train_data_raw(self):
-        if not self.train_x:
-            self.read_train_from_np_files()
-        return self.train_x, self.train_y
+        X, Y = self.test[:, :-1], self.test[:, -1]
+        return X, Y
 
 
     def get_all_unfolded(self):
