@@ -448,14 +448,9 @@ class WinPredNetwork(LolNetwork):
         kd = kda[:, 0::3] - kda[:, 1::3]
 
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
-        all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
+        all_champs_one_hot = dropout(all_champs_one_hot, 0.5, noise_shape=[n, self.game_config["champs_per_game"], 1])
         all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
                                                              self.game_config["champs_per_game"]))
-
-        net = batch_normalization(fully_connected(all_champs_one_hot, 512, bias=False, activation='relu',
-                                                  regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
-        all_champs_one_hot = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
 
 
 
@@ -484,10 +479,10 @@ class WinPredNetwork(LolNetwork):
                 first_team_has_blue_side
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu', regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
         # # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
         net = fully_connected(net, 1, activation='sigmoid')
