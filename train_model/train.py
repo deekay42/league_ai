@@ -251,21 +251,18 @@ class WinPredTrainer(Trainer):
         self.test_sets["all"] = model.scale_inputs(np.array(self.test_sets["all"][0]).astype(np.float32)), \
                                 self.test_sets["all"][1]
 
-        X_test_init = X_test_all.copy()
-        X_test_init[:, Input.champs_end:Input.first_team_blue_start] = 0
-        X_test_init[:, Input.pos_start:Input.pos_end] = 0
-        X_test_init = np.unique(X_test_init, axis=0)
-        self.test_sets["init"] = self.flip_data(X_test_init)
 
         num_drags_killed = np.sum(X_test_raw[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
         num_kills = np.sum(X_test_raw[:, Input.kda_start + 1:Input.kda_end + 1:3], axis=1)
         num_towers = np.sum(X_test_raw[:, Input.turrets_start + 1:Input.turrets_end + 1], axis=1)
         max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
 
+
         self.test_sets["first_drag"] = self.process_win_pred_measure(X_test_raw, model, num_drags_killed == 1)
         self.test_sets["first_kill"] = self.process_win_pred_measure(X_test_raw, model, num_kills == 1)
         self.test_sets["first_tower"] = self.process_win_pred_measure(X_test_raw, model, num_towers == 1)
 
+        self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
         self.test_sets["first_lvl_6"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 6)
         self.test_sets["first_lvl_11"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 11)
         self.test_sets["first_lvl_16"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 16)
