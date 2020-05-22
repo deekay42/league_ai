@@ -475,11 +475,11 @@ class WinPredNetwork(LolNetwork):
                 first_team_has_blue_side
             ], mode='concat', axis=1)
 
-        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(final_input_layer, 128, bias=False, activation='relu'))
         # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu'))
-        # net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu'))
+        # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu'))
+        # # net = dropout(net, 0.9)
+        # net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu'))
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
