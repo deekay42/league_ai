@@ -111,9 +111,25 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         if cond:
             self.train = self.train[cond(self.train)]
         X, Y = self.train[:, 1:-1], self.train[:, -1]
+        # self.stat_items()
         return X, Y
 
 
+    def stat_items(self):
+        stats = dict()
+        for example in self.train:
+            pos = example[1]
+            champ_int = example[pos+2]
+            item_name = ItemManager().lookup_by("int", example[-1])["name"]
+            if not champ_int in stats:
+                stats[champ_int] = dict()
+            if not pos in stats[champ_int]:
+                stats[champ_int][pos] = Counter()
+            if not item_name in stats[champ_int][pos]:
+                stats[champ_int][pos][item_name] = 1
+            else:
+                stats[champ_int][pos][item_name] += 1
+        return stats
 
 
     def get_item_distrib_by_champ(self):

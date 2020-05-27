@@ -206,6 +206,18 @@ def brute_force_build_paths(item, existing_items):
     return result
 
 
+def build_path_nogold_v2(prev_avail_items, next_item):
+    occ = prev_avail_items[next_item.id]
+    if occ:
+        del prev_avail_items[next_item.id]
+    result_buy_seq, result_ex_i_used, result_abs, prev_avail_items = _build_path(prev_avail_items, next_item, [
+        Counter(prev_avail_items)])
+    prev_avail_items += Counter({next_item.id:occ})
+    result_abs = [Counter(item_state.elements()) + Counter({next_item.id: occ}) for item_state in result_abs]
+    return result_buy_seq, result_ex_i_used, result_abs, prev_avail_items
+
+
+
 def score_build_path(build_path, existing_items, current_gold):
     existing_items_copy = Counter(existing_items)
     result_buy_seq, result_ex_i_used, result_abs, prev_avail_items = [], [], [existing_items_copy.copy()], []
@@ -223,7 +235,7 @@ def score_build_path(build_path, existing_items, current_gold):
         #     already_used_items_add_to_abs += [already_used_items.copy()]
         #     existing_items_copy -= Counter({item:1})
         # else:
-        buy_seq, ex_i_used, abs_items, prev_avail_items = build_path_nogold(result_abs[-1].copy(), cass_item)
+        buy_seq, ex_i_used, abs_items, prev_avail_items = build_path_nogold_v2(result_abs[-1].copy(), cass_item)
         result_buy_seq += buy_seq
         existing_items_copy -= Counter([i.id for i in ex_i_used])
         result_abs += abs_items
