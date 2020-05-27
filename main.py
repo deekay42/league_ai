@@ -803,8 +803,8 @@ class Main(FileSystemEventHandler):
 # m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen687.png")
-# for i in range(700,720):
+# m.process_image(f"test_data/screenshots/Screen659.png")
+# for i in range(678,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
