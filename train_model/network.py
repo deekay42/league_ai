@@ -433,6 +433,7 @@ class WinPredNetwork(LolNetwork):
         total_gold = in_vec[:,Input.total_gold_start:Input.total_gold_end]
         total_gold = tf.reshape(total_gold, (-1,2,5))
         total_gold_diff = total_gold[:,0] - total_gold[:,1]
+
         baron_active = in_vec[:,Input.baron_start:Input.baron_end]
         elder_active = in_vec[:, Input.elder_start:Input.elder_end]
         dragons_killed = in_vec[:, Input.dragons_killed_start:Input.dragons_killed_end]
@@ -460,8 +461,8 @@ class WinPredNetwork(LolNetwork):
             [
                 all_champs_one_hot,
                 # # all_champs_embedded,
-                total_gold,
-                # total_gold_diff,
+                # total_gold,
+                total_gold_diff,
                 # team1_total_kills,
                 # team2_total_kills,
                 team_kills_diff,
