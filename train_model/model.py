@@ -1110,23 +1110,61 @@ def export_models():
         model.export()
 
 if __name__ == "__main__":
-    model = WinPredModel(type="init")
+    gold_ratios = np.array([12.5, 10.2, 14.1, 15.0, 7.8])
+    gold_ratios = gold_ratios / np.sum(gold_ratios)
+    model = WinPredModel(type="standard")
     model.load_model()
-    inputs = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
+    input_5541 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
                              "Ezreal",
                              "Karma"],
      # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-     "total_gold": [57800/5]*10,
+     "total_gold": np.concatenate([gold_ratios*57800, gold_ratios*57800], axis=0),
      "first_team_blue_start": 1,
      "cs": [238, 211, 309, 328, 35, 287, 174, 297, 292, 43],
      "lvl": [16, 14, 17, 16, 12, 17, 15, 16, 15, 13],
      "kda": [[4, 2, 2], [0, 3, 6], [3, 1, 5], [4, 2, 5], [1, 1, 6], [1, 4, 6], [4, 2, 2], [1, 2, 0], [3, 2, 2],
              [0, 2, 7]],
-     "baron_active": [0, 0],
+     "baron_active": [0, 1],
      "elder_active": [0, 0],
      "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [1, 1], "FIRE_DRAGON": [1, 0], "WATER_DRAGON": [0, 1]},
      "dragon_soul_type": ["NONE", "NONE"],
      "turrets": [4, 4]}
+
+    input_4529 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
+                                 "Ezreal",
+                                 "Karma"],
+                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
+                  "total_gold": np.concatenate([gold_ratios * 37700, gold_ratios * 38300], axis=0),
+                  "first_team_blue_start": 1,
+                  "cs": [168, 147, 219, 215, 32, 203, 138, 213, 199, 36],
+                  "lvl": [13, 11, 14, 12, 9, 14, 12, 13, 12, 9],
+                  "kda": [[2, 2, 1], [0, 1, 3], [0, 0, 3], [2, 1, 1], [1, 0, 2], [0, 1, 3], [1, 2, 0], [1, 0, 0],
+                          [2, 1, 1],
+                          [0, 1, 3]],
+                  "baron_active": [0, 0],
+                  "elder_active": [0, 0],
+                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 1], "FIRE_DRAGON": [1, 0],
+                              "WATER_DRAGON": [0, 1]},
+                  "dragon_soul_type": ["NONE", "NONE"],
+                  "turrets": [2, 3]}
+
+    input_4027 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
+                                 "Ezreal",
+                                 "Karma"],
+                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
+                  "total_gold": np.concatenate([gold_ratios * 29400, gold_ratios * 27700], axis=0),
+                  "first_team_blue_start": 1,
+                  "cs": [143, 115, 167, 176, 29, 151, 114, 167, 159, 28],
+                  "lvl": [12, 10, 12, 11, 8, 12, 10, 11, 10, 7],
+                  "kda": [[2, 1, 0], [0, 0, 3], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 1, 1], [1, 1, 0], [0, 0, 0],
+                          [0, 1, 0],
+                          [0, 1, 0]],
+                  "baron_active": [0, 0],
+                  "elder_active": [0, 0],
+                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [1, 0],
+                              "WATER_DRAGON": [0, 1]},
+                  "dragon_soul_type": ["NONE", "NONE"],
+                  "turrets": [0, 0]}
     # import data_loader
     # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
     #                                                              "next_items_processed_elite_sorted_inf"])
@@ -1135,27 +1173,27 @@ if __name__ == "__main__":
     # X_test_raw, _ = dataloader_elite.get_test_data_raw()
     # # X_test_raw = X_test_raw[:10000]
     # scalemodel = NextItemModel("standard")
-    from train_model.train import WinPredTrainer
-    t = WinPredTrainer()
-    # max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-    # X,Y = t.process_win_pred_measure(X_test_raw, scalemodel, max_lvl == 1)
+    # from train_model.train import WinPredTrainer
+    # t = WinPredTrainer()
+    # # max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    # # X,Y = t.process_win_pred_measure(X_test_raw, scalemodel, max_lvl == 1)
+    # #
+    # # model.predict(X)
     #
-    # model.predict(X)
-
-    import data_loader
-
-    dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                 "next_items_processed_elite_sorted_inf"])
-    X, _ = dataloader_elite.get_train_data_raw()
-    print("Loading elite test data")
-    # X_test_raw, _ = dataloader_elite.get_test_data_raw()
-    # X_test_raw = X_test_raw[:10000]
-    scalemodel = NextItemModel("standard")
-    # self.test_sets = {}
-
-    max_lvl = np.max(X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-    X, Y = t.process_win_pred_measure(X, scalemodel, max_lvl == 1)
-    print(model.predict(X))
+    # import data_loader
+    #
+    # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+    #                                                              "next_items_processed_elite_sorted_inf"])
+    # X, _ = dataloader_elite.get_train_data_raw()
+    # print("Loading elite test data")
+    # # X_test_raw, _ = dataloader_elite.get_test_data_raw()
+    # # X_test_raw = X_test_raw[:10000]
+    # scalemodel = NextItemModel("standard")
+    # # self.test_sets = {}
+    #
+    # max_lvl = np.max(X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    # X, Y = t.process_win_pred_measure(X, scalemodel, max_lvl == 1)
+    # print(model.predict(X))
 
 
     # from train_model.train import WinPredTrainer
@@ -1165,3 +1203,21 @@ if __name__ == "__main__":
     # x_flipped = t.flip_teams(x)
     # print(model.predict(x))
     # print(model.predict(x_flipped))
+
+    from train_model.train import WinPredTrainer
+    t = WinPredTrainer()
+
+    x = model.transform_inputs(**input_5541)
+    x_flipped = t.flip_teams(x)
+    print(model.predict(x))
+    print(model.predict(x_flipped))
+
+    x = model.transform_inputs(**input_4529)
+    x_flipped = t.flip_teams(x)
+    print(model.predict(x))
+    print(model.predict(x_flipped))
+
+    x = model.transform_inputs(**input_4027)
+    x_flipped = t.flip_teams(x)
+    print(model.predict(x))
+    print(model.predict(x_flipped))
