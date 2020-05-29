@@ -1751,7 +1751,7 @@ if __name__ == "__main__":
     # t.build_next_items_late_game_model()
 
     t = WinPredTrainer()
-    t.train_init()
+    t.train()
     # t = BootsTrainer()
     # t.train()
     # t = StarterItemsTrainer()
