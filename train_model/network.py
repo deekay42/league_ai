@@ -451,16 +451,24 @@ class WinPredNetwork(LolNetwork):
         kd = kda[:, 0::3] - kda[:, 1::3]
 
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
+        team1_champs_one_hot = dropout(team1_champs_one_hot, 0.2,
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+        team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
+        team2_champs_one_hot = dropout(team2_champs_one_hot, 0.2,
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+
+        team1_champs_k_hot = tf.reduce_sum(team1_champs_one_hot, axis=1)
+        team2_champs_k_hot = tf.reduce_sum(team2_champs_one_hot, axis=1)
+
+        #dropout should be applied so that equal champs from both teams are dropped
         all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
         all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
                                                              self.game_config["champs_per_game"]))
 
 
-
-        final_input_layer = merge(
+        stats_layer = merge(
             [
-                all_champs_one_hot,
-                # # all_champs_embedded,
                 # total_gold,
                 total_gold_diff,
                 # team1_total_kills,
@@ -482,14 +490,26 @@ class WinPredNetwork(LolNetwork):
                 turrets_destroyed,
                 first_team_has_blue_side
             ], mode='concat', axis=1)
+        stats_layer = dropout(stats_layer, 0.9)
 
-        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
-                                                  regularizer="L2"))
-        # net = dropout(net, 0.85)
+        final_input_layer = merge(
+            [
+                team1_champs_k_hot,
+                team2_champs_k_hot,
+                stats_layer
+            ], mode='concat', axis=1)
+
+        net = final_input_layer
+
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
-        # # net = dropout(net, 0.9)
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
+
         net = fully_connected(net, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
