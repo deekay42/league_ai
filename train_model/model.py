@@ -689,7 +689,148 @@ class SelfImgModel(ImgModel):
         return role_index
 
 
-class NextItemModel(Model):
+class GameModel(Model):
+
+    def __init__(self, type, dll_hook=None):
+        super().__init__(dll_hook)
+        self.cont_slices_by_name = {'total_gold': np.s_[:, Input.total_gold_start:Input.total_gold_end],
+                                    'cs': np.s_[:, Input.cs_start:Input.cs_end],
+                                    'neutral_cs': np.s_[:, Input.neutral_cs_start:Input.neutral_cs_end],
+                                    'xp': np.s_[:, Input.xp_start:Input.xp_end],
+                                    'lvl': np.s_[:, Input.lvl_start:Input.lvl_end],
+                                    'kda': np.s_[:, Input.kda_start:Input.kda_end],
+                                    'cg': np.s_[:, Input.current_gold_start:Input.current_gold_end],
+                                    'turrets': np.s_[:, Input.turrets_start:Input.turrets_end], }
+
+    def scale_inputs(self, X):
+        for slice_name in self.cont_slices_by_name:
+            slice = self.cont_slices_by_name[slice_name]
+            if slice_name == 'cs' or slice_name == 'neutral_cs':
+                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
+            elif slice_name == 'lvl':
+                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
+            elif slice_name == 'kda':
+                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
+            elif slice_name == 'cg':
+                scaler = self.fit_input(np.array([[0.0, 2000.0]]), slice_name)
+            elif slice_name == 'total_gold':
+                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
+            elif slice_name == 'xp':
+                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
+            elif slice_name == 'turrets':
+                scaler = self.fit_input(np.array([[0.0, 11.0]]), slice_name)
+            else:
+                print("WTFFFFFFFF")
+            X[slice] = scaler.transform(X[slice])
+        return X
+
+
+    def fit_input(self, X, scaler_name):
+        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
+        min_max_scaler.fit(np.reshape(X, (-1, 1)))
+        return min_max_scaler
+
+
+
+class WinPredModel(GameModel):
+
+    def __init__(self, type, dll_hook=None):
+        super().__init__(dll_hook)
+
+
+        if type == "standard":
+            self.model_path = app_constants.model_paths["best"]["win_pred_standard"]
+            self.elements = "win_pred_standard"
+        elif type == "init":
+            self.model_path = app_constants.model_paths["best"]["win_pred_init"]
+            self.elements = "win_pred_init"
+
+
+
+        self.input_len = Input.len
+
+        self.output_node_name = "Sigmoid"
+
+        if dll_hook:
+            return
+
+        if type == "standard":
+            self.network = network.WinPredNetwork()
+        elif type == "init":
+            self.network = network.WinPredNetworkInit()
+
+
+
+    def transform_inputs(self, champs_str,  total_gold, first_team_blue_start, cs=None, lvl=None, kda=None,
+                     baron_active=None,
+                     elder_active=None, dragons=None, dragon_soul_type=None, turrets=None):
+
+        if baron_active is None:
+            baron_active = [0, 0]
+        if elder_active is None:
+            elder_active = [0, 0]
+        if dragons is None:
+            dragons = {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [0,0], "WATER_DRAGON": [0,0]}
+        if cs is None:
+            cs = [0] * 10
+        if lvl is None:
+            lvl = [1] * 10
+        if kda is None:
+            kda = [[0,0,0]]*10
+        if dragon_soul_type is None:
+            dragon_soul_type = ["NONE", "NONE"]
+        if turrets is None:
+            turrets = [0,0]
+
+        dragons_int = [0,0,0,0,0,0,0,0]
+        for dragon_type in dragons:
+            team_dragon_kills = dragons[dragon_type]
+            dragon_index = game_constants.dragon2index[dragon_type]
+            dragons_int[dragon_index] += team_dragon_kills[0]
+            dragons_int[dragon_index+4] += team_dragon_kills[1]
+
+        dragon_soul = [dragon_soul_type[0] != "NONE", dragon_soul_type[1] != "NONE"]
+        dragon_soul_type_ints = [game_constants.dragon2index[soul_team] if soul_team in game_constants.dragon2index
+                                else 0
+                       for soul_team in dragon_soul_type]
+        dragon_soul_type = [0,0,0,0,0,0,0,0]
+        if dragon_soul_type_ints[0] != 0:
+            dragon_soul_type[dragon_soul_type_ints[0]] = 1
+        if dragon_soul_type_ints[1] != 0:
+            dragon_soul_type[dragon_soul_type_ints[1]] = 1
+
+
+        x = np.zeros(shape=self.input_len, dtype=np.int32)
+        champs_int = [ChampManager().lookup_by("name", chstr)["int"] for chstr in champs_str]
+        x[Input.champs_start:Input.champs_end] = champs_int
+        x[Input.cs_start:Input.cs_end] = cs
+        x[Input.lvl_start:Input.lvl_end] = lvl
+        x[Input.kda_start:Input.kda_end] = np.ravel(kda)
+        x[Input.total_gold_start:Input.total_gold_end] = total_gold
+        x[Input.baron_start:Input.baron_end] = baron_active
+        x[Input.elder_start:Input.elder_end] = elder_active
+        x[Input.dragons_killed_start:Input.dragons_killed_end] = dragons_int
+        x[Input.dragon_soul_type_start:Input.dragon_soul_type_end] = dragon_soul_type
+        x[Input.dragon_soul_start:Input.dragon_soul_end] = dragon_soul
+        x[Input.turrets_start:Input.turrets_end] = turrets
+        x[Input.first_team_blue_start:Input.first_team_blue_end] = first_team_blue_start
+        x = self.scale_inputs(np.array([x]).astype(np.float32))
+        return x
+
+
+
+    def predict(self, x, blackout_indices=None):
+        if self.dll_hook:
+            flat_x = np.ravel(x).astype(np.float)
+            y = self.dll_hook.predict(flat_x, self.elements, (x.shape[0], self.artifact_manager.get_num("int")))
+        else:
+            with self.graph.as_default():
+                y = self.model.predict(x)
+        return y[0]
+
+
+
+class NextItemModel(GameModel):
 
     def __init__(self, early_or_late, dll_hook=None):
         super().__init__(dll_hook)
@@ -723,15 +864,6 @@ class NextItemModel(Model):
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
-
-        self.cont_slices_by_name = {'total_gold': np.s_[:, Input.total_gold_start:Input.total_gold_end],
-                                    'cs': np.s_[:, Input.cs_start:Input.cs_end],
-                                    'neutral_cs': np.s_[:, Input.neutral_cs_start:Input.neutral_cs_end],
-                                    'xp': np.s_[:, Input.xp_start:Input.xp_end],
-                                    'lvl': np.s_[:, Input.lvl_start:Input.lvl_end],
-                                    'kda': np.s_[:, Input.kda_start:Input.kda_end],
-                                    'cg': np.s_[:, Input.current_gold_start:Input.current_gold_end],
-                                    'turrets': np.s_[:, Input.turrets_start:Input.turrets_end], }
         
         self.input_len = Input.len
         
@@ -791,35 +923,6 @@ class NextItemModel(Model):
             self.output_logs(x)
         result, probabilities = self.predict(x, blackout_indices)
         return result[zero_offset], result, probabilities[zero_offset]
-
-
-    def scale_inputs(self, X):
-        for slice_name in self.cont_slices_by_name:
-            slice = self.cont_slices_by_name[slice_name]
-            if slice_name == 'cs' or slice_name == 'neutral_cs':
-                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
-            elif slice_name == 'lvl':
-                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
-            elif slice_name == 'kda':
-                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
-            elif slice_name == 'cg':
-                scaler = self.fit_input(np.array([[0.0, 2000.0]]), slice_name)
-            elif slice_name == 'total_gold':
-                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
-            elif slice_name == 'xp':
-                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
-            elif slice_name == 'turrets':
-                scaler = self.fit_input(np.array([[0.0, 11.0]]), slice_name)
-            else:
-                print("WTFFFFFFFF")
-            X[slice] = scaler.transform(X[slice])
-        return X
-
-
-    def fit_input(self, X, scaler_name):
-        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
-        min_max_scaler.fit(np.reshape(X, (-1, 1)))
-        return min_max_scaler
 
 
     @staticmethod
@@ -1005,3 +1108,60 @@ def export_models():
     for model in models:
         model.load_model()
         model.export()
+
+if __name__ == "__main__":
+    model = WinPredModel(type="init")
+    model.load_model()
+    inputs = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
+                             "Ezreal",
+                             "Karma"],
+     # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
+     "total_gold": [57800/5]*10,
+     "first_team_blue_start": 1,
+     "cs": [238, 211, 309, 328, 35, 287, 174, 297, 292, 43],
+     "lvl": [16, 14, 17, 16, 12, 17, 15, 16, 15, 13],
+     "kda": [[4, 2, 2], [0, 3, 6], [3, 1, 5], [4, 2, 5], [1, 1, 6], [1, 4, 6], [4, 2, 2], [1, 2, 0], [3, 2, 2],
+             [0, 2, 7]],
+     "baron_active": [0, 0],
+     "elder_active": [0, 0],
+     "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [1, 1], "FIRE_DRAGON": [1, 0], "WATER_DRAGON": [0, 1]},
+     "dragon_soul_type": ["NONE", "NONE"],
+     "turrets": [4, 4]}
+    # import data_loader
+    # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+    #                                                              "next_items_processed_elite_sorted_inf"])
+    #
+    # print("Loading elite test data")
+    # X_test_raw, _ = dataloader_elite.get_test_data_raw()
+    # # X_test_raw = X_test_raw[:10000]
+    # scalemodel = NextItemModel("standard")
+    from train_model.train import WinPredTrainer
+    t = WinPredTrainer()
+    # max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    # X,Y = t.process_win_pred_measure(X_test_raw, scalemodel, max_lvl == 1)
+    #
+    # model.predict(X)
+
+    import data_loader
+
+    dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                 "next_items_processed_elite_sorted_inf"])
+    X, _ = dataloader_elite.get_train_data_raw()
+    print("Loading elite test data")
+    # X_test_raw, _ = dataloader_elite.get_test_data_raw()
+    # X_test_raw = X_test_raw[:10000]
+    scalemodel = NextItemModel("standard")
+    # self.test_sets = {}
+
+    max_lvl = np.max(X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    X, Y = t.process_win_pred_measure(X, scalemodel, max_lvl == 1)
+    print(model.predict(X))
+
+
+    # from train_model.train import WinPredTrainer
+    # t = WinPredTrainer()
+    # x = model.transform_inputs(**inputs)
+    # x[:,11:] = 0
+    # x_flipped = t.flip_teams(x)
+    # print(model.predict(x))
+    # print(model.predict(x_flipped))
