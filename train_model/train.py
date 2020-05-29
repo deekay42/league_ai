@@ -253,8 +253,8 @@ class WinPredTrainer(Trainer):
         # self.opp_champ_embs = opp_champ_embs_normed
         self.network = WinPredNetwork()
 
-        self.train_path = app_constants.model_paths["train"]["win_pred"]
-        self.best_path = app_constants.model_paths["best"]["win_pred"]
+        self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
+        self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
 
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
