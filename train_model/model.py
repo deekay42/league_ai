@@ -14,7 +14,7 @@ from collections import Counter
 import os
 import platform
 from sklearn import preprocessing
-from tesserocr import PyTessBaseAPI
+# from tesserocr import PyTessBaseAPI
 import pathlib
 import ctypes
 from numpy.ctypeslib import ndpointer
