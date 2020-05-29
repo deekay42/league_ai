@@ -114,7 +114,8 @@ for label in ["train", "best"]:
         "next_items_starter": paths["base"] + "next_items" + os.sep + "starter" + os.sep,
         "next_items_first_item": paths["base"] + "next_items" + os.sep + "first_item" + os.sep,
         "next_items_boots": paths["base"] + "next_items" + os.sep + "boots" + os.sep,
-        "win_pred": paths["base"] + "win_pred" + os.sep,
+        "win_pred_standard": paths["base"] + "win_pred" + os.sep + "standard" + os.sep,
+        "win_pred_init": paths["base"] + "win_pred" + os.sep + "init" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})
     paths.update({"imgs": paths["base"] + "imgs" + os.sep})
     paths.update({"champs": paths["imgs"] + "champs" + os.sep,
