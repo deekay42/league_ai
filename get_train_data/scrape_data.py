@@ -285,7 +285,7 @@ class Scraper:
                                                             in
                                                             enumerate(teams)}
                 kda = np.zeros((10, 3), dtype=np.int32)
-                dragon2index = {"AIR_DRAGON":0, "EARTH_DRAGON":1, "FIRE_DRAGON":2, "WATER_DRAGON":3}
+                dragon2index = game_constants.dragon2index
                 dragon_kills = [[0,0,0,0],[0,0,0,0]]
                 dragon_soul_type = [[0,0,0,0],[0,0,0,0]]
                 dragon_soul_obtained = [0,0]
