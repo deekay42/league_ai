@@ -767,7 +767,7 @@ class SelfImgModel(ImgModel):
 
 class GameModel(Model):
 
-    def __init__(self, type, dll_hook=None):
+    def __init__(self, dll_hook=None):
         super().__init__(dll_hook)
         self.cont_slices_by_name = {'total_gold': np.s_[:, Input.total_gold_start:Input.total_gold_end],
                                     'cs': np.s_[:, Input.cs_start:Input.cs_end],
@@ -802,7 +802,7 @@ class GameModel(Model):
 
 
     def fit_input(self, X, scaler_name):
-        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
+        min_max_scaler = heavy_imports.MinMaxScaler(feature_range=(0, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         return min_max_scaler
 
@@ -908,24 +908,24 @@ class WinPredModel(GameModel):
 
 class NextItemModel(GameModel):
 
-    def __init__(self, early_or_late, dll_hook=None):
+    def __init__(self, type, dll_hook=None):
         super().__init__(dll_hook)
 
 
-        self.early_or_late = early_or_late
-        if early_or_late == "standard":
+        self.type = type
+        if type == "standard":
             self.model_path = app_constants.model_paths["best"]["next_items_standard"]
             self.elements = "next_items_standard"
-        elif early_or_late == "late":
+        elif type == "late":
             self.model_path = app_constants.model_paths["best"]["next_items_late"]
             self.elements = "next_items_late"
-        elif early_or_late == "starter":
+        elif type == "starter":
             self.model_path = app_constants.model_paths["best"]["next_items_starter"]
             self.elements = "next_items_starter"
-        elif early_or_late == "first_item":
+        elif type == "first_item":
             self.model_path = app_constants.model_paths["best"]["next_items_first_item"]
             self.elements = "next_items_first_item"
-        elif early_or_late == "boots":
+        elif type == "boots":
             self.model_path = app_constants.model_paths["best"]["next_items_boots"]
             self.elements = "next_items_boots"
 
@@ -948,15 +948,15 @@ class NextItemModel(GameModel):
         if dll_hook:
             return
 
-        if early_or_late == "standard":
+        if type == "standard":
             self.network = network.StandardNextItemNetwork()
-        elif early_or_late == "late":
+        elif type == "late":
             self.network = network.NextItemLateGameNetwork()
-        elif early_or_late == "starter":
+        elif type == "starter":
             self.network = network.NextItemStarterNetwork()
-        elif early_or_late == "first_item":
+        elif type == "first_item":
             self.network = network.NextItemFirstItemNetwork()
-        elif early_or_late == "boots":
+        elif type == "boots":
             self.network = network.NextItemBootsNetwork()
         
 
@@ -1001,38 +1001,6 @@ class NextItemModel(GameModel):
         return result[zero_offset], result, probabilities[zero_offset]
 
 
-<<<<<<< HEAD
-    def scale_inputs(self, X):
-        for slice_name in self.cont_slices_by_name:
-            slice = self.cont_slices_by_name[slice_name]
-            if slice_name == 'cs' or slice_name == 'neutral_cs':
-                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
-            elif slice_name == 'lvl':
-                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
-            elif slice_name == 'kda':
-                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
-            elif slice_name == 'cg':
-                scaler = self.fit_input(np.array([[0.0, 2000.0]]), slice_name)
-            elif slice_name == 'total_gold':
-                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
-            elif slice_name == 'xp':
-                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
-            elif slice_name == 'turrets':
-                scaler = self.fit_input(np.array([[0.0, 11.0]]), slice_name)
-            else:
-                print("WTFFFFFFFF")
-            X[slice] = scaler.transform(X[slice])
-        return X
-
-
-    def fit_input(self, X, scaler_name):
-        min_max_scaler = heavy_imports.MinMaxScaler(feature_range=(0, 1))
-        min_max_scaler.fit(np.reshape(X, (-1, 1)))
-        return min_max_scaler
-
-
-=======
->>>>>>> 5f7244fa7a9b934163f00558c87839c431311ba2
     @staticmethod
     def encode_items(items, artifact_manager):
         items_at_time_x = []

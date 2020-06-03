@@ -200,7 +200,7 @@ class Main(FileSystemEventHandler):
         logger.info("Now loading models!")
         dll_hook = CPredict()
         # dll_hook = None
-        
+
         self.next_item_model_standard = NextItemModel("standard", dll_hook)
         self.next_item_model_standard.load_model()
         if Main.shouldTerminate():
