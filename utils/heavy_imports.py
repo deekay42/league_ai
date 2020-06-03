@@ -27,7 +27,9 @@ def heavy_import(module_name, setter):
     print(f"Thread {module_name} OVERALL Took {time.time() - sstarttime} s")
     
     
+def sequence_imports():
+    heavy_import("sklearn.preprocessing.data", setsklearnItem)
+    heavy_import("cassiopeia.core.staticdata.item", setcassItem)
 
 threading.Thread(target=lambda:heavy_import("cv2", setopencv)).start()
-threading.Thread(target=lambda:heavy_import("cassiopeia.core.staticdata.item", setcassItem)).start()
-threading.Thread(target=lambda:heavy_import("sklearn.preprocessing.data", setsklearnItem)).start()
+threading.Thread(target=sequence_imports).start()
