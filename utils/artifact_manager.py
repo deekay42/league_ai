@@ -1,10 +1,10 @@
 import json
 import traceback
 from abc import ABC
-from utils import cass_configured as cass
-
-import cv2 as cv
-
+# from utils import cass_configured as cass
+# from cassiopeia.core.staticdata import Item
+# import cv2 as cv
+from utils import heavy_imports
 from constants import app_constants
 
 
@@ -72,7 +72,7 @@ class ArtifactManager(ABC):
 
 
     def get_imgs(self):
-        return {artifact["img_int"]: cv.imread(self.assets_path + artifact["name"] + ".png") for artifact in
+        return {artifact["img_int"]: heavy_imports.cv.imread(self.assets_path + artifact["name"] + ".png") for artifact in
                 self._by["img_int"].values()}
 
 
@@ -177,7 +177,7 @@ class ItemManager:
 
 
         def get_imgs(self):
-            return {item["img_int"]: cv.imread(self.assets_path + item["id"] + ".png") for item in
+            return {item["img_int"]: heavy_imports.cv.imread(self.assets_path + item["id"] + ".png") for item in
                     self._by["img_int"].values()}
 
 
@@ -216,19 +216,7 @@ class ItemManager:
                     yield item
 
 
-        def get_blackout_items(self, summ_items_counter):
-            completes = self.get_completes()
-            for item in summ_items_counter:
-                item_full = self.lookup_by("int", item)
-                if item in completes and not ("multiples_allowed" in item_full and item_full["multiples_allowed"]):
-                    subcomponents = cass.Item(id=(int(item_full["id"])), region="EUW").builds_from
-                    # print(subcomponents)
-                    for subcomponent in subcomponents:
-                        # print(subcomponent)
-                        sub = self.lookup_by("id", str(subcomponent.id))["int"]
-                        if sub in completes:
-                            yield sub
-                    yield item
+        
 
 
         def get_starter_ints(self):

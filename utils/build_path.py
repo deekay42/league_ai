@@ -4,8 +4,12 @@ from collections import Counter
 import itertools
 from utils.artifact_manager import ItemManager
 import numpy as np
-from utils import cass_configured as cass
+# from utils import cass_configured as cass
+# from cassiopeia.core.staticdata import Item
 from utils.utils import itemslots_left, iditem2intitems
+
+from utils import heavy_imports
+
 # def get_item_score(comp, curr_used, current_gold=None):
 #     total_discount = 0
 #     for i in curr_used:
@@ -199,7 +203,7 @@ def brute_force_build_paths(item, existing_items):
     intersec = comps_counter & existing_items
     comps_counter -= intersec
     existing_items -= intersec
-    comps_build_paths = [brute_force_build_paths(cass.Item(id=compid, region="EUW"), existing_items) for compid,
+    comps_build_paths = [brute_force_build_paths(heavy_imports.Item(id=compid, region="EUW"), existing_items) for compid,
                                                                                                     qty in comps_counter.items() for _
                          in range(qty)]
     result = list(itertools.product(*comps_build_paths)) + [item.id]
@@ -228,7 +232,7 @@ def score_build_path(build_path, existing_items, current_gold):
     for item in build_path:
         if not item:
             continue
-        cass_item = cass.Item(id=item, region="EUW")
+        cass_item = heavy_imports.Item(id=item, region="EUW")
         # if item in existing_items_copy:
         #     result_abs[-1] -= Counter({item:1})
         #     already_used_items += Counter({item:1})
@@ -258,7 +262,7 @@ def score_build_path(build_path, existing_items, current_gold):
             multiplier *= 2
         score += cass_item.gold.total * multiplier
 
-    score += sum([cass.Item(id=item, region="EUW").gold.total for item in existing_items_copy])
+    score += sum([heavy_imports.Item(id=item, region="EUW").gold.total for item in existing_items_copy])
     if current_gold >= 0:
         return score, result_buy_seq, [ai+aai for ai, aai in zip(result_abs, already_used_items_add_to_abs)]
     else:
@@ -282,7 +286,7 @@ def normalize_bps(bps):
     bps = [list(flatten((path,))) for path in bps]
     bps = [[i for i in bp if i] for bp in bps]
     bps = [bp for bp in bps if bp]
-    bps = [sorted(bp, key=lambda a: cass.Item(id=a, region="EUW").gold.total, reverse=True) for bp in bps]
+    bps = [sorted(bp, key=lambda a: heavy_imports.Item(id=a, region="EUW").gold.total, reverse=True) for bp in bps]
     try:
         return np.unique(bps, axis=0).tolist()
     except:

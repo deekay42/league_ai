@@ -1,11 +1,14 @@
 REM this script needs to be given the path to the pythondir. there it'll create a folder named dist with all required dlls and libs
 REM it will also create cython.h in the include dir in the pythondir
+
 if [%1]==[] goto usage
 if [%2]==[] goto usage
 
 set PYTHONPATH=C:\Program Files\Python37\python37.zip;C:\Program Files\Python37\DLLs;C:\Program Files\Python37\lib;C:\Program Files\Python37;C:\Users\Dom\AppData\Roaming\Python\Python37\site-packages;C:\Program Files\Python37\lib\site-packages
 set PYTHONHOME=C:\Program Files\Python37
-set PATH=C:\Program Files (x86)\Windows Kits\10\Redist\10.0.17763.0\ucrt\DLLs\x64;%PATH%;%PYTHONPATH%
+set VSLIBS=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redist\MSVC\14.25.28508\x64\Microsoft.VC142.CRT
+set WINSDKLIBS=C:\Program Files (x86)\Windows Kits\10\Redist\10.0.17763.0\ucrt\DLLs\x64
+set PATH=%WINSDKLIBS%;%PATH%;%PYTHONPATH%
 call vcvars64.bat
 set INIT_DIR=%cd%
 CALL :NORMALIZEPATH %~1 
@@ -24,8 +27,11 @@ set TCL_LIBRARY=C:\Program Files\Python37\tcl\tcl8.6
 set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 set TFL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\tflearn
 set PKG_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pkg_resources
+set SKL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\sklearn
 
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
+python -c "from train_model import model; model.export_models()"
+
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=sklearn --hidden-import=cassiopeia --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -50,6 +56,7 @@ SET tar_folder=%OUT_DIR%
 ROBOCOPY /NFL /NDL %src_folder% %tar_folder% *.* /S /MOVE
 cd %INIT_DIR%
 
+ROBOCOPY /NFL /NDL  "%VSLIBS%" %OUT_DIR% *.* /S
 
 COPY %INIT_DIR%\windows\google-services.json %OUT_DIR%
 mkdir %OUT_DIR%\assets\data
@@ -83,7 +90,6 @@ REM COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\tessdata %OUT_DIR%\tessdata *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\fonts %OUT_DIR%\assets\fonts *.* /S
-REM ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\icons %OUT_DIR%\assets\icons *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\item_imgs %OUT_DIR%\assets\item_imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\kda %OUT_DIR%\assets\train_imgs\kda *.* /S

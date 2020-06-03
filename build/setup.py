@@ -22,6 +22,10 @@ extensions = [
               sources=['train_model/model.py']),
     Extension(name='train_model.network',  # using dots!
               sources=['train_model/network.py']),
+    Extension(name='train_model.input_vector',  # using dots!
+              sources=['train_model/input_vector.py']),
+    Extension(name='utils.heavy_imports',  # using dots!
+              sources=['utils/heavy_imports.py']),
     Extension(name='main',  # using dots!
               sources=['main.py'])
 ]

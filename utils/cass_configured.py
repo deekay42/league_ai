@@ -1,6 +1,10 @@
+import time
+print("cass")
+starttime = time.time()
 from cassiopeia import get_default_config, set_default_region, apply_settings, Item, Patch, Tier, Division, \
     get_challenger_league, LeagueEntries, get_grandmaster_league, get_master_league, Queue, Lane, get_match
 from cassiopeia.core.match import EventData
+print(f"cass Took {time.time() - starttime} s")
 
 config = get_default_config()
 # config['pipeline']['ChampionGG'] = {

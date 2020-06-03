@@ -1,28 +1,90 @@
 import time
+import threading
+import importlib
+sstarttime = time.time()
+
+from utils import heavy_imports
+
 starttime = time.time()
 import glob
-import threading
+# import threading
 from abc import ABC, abstractmethod
+
+print("1.1")
+starttime = time.time()
 import cv2 as cv
+print(f"Took {time.time() - starttime} s")
+print("1.2")
+starttime = time.time()
 import numpy as np
+print(f"Took {time.time() - starttime} s")
+print("1.3")
+starttime = time.time()
 from constants import game_constants, app_constants, ui_constants
+print(f"Took {time.time() - starttime} s")
+print("1.4")
+starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-from utils import utils
-import json
+print(f"Took {time.time() - starttime} s")
+print("1.5")
+starttime = time.time()
+# from utils import utils
+# import json
+
 import itertools
+print(f"Took {time.time() - starttime} s")
+print("1.6")
+starttime = time.time()
 from collections import Counter
+print(f"Took {time.time() - starttime} s")
+print("1.7")
+starttime = time.time()
 import os
+print(f"Took {time.time() - starttime} s")
+print("1.8")
+starttime = time.time()
 import platform
-from sklearn import preprocessing
+print(f"Took {time.time() - starttime} s")
+# print("1.9")
+# starttime = time.time()
+# from sklearn.preprocessing.data import MinMaxScaler
+# print(f"Took {time.time() - starttime} s")
+print("1.10")
+starttime = time.time()
 from tesserocr import PyTessBaseAPI
+print(f"Took {time.time() - starttime} s")
+print("1.11")
+starttime = time.time()
 import pathlib
+print(f"Took {time.time() - starttime} s")
+print("1.12")
+starttime = time.time()
 import ctypes
+print(f"Took {time.time() - starttime} s")
+print("1.13")
+starttime = time.time()
 from numpy.ctypeslib import ndpointer
+print(f"Took {time.time() - starttime} s")
+print("1.14")
+starttime = time.time()
 import importlib
+print(f"Took {time.time() - starttime} s")
+print("1.15")
+starttime = time.time()
 import logging
+print(f"Took {time.time() - starttime} s")
+print("1.16")
+starttime = time.time()
 import sys
-logger = logging.getLogger("main")
+print(f"Took {time.time() - starttime} s")
+print("1.17")
+starttime = time.time()
 from train_model.input_vector import Input
+print(f"Took {time.time() - starttime} s")
+print("1.18")
+starttime = time.time()
+
+logger = logging.getLogger("main")
 
 # if platform.system() == "Windows":
 #     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
@@ -292,15 +354,28 @@ class CPredict:
         libname = pathlib.Path().absolute() / "cpredict"
 
         self.cpredict = ctypes.CDLL(str(libname))
-        self.cpredict.initialize(utils.strlist2cstrlist(model_paths), utils.strlist2cstrlist(model_ids), utils.strlist2cstrlist(model_output_nodes), len(models))
+        self.cpredict.initialize(CPredict.strlist2cstrlist(model_paths), CPredict.strlist2cstrlist(model_ids), CPredict.strlist2cstrlist(model_output_nodes), len(models))
 
+
+    @staticmethod
+    def str2cstr(string):
+        bytestring = bytes(string, 'utf-8')
+        return ctypes.c_char_p(bytestring)
+
+
+    @staticmethod
+    def strlist2cstrlist(strlist):
+        bytelist = [bytes(s, 'utf-8') for s in strlist]
+        result = (ctypes.c_char_p * (len(bytelist)+1))()
+        result[:-1] = bytelist
+        return result
 
     def predict(self, x, model_id, dims):
         result_len = 1
         for i in dims:
             result_len *= i
         self.cpredict.predict.restype = ndpointer(dtype=ctypes.c_float, shape=(result_len,))
-        result = self.cpredict.predict((ctypes.c_float * len(x))(*x), len(x), utils.str2cstr(model_id))
+        result = self.cpredict.predict((ctypes.c_float * len(x))(*x), len(x), CPredict.str2cstr(model_id))
         return np.reshape(result, dims)
         
 
@@ -328,6 +403,7 @@ class ImgModel(Model):
     def extract_imgs(self, whole_img):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
+        
         # from utils import utils
         # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
         #                   self.res_converter.lookup(self.elements, "y_crop"))
@@ -337,10 +413,10 @@ class ImgModel(Model):
                     int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_crop")))]
                     for coord in
                     coords]
-        sub_imgs = [cv.resize(img, self.network_crop, cv.INTER_AREA) for img in sub_imgs]
+        sub_imgs = [heavy_imports.cv.resize(img, self.network_crop, heavy_imports.cv.INTER_AREA) for img in sub_imgs]
         # for i, img in enumerate(sub_imgs):
-        #     cv.imshow(str(i), img)
-        # cv.waitKey(0)
+        #     heavy_imports.cv.imshow(str(i), img)
+        # heavy_imports.cv.waitKey(0)
         return np.array(sub_imgs)
 
 
@@ -367,20 +443,20 @@ class MultiTesseractModel:
         y_height = Counter(y_heights).most_common(1)[0][0]
 
 
-        slide_imgs = [cv.resize(slide_img, None, fx=y_height/slide_img.shape[0], fy=y_height/slide_img.shape[
+        slide_imgs = [heavy_imports.cv.resize(slide_img, None, fx=y_height/slide_img.shape[0], fy=y_height/slide_img.shape[
             0],
-                                interpolation=cv.INTER_CUBIC) for slide_img in slide_imgs]
+                                interpolation=heavy_imports.cv.INTER_CUBIC) for slide_img in slide_imgs]
 
         y_widths = [slide_img.shape[1] for slide_img in slide_imgs]
         y_longest_width = max(y_widths)
-        slide_imgs_vert = [cv.copyMakeBorder(slide_img, 0, 5, 0, y_longest_width - slide_img.shape[1], cv.BORDER_CONSTANT,
+        slide_imgs_vert = [heavy_imports.cv.copyMakeBorder(slide_img, 0, 5, 0, y_longest_width - slide_img.shape[1], heavy_imports.cv.BORDER_CONSTANT,
                                              value=(255, 255, 255)) for slide_img in slide_imgs]
         img_vert = np.concatenate(slide_imgs_vert, axis=0)
-        img = cv.copyMakeBorder(img_vert, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        # cv.imshow("f", img)
-        # cv.waitKey(0)
+        img = heavy_imports.cv.copyMakeBorder(img_vert, 10, 10, 10, 10, heavy_imports.cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # heavy_imports.cv.imshow("f", img)
+        # heavy_imports.cv.waitKey(0)
         # img = np.concatenate(slide_imgs, axis=1)
-        # img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # img = heavy_imports.cv.copyMakeBorder(img, 10, 10, 10, 10, heavy_imports.cv.BORDER_CONSTANT, value=(255, 255, 255))
         self.tess.SetImageBytes(np.ravel(img).tostring(), *img.shape[::-1], 1, 1 * img.shape[1])
         text = self.tess.GetUTF8Text()
         # result = text[10:]
@@ -394,46 +470,46 @@ class TesseractModel:
 
     def __init__(self, res_converter):
         self.res_converter = res_converter
-        sep_imgs = [cv.imread(app_constants.asset_paths["kda"]+str(i)+".png", cv.IMREAD_GRAYSCALE) for i in range(10)]
+        sep_imgs = [heavy_imports.cv.imread(app_constants.asset_paths["kda"]+str(i)+".png", heavy_imports.cv.IMREAD_GRAYSCALE) for i in range(10)]
         sep_img = np.concatenate(sep_imgs, axis=1)
         sep_img = sep_img[2:-2]
-        sep_img = cv.bitwise_not(sep_img)
-        sep_img = cv.resize(sep_img, None, fx=5, fy=5, interpolation=cv.INTER_CUBIC)
+        sep_img = heavy_imports.cv.bitwise_not(sep_img)
+        sep_img = heavy_imports.cv.resize(sep_img, None, fx=5, fy=5, interpolation=heavy_imports.cv.INTER_CUBIC)
 
-        # self.separator = cv.imread( app_constants.asset_paths["tesseract_separator"], cv.IMREAD_GRAYSCALE)
-        # self.left_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        # self.right_separator = cv.copyMakeBorder(self.separator, 0, 0, 0, 0, cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # self.separator = heavy_imports.cv.imread( app_constants.asset_paths["tesseract_separator"], heavy_imports.cv.IMREAD_GRAYSCALE)
+        # self.left_separator = heavy_imports.cv.copyMakeBorder(self.separator, 0, 0, 0, 0, heavy_imports.cv.BORDER_CONSTANT, value=(255, 255, 255))
+        # self.right_separator = heavy_imports.cv.copyMakeBorder(self.separator, 0, 0, 0, 0, heavy_imports.cv.BORDER_CONSTANT, value=(255, 255, 255))
         self.left_separator = sep_img
         self.right_separator = sep_img
         kernel = np.ones((2, 2 ), np.uint8)
 
 
-        # self.left_separator = cv.erode(self.left_separator,kernel,iterations = 1)
-        # self.right_separator = cv.erode(self.right_separator, kernel, iterations=1)
-        _, self.right_separator = cv.threshold(self.right_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        _, self.left_separator = cv.threshold(self.left_separator, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        # self.left_separator = heavy_imports.cv.erode(self.left_separator,kernel,iterations = 1)
+        # self.right_separator = heavy_imports.cv.erode(self.right_separator, kernel, iterations=1)
+        _, self.right_separator = heavy_imports.cv.threshold(self.right_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+        _, self.left_separator = heavy_imports.cv.threshold(self.left_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
 
 
     def extract_slide_img(self, slide_img):
 
         # x_pad = y_pad = 20
-        # img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        # img_bordered = heavy_imports.cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, heavy_imports.cv.BORDER_CONSTANT, value=(0, 0, 0))
         scale_factor = 3
-        img_bordered = cv.resize(slide_img, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
-        gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
-        # cv.imshow("gray", gray)
+        img_bordered = heavy_imports.cv.resize(slide_img, None, fx=scale_factor, fy=scale_factor, interpolation=heavy_imports.cv.INTER_CUBIC)
+        gray = heavy_imports.cv.cvtColor(img_bordered, heavy_imports.cv.COLOR_BGR2GRAY)
+        # heavy_imports.cv.imshow("gray", gray)
 
-        ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        # cv.imshow("thresholded", thresholded)
+        ret, thresholded = heavy_imports.cv.threshold(gray, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+        # heavy_imports.cv.imshow("thresholded", thresholded)
         # cutoff_ratio = 2/5
         # sorted_thresholds = sorted(gray[thresholded > 0])
         # thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
         # gray[gray < thresh] = 0
-        # cv.imshow("gray_thresholded", gray)
-        contours, hier = cv.findContours(thresholded, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-        bboxes = [cv.boundingRect(contour) for contour in contours]
+        # heavy_imports.cv.imshow("gray_thresholded", gray)
+        contours, hier = heavy_imports.cv.findContours(thresholded, heavy_imports.cv.RETR_EXTERNAL, heavy_imports.cv.CHAIN_APPROX_NONE)
+        bboxes = [heavy_imports.cv.boundingRect(contour) for contour in contours]
         bboxes = np.array([[bbox[0], bbox[1], bbox[0] + bbox[2], bbox[1] + bbox[3]] for bbox in bboxes])
-        # sorted_bboxes = np.array(sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0]))
+        # sorted_bboxes = np.array(sorted([heavy_imports.cv.boundingRect(contour) for contour in contours], key=lambda a: a[0]))
         # x_l, y_l, w_l, h_l = sorted_bboxes[0]
         # x_r, y_r, w_r, h_r = sorted_bboxes[-1]
         x_left = np.min(bboxes[:, 0])
@@ -441,21 +517,21 @@ class TesseractModel:
         y_top = np.min(bboxes[:, 1])
         y_bot = np.max(bboxes[:, 3])
         ratio = (y_bot - y_top) / self.left_separator.shape[0]
-        left_separator = cv.resize(self.left_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
-        right_separator = cv.resize(self.right_separator, None, fx=ratio, fy=ratio, interpolation=cv.INTER_AREA)
+        left_separator = heavy_imports.cv.resize(self.left_separator, None, fx=ratio, fy=ratio, interpolation=heavy_imports.cv.INTER_AREA)
+        right_separator = heavy_imports.cv.resize(self.right_separator, None, fx=ratio, fy=ratio, interpolation=heavy_imports.cv.INTER_AREA)
         blob_contour = gray[y_top:y_bot, x_left:x_right]
-        ret, thresholded = cv.threshold(blob_contour, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-        inv = cv.bitwise_not(thresholded)
-        # inv = cv.copyMakeBorder(inv, 0, left_separator.shape[0]-inv.shape[0], 0, 0, cv.BORDER_CONSTANT,
+        ret, thresholded = heavy_imports.cv.threshold(blob_contour, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+        inv = heavy_imports.cv.bitwise_not(thresholded)
+        # inv = heavy_imports.cv.copyMakeBorder(inv, 0, left_separator.shape[0]-inv.shape[0], 0, 0, heavy_imports.cv.BORDER_CONSTANT,
         #                         value=(255, 255, 255))
         border = np.ones(shape=(left_separator.shape[0], 3), dtype=np.uint8)*255
         img = np.concatenate([left_separator, border, inv, border],
                              axis=1)
 
-        # img = cv.copyMakeBorder(img, 10, 10, 10, 10, cv.BORDER_CONSTANT, value=(255, 255, 255))
-        _, img_binarized = cv.threshold(img, 180, 255, cv.THRESH_BINARY)
+        # img = heavy_imports.cv.copyMakeBorder(img, 10, 10, 10, 10, heavy_imports.cv.BORDER_CONSTANT, value=(255, 255, 255))
+        _, img_binarized = heavy_imports.cv.threshold(img, 180, 255, heavy_imports.cv.THRESH_BINARY)
 
-        # cv.waitKey(0)
+        # heavy_imports.cv.waitKey(0)
         return img_binarized
 
 
@@ -479,12 +555,12 @@ class TesseractModel:
 
         slide_imgs = self.get_raw_slide_imgs(whole_img)
         # for img in slide_imgs:
-        #     cv.imshow("f", img)
-        #     cv.waitKey(0)
+        #     heavy_imports.cv.imshow("f", img)
+        #     heavy_imports.cv.waitKey(0)
         result = [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
         # for img in result:
-        #     cv.imshow("f", img)
-        #     cv.waitKey(0)
+        #     heavy_imports.cv.imshow("f", img)
+        #     heavy_imports.cv.waitKey(0)
         return result
 
 
@@ -512,7 +588,7 @@ class LvlImgModel(TesseractModel):
     def extract_slide_img(self, slide_img):
         bw_pixels = np.logical_and(slide_img[:,:,0] == slide_img[:,:,1], slide_img[:,:,1] == slide_img[:,:,
                                                                                              2]).astype(np.uint8)
-        slide_img = cv.bitwise_and(slide_img, slide_img, mask=bw_pixels)
+        slide_img = heavy_imports.cv.bitwise_and(slide_img, slide_img, mask=bw_pixels)
         return super().extract_slide_img(slide_img)
 
 
@@ -556,29 +632,29 @@ class KDAImgModel(ImgModel):
     def break_up_into_sub_imgs(self, slide_img):
 
         x_pad = y_pad = 20
-        img_bordered = cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, cv.BORDER_CONSTANT, value=(0, 0, 0))
+        img_bordered = heavy_imports.cv.copyMakeBorder(slide_img, x_pad, x_pad, y_pad, y_pad, heavy_imports.cv.BORDER_CONSTANT, value=(0, 0, 0))
         scale_factor = 5
-        img_bordered = cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=cv.INTER_CUBIC)
+        img_bordered = heavy_imports.cv.resize(img_bordered, None, fx=scale_factor, fy=scale_factor, interpolation=heavy_imports.cv.INTER_CUBIC)
 
-        gray = cv.cvtColor(img_bordered, cv.COLOR_BGR2GRAY)
+        gray = heavy_imports.cv.cvtColor(img_bordered, heavy_imports.cv.COLOR_BGR2GRAY)
 
 
         cutoff_ratio = 2/5
-        ret, thresholded = cv.threshold(gray, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
+        ret, thresholded = heavy_imports.cv.threshold(gray, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
         sorted_thresholds = sorted(gray[thresholded > 0])
         thresh = sorted_thresholds[int(len(sorted_thresholds) * cutoff_ratio)]
         gray[gray < thresh] = 0
 
 
-        contours, hier = cv.findContours(gray, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-        sorted_bboxes = sorted([cv.boundingRect(contour) for contour in contours], key=lambda a: a[0])
+        contours, hier = heavy_imports.cv.findContours(gray, heavy_imports.cv.RETR_EXTERNAL, heavy_imports.cv.CHAIN_APPROX_NONE)
+        sorted_bboxes = sorted([heavy_imports.cv.boundingRect(contour) for contour in contours], key=lambda a: a[0])
 
         for x,y,w,h in sorted_bboxes:
             # get the bounding rect
             # x += x_l
             # y += y_top
 
-            # cv.rectangle(img_bordered, (x, y), (x + w, y + h), (0, 0, 255), 1)
+            # heavy_imports.cv.rectangle(img_bordered, (x, y), (x + w, y + h), (0, 0, 255), 1)
 
             center_x = x + w / 2
             center_y = y + h / 2
@@ -592,11 +668,11 @@ class KDAImgModel(ImgModel):
             sub_image = img_bordered[crop_start_y:int(round(crop_start_y + y_height)),
                         crop_start_x:int(round(crop_start_x + x_width))]
 
-            # cv.rectangle(img_bordered, (crop_start_x, crop_start_y), (int(round(crop_start_x + x_width)), int(round(crop_start_y +
+            # heavy_imports.cv.rectangle(img_bordered, (crop_start_x, crop_start_y), (int(round(crop_start_x + x_width)), int(round(crop_start_y +
             #                                                           y_height))), (0, 255,0), 1)
             yield sub_image
-        # cv.imshow("f", img_bordered)
-        # cv.waitKey(0)
+        # heavy_imports.cv.imshow("f", img_bordered)
+        # heavy_imports.cv.waitKey(0)
 
 
     def extract_imgs(self, whole_img):
@@ -617,8 +693,8 @@ class KDAImgModel(ImgModel):
             num_elements.append(len(next_sub_imgs))
             sub_imgs.extend(next_sub_imgs)
 
-        sub_imgs = [cv.resize(img, (self.res_converter.network_crop[self.elements][1],
-                                         self.res_converter.network_crop[self.elements][0]), cv.INTER_AREA) for img in
+        sub_imgs = [heavy_imports.cv.resize(img, (self.res_converter.network_crop[self.elements][1],
+                                         self.res_converter.network_crop[self.elements][0]), heavy_imports.cv.INTER_AREA) for img in
                          sub_imgs]
 
         return sub_imgs, num_elements
@@ -817,7 +893,7 @@ class NextItemModel(Model):
 
 
     def fit_input(self, X, scaler_name):
-        min_max_scaler = preprocessing.MinMaxScaler(feature_range=(0, 1))
+        min_max_scaler = heavy_imports.MinMaxScaler(feature_range=(0, 1))
         min_max_scaler.fit(np.reshape(X, (-1, 1)))
         return min_max_scaler
 
@@ -908,87 +984,88 @@ class NextItemModel(Model):
         return items, np.max(y, axis=1)
 
 
-class PositionsModel(Model):
+# class PositionsModel(Model):
 
-    def __init__(self):
-        super().__init__()
-        self.network = network.PositionsNetwork()
-        self.model_path = app_constants.model_paths["best"]["positions"]
-        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-        self.champ_manager = ChampManager()
-        self.spell_manager = SimpleManager("spells")
-        self.elements = "positions"
-        self.load_model()
-        self.lock = threading.Lock()
-
-
-    def predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict([x])
-                with tf.Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)[0]
-            champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-            # the champ ids need to be ints, otherwise jq fails
-            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
-            return dict(zip(champ_roles, champ_ids))
+#     def __init__(self):
+#         super().__init__()
+#         self.network = network.PositionsNetwork()
+#         self.model_path = app_constants.model_paths["best"]["positions"]
+#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+#         self.champ_manager = ChampManager()
+#         self.spell_manager = SimpleManager("spells")
+#         self.elements = "positions"
+#         self.load_model()
+#         self.lock = threading.Lock()
 
 
-    def multi_predict_perm(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                with tf.Session() as sess:
-                    x = network.PositionsNetwork.permutate_inputs(x)
+#     def predict(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict([x])
+#                 with tf.Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)[0]
+#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-                    chunk_len = 1000
-                    x = tf.reshape(x, (-1,120,55))
-                    i = 0
-                    final_pred = []
-                    while i < int(x.shape[0]):
-                        print(i/int(x.shape[0]))
-                        next_chunk = x[i:i+chunk_len]
-                        next_chunk = tf.reshape(next_chunk, (-1,55))
-                        chunk_pred = self.model.predict(sess.run(next_chunk))
-                        i += chunk_len
-                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-                        final_pred.extend(sess.run(best_perms).tolist())
-
-        result = []
-        for sorted_team in final_pred:
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-        return result
+#             # the champ ids need to be ints, otherwise jq fails
+#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
+#             return dict(zip(champ_roles, champ_ids))
 
 
+#     def multi_predict_perm(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 with tf.Session() as sess:
+#                     x = network.PositionsNetwork.permutate_inputs(x)
 
-    def multi_predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict(x)
-                with Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)
-        result = []
-        for sorted_team, unsorted_team in zip(final_pred, x):
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+#                     chunk_len = 1000
+#                     x = tf.reshape(x, (-1,120,55))
+#                     i = 0
+#                     final_pred = []
+#                     while i < int(x.shape[0]):
+#                         print(i/int(x.shape[0]))
+#                         next_chunk = x[i:i+chunk_len]
+#                         next_chunk = tf.reshape(next_chunk, (-1,55))
+#                         chunk_pred = self.model.predict(sess.run(next_chunk))
+#                         i += chunk_len
+#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+#                         final_pred.extend(sess.run(best_perms).tolist())
 
-            # the champ ids need to be ints, otherwise jq fails
-            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-            # result.append(dict(zip(champ_roles, champ_ids)))
+#         result = []
+#         for sorted_team in final_pred:
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#         return result
 
-        return result
+
+
+#     def multi_predict(self, x):
+        
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict(x)
+#                 with Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)
+#         result = []
+#         for sorted_team, unsorted_team in zip(final_pred, x):
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+
+#             # the champ ids need to be ints, otherwise jq fails
+#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+#             # result.append(dict(zip(champ_roles, champ_ids)))
+
+#         return result
 
 
 

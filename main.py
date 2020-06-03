@@ -1,38 +1,130 @@
 #DONT CHANGE THESE IMPORTS. PYINSTALLER NEEDS THESE
-
+print("starting load")
 import time
+import threading
+import importlib
+sstarttime = time.time()
+
+
+from utils import heavy_imports 
+
+print("starting load 1")
+starttime = time.time()
 import os
+print(f"Took {time.time() - starttime} s")
+print("2")
+starttime = time.time()
 import configparser
+print(f"Took {time.time() - starttime} s")
+print("3")
+starttime = time.time()
 import traceback
+print(f"Took {time.time() - starttime} s")
+print("4")
+starttime = time.time()
 from tkinter import Tk
+print(f"Took {time.time() - starttime} s")
+print("5")
+starttime = time.time()
 from tkinter import messagebox
-import cv2 as cv
+print(f"Took {time.time() - starttime} s")
+print("6")
+# starttime = time.time()
+# import cv2 as cv
+# print(f"Took {time.time() - starttime} s")
+print("7")
+starttime = time.time()
 import numpy as np
+print(f"Took {time.time() - starttime} s")
+print("8")
+starttime = time.time()
 import cProfile
+print(f"Took {time.time() - starttime} s")
+print("9")
+starttime = time.time()
 import io
+print(f"Took {time.time() - starttime} s")
+print("10")
+starttime = time.time()
 import pstats
+print(f"Took {time.time() - starttime} s")
+print("11")
+starttime = time.time()
 import copy
+print(f"Took {time.time() - starttime} s")
+print("12")
+starttime = time.time()
 import glob
+print(f"Took {time.time() - starttime} s")
+print("13")
+starttime = time.time()
 import json
+print(f"Took {time.time() - starttime} s")
+print("14")
+starttime = time.time()
 from collections import Counter
 starttime = time.time()
-from utils import cass_configured as cass
+print(f"Took {time.time() - starttime} s")
+# print("15")
+# starttime = time.time()
+# # from utils import cass_configured as cass
+# from cassiopeia.core.staticdata import Item
+# print(f"Took {time.time() - starttime} s")
+print("16")
+starttime = time.time()
 from range_key_dict import RangeKeyDict
+print(f"Took {time.time() - starttime} s")
+print("17")
+starttime = time.time()
 from watchdog.events import FileSystemEventHandler
+print(f"Took {time.time() - starttime} s")
+print("18")
+starttime = time.time()
 from watchdog.observers import Observer
+print(f"Took {time.time() - starttime} s")
+print("19")
+starttime = time.time()
 from constants import ui_constants, game_constants, app_constants
+print(f"Took {time.time() - starttime} s")
+print("20")
+starttime = time.time()
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
     KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel, CPredict
+print(f"Took {time.time() - starttime} s")
+print("22")
+starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager
+print(f"Took {time.time() - starttime} s")
+print("23")
+starttime = time.time()
 from utils.build_path import build_path_for_gold, InsufficientGold, NoPathFound
+print(f"Took {time.time() - starttime} s")
+print("24")
+starttime = time.time()
 from utils.utils import itemslots_left
+print(f"Took {time.time() - starttime} s")
+print("25")
+starttime = time.time()
 from utils import utils
+print(f"Took {time.time() - starttime} s")
+print("26")
+starttime = time.time()
 import configparser
+print(f"Took {time.time() - starttime} s")
+print("27")
+starttime = time.time()
 import logging
+print(f"Took {time.time() - starttime} s")
+print("28")
+starttime = time.time()
 import sys
+print(f"Took {time.time() - starttime} s")
+
+print(f"OVERALL Took {time.time() - sstarttime} s")
 logger = logging.getLogger("main")
-logger.setLevel(logging.CRITICAL)
+logger.setLevel(logging.INFO)
 # logger.addHandler(logging.StreamHandler(sys.stdout))
+
 
 
 class NoMoreItemSlots(Exception):
@@ -41,17 +133,23 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
+        logger.info("Starting main")
         self.onTimeout = False
         self.loldir = utils.get_lol_dir()
+        logger.info("Go tlol dir !")
         self.config = configparser.ConfigParser()
+        logger.info("Reading config")
         self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        try:
-        # res = 1440,810
-            res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        except KeyError as e:
-            print(repr(e))
-            res = 1366, 768
-            print("Couldn't find Width or Height sections")
+
+        while True:
+            try:
+            # res = 1440,810
+                res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+                break
+            except KeyError as e:
+                print(repr(e))
+                os.remove(self.loldir)
+                utils.get_lol_dir()
 
         try:
             show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
@@ -90,6 +188,7 @@ class Main(FileSystemEventHandler):
 
         # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        logger.info("Loading res cvt")
         self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
@@ -98,7 +197,7 @@ class Main(FileSystemEventHandler):
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
-
+        logger.info("Now loading models!")
         dll_hook = CPredict()
         # dll_hook = None
         
@@ -141,7 +240,7 @@ class Main(FileSystemEventHandler):
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
-
+        logger.info("All models loaded!")
         self.previous_champs = None
         self.previous_kda = None
         self.previous_cs = None
@@ -167,7 +266,7 @@ class Main(FileSystemEventHandler):
         for i in range(len(num_full_items)):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
-
+        logger.info("init complete!")
         Main.test_connection()
 
 
@@ -184,8 +283,9 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def test_connection(timeout=0):
         try:
-            lol = cass.Item(id=3040, region="EUW").name[-1]
+            lol = heavy_imports.Item(id=3040, region="EUW").name[-1]
         except Exception as e:
+            print(e)
             print(f"Connection error. Retry in {timeout}")
             time.sleep(timeout)
             Main.test_connection(5)
@@ -199,6 +299,21 @@ class Main(FileSystemEventHandler):
     def summoner_items_slice(self, role):
         return np.s_[
                role * game_constants.MAX_ITEMS_PER_CHAMP:role * game_constants.MAX_ITEMS_PER_CHAMP + game_constants.MAX_ITEMS_PER_CHAMP]
+
+
+    def get_blackout_items(self, summ_items_counter):
+                completes = self.item_manager.get_completes()
+                for item in summ_items_counter:
+                    item_full = self.item_manager.lookup_by("int", item)
+                    if item in completes and not ("multiples_allowed" in item_full and item_full["multiples_allowed"]):
+                        subcomponents = heavy_imports.Item(id=(int(item_full["id"])), region="EUW").builds_from
+                        # print(subcomponents)
+                        for subcomponent in subcomponents:
+                            # print(subcomponent)
+                            sub = self.item_manager.lookup_by("id", str(subcomponent.id))["int"]
+                            if sub in completes:
+                                yield sub
+                        yield item
 
 
     def all_items_counter2items_list(self, counter, lookup):
@@ -239,7 +354,7 @@ class Main(FileSystemEventHandler):
         if self.network_type == "late" or self.network_type == "first_item":
             # at beginning of game dont buy potion first item. buy starter item first
             if items[role]:
-                summ_owned_completes = list(self.item_manager.get_blackout_items(items[role] + delta_items))
+                summ_owned_completes = list(self.get_blackout_items(items[role] + delta_items))
 
         return model.predict_easy(role, champs_int, items_id, cs, lvl, kda, self.current_gold,
                                   summ_owned_completes)
@@ -257,7 +372,7 @@ class Main(FileSystemEventHandler):
 
         # if self.network_type == "first_item":
         #     return [next_item], [items], 0, False
-        cass_item = cass.Item(id=(int(next_item["id"])), region="EUW")
+        cass_item = heavy_imports.Item(id=(int(next_item["id"])), region="EUW")
         l = cass_item.name
         if not list(cass_item.builds_from):
             if current_gold >= cass_item.gold.base:
@@ -268,7 +383,7 @@ class Main(FileSystemEventHandler):
                                                                                                qty in items.items()})
 
         # TODO: this is bad. the item class should know when to return main_img or id
-        next_items, abs_items = build_path_for_gold(cass.Item(id=(int(next_item["main_img"]) if
+        next_items, abs_items = build_path_for_gold(heavy_imports.Item(id=(int(next_item["main_img"]) if
                                                                   "main_img" in
                                                                   next_item else
                                                                   int(next_item["id"])), region="EUW"), items_by_id,
@@ -276,7 +391,7 @@ class Main(FileSystemEventHandler):
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [Counter([self.item_manager.lookup_by("id", str(item))["int"] for item, qty in
                               abs_items_counter.items() for _ in range(qty)]) for abs_items_counter in abs_items]
-        cost = sum([cass.Item(id=(int(item["main_img"]) if "main_img" in
+        cost = sum([heavy_imports.Item(id=(int(item["main_img"]) if "main_img" in
                                                          item else int(item["id"])),
                               region="EUW").gold.base for item in next_items])
         item_reached = next_item["id"] == next_items[-1]["id"]
@@ -466,7 +581,7 @@ class Main(FileSystemEventHandler):
 
 
     def pad_result(self, result, next_items=None, abs_items=None):
-        if not result and self.network_type not in ["starter", "first_item"]:
+        if not result and hasattr(self, "network_type") and self.network_type not in ["starter", "first_item"]:
             self.network_type = "late"
             next_item = self.predict_next_item(model=self.next_item_model_late)[0]
             try:
@@ -498,14 +613,14 @@ class Main(FileSystemEventHandler):
         if self.network_type == "starter":
             self.items[self.role] = abs_items
             result.extend(next_items)
-            self.current_gold -= cass.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
+            self.current_gold -= heavy_imports.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
 
         if not np.any(["Elixir" in item["name"] for item in result]) and self.current_gold >= 500:
             elixir = self.predict_next_item(model=self.next_item_model_late)[0]
             if "Elixir" in elixir["name"]:
                 result.append(elixir)
-                self.current_gold -= cass.Item(id=(int(elixir["id"])), region="EUW").gold.base
+                self.current_gold -= heavy_imports.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
         while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
             next_extra_item = self.predict_next_item(model=self.next_item_model_standard)[0]
@@ -519,7 +634,7 @@ class Main(FileSystemEventHandler):
 
     def buy_one_off_item(self, item, result):
         result.append(item)
-        self.current_gold -= cass.Item(id=(int(item["id"])), region="EUW").gold.base
+        self.current_gold -= heavy_imports.Item(id=(int(item["id"])), region="EUW").gold.base
         self.items[self.role] += Counter({item["int"]: 1})
 
 
@@ -540,19 +655,19 @@ class Main(FileSystemEventHandler):
     def deflate_items(self, items):
         comp_pool = Counter()
         for item in items:
-            item = cass.Item(id=(int(item["id"])), region="EUW")
+            item = heavy_imports.Item(id=(int(item["id"])), region="EUW")
             comps = Counter([str(item_comp.id) for item_comp in list(item.builds_from)])
             if comps:
                 comp_pool -= Counter(comps)
             comp_pool += Counter({str(item.id): 1})
         result = self.items_counter2items_list(comp_pool, "id")
-        result_sorted = sorted(result, key=lambda a: cass.Item(id=(int(a["id"])), region="EUW").gold.total,
+        result_sorted = sorted(result, key=lambda a: heavy_imports.Item(id=(int(a["id"])), region="EUW").gold.total,
                                reverse=True)
         return result_sorted
 
 
     def recipe_cost(self, next_items):
-        return sum([cass.Item(id=(int(next_item["main_img"]) if "main_img" in
+        return sum([heavy_imports.Item(id=(int(next_item["main_img"]) if "main_img" in
                                                                 next_item else int(next_item["id"])),
                               region="EUW").gold.base for next_item in next_items])
 
@@ -629,7 +744,7 @@ class Main(FileSystemEventHandler):
 
         try:
             logger.info("Now trying to predict image")
-            screenshot = cv.imread(img_path)
+            screenshot = heavy_imports.cv.imread(img_path)
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             logger.info("Trying to predict champ imgs")
 
@@ -821,12 +936,12 @@ class Main(FileSystemEventHandler):
 # m.output_logs(X[:20].astype(np.float32))
 
 #
-# blob = cv.imread("blob.png", cv.IMREAD_GRAYSCALE )
-# cv.imshow("blob", blob)
-# cv.waitKey(0)
-# ret, thresholded = cv.threshold(blob, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU)
-# cv.imshow("thresholded", thresholded)
-# cv.waitKey(0)
+# blob = heavy_imports.cv.imread("blob.png", heavy_imports.cv.IMREAD_GRAYSCALE )
+# heavy_imports.cv.imshow("blob", blob)
+# heavy_imports.cv.waitKey(0)
+# ret, thresholded = heavy_imports.cv.threshold(blob, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+# heavy_imports.cv.imshow("thresholded", thresholded)
+# heavy_imports.cv.waitKey(0)
 #
 # from train_model.model import CurrentGoldImgModel, CSImgModel, LvlImgModel, MultiTesseractModel
 # with open('test_data/easy/test_labels.json', "r") as f:
