@@ -11,17 +11,6 @@ from utils.artifact_manager import ItemManager
 from constants import game_constants, ui_constants
 import ctypes
 
-def str2cstr(string):
-    bytestring = bytes(string, 'utf-8')
-    return ctypes.c_char_p(bytestring)
-
-
-def strlist2cstrlist(strlist):
-    bytelist = [bytes(s, 'utf-8') for s in strlist]
-    result = (ctypes.c_char_p * (len(bytelist)+1))()
-    result[:-1] = bytelist
-    return result
-
 
 def num_itemslots(items):
     if not items:
@@ -97,7 +86,7 @@ def get_lol_dir():
                 loldir = f.read()
         else:
             loldir = "C:/Riot Games/League of Legends"
-        if not os.path.isdir(loldir + "/Game"):
+        if not (os.path.isdir(loldir + "/Game") and os.path.isdir(loldir + "/Screenshots")) :
             query_lol_dir()
         else:
             return loldir
@@ -109,7 +98,7 @@ def query_lol_dir():
                         "We were unable to locate your League of Legends installation. Please select your main League of Legends folder.")
     loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
 
-    while not os.path.isdir(loldir + "/Game"):
+    while not (os.path.isdir(loldir + "/Game") and os.path.isdir(loldir + "/Screenshots")):
         messagebox.showinfo("Information", "That wasn't it. Select the folder that has the Game folder in it.")
         loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
         if loldir == "":
