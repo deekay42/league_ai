@@ -431,6 +431,9 @@ class WinPredNetwork(LolNetwork):
         cs_diff = tf.reshape(cs_diff, (-1, 5))
 
         total_gold = in_vec[:,Input.total_gold_start:Input.total_gold_end]
+        total_gold = tf.reshape(total_gold, (-1,2,5))
+        total_gold_diff = total_gold[:,0] - total_gold[:,1]
+
         baron_active = in_vec[:,Input.baron_start:Input.baron_end]
         elder_active = in_vec[:, Input.elder_start:Input.elder_end]
         dragons_killed = in_vec[:, Input.dragons_killed_start:Input.dragons_killed_end]
@@ -448,27 +451,36 @@ class WinPredNetwork(LolNetwork):
         kd = kda[:, 0::3] - kda[:, 1::3]
 
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
-        all_champs_one_hot = dropout(all_champs_one_hot, 0.35, noise_shape=[n, self.game_config["champs_per_game"], 1])
+        team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
+        team1_champs_one_hot = dropout(team1_champs_one_hot, 0.2,
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+        team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
+        team2_champs_one_hot = dropout(team2_champs_one_hot, 0.2,
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+
+        team1_champs_k_hot = tf.reduce_sum(team1_champs_one_hot, axis=1)
+        team2_champs_k_hot = tf.reduce_sum(team2_champs_one_hot, axis=1)
+
+        #dropout should be applied so that equal champs from both teams are dropped
+        all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
         all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
                                                              self.game_config["champs_per_game"]))
 
 
-
-        final_input_layer = merge(
+        stats_layer = merge(
             [
-                all_champs_one_hot,
-                # # all_champs_embedded,
-                total_gold,
-                team1_total_kills,
-                team2_total_kills,
+                # total_gold,
+                total_gold_diff,
+                # team1_total_kills,
+                # team2_total_kills,
                 team_kills_diff,
-                kd,
+                # kd,
                 kda_diff,
                 lvl_diff,
                 cs_diff,
-                kda,
+                # kda,
                 lvl,
-                cs,
+                # cs,
                 baron_active,
                 elder_active,
                 dragons_killed,
@@ -478,14 +490,85 @@ class WinPredNetwork(LolNetwork):
                 turrets_destroyed,
                 first_team_has_blue_side
             ], mode='concat', axis=1)
+        stats_layer = dropout(stats_layer, 0.9)
 
-        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
+        final_input_layer = merge(
+            [
+                team1_champs_k_hot,
+                team2_champs_k_hot,
+                stats_layer
+            ], mode='concat', axis=1)
+
+        net = final_input_layer
+
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu', regularizer="L2"))
+        net = dropout(net, 0.9)
+
+        net = fully_connected(net, 1, activation='sigmoid')
+
+        return regression(net, optimizer='adam',
+                                 shuffle_batches=True,
+                                 learning_rate=self.network_config["learning_rate"],
+                                 loss='binary_crossentropy',
+                                 name='target', metric=self.bin_acc)
+
+
+    # @staticmethod
+    # def bin_acc(preds, targets, input_):
+    #     preds = tf.reshape(preds, (-1,))
+    #     targets = tf.reshape(targets, (-1,))
+    #     preds = tf.round(preds)
+    #     correct_prediction = tf.equal(preds, targets)
+    #     # all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
+    #     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    #
+    #     return acc
+
+    @staticmethod
+    def bin_acc(preds, targets, input_):
+        preds = tf.reshape(preds, (-1,))
+        targets = tf.reshape(targets, (-1,))
+        error = tf.abs(targets - preds)
+        score = 1-error
+        acc = tf.reduce_mean(score)
+
+        return acc
+
+
+class WinPredNetworkInit(LolNetwork):
+
+    def build(self):
+
+        in_vec = input_data(shape=[None, Input.len], name='input')
+        n = tf.shape(in_vec)[0]
+        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
+        first_team_has_blue_side = in_vec[:, Input.first_team_blue_start:Input.first_team_blue_end]
+
+
+        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        # all_champs_one_hot = dropout(all_champs_one_hot, 0.9, noise_shape=[n, self.game_config["champs_per_game"], 1])
+        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
+                                                             self.game_config["champs_per_game"]))
+
+        final_input_layer = merge(
+            [
+                all_champs_one_hot,
+                first_team_has_blue_side
+            ], mode='concat', axis=1)
+
+        net = batch_normalization(fully_connected(final_input_layer, 64, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
+        # net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu', regularizer="L2"))
         # # net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
-        net = fully_connected(net, 1, activation='sigmoid')
+        # net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
+        net = fully_connected(final_input_layer, 1, activation='sigmoid')
 
         return regression(net, optimizer='adam',
                                  shuffle_batches=True,

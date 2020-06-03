@@ -20,3 +20,5 @@ LOWER_LEAGUES = ["Diamond_1", "Diamond_2", "Diamond_3", "Diamond_4",
 
 NUM_LEAGUES = 27
 NUM_ELITE_LEAGUES = 3
+
+dragon2index = {"AIR_DRAGON":0, "EARTH_DRAGON":1, "FIRE_DRAGON":2, "WATER_DRAGON":3}

@@ -212,6 +212,37 @@ class Trainer(ABC):
 
 class WinPredTrainer(Trainer):
 
+    def __init__(self):
+        super().__init__()
+        self.num_epochs = 500
+
+    def train_init(self):
+        self.network = WinPredNetworkInit()
+
+        self.train_path = app_constants.model_paths["train"]["win_pred_init"]
+        self.best_path = app_constants.model_paths["best"]["win_pred_init"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_inf"])
+        print("Loading elite train data")
+        self.X, _ = dataloader_elite.get_train_data_raw()
+        print("Loading elite test data")
+        X_test_raw, _ = dataloader_elite.get_test_data_raw()
+        # X_test_raw = X_test_raw[:10000]
+        model = NextItemModel("standard")
+        self.test_sets = {}
+
+        max_lvl = np.max(self.X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+        self.X, self.Y = self.process_win_pred_measure(self.X, model, max_lvl == 1)
+
+        max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+        self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
+        self.Y_test = self.X_test = []
+        self.build_new_model()
+
+
+
     def train(self):
         # my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
         # opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
@@ -222,8 +253,8 @@ class WinPredTrainer(Trainer):
         # self.opp_champ_embs = opp_champ_embs_normed
         self.network = WinPredNetwork()
 
-        self.train_path = app_constants.model_paths["train"]["win_pred"]
-        self.best_path = app_constants.model_paths["best"]["win_pred"]
+        self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
+        self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
 
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
@@ -236,8 +267,6 @@ class WinPredTrainer(Trainer):
         print("Loading elite test data")
         X_test_raw, _ = dataloader_elite.get_test_data_raw()
         # X_test_raw = X_test_raw[:10000]
-        self.X = self.X.astype(np.float32)
-        X_test_raw = X_test_raw.astype(np.float32)
         model = NextItemModel("standard")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X, self.Y = self.flip_data(self.X)
@@ -299,7 +328,7 @@ class WinPredTrainer(Trainer):
     def extract_first_occurence_per_match(self, X, cond):
         X_result = []
         match_id_blacklist = set()
-        for example in X[cond]:
+        for i, example in enumerate(X[cond]):
             if example[0] in match_id_blacklist:
                 continue
             else:
@@ -1715,14 +1744,14 @@ if __name__ == "__main__":
     #                           "opp_champ_embs_dst")
 
 
-    t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
 
     # t = NextItemsTrainer()
     # t.build_next_items_late_game_model()
 
-    # t = WinPredTrainer()
-    # t.train()
+    t = WinPredTrainer()
+    t.train()
     # t = BootsTrainer()
     # t.train()
     # t = StarterItemsTrainer()

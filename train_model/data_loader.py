@@ -239,6 +239,14 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         return X, Y
 
 
+    def get_train_data_raw(self):
+        if not self.train:
+            self.read_train_from_np_files()
+
+        X, Y = self.train[:, :-1], self.train[:, -1]
+        return X, Y
+
+
     def get_all_unfolded(self):
         if not self.train_x:
             self.read_train_from_np_files()
