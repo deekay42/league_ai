@@ -353,7 +353,7 @@ class CPredict:
         model_output_nodes = [model.output_node_name for model in models]
         libname = pathlib.Path().absolute() / "cpredict"
 
-        self.cpredict = ctypes.CDLL(str(libname))
+        self.cpredict = ctypes.WinDLL(str(libname))
         self.cpredict.initialize(CPredict.strlist2cstrlist(model_paths), CPredict.strlist2cstrlist(model_ids), CPredict.strlist2cstrlist(model_output_nodes), len(models))
 
 
