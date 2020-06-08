@@ -25,7 +25,10 @@ class ArtifactManager(ABC):
 
     def lookup_by(self, lookup, val):
         try:
-            return self._by[lookup][val]
+            if lookup == "name":
+                return self._by[lookup][val.lower()]
+            else:
+                return self._by[lookup][val]
         except KeyError as e:
             print(f"ERROR: There was an error looking up the given key {lookup} and the value {val}")
             print(repr(e))
@@ -59,7 +62,10 @@ class ArtifactManager(ABC):
         json_artifact["int"] = int_counter
         json_artifact["img_int"] = img_int_counter
         for lookup in self.supported_lookups:
-            self._by[lookup][json_artifact[lookup]] = json_artifact
+            if lookup == "name":
+                self._by[lookup][json_artifact[lookup].lower()] = json_artifact
+            else:
+                self._by[lookup][json_artifact[lookup]] = json_artifact
 
 
     def _handle_virtual_artifacts(self, json_virtual, img_int_counter):

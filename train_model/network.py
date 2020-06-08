@@ -360,6 +360,12 @@ class LolNetwork(Network):
 
 class WinPredNetwork(LolNetwork):
 
+    def __init__(self, champ_dropout, stats_dropout):
+        super().__init__()
+        self.champ_dropout = champ_dropout
+        self.stats_dropout = stats_dropout
+
+
     def build(self):
 
         in_vec = input_data(shape=[None, Input.len], name='input')
@@ -390,10 +396,10 @@ class WinPredNetwork(LolNetwork):
         lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
         kda = in_vec[:, Input.kda_start:Input.kda_end]
         current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
-        total_cs = cs + neutral_cs
+        cs = cs + neutral_cs
 
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
-        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
+        target_summ_cs = tf.expand_dims(tf.gather_nd(cs, pos_index), 1)
         target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
         target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
@@ -415,12 +421,12 @@ class WinPredNetwork(LolNetwork):
         opp_kda = kda[:, 5 * 3:10 * 3]
         opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
+        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
 
         my_kda = kda[:, :5 * 3]
         my_kda = tf.reshape(my_kda, (-1, 5, 3))
         my_lvl = tf.expand_dims(lvl[:, :5], -1)
-        my_cs = tf.expand_dims(total_cs[:, :5], -1)
+        my_cs = tf.expand_dims(cs[:, :5], -1)
 
         kda_diff = opp_kda - my_kda
         lvl_diff = opp_lvl - my_lvl
@@ -452,19 +458,24 @@ class WinPredNetwork(LolNetwork):
 
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
-        team1_champs_one_hot = dropout(team1_champs_one_hot, 0.2,
+        team1_champs_one_hot = dropout(team1_champs_one_hot, self.champ_dropout,
                                        noise_shape=[n, self.game_config["champs_per_team"], 1])
         team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
-        team2_champs_one_hot = dropout(team2_champs_one_hot, 0.2,
+        team2_champs_one_hot = dropout(team2_champs_one_hot, self.champ_dropout,
                                        noise_shape=[n, self.game_config["champs_per_team"], 1])
 
-        team1_champs_k_hot = tf.reduce_sum(team1_champs_one_hot, axis=1)
-        team2_champs_k_hot = tf.reduce_sum(team2_champs_one_hot, axis=1)
+        team1_champs_one_hot = tf.reshape(team1_champs_one_hot, (-1, self.game_config["champs_per_team"] *
+                                                                 self.game_config["total_num_champs"]))
+        team2_champs_one_hot = tf.reshape(team2_champs_one_hot, (-1, self.game_config["champs_per_team"] *
+                                                                 self.game_config["total_num_champs"]))
+
+        # team1_champs_k_hot = tf.reduce_sum(team1_champs_one_hot, axis=1)
+        # team2_champs_k_hot = tf.reduce_sum(team2_champs_one_hot, axis=1)
 
         #dropout should be applied so that equal champs from both teams are dropped
-        all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
-        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
-                                                             self.game_config["champs_per_game"]))
+        # all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
+        # all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
+        #                                                      self.game_config["champs_per_game"]))
 
 
         stats_layer = merge(
@@ -480,7 +491,7 @@ class WinPredNetwork(LolNetwork):
                 cs_diff,
                 # kda,
                 lvl,
-                # cs,
+                # total_cs,
                 baron_active,
                 elder_active,
                 dragons_killed,
@@ -490,25 +501,25 @@ class WinPredNetwork(LolNetwork):
                 turrets_destroyed,
                 first_team_has_blue_side
             ], mode='concat', axis=1)
-        stats_layer = dropout(stats_layer, 0.9)
+        stats_layer = dropout(stats_layer, self.stats_dropout)
 
-        final_input_layer = merge(
-            [
-                team1_champs_k_hot,
-                team2_champs_k_hot,
-                stats_layer
-            ], mode='concat', axis=1)
+        # final_input_layer = merge(
+        #     [
+        #         team1_champs_one_hot,
+        #         team2_champs_one_hot,
+        #         stats_layer
+        #     ], mode='concat', axis=1)
 
-        net = final_input_layer
+        net = stats_layer
 
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
-        net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu', regularizer="L2"))
-        net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu', regularizer="L2"))
-        net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu', regularizer="L2"))
-        net = dropout(net, 0.9)
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu'))
+        # net = dropout(net, self.stats_dropout)
+        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu'))
+        # net = dropout(net, self.stats_dropout)
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu'))
+        # net = dropout(net, self.stats_dropout)
+        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu'))
+        # net = dropout(net, self.stats_dropout)
 
         net = fully_connected(net, 1, activation='sigmoid')
 
@@ -519,26 +530,26 @@ class WinPredNetwork(LolNetwork):
                                  name='target', metric=self.bin_acc)
 
 
-    # @staticmethod
-    # def bin_acc(preds, targets, input_):
-    #     preds = tf.reshape(preds, (-1,))
-    #     targets = tf.reshape(targets, (-1,))
-    #     preds = tf.round(preds)
-    #     correct_prediction = tf.equal(preds, targets)
-    #     # all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
-    #     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    #
-    #     return acc
-
     @staticmethod
     def bin_acc(preds, targets, input_):
         preds = tf.reshape(preds, (-1,))
         targets = tf.reshape(targets, (-1,))
-        error = tf.abs(targets - preds)
-        score = 1-error
-        acc = tf.reduce_mean(score)
+        preds = tf.round(preds)
+        correct_prediction = tf.equal(preds, targets)
+        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
         return acc
+
+    #sigmoid is not a probabiliti density function and shouldn't be interpreted as probabilities
+    # @staticmethod
+    # def bin_acc(preds, targets, input_):
+    #     preds = tf.reshape(preds, (-1,))
+    #     targets = tf.reshape(targets, (-1,))
+    #     error = tf.abs(targets - preds)
+    #     score = 1-error
+    #     acc = tf.reduce_mean(score)
+    #
+    #     return acc
 
 
 class WinPredNetworkInit(LolNetwork):
@@ -577,26 +588,25 @@ class WinPredNetworkInit(LolNetwork):
                                  name='target', metric=self.bin_acc)
 
 
-    # @staticmethod
-    # def bin_acc(preds, targets, input_):
-    #     preds = tf.reshape(preds, (-1,))
-    #     targets = tf.reshape(targets, (-1,))
-    #     preds = tf.round(preds)
-    #     correct_prediction = tf.equal(preds, targets)
-    #     # all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
-    #     acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-    #
-    #     return acc
-
     @staticmethod
     def bin_acc(preds, targets, input_):
         preds = tf.reshape(preds, (-1,))
         targets = tf.reshape(targets, (-1,))
-        error = tf.abs(targets - preds)
-        score = 1-error
-        acc = tf.reduce_mean(score)
+        preds = tf.round(preds)
+        correct_prediction = tf.equal(preds, targets)
+        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
         return acc
+    #
+    # @staticmethod
+    # def bin_acc(preds, targets, input_):
+    #     preds = tf.reshape(preds, (-1,))
+    #     targets = tf.reshape(targets, (-1,))
+    #     error = tf.abs(targets - preds)
+    #     score = 1-error
+    #     acc = tf.reduce_mean(score)
+    #
+    #     return acc
 
 
 

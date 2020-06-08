@@ -67,6 +67,11 @@ class Trainer(ABC):
         self.network = None
         self.class_weights = 1
 
+        with tf.device("/gpu:0"):
+            self.graph = tf.Graph()
+            with self.graph.as_default():
+                self.session = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False))
+
 
     @abstractmethod
     def determine_best_eval(self, scores):
@@ -216,30 +221,57 @@ class WinPredTrainer(Trainer):
         super().__init__()
         self.num_epochs = 500
 
-    def train_init(self):
-        self.network = WinPredNetworkInit()
 
-        self.train_path = app_constants.model_paths["train"]["win_pred_init"]
-        self.best_path = app_constants.model_paths["best"]["win_pred_init"]
+    def train_neural_network(self):
+        with tf.device("/gpu:0"):
+            with self.graph:
+                with self.session:
+                    tflearn.is_training(True, self.session)
+                    self.network = self.network.build()
+                    model = tflearn.DNN(self.network, session=self.session)
+                    self.session.run(tf.global_variables_initializer())
+                    if hasattr(self, 'champ_embs') and self.champ_embs is not None:
+                        embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.champ_embs)
+                        embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.opp_champ_embs)
+                    scores = []
+                    for epoch in range(self.num_epochs):
+                        x, y = self.get_train_data()
+                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                                  show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
+                                  callbacks=self.monitor_callback)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
+                        scores.append(score)
+        return scores
 
-        print("Loading training data")
-        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_inf"])
-        print("Loading elite train data")
-        self.X, _ = dataloader_elite.get_train_data_raw()
-        print("Loading elite test data")
-        X_test_raw, _ = dataloader_elite.get_test_data_raw()
-        # X_test_raw = X_test_raw[:10000]
-        model = NextItemModel("standard")
-        self.test_sets = {}
 
-        max_lvl = np.max(self.X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-        self.X, self.Y = self.process_win_pred_measure(self.X, model, max_lvl == 1)
 
-        max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-        self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
-        self.Y_test = self.X_test = []
-        self.build_new_model()
+    # def train_init(self):
+    #     self.network = WinPredNetworkInit()
+    #
+    #     self.train_path = app_constants.model_paths["train"]["win_pred_init"]
+    #     self.best_path = app_constants.model_paths["best"]["win_pred_init"]
+    #
+    #     print("Loading training data")
+    #     dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+    #                                                                  "next_items_processed_elite_sorted_inf"])
+    #     print("Loading elite train data")
+    #     self.X, _ = dataloader_elite.get_train_data_raw()
+    #     print("Loading elite test data")
+    #     X_test_raw, _ = dataloader_elite.get_test_data_raw()
+    #     # X_test_raw = X_test_raw[:10000]
+    #     model = NextItemModel("standard")
+    #     self.test_sets = {}
+    #
+    #     max_lvl = np.max(self.X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    #     self.X, self.Y = self.process_win_pred_measure(self.X, model, max_lvl == 1)
+    #
+    #     max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+    #     self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
+    #     self.Y_test = self.X_test = []
+    #     self.build_new_model()
 
 
 
@@ -251,7 +283,8 @@ class WinPredTrainer(Trainer):
         #
         # self.champ_embs = my_champ_embs_normed
         # self.opp_champ_embs = opp_champ_embs_normed
-        self.network = WinPredNetwork()
+        self.network = WinPredNetwork(champ_dropout=0.2, stats_dropout=0.8)
+        self.model = WinPredModel("standard")
 
         self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
         self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
@@ -259,40 +292,51 @@ class WinPredTrainer(Trainer):
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_uninf"])
+        dataloader_pro = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["win_pred"])
         # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
         self.X, _ = dataloader_elite.get_train_data()
-        # self.X = self.X[:50000]
+        self.X = self.X[:50000]
         print("Loading elite test data")
         X_test_raw, _ = dataloader_elite.get_test_data_raw()
-        # X_test_raw = X_test_raw[:10000]
+
+        X_test_raw_pro = np.load("training_data/win_pred/pro_test.npz")['arr_0']
+        X_test_raw = X_test_raw[:1000]
+        X_test_raw_pro = X_test_raw_pro[:1000]
+
         model = NextItemModel("standard")
         self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
         self.X, self.Y = self.flip_data(self.X)
         self.test_sets = {}
 
-        X_test_all = X_test_raw[:, 1:]
+        for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
 
-        self.test_sets["all"] = self.flip_data(X_test_all)
-        self.test_sets["all"] = model.scale_inputs(np.array(self.test_sets["all"][0]).astype(np.float32)), \
-                                self.test_sets["all"][1]
-
-
-        num_drags_killed = np.sum(X_test_raw[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
-        num_kills = np.sum(X_test_raw[:, Input.kda_start + 1:Input.kda_end + 1:3], axis=1)
-        num_towers = np.sum(X_test_raw[:, Input.turrets_start + 1:Input.turrets_end + 1], axis=1)
-        max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+            self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
+            self.test_sets[(tst_desc, "all")] = model.scale_inputs(np.array(self.test_sets[(tst_desc, "all")][0]).astype(np.float32)), \
+                                          self.test_sets[(tst_desc, "all")][1]
 
 
-        self.test_sets["first_drag"] = self.process_win_pred_measure(X_test_raw, model, num_drags_killed == 1)
-        self.test_sets["first_kill"] = self.process_win_pred_measure(X_test_raw, model, num_kills == 1)
-        self.test_sets["first_tower"] = self.process_win_pred_measure(X_test_raw, model, num_towers == 1)
+            num_drags_killed = np.sum(test_set_type[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
+            num_kills = np.sum(test_set_type[:, Input.kda_start + 1:Input.kda_end + 1:3], axis=1)
+            num_towers = np.sum(test_set_type[:, Input.turrets_start + 1:Input.turrets_end + 1], axis=1)
+            max_lvl = np.max(test_set_type[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
 
-        self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
-        self.test_sets["first_lvl_6"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 6)
-        self.test_sets["first_lvl_11"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 11)
-        self.test_sets["first_lvl_16"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 16)
+
+            self.test_sets[(tst_desc, "first_drag")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                     num_drags_killed == 1)
+            self.test_sets[(tst_desc, "first_kill")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                     num_kills == 1)
+            self.test_sets[(tst_desc, "first_tower")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                      num_towers == 1)
+
+            self.test_sets[(tst_desc, "init")] = self.process_win_pred_measure(test_set_type, model, max_lvl == 1)
+            self.test_sets[(tst_desc, "first_lvl_6")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                      max_lvl == 6)
+            self.test_sets[(tst_desc, "first_lvl_11")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                       max_lvl == 11)
+            self.test_sets[(tst_desc, "first_lvl_16")] = self.process_win_pred_measure(test_set_type, model,
+                                                                                       max_lvl == 16)
 
         self.Y_test = self.X_test = []
         self.build_new_model()
@@ -305,7 +349,23 @@ class WinPredTrainer(Trainer):
 
 
     def eval_model_single(self, model, X_test, Y_test):
-        return model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
+        acc = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
+        tile_factor = 128
+        batch_size = 1024
+        x = np.tile(X_test, [1, tile_factor])
+        x = np.reshape(x, (-1, Input.len))
+        y = [self.session.run(['FullyConnected_4/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
+             chunks(x, batch_size)]
+        y = np.reshape(y, (-1, tile_factor))
+        y_mean = np.mean(y, axis=1)
+
+        preds = tf.reshape(y_mean, (-1,))
+        targets = tf.reshape(Y_test, (-1,))
+        error = tf.abs(targets - preds)
+        score = 1-error
+        sym_acc = tf.reduce_mean(score)
+
+        return acc, sym_acc
 
 
     def eval_model(self, model, epoch, X_test, Y_test):
@@ -1715,6 +1775,8 @@ class ChampsEmbeddingTrainer(Trainer):
         d = tree.query(embeddings, k=2)
         d = d[0][:,1]
         return embeddings, d
+
+
 
 
 
