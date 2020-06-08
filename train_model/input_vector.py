@@ -2,7 +2,6 @@ from constants import game_constants
 
 
 class Input:
-
         pos_start = 0
         pos_end = pos_start + 1
         champs_start = pos_end

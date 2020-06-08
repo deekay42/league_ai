@@ -28,7 +28,7 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 print(f"Took {time.time() - starttime} s")
 print("1.5")
 starttime = time.time()
-# from utils import utils
+from utils.utils import chunks
 # import json
 
 import itertools
@@ -831,7 +831,7 @@ class WinPredModel(GameModel):
             return
 
         if type == "standard":
-            self.network = network.WinPredNetwork()
+            self.network = network.WinPredNetwork(champ_dropout=0.5, stats_dropout=0.95)
         elif type == "init":
             self.network = network.WinPredNetworkInit()
 
@@ -839,7 +839,7 @@ class WinPredModel(GameModel):
 
     def transform_inputs(self, champs_str,  total_gold, first_team_blue_start, cs=None, lvl=None, kda=None,
                      baron_active=None,
-                     elder_active=None, dragons=None, dragon_soul_type=None, turrets=None):
+                     elder_active=None, dragons=None, dragon_soul_type=None, turrets=None, gameId=0):
 
         if baron_active is None:
             baron_active = [0, 0]
@@ -873,12 +873,12 @@ class WinPredModel(GameModel):
         if dragon_soul_type_ints[0] != 0:
             dragon_soul_type[dragon_soul_type_ints[0]] = 1
         if dragon_soul_type_ints[1] != 0:
-            dragon_soul_type[dragon_soul_type_ints[1]] = 1
+            dragon_soul_type[4+dragon_soul_type_ints[1]] = 1
 
 
-        x = np.zeros(shape=self.input_len, dtype=np.int32)
-        champs_int = [ChampManager().lookup_by("name", chstr)["int"] for chstr in champs_str]
-        x[Input.champs_start:Input.champs_end] = champs_int
+        x = np.zeros(shape=self.input_len, dtype=np.int64)
+        x[0] = int(gameId)
+        x[Input.champs_start:Input.champs_end] = [ChampManager().lookup_by("name", chstr)["int"] for chstr in champs_str]
         x[Input.cs_start:Input.cs_end] = cs
         x[Input.lvl_start:Input.lvl_end] = lvl
         x[Input.kda_start:Input.kda_end] = np.ravel(kda)
@@ -891,8 +891,38 @@ class WinPredModel(GameModel):
         x[Input.turrets_start:Input.turrets_end] = turrets
         x[Input.first_team_blue_start:Input.first_team_blue_end] = first_team_blue_start
         x = self.scale_inputs(np.array([x]).astype(np.float32))
+
         return x
 
+
+    def bayes_predict(self, x):
+        tile_factor = 1024
+        batch_size = 1024
+        x = np.tile(x, [1,1024])
+        x = np.reshape(x, (-1, Input.len))
+
+        with self.graph.as_default():
+            tflearn.is_training(True, self.session)
+
+            y = [self.session.run(['FullyConnected_4/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
+                 chunks(x, batch_size)]
+
+        y = np.reshape(y, (-1, tile_factor))
+
+
+
+        y_mean = np.mean(y, axis=1)
+        y_std = np.std(y, axis=1)
+        return y_mean, y_std
+
+
+
+
+    def bayes_predict_sym(self, x, x_flipped):
+        blue_team_wins_score, blue_team_wins_std  = self.bayes_predict(x)
+        red_team_wins_score, red_team_wins_std = self.bayes_predict(x_flipped)
+        total_score = blue_team_wins_score + red_team_wins_score
+        return blue_team_wins_score/total_score
 
 
     def predict(self, x, blackout_indices=None):
@@ -1187,61 +1217,8 @@ def export_models():
         model.export()
 
 if __name__ == "__main__":
-    gold_ratios = np.array([12.5, 10.2, 14.1, 15.0, 7.8])
-    gold_ratios = gold_ratios / np.sum(gold_ratios)
     model = WinPredModel(type="standard")
     model.load_model()
-    input_5541 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
-                             "Ezreal",
-                             "Karma"],
-     # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-     "total_gold": np.concatenate([gold_ratios*57800, gold_ratios*57800], axis=0),
-     "first_team_blue_start": 1,
-     "cs": [238, 211, 309, 328, 35, 287, 174, 297, 292, 43],
-     "lvl": [16, 14, 17, 16, 12, 17, 15, 16, 15, 13],
-     "kda": [[4, 2, 2], [0, 3, 6], [3, 1, 5], [4, 2, 5], [1, 1, 6], [1, 4, 6], [4, 2, 2], [1, 2, 0], [3, 2, 2],
-             [0, 2, 7]],
-     "baron_active": [0, 1],
-     "elder_active": [0, 0],
-     "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [1, 1], "FIRE_DRAGON": [1, 0], "WATER_DRAGON": [0, 1]},
-     "dragon_soul_type": ["NONE", "NONE"],
-     "turrets": [4, 4]}
-
-    input_4529 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
-                                 "Ezreal",
-                                 "Karma"],
-                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-                  "total_gold": np.concatenate([gold_ratios * 37700, gold_ratios * 38300], axis=0),
-                  "first_team_blue_start": 1,
-                  "cs": [168, 147, 219, 215, 32, 203, 138, 213, 199, 36],
-                  "lvl": [13, 11, 14, 12, 9, 14, 12, 13, 12, 9],
-                  "kda": [[2, 2, 1], [0, 1, 3], [0, 0, 3], [2, 1, 1], [1, 0, 2], [0, 1, 3], [1, 2, 0], [1, 0, 0],
-                          [2, 1, 1],
-                          [0, 1, 3]],
-                  "baron_active": [0, 0],
-                  "elder_active": [0, 0],
-                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 1], "FIRE_DRAGON": [1, 0],
-                              "WATER_DRAGON": [0, 1]},
-                  "dragon_soul_type": ["NONE", "NONE"],
-                  "turrets": [2, 3]}
-
-    input_4027 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
-                                 "Ezreal",
-                                 "Karma"],
-                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-                  "total_gold": np.concatenate([gold_ratios * 29400, gold_ratios * 27700], axis=0),
-                  "first_team_blue_start": 1,
-                  "cs": [143, 115, 167, 176, 29, 151, 114, 167, 159, 28],
-                  "lvl": [12, 10, 12, 11, 8, 12, 10, 11, 10, 7],
-                  "kda": [[2, 1, 0], [0, 0, 3], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 1, 1], [1, 1, 0], [0, 0, 0],
-                          [0, 1, 0],
-                          [0, 1, 0]],
-                  "baron_active": [0, 0],
-                  "elder_active": [0, 0],
-                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [1, 0],
-                              "WATER_DRAGON": [0, 1]},
-                  "dragon_soul_type": ["NONE", "NONE"],
-                  "turrets": [0, 0]}
     # import data_loader
     # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
     #                                                              "next_items_processed_elite_sorted_inf"])
@@ -1284,17 +1261,52 @@ if __name__ == "__main__":
     from train_model.train import WinPredTrainer
     t = WinPredTrainer()
 
-    x = model.transform_inputs(**input_5541)
-    x_flipped = t.flip_teams(x)
-    print(model.predict(x))
-    print(model.predict(x_flipped))
+    # test_x = np.load("training_data/win_pred/test_x.npz")['arr_0']
+    # test_y = np.load("training_data/win_pred/test_y.npz")['arr_0']
+    #
+    # test_x = test_x[:2800:20]
+    # test_y = test_y[:2800:20]
+    # preds = []
+    # test_x_flipped = t.flip_teams(test_x)
+    # results = model.bayes_predict_sym(test_x,test_x_flipped)
+    #
+    # for x,y in zip(test_x, test_y):
+    #     x = np.array(x)[np.newaxis]
+    #     x_flipped = t.flip_teams(x)
+    #     y_pred = model.bayes_predict_sym(x,x_flipped)
+    #     preds.append(y_pred)
+    # preds = np.round(preds)
+    # equals = np.equal(preds, test_y)
+    # avg_score = np.mean(equals)
+    # print(avg_score)
 
-    x = model.transform_inputs(**input_4529)
-    x_flipped = t.flip_teams(x)
-    print(model.predict(x))
-    print(model.predict(x_flipped))
+    gold_ratios = np.array([12.5, 10.2, 14.1, 15.0, 7.8])
+    gold_ratios = gold_ratios / np.sum(gold_ratios)
+    input_4027 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
+                                 "Ezreal",
+                                 "Karma"],
+                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
+                  "total_gold": np.concatenate([gold_ratios * 29400, gold_ratios * 27700], axis=0),
+                  "first_team_blue_start": 1,
+                  "cs": [143, 115, 167, 176, 29, 151, 114, 167, 159, 28],
+                  "lvl": [12, 10, 12, 11, 8, 12, 10, 11, 10, 7],
+                  "kda": [[2, 1, 0], [0, 0, 3], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 1, 1], [1, 1, 0], [0, 0, 0],
+                          [0, 1, 0],
+                          [0, 1, 0]],
+                  "baron_active": [0, 0],
+                  "elder_active": [0, 0],
+                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [1, 0],
+                              "WATER_DRAGON": [0, 1]},
+                  "dragon_soul_type": ["NONE", "NONE"],
+                  "turrets": [0, 0]}
+
 
     x = model.transform_inputs(**input_4027)
     x_flipped = t.flip_teams(x)
+    print(model.bayes_predict_sym(x,x_flipped))
+    print(model.bayes_predict(x))
+    print(model.bayes_predict(x_flipped))
     print(model.predict(x))
     print(model.predict(x_flipped))
+    print("\n\n")
+

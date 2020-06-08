@@ -41,6 +41,7 @@ asset_paths["tesseract_separator"] = base_asset_path + "tesseract/sep.png"
 base_train_path = "training_data" + os.sep
 train_paths = dict()
 train_paths["next_items"] = base_train_path + "next_items" + os.sep
+train_paths["win_pred"] = base_train_path + "win_pred" + os.sep
 train_paths["positions"] = base_train_path + "positions" + os.sep
 train_paths["next_items_processed_elite_unsorted_inf"] = train_paths["next_items"] + "processed" + os.sep + "elite" + \
                                                          os.sep + "unsorted" + \
