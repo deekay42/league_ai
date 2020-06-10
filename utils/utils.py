@@ -86,7 +86,7 @@ def get_lol_dir():
                 loldir = f.read()
         else:
             loldir = "C:/Riot Games/League of Legends"
-        if not (os.path.isdir(loldir + "/Game") and os.path.isdir(loldir + "/Screenshots")) :
+        if not (os.path.isdir(loldir + "/Game")) :
             query_lol_dir()
         else:
             return loldir
@@ -98,7 +98,7 @@ def query_lol_dir():
                         "We were unable to locate your League of Legends installation. Please select your main League of Legends folder.")
     loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
 
-    while not (os.path.isdir(loldir + "/Game") and os.path.isdir(loldir + "/Screenshots")):
+    while not (os.path.isdir(loldir + "/Game")):
         messagebox.showinfo("Information", "That wasn't it. Select the folder that has the Game folder in it.")
         loldir = askdirectory(initialdir="C:", title="Please select your main League of Legends folder")
         if loldir == "":
