@@ -136,6 +136,8 @@ class Main(FileSystemEventHandler):
         logger.info("Starting main")
         self.onTimeout = False
         self.loldir = utils.get_lol_dir()
+        self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        self.screenshot_dir_created = False
         logger.info("Go tlol dir !")
         self.config = configparser.ConfigParser()
         logger.info("Reading config")
@@ -148,7 +150,7 @@ class Main(FileSystemEventHandler):
                 break
             except KeyError as e:
                 print(repr(e))
-                os.remove(self.loldir)
+                os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
                 utils.get_lol_dir()
 
         try:
@@ -673,13 +675,23 @@ class Main(FileSystemEventHandler):
 
 
     def on_created(self, event):
+        logger.info("Got event for file %s" % event.src_path)
         # pr.enable()
 
         # prevent keyboard mashing
         if self.onTimeout:
             return
         file_path = event.src_path
-        logger.info("Got event for file %s" % file_path)
+        
+        if self.listener_dir == self.loldir:        
+            if file_path[-11:] == "Screenshots":
+                self.screenshot_dir_created = True
+                return
+            else:
+                return
+        
+
+
         # stupid busy waiting until file finishes writing
         oldsize = -1
         while True:
@@ -896,24 +908,45 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def shouldTerminate():
         return os.path.isfile(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
-
+    
 
     def run(self):
         observer = Observer()
-        ss_path = os.path.join(self.loldir, "Screenshots")
-        logger.info(f"Now listening for screenshots at: {ss_path}")
-        observer.schedule(self, path=ss_path)
-        observer.start()
+        logger.info(f"Now listening for screenshots at: {self.listener_dir}")
+        observer.schedule(self, path=self.listener_dir)
+        try:
+            observer.start()
+        except FileNotFoundError:
+            self.listener_dir = self.loldir
+            logger.info(f"Error. Screenshots dir does not exist. Now listening for screenshots at: {self.listener_dir}")
+            observer.unschedule_all()
+            observer.stop()   
+            observer = Observer()
+            observer.schedule(self, path=self.listener_dir)
+            observer.start()
+            
         try:
             with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
                 f.write("true")
             while not Main.shouldTerminate():
                 time.sleep(1)
+                if self.screenshot_dir_created:
+                    print("screenshot dir created!")
+                    observer.unschedule_all()
+                    observer.stop()
+                    observer = Observer()
+                    self.listener_dir = os.path.join(self.loldir, "Screenshots")
+                    screenshot_path = glob.glob(self.listener_dir+"/*")[-1]
+                    self.process_image(screenshot_path)
+                    observer.schedule(self, path=self.listener_dir)
+                    observer.start()
+                    self.screenshot_dir_created = False
             observer.stop()
             os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
         except KeyboardInterrupt:
             observer.stop()
         observer.join()
+
 
 # m = Main()
 # m.run()
