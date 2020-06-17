@@ -133,112 +133,112 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        logger.info("Starting main")
-        self.onTimeout = False
-        self.loldir = utils.get_lol_dir()
-        self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        self.screenshot_dir_created = False
-        logger.info("Go tlol dir !")
-        self.config = configparser.ConfigParser()
-        logger.info("Reading config")
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-
-        while True:
-            try:
-            # res = 1440,810
-                res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-                break
-            except KeyError as e:
-                print(repr(e))
-                os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
-                utils.get_lol_dir()
-
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-
-
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-
-        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-
-        if too_many_screenshots:
-            Tk().withdraw()
-            messagebox.showinfo("Warning",
-                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-
-
-
+        # logger.info("Starting main")
+        # self.onTimeout = False
+        # self.loldir = utils.get_lol_dir()
+        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        # self.screenshot_dir_created = False
+        # logger.info("Go tlol dir !")
+        # self.config = configparser.ConfigParser()
+        # logger.info("Reading config")
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        #
+        # while True:
+        #     try:
+        #     # res = 1440,810
+        #         res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        #         break
+        #     except KeyError as e:
+        #         print(repr(e))
+        #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
+        #         utils.get_lol_dir()
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        #
+        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        #
+        # if too_many_screenshots:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Warning",
+        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        #
+        #
+        #
 
         # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
-        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
         logger.info("Loading res cvt")
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        dll_hook = CPredict()
-        # dll_hook = None
+        # dll_hook = CPredict()
+        dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook)
         self.next_item_model_standard.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late", dll_hook)
         self.next_item_model_late.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook)
         self.next_item_model_starter.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook)
         self.next_item_model_first_item.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook)
         self.next_item_model_boots.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter, dll_hook)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter, dll_hook)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter, dll_hook)
         self.self_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.kda_img_model = KDAImgModel(self.res_converter, dll_hook)
         self.kda_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -269,7 +269,7 @@ class Main(FileSystemEventHandler):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
-        Main.test_connection()
+        # Main.test_connection()
 
 
     def set_res_converter(self, res_cvt):
@@ -608,7 +608,7 @@ class Main(FileSystemEventHandler):
             or delta_items and ((next_item["int"] in delta_items and (next_item['int'] != self.ward_int))
                                 or (next_item["name"] in self.removable_items)) \
             or next_items == [] \
-            or self.network_type in ["starter"]
+            or (self.network_type in ["starter"] and self.current_gold == 500)
 
 
     def add_aux_items(self, result, next_items, abs_items):
@@ -948,10 +948,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen659.png")
+m.process_image(f"test_data/screenshots/Screen04.png")
 # for i in range(678,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
