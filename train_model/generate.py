@@ -4,7 +4,7 @@ import random
 import cv2 as cv
 import numpy as np
 
-from utils import utils
+from utils import misc
 
 #
 #
@@ -576,30 +576,30 @@ def drawBlackBorder(img, x0, y0, x1, y1, thickness=1):
 
 
 def getScoreboardElementXCoords(scoreboard_new_tile_width, new_champ_size, new_item_size, new_spell_size):
-    items_width = 7 * new_item_size + utils.SCOREBOARD_ITEM_BORDER_WIDTH
-    champ_width = new_champ_size + utils.SCOREBOARD_ITEM_BORDER_WIDTH
-    spells_width = new_spell_size + utils.SCOREBOARD_ITEM_BORDER_WIDTH
+    items_width = 7 * new_item_size + misc.SCOREBOARD_ITEM_BORDER_WIDTH
+    champ_width = new_champ_size + misc.SCOREBOARD_ITEM_BORDER_WIDTH
+    spells_width = new_spell_size + misc.SCOREBOARD_ITEM_BORDER_WIDTH
 
-    item_x_offset = np.random.randint(utils.SCOREBOARD_ITEM_BORDER_WIDTH, scoreboard_new_tile_width - items_width)
-    if item_x_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH > utils.SCOREBOARD_ITEM_BORDER_WIDTH + champ_width:
-        if scoreboard_new_tile_width - item_x_offset - items_width > utils.SCOREBOARD_ITEM_BORDER_WIDTH + champ_width:
+    item_x_offset = np.random.randint(misc.SCOREBOARD_ITEM_BORDER_WIDTH, scoreboard_new_tile_width - items_width)
+    if item_x_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH > misc.SCOREBOARD_ITEM_BORDER_WIDTH + champ_width:
+        if scoreboard_new_tile_width - item_x_offset - items_width > misc.SCOREBOARD_ITEM_BORDER_WIDTH + champ_width:
             if np.random.random() > 0.5:
-                champ_x_offset = np.random.randint(utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                                   item_x_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH - champ_width)
+                champ_x_offset = np.random.randint(misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                                   item_x_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH - champ_width)
             else:
                 try:
                     champ_x_offset = np.random.randint(
-                        item_x_offset + items_width + utils.SCOREBOARD_ITEM_BORDER_WIDTH,
+                        item_x_offset + items_width + misc.SCOREBOARD_ITEM_BORDER_WIDTH,
                         scoreboard_new_tile_width - champ_width)
                 except:
                     pass
         else:
-            champ_x_offset = np.random.randint(utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                               item_x_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH - champ_width)
+            champ_x_offset = np.random.randint(misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                               item_x_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH - champ_width)
     else:
         try:
             champ_x_offset = np.random.randint(
-                item_x_offset + items_width + utils.SCOREBOARD_ITEM_BORDER_WIDTH,
+                item_x_offset + items_width + misc.SCOREBOARD_ITEM_BORDER_WIDTH,
                 scoreboard_new_tile_width - champ_width)
 
         except:
@@ -615,13 +615,13 @@ def getScoreboardElementXCoords(scoreboard_new_tile_width, new_champ_size, new_i
         left_side_width, right_side_width = right_side_width, left_side_width
 
     # left side wide enough?
-    if left_side_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH > utils.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
+    if left_side_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH > misc.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
         position_wide_enough[0] = True
     # middle wide enough?
-    if right_side_offset - left_side_offset - left_side_width > utils.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
+    if right_side_offset - left_side_offset - left_side_width > misc.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
         position_wide_enough[1] = True
     # right side wide enough?
-    if scoreboard_new_tile_width - right_side_offset - right_side_width > utils.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
+    if scoreboard_new_tile_width - right_side_offset - right_side_width > misc.SCOREBOARD_ITEM_BORDER_WIDTH + spells_width:
         position_wide_enough[2] = True
 
     assert position_wide_enough != [False, False, False]
@@ -630,20 +630,20 @@ def getScoreboardElementXCoords(scoreboard_new_tile_width, new_champ_size, new_i
         if position_wide_enough[choice]:
             if choice == 0:
                 try:
-                    spells_x_offset = np.random.randint(utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                                        left_side_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
+                    spells_x_offset = np.random.randint(misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                                        left_side_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
                 except:
                     pass
             elif choice == 1:
                 try:
                     spells_x_offset = np.random.randint(left_side_offset + left_side_width,
-                                                        right_side_offset - utils.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
+                                                        right_side_offset - misc.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
                 except:
                     pass
             elif choice == 2:
                 try:
                     spells_x_offset = np.random.randint(right_side_offset + right_side_width,
-                                                        scoreboard_new_tile_width - utils.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
+                                                        scoreboard_new_tile_width - misc.SCOREBOARD_ITEM_BORDER_WIDTH - spells_width)
                 except:
                     pass
             break
@@ -781,23 +781,23 @@ def generateRandomScoreboard():
     champ_imgs = champ_imgs_global.copy()
     item_imgs = item_imgs_global.copy()
     spell_imgs = spell_imgs_global.copy()
-    new_champ_size = np.random.randint(utils.CHAMP_MIN_SIZE, utils.CHAMP_MAX_SIZE)
-    new_item_size = np.random.randint(utils.ITEM_MIN_SIZE, utils.ITEM_MAX_SIZE)
-    new_spell_size = np.random.randint(utils.SPELL_MIN_SIZE, utils.SPELL_MAX_SIZE)
+    new_champ_size = np.random.randint(misc.CHAMP_MIN_SIZE, misc.CHAMP_MAX_SIZE)
+    new_item_size = np.random.randint(misc.ITEM_MIN_SIZE, misc.ITEM_MAX_SIZE)
+    new_spell_size = np.random.randint(misc.SPELL_MIN_SIZE, misc.SPELL_MAX_SIZE)
     champ_imgs = {k: resize(img, new_champ_size, new_champ_size) for k, img in champ_imgs.items()}
     item_imgs = {k: resize(img, new_item_size, new_item_size) for k, img in item_imgs.items()}
     spell_imgs = {k: resize(img, new_spell_size, new_spell_size) for k, img in spell_imgs.items()}
 
     for i in range(5):
-        top_border = utils.SCOREBOARD_INNER_Y_BOT_OFFSET - i * (utils.SCOREBOARD_INNER_TILE_HEIGHT)
-        bottom_border = top_border + utils.SCOREBOARD_INNER_TILE_HEIGHT - utils.SCOREBOARD_INNER_BORDER_WIDTH
-        left_border = utils.SCOREBOARD_INNER_LEFT_X_OFFSET
-        right_border = left_border + utils.SCOREBOARD_INNER_TILE_WIDTH
+        top_border = misc.SCOREBOARD_INNER_Y_BOT_OFFSET - i * (misc.SCOREBOARD_INNER_TILE_HEIGHT)
+        bottom_border = top_border + misc.SCOREBOARD_INNER_TILE_HEIGHT - misc.SCOREBOARD_INNER_BORDER_WIDTH
+        left_border = misc.SCOREBOARD_INNER_LEFT_X_OFFSET
+        right_border = left_border + misc.SCOREBOARD_INNER_TILE_WIDTH
         # scoreboard_only[top_border: bottom_border, left_border:right_border] = np.random.randint(0,50,(bottom_border-top_border, right_border-left_border, 3))
         scoreboard_only[top_border: bottom_border, left_border:right_border] = overlayRandomImgs(
             scoreboard_only[top_border: bottom_border, left_border:right_border], overlays_inner, 2)
-        left_border = utils.SCOREBOARD_INNER_RIGHT_X_OFFSET
-        right_border = left_border + utils.SCOREBOARD_INNER_TILE_WIDTH + utils.SCOREBOARD_INNER_BORDER_WIDTH
+        left_border = misc.SCOREBOARD_INNER_RIGHT_X_OFFSET
+        right_border = left_border + misc.SCOREBOARD_INNER_TILE_WIDTH + misc.SCOREBOARD_INNER_BORDER_WIDTH
         # scoreboard_only[top_border: bottom_border, left_border:right_border] = np.random.randint(0, 50, (
         # bottom_border - top_border, right_border - left_border, 3))
         scoreboard_only[top_border: bottom_border, left_border:right_border] = overlayRandomImgs(
@@ -805,25 +805,25 @@ def generateRandomScoreboard():
             overlays_inner, 2)
 
     scoreboard_new_tile_height = int(np.random.uniform(
-        max(2 * new_spell_size, new_champ_size, new_item_size) + 2 * utils.SCOREBOARD_ITEM_BORDER_WIDTH + 10,
-        utils.SCOREBOARD_ITEM_BORDER_WIDTH * 2 + 2 * utils.SPELL_MAX_SIZE))
+        max(2 * new_spell_size, new_champ_size, new_item_size) + 2 * misc.SCOREBOARD_ITEM_BORDER_WIDTH + 10,
+        misc.SCOREBOARD_ITEM_BORDER_WIDTH * 2 + 2 * misc.SPELL_MAX_SIZE))
     scoreboard_new_tile_width = int(np.random.uniform(
-        7 * new_item_size + 6 * utils.SCOREBOARD_ITEM_BORDER_WIDTH + 2 * new_champ_size + 3 * new_spell_size,
-        6 * utils.SCOREBOARD_ITEM_BORDER_WIDTH + 7 * utils.ITEM_MAX_SIZE + 2 * utils.CHAMP_MAX_SIZE + 3 * utils.SPELL_MAX_SIZE))
+        7 * new_item_size + 6 * misc.SCOREBOARD_ITEM_BORDER_WIDTH + 2 * new_champ_size + 3 * new_spell_size,
+        6 * misc.SCOREBOARD_ITEM_BORDER_WIDTH + 7 * misc.ITEM_MAX_SIZE + 2 * misc.CHAMP_MAX_SIZE + 3 * misc.SPELL_MAX_SIZE))
 
     scoreboard_new_height = int(
-        (scoreboard_new_tile_height / utils.SCOREBOARD_INNER_TILE_HEIGHT) * utils.STD_SCOREBOARD_HEIGHT)
+        (scoreboard_new_tile_height / misc.SCOREBOARD_INNER_TILE_HEIGHT) * misc.STD_SCOREBOARD_HEIGHT)
     scoreboard_new_width = int(
-        (scoreboard_new_tile_width / utils.SCOREBOARD_INNER_TILE_WIDTH) * utils.STD_SCOREBOARD_WIDTH)
+        (scoreboard_new_tile_width / misc.SCOREBOARD_INNER_TILE_WIDTH) * misc.STD_SCOREBOARD_WIDTH)
 
     scoreboard_inner_border_width = int(
-        (scoreboard_new_tile_height / utils.SCOREBOARD_INNER_TILE_HEIGHT) * utils.SCOREBOARD_INNER_BORDER_WIDTH)
+        (scoreboard_new_tile_height / misc.SCOREBOARD_INNER_TILE_HEIGHT) * misc.SCOREBOARD_INNER_BORDER_WIDTH)
 
-    scoreboard_inner_bot_offset = utils.SCOREBOARD_INNER_Y_BOT_OFFSET * scoreboard_new_height / utils.STD_SCOREBOARD_HEIGHT
+    scoreboard_inner_bot_offset = misc.SCOREBOARD_INNER_Y_BOT_OFFSET * scoreboard_new_height / misc.STD_SCOREBOARD_HEIGHT
     scoreboard_inner_left_x_offset = int(
-        (scoreboard_new_width / utils.STD_SCOREBOARD_WIDTH) * utils.SCOREBOARD_INNER_LEFT_X_OFFSET)
+        (scoreboard_new_width / misc.STD_SCOREBOARD_WIDTH) * misc.SCOREBOARD_INNER_LEFT_X_OFFSET)
     scoreboard_inner_right_x_offset = int(
-        (scoreboard_new_width / utils.STD_SCOREBOARD_WIDTH) * utils.SCOREBOARD_INNER_RIGHT_X_OFFSET)
+        (scoreboard_new_width / misc.STD_SCOREBOARD_WIDTH) * misc.SCOREBOARD_INNER_RIGHT_X_OFFSET)
 
     scoreboard_only = resize(scoreboard_only, scoreboard_new_width, scoreboard_new_height)
     # scoreboard_alpha = resize(scoreboard_alpha, scoreboard_new_width, scoreboard_new_height)
@@ -835,24 +835,24 @@ def generateRandomScoreboard():
 
     top_y_offset = scoreboard_inner_bot_offset - 4 * (scoreboard_new_tile_height)
 
-    spells_y_offset = np.random.randint(top_y_offset + utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                        top_y_offset + scoreboard_new_tile_height - 2 * new_spell_size - utils.SCOREBOARD_ITEM_BORDER_WIDTH)
-    champs_y_offset = np.random.randint(top_y_offset + utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                        top_y_offset + scoreboard_new_tile_height - new_champ_size - utils.SCOREBOARD_ITEM_BORDER_WIDTH)
-    items_y_offset = np.random.randint(top_y_offset + utils.SCOREBOARD_ITEM_BORDER_WIDTH,
-                                       top_y_offset + scoreboard_new_tile_height - new_item_size - utils.SCOREBOARD_ITEM_BORDER_WIDTH)
+    spells_y_offset = np.random.randint(top_y_offset + misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                        top_y_offset + scoreboard_new_tile_height - 2 * new_spell_size - misc.SCOREBOARD_ITEM_BORDER_WIDTH)
+    champs_y_offset = np.random.randint(top_y_offset + misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                        top_y_offset + scoreboard_new_tile_height - new_champ_size - misc.SCOREBOARD_ITEM_BORDER_WIDTH)
+    items_y_offset = np.random.randint(top_y_offset + misc.SCOREBOARD_ITEM_BORDER_WIDTH,
+                                       top_y_offset + scoreboard_new_tile_height - new_item_size - misc.SCOREBOARD_ITEM_BORDER_WIDTH)
 
-    item_coords = utils._generate_item_coords(new_item_size, item_left_x_offset + scoreboard_inner_left_x_offset,
-                                              item_right_x_offset + scoreboard_inner_right_x_offset,
-                                              scoreboard_new_tile_height, items_y_offset)
-    spell_coords = utils.generateSpellCoordinates(new_spell_size,
-                                                  spells_left_x_offset + scoreboard_inner_left_x_offset,
-                                                  spells_right_x_offset + scoreboard_inner_right_x_offset,
-                                                  scoreboard_new_tile_height - new_spell_size, spells_y_offset)
-    champ_coords = utils._generate_champ_coords(new_champ_size,
-                                                champ_left_x_offset + scoreboard_inner_left_x_offset,
-                                                champ_right_x_offset + scoreboard_inner_right_x_offset,
-                                                scoreboard_new_tile_height, champs_y_offset)
+    item_coords = misc._generate_item_coords(new_item_size, item_left_x_offset + scoreboard_inner_left_x_offset,
+                                             item_right_x_offset + scoreboard_inner_right_x_offset,
+                                             scoreboard_new_tile_height, items_y_offset)
+    spell_coords = misc.generateSpellCoordinates(new_spell_size,
+                                                 spells_left_x_offset + scoreboard_inner_left_x_offset,
+                                                 spells_right_x_offset + scoreboard_inner_right_x_offset,
+                                                 scoreboard_new_tile_height - new_spell_size, spells_y_offset)
+    champ_coords = misc._generate_champ_coords(new_champ_size,
+                                               champ_left_x_offset + scoreboard_inner_left_x_offset,
+                                               champ_right_x_offset + scoreboard_inner_right_x_offset,
+                                               scoreboard_new_tile_height, champs_y_offset)
 
     champ_names = []
     spell_names = []

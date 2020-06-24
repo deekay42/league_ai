@@ -14,7 +14,7 @@ from constants.ui_constants import ResConverter
 from train_model import generate, data_loader
 from train_model.model import *
 from train_model.network import *
-from utils import utils
+from utils import misc
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 import sklearn
 from tflearn.data_utils import to_categorical
@@ -84,7 +84,7 @@ class Trainer(ABC):
 
 
     def save_best_model(self, best_model_index):
-        utils.remove_old_files(self.best_path)
+        misc.remove_old_files(self.best_path)
         best_model_files = glob.glob(self.train_path + self.model_name + str(best_model_index) + ".*")
         best_model_files.append(self.train_path + self.acc_file_name)
         for file in best_model_files:
@@ -92,7 +92,7 @@ class Trainer(ABC):
 
 
     def build_new_model(self):
-        utils.remove_old_files(self.train_path)
+        misc.remove_old_files(self.train_path)
         with open(self.train_path + self.acc_file_name, "w") as self.logfile:
             self.monitor_callback = MonitorCallback(self.logfile)
             scores = self.train_neural_network()
@@ -199,12 +199,12 @@ class Trainer(ABC):
 
 
     def get_train_data_balanced(self, size=1e5):
-        chunk_per_item = int(size//sum([1 if y != [] else 0 for y in self.Y_indices]))
-        print(f"building new epoch with chunksize:{chunk_per_item}")
+        num_examples_per_item = int(size//sum([1 if y != [] else 0 for y in self.Y_indices]))
+        print(f"building new epoch with num_examples_per_item:{num_examples_per_item}")
         indices = []
         for y_indices in self.Y_indices:
             if y_indices:
-                indices.extend(np.random.choice(y_indices, size=chunk_per_item))
+                indices.extend(np.random.choice(y_indices, size=num_examples_per_item))
         print("epoch built")
         return self.X[indices], self.Y[indices]
 
@@ -222,9 +222,89 @@ class WinPredTrainer(Trainer):
         self.num_epochs = 500
 
 
+        self.network_config = dict()
+        self.network_config["train"] = {
+                "learning_rate": 0.001,
+                "stats_dropout": 0.9,
+                "champ_dropout": 0.2,
+                "noise": {"kda": 0.0,
+                          "total_gold": 0,
+                          "cs": 0,
+                          "lvl": 0.0,
+                          "dragons_killed": 0.0,
+                          "baron_active": 0,
+                          "elder_active": 0,
+                          "first_team_has_blue_side": 0,
+                          "champs": 0,
+                          "turrets_destroyed": 0.0}}
+
+        self.network_config["gauss"] = {
+            "learning_rate": 0.001,
+            "stats_dropout": 1.0,
+            "champ_dropout": 1.0,
+            "noise": {"kda": 0.5,
+                      "total_gold": 500 + 125,
+                      "cs": 10,
+                      "lvl": 0.4,
+                      "dragons_killed": 0.2,
+                      "baron_active": 0.05,
+                      "elder_active": 0.05,
+                      "first_team_has_blue_side": 0.2,
+                      "champs": 0.1,
+                      "turrets_destroyed": 0.4}
+        }
+
+        self.network_config["dropout"] = {
+            "learning_rate": 0.001,
+            "stats_dropout": 0.8,
+            "champ_dropout": 0.2,
+            "noise": {"kda": 0.0,
+                      "total_gold": 0,
+                      "cs": 0,
+                      "lvl": 0.0,
+                      "dragons_killed": 0.0,
+                      "baron_active": 0.0,
+                      "elder_active": 0.0,
+                      "first_team_has_blue_side": 0.0,
+                      "champs": 0.0,
+                      "turrets_destroyed": 0.0}
+        }
+
+        self.network_config["standard_eval"] = {
+            "learning_rate": 0.001,
+            "stats_dropout": 1.0,
+            "champ_dropout": 1.0,
+            "noise": {"kda": 0.0,
+                      "total_gold": 0,
+                      "cs": 0,
+                      "lvl": 0.0,
+                      "dragons_killed": 0.0,
+                      "baron_active": 0.0,
+                      "elder_active": 0.0,
+                      "first_team_has_blue_side": 0.0,
+                      "champs": 0.0,
+                      "turrets_destroyed": 0.0}
+        }
+
+
+        self.network = WinPredNetwork(self.network_config["train"])
+        self.model = WinPredModel("standard")
+
+        self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
+        self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
+        for config in self.network_config:
+            self.network_config[config]["noise"] = Input.scale(self.network_config[config]["noise"])
+
+        game_constants.game_config_scaled = dict()
+        for elem in ["min", "max"]:
+            game_constants.game_config_scaled[elem] = Input.scale(game_constants.min_max_scales_clip[elem])
+
+
+
+
     def train_neural_network(self):
         with tf.device("/gpu:0"):
-            with self.graph:
+            with self.graph.as_default():
                 with self.session:
                     tflearn.is_training(True, self.session)
                     self.network = self.network.build()
@@ -238,6 +318,7 @@ class WinPredTrainer(Trainer):
                     scores = []
                     for epoch in range(self.num_epochs):
                         x, y = self.get_train_data()
+
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
@@ -276,19 +357,6 @@ class WinPredTrainer(Trainer):
 
 
     def train(self):
-        # my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        # opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
-        # my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
-        # opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
-        #
-        # self.champ_embs = my_champ_embs_normed
-        # self.opp_champ_embs = opp_champ_embs_normed
-        self.network = WinPredNetwork(champ_dropout=0.2, stats_dropout=0.8)
-        self.model = WinPredModel("standard")
-
-        self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
-        self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
-
         print("Loading training data")
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_uninf"])
@@ -298,23 +366,34 @@ class WinPredTrainer(Trainer):
         print("Loading elite train data")
         self.X, _ = dataloader_elite.get_train_data()
         self.X = self.X[:50000]
+
+
         print("Loading elite test data")
         X_test_raw, _ = dataloader_elite.get_test_data_raw()
 
-        X_test_raw_pro = np.load("training_data/win_pred/pro_test.npz")['arr_0']
-        X_test_raw = X_test_raw[:1000]
-        X_test_raw_pro = X_test_raw_pro[:1000]
+        X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
+        X_test_raw_pro = np.concatenate([X_test_raw_pro[:,0:1][:,], np.zeros((X_test_raw_pro.shape[0], 1)),
+                                         X_test_raw_pro[:,1:]], axis=1)
+        X_test_raw = X_test_raw[:5000]
+        X_test_raw_pro = X_test_raw_pro[:5000]
 
-        model = NextItemModel("standard")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
+        # X_test_raw = Input(X_test_raw)
+        # X_test_raw_pro = Input(X_test_raw_pro)
+
+
+
+        self.X = Input().scale_inputs(self.X)
         self.X, self.Y = self.flip_data(self.X)
+        # utils.uniform_shuffle(self.X, self.Y)
+
         self.test_sets = {}
 
         for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
 
-            self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
-            self.test_sets[(tst_desc, "all")] = model.scale_inputs(np.array(self.test_sets[(tst_desc, "all")][0]).astype(np.float32)), \
-                                          self.test_sets[(tst_desc, "all")][1]
+            # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
+
+            self.test_sets[(tst_desc, "all")] = test_set_all
+            self.test_sets[(tst_desc, "all")] = Input().scale_inputs(test_set_all)
 
 
             num_drags_killed = np.sum(test_set_type[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
@@ -323,49 +402,114 @@ class WinPredTrainer(Trainer):
             max_lvl = np.max(test_set_type[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
 
 
-            self.test_sets[(tst_desc, "first_drag")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "first_drag")] = self.process_win_pred_measure(test_set_type,
                                                                                      num_drags_killed == 1)
-            self.test_sets[(tst_desc, "first_kill")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "first_kill")] = self.process_win_pred_measure(test_set_type,
                                                                                      num_kills == 1)
-            self.test_sets[(tst_desc, "first_tower")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "first_tower")] = self.process_win_pred_measure(test_set_type,
                                                                                       num_towers == 1)
 
-            self.test_sets[(tst_desc, "init")] = self.process_win_pred_measure(test_set_type, model, max_lvl == 1)
-            self.test_sets[(tst_desc, "first_lvl_6")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "init")] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
+            self.test_sets[(tst_desc, "first_lvl_6")] = self.process_win_pred_measure(test_set_type,
                                                                                       max_lvl == 6)
-            self.test_sets[(tst_desc, "first_lvl_11")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "first_lvl_11")] = self.process_win_pred_measure(test_set_type,
                                                                                        max_lvl == 11)
-            self.test_sets[(tst_desc, "first_lvl_16")] = self.process_win_pred_measure(test_set_type, model,
+            self.test_sets[(tst_desc, "first_lvl_16")] = self.process_win_pred_measure(test_set_type,
                                                                                        max_lvl == 16)
 
         self.Y_test = self.X_test = []
         self.build_new_model()
 
 
-    def process_win_pred_measure(self, X, model, cond):
+    def process_win_pred_measure(self, X, cond):
         X_result = self.extract_first_occurence_per_match(X, cond)
-        X_result = model.scale_inputs(np.array(X_result).astype(np.float32))
-        return self.flip_data(X_result)
+        X_result = Input().scale_inputs(X_result)
+        # return self.flip_data(X_result)
+        return X_result
 
 
-    def eval_model_single(self, model, X_test, Y_test):
-        acc = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)[0]
-        tile_factor = 128
-        batch_size = 1024
-        x = np.tile(X_test, [1, tile_factor])
-        x = np.reshape(x, (-1, Input.len))
-        y = [self.session.run(['FullyConnected_4/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
-             chunks(x, batch_size)]
-        y = np.reshape(y, (-1, tile_factor))
-        y_mean = np.mean(y, axis=1)
+    def percentage_score(self, preds, targets):
+        error = np.abs(targets - preds)
+        score = 1 - error
+        return np.mean(score)
 
-        preds = tf.reshape(y_mean, (-1,))
-        targets = tf.reshape(Y_test, (-1,))
-        error = tf.abs(targets - preds)
-        score = 1-error
-        sym_acc = tf.reduce_mean(score)
 
-        return acc, sym_acc
+    def abs_score(self, preds, targets):
+        corrects = np.equal(np.round(preds), np.ravel(targets))
+        return np.mean(corrects)
+
+
+    def run_network_configs(self, model, network_config_name, X_test, tile_factor):
+        Y_test = [[1.]] * X_test.shape[0]
+        Y_test_flipped = [[0.]] * X_test.shape[0]
+        accuracies = dict()
+        preds_reg, _ = model.bayes_predict(X_test, tile_factor=tile_factor)
+        accuracies[network_config_name + "_reg_percentage"] = self.percentage_score(preds_reg, Y_test)
+        accuracies[network_config_name + "_reg_abs"] = self.abs_score(preds_reg, Y_test)
+
+        X_test_flipped = Input(X_test).flip_teams().data
+        preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
+        accuracies[network_config_name + "_reg_percentage_flipped"] = self.percentage_score(preds_flipped,
+                                                                                            Y_test_flipped)
+        accuracies[network_config_name + "_reg_abs_flipped"] = self.abs_score(preds_flipped, Y_test_flipped)
+
+        preds_sym = preds_reg / (preds_reg + preds_flipped)
+        accuracies[network_config_name + "_reg_percentage_sym"] = self.percentage_score(preds_sym, Y_test)
+        accuracies[network_config_name + "_reg_abs_sym"] = self.abs_score(preds_sym, Y_test)
+
+        return accuracies
+
+
+    def eval_test_set(self, model, X_test, epoch):
+        Y_test = [[1.]] * X_test.shape[0]
+        Y_test_flipped = [[0.]] * X_test.shape[0]
+        model_path = app_constants.model_paths["train"]["win_pred_standard"] + "my_model" + str(epoch+1)
+
+        accuracies = dict()
+        accuracies["raw_reg"] = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)
+        accuracies["raw_flipped"] = model.evaluate(Input(X_test).flip_teams().data, np.array(Y_test_flipped),
+                                                   batch_size=self.batch_size)
+
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard_eval"])
+        model.load_model()
+        sub_accuracies = self.run_network_configs(model, "standard", X_test, 1)
+        accuracies.update(sub_accuracies)
+
+        # model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["dropout"])
+        # model.load_model()
+        # sub_accuracies = self.run_network_configs(model, "dropout", X_test)
+        # accuracies.update(sub_accuracies)
+
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
+        model.load_model()
+        sub_accuracies = self.run_network_configs(model, "gauss", X_test, 128)
+        accuracies.update(sub_accuracies)
+
+        total_gold_team1 = np.sum(X_test[:,Input.total_gold_start:Input.total_gold_half], axis=1)
+        total_gold_team2 = np.sum(X_test[:, Input.total_gold_half:Input.total_gold_end], axis=1)
+        accuracies["gold_based_percentage"] = self.percentage_score(total_gold_team1 / (total_gold_team1 +
+                                                                                        total_gold_team2), Y_test)
+
+
+        accuracies["gold_based_abs"] = self.abs_score(total_gold_team1 > total_gold_team2, Y_test)
+
+        total_kills_team1 = np.sum(X_test[:, Input.kda_start:Input.kda_half:3], axis=1)
+        total_kills_team2 = np.sum(X_test[:, Input.kda_half:Input.kda_end:3], axis=1)
+        sum_team_kills = total_kills_team1 + total_kills_team2
+        zero_indices = sum_team_kills == 0
+        nonzero_indices = sum_team_kills != 0
+        kda_based_win_percentage = np.zeros(sum_team_kills.shape)
+        kda_based_win_percentage[zero_indices] = 0.5
+        kda_based_win_percentage[nonzero_indices] = total_kills_team1[nonzero_indices] / sum_team_kills[nonzero_indices]
+        accuracies["kda_based_percentage"] = self.percentage_score(kda_based_win_percentage, Y_test)
+
+        kda_based_win_abs = np.zeros(sum_team_kills.shape)
+        kda_based_win_abs[total_kills_team1 == total_kills_team2] = 0.5
+        kda_based_win_abs[total_kills_team1 > total_kills_team2] = 1
+        kda_based_win_abs[total_kills_team1 < total_kills_team2] = 0
+        accuracies["kda_based_abs"] = self.abs_score(kda_based_win_abs, Y_test)
+
+        return accuracies
 
 
     def eval_model(self, model, epoch, X_test, Y_test):
@@ -373,10 +517,12 @@ class WinPredTrainer(Trainer):
         for output in [sys.stdout, self.logfile]:
             output.write("Epoch {0}\n".format(epoch + 1))
 
-        for name, (X,Y) in self.test_sets.items():
-            accs.append(self.eval_model_single(model, X, Y))
+        for name, X in self.test_sets.items():
+            current_accs = self.eval_test_set(model, X, epoch)
+            accs.append(current_accs)
             for output in [sys.stdout, self.logfile]:
-                output.write("{0} {1:.4f}\n".format(name, accs[-1]))
+                for measure in current_accs:
+                    output.write("{0} {1} {1:.4f}\n".format(name, measure, current_accs[measure]))
 
         for output in [sys.stdout, self.logfile]:
             output.write("\n\n")
@@ -398,8 +544,8 @@ class WinPredTrainer(Trainer):
 
 
     def flip_data(self, X):
-        X_result = np.concatenate([X, self.flip_teams(X)], axis=0)
-        Y_result = [1] * (len(X_result) // 2) + [0] * (len(X_result) // 2)
+        X_result = np.concatenate([X.flip_teams().data, X.data], axis=0)
+        Y_result = [0] * (len(X_result) // 2) + [1] * (len(X_result) // 2)
         Y_result = np.array(Y_result)[:, np.newaxis]
 
         return X_result, Y_result
@@ -414,60 +560,6 @@ class WinPredTrainer(Trainer):
                 best_model_index = i
         # epoch counter is 1 based
         return best_model_index + 1
-
-
-    def flip_teams(self, X):
-        X_copy = np.copy(X)
-        X_copy[:, Input.champs_start:Input.champs_half] = X[:, Input.champs_half:Input.champs_end]
-        X_copy[:,Input.champs_half:Input.champs_end] = X[:, Input.champs_start:Input.champs_half]
-
-        X_copy[:, Input.items_start:Input.items_half] = X[:, Input.items_half:Input.items_end]
-        X_copy[:, Input.items_half:Input.items_end] = X[:, Input.items_start:Input.items_half]
-
-        X_copy[:, Input.total_gold_start:Input.total_gold_half] = X[:, Input.total_gold_half:Input.total_gold_end]
-        X_copy[:, Input.total_gold_half:Input.total_gold_end] = X[:, Input.total_gold_start:Input.total_gold_half]
-
-        X_copy[:, Input.cs_start:Input.cs_half] = X[:, Input.cs_half:Input.cs_end]
-        X_copy[:, Input.cs_half:Input.cs_end] = X[:, Input.cs_start:Input.cs_half]
-
-        X_copy[:, Input.neutral_cs_start:Input.neutral_cs_half] = X[:, Input.neutral_cs_half:Input.neutral_cs_end]
-        X_copy[:, Input.neutral_cs_half:Input.neutral_cs_end] = X[:, Input.neutral_cs_start:Input.neutral_cs_half]
-
-        X_copy[:, Input.xp_start:Input.xp_half] = X[:, Input.xp_half:Input.xp_end]
-        X_copy[:, Input.xp_half:Input.xp_end] = X[:, Input.xp_start:Input.xp_half]
-
-        X_copy[:, Input.lvl_start:Input.lvl_half] = X[:, Input.lvl_half:Input.lvl_end]
-        X_copy[:, Input.lvl_half:Input.lvl_end] = X[:, Input.lvl_start:Input.lvl_half]
-
-        X_copy[:, Input.kda_start:Input.kda_half] = X[:, Input.kda_half:Input.kda_end]
-        X_copy[:, Input.kda_half:Input.kda_end] = X[:, Input.kda_start:Input.kda_half]
-
-        X_copy[:, Input.current_gold_start:Input.current_gold_half] = X[:, Input.current_gold_half:Input.current_gold_end]
-        X_copy[:, Input.current_gold_half:Input.current_gold_end] = X[:, Input.current_gold_start:Input.current_gold_half]
-
-        X_copy[:, Input.baron_start:Input.baron_half] = X[:, Input.baron_half:Input.baron_end]
-        X_copy[:, Input.baron_half:Input.baron_end] = X[:, Input.baron_start:Input.baron_half]
-
-        X_copy[:, Input.elder_start:Input.elder_half] = X[:, Input.elder_half:Input.elder_end]
-        X_copy[:, Input.elder_half:Input.elder_end] = X[:, Input.elder_start:Input.elder_half]
-
-        X_copy[:, Input.dragons_killed_start:Input.dragons_killed_half] = X[:, Input.dragons_killed_half:Input.dragons_killed_end]
-        X_copy[:, Input.dragons_killed_half:Input.dragons_killed_end] = X[:, Input.dragons_killed_start:Input.dragons_killed_half]
-
-        X_copy[:, Input.dragon_soul_start:Input.dragon_soul_half] = X[:, Input.dragon_soul_half:Input.dragon_soul_end]
-        X_copy[:, Input.dragon_soul_half:Input.dragon_soul_end] = X[:, Input.dragon_soul_start:Input.dragon_soul_half]
-
-        X_copy[:, Input.dragon_soul_type_start:Input.dragon_soul_type_half] = X[:, Input.dragon_soul_type_half:Input.dragon_soul_type_end]
-        X_copy[:, Input.dragon_soul_type_half:Input.dragon_soul_type_end] = X[:, Input.dragon_soul_type_start:Input.dragon_soul_type_half]
-
-        X_copy[:, Input.turrets_start:Input.turrets_half] = X[:, Input.turrets_half:Input.turrets_end]
-        X_copy[:, Input.turrets_half:Input.turrets_end] = X[:, Input.turrets_start:Input.turrets_half]
-
-        X_copy[:, Input.first_team_blue_start:Input.first_team_blue_end] = np.logical_not(X[:,
-                                                                                   Input.first_team_blue_start:Input.first_team_blue_end].astype(np.bool)).astype(np.float)
-
-        return X_copy
-
 
 
 class DynamicTrainingDataTrainer(Trainer):
@@ -529,10 +621,10 @@ class DynamicTrainingDataTrainer(Trainer):
     def eval_model(self, model, epoch):
         print("now eval")
         if not self.X_preprocessed_test:
-            self.X_preprocessed_test = [[utils.preprocess(x, 1, 3) for x in self.X_test],
-                                        [utils.preprocess(x, 1, 5) for x in self.X_test],
-                                        [utils.preprocess(x, 2, 3) for x in self.X_test],
-                                        [utils.preprocess(x, 2, 5) for x in self.X_test]]
+            self.X_preprocessed_test = [[misc.preprocess(x, 1, 3) for x in self.X_test],
+                                        [misc.preprocess(x, 1, 5) for x in self.X_test],
+                                        [misc.preprocess(x, 2, 3) for x in self.X_test],
+                                        [misc.preprocess(x, 2, 5) for x in self.X_test]]
         main_eval = model.evaluate(np.array(self.X_test), np.array(self.Y_test), batch_size=self.batch_size)[0]
         extra_eval = [model.evaluate(np.array(X), np.array(self.Y_test), batch_size=self.batch_size) for X
                       in self.X_preprocessed_test]
@@ -877,17 +969,16 @@ class NextItemsTrainer(Trainer):
             opp_team_champs = [ChampManager().lookup_by("name", champ_name)["int"] for champ_name in test_case[
                 "opp_team"]]
             complete_example = [0]*Input.len
-            complete_example[0] = test_case["role"]
-            complete_example[1:11] = my_team_champs + opp_team_champs
+            complete_example[Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = [test_case["role"]]
+            complete_example[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = my_team_champs + \
+                                                                                              opp_team_champs
 
             targets = [ItemManager().lookup_by("name", item_name)["int"] for item_name in test_case["target"]]
             aux_test_x.append(complete_example)
             aux_test_y.append(targets)
         return np.array(aux_test_x), np.array(aux_test_y)
 
-    def determine_best_eval(self, scores):
-        # epoch counter is 1 based
-        return np.argmax(scores[:, 0]) + 1
+
 
 
     def weighted_accuracy(self, preds_sparse, targets_sparse, class_weights):
@@ -899,7 +990,7 @@ class NextItemsTrainer(Trainer):
 
     def eval_model(self, model, epoch, x_test, y_test, prior=None):
         y_pred_prob = []
-        for chunk in utils.chunks(x_test, 1024):
+        for chunk in misc.chunks(x_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
         y_pred_prob = np.array(y_pred_prob)
         if prior:
@@ -1022,27 +1113,31 @@ class NextItemsTrainer(Trainer):
 
 
     def determine_best_eval(self, scores):
+        f1_index = 5
         max_main = -1
         best_model_index = -1
         for i, main in enumerate(scores):
-            if main >= max_main:
-                max_main = main
+            if main[f1_index] >= max_main:
+                max_main = main[f1_index]
                 best_model_index = i
         # epoch counter is 1 based
         return best_model_index + 1
 
 
     def build_next_items_standard_game_model(self):
+        self.num_epochs = 20
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
-        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
-        opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
-
-        self.champ_embs = my_champ_embs_normed
-        self.opp_champ_embs = opp_champ_embs_normed
+        # my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
+        # opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        # my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        # opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
+        #
+        # self.champ_embs = my_champ_embs_normed
+        # self.opp_champ_embs = opp_champ_embs_normed
+        #
+        #
         self.network = StandardNextItemNetwork()
 
         self.train_path = app_constants.model_paths["train"]["next_items_standard"]
@@ -1105,15 +1200,8 @@ class NextItemsTrainer(Trainer):
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
-
-
-        self.X = self.X.astype(np.float32)
-
-        self.X_test = self.X_test.astype(np.float32)
-
-        model = NextItemModel("early")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = Input().scale_inputs(self.X)
+        self.X_test = Input().scale_inputs(self.X_test)
 
         self.build_new_model()
 
@@ -1128,10 +1216,10 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def only_starters(data):
-        pos = data[:, 1]
+        pos = data[:, Input.indices["start"]["pos"]]
         all_starter_items_ints = ItemManager().get_starter_ints()
         starter_items = np.isin(data[:, -1], list(all_starter_items_ints))
-        data_items = data[:, 12:6 * 12]
+        data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
         data_items = np.reshape(data_items, (-1, 5, 12))
         empty_items = data_items[range(len(pos)), pos, 1] == 6
         return np.logical_and(empty_items, starter_items)
@@ -1145,8 +1233,8 @@ class NextItemsTrainer(Trainer):
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
         exclude_noncompletes = np.isin(y, list(full_item_ints))
 
-        pos = data[:, 1].astype(np.int32)
-        data_items = data[:, 12:6 * 12]
+        pos = data[:, data_loader.legacy_indices["start"]["pos"]].astype(np.int32)
+        data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
         data_items = np.reshape(data_items, (-1, 5, 12))
         target_summ_items = data_items[range(len(pos)), pos, ::2]
         target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
@@ -1161,9 +1249,9 @@ class NextItemsTrainer(Trainer):
         starter_ints = ItemManager().get_starter_ints()
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
 
-        pos = data[:, 1]
+        pos = data[:, Input.indices["start"]["pos"]]
         full_item_ints = ItemManager().get_full_item_ints()
-        data_items = data[:, 12:6 * 12]
+        data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
         data_items = np.reshape(data_items, (-1, 5, 12))
         target_summ_items = data_items[range(len(pos)), pos, ::2]
         target_summs_full_items_boolean = np.isin(target_summ_items, list(full_item_ints))
@@ -1173,6 +1261,7 @@ class NextItemsTrainer(Trainer):
 
 
     def build_next_items_late_game_model(self):
+        self.num_epochs = 5
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
@@ -1271,20 +1360,19 @@ class NextItemsTrainer(Trainer):
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.class_weights[106] *= 3
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
+
         self.network.network_config["class_weights"] = self.class_weights
-
-
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("late")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = Input().scale_inputs(self.X)
+        self.X_test = Input().scale_inputs(self.X_test)
         self.build_new_model()
 
 
 class FirstItemsTrainer(NextItemsTrainer):
-
+    def determine_best_eval(self, scores):
+        # epoch counter is 1 based
+        return np.argmax(scores) + 1
     def train(self):
+        self.num_epochs = 50
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
@@ -1370,19 +1458,15 @@ class FirstItemsTrainer(NextItemsTrainer):
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         # self.network.network_config["class_weights"] = self.class_weights
 
-
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("first_item")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = Input().scale_inputs(self.X)
+        self.X_test = Input().scale_inputs(self.X_test)
 
         self.build_new_model()
 
 
     def eval_model_extra(self, model, epoch, x_test, y_test):
         y_pred_prob = []
-        for chunk in utils.chunks(x_test, 1024):
+        for chunk in misc.chunks(x_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
         y_pred_prob = np.array(y_pred_prob)
         y_preds = np.argmax(y_pred_prob, axis=1)
@@ -1442,18 +1526,16 @@ class FirstItemsTrainer(NextItemsTrainer):
 
                         # score = self.eval_model(model, epoch, self.X_test, self.Y_test)
                         score = self.eval_model_extra(model, epoch, self.X_test_aux, self.Y_test_aux)
-
-
-
-
                         scores.append(score)
         return scores
 
 
 class StarterItemsTrainer(NextItemsTrainer):
-
+    def determine_best_eval(self, scores):
+        # epoch counter is 1 based
+        return np.argmax(scores) + 1
     def train(self):
-
+        self.num_epochs = 50
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
         self.X_test, self.Y_test = self.build_aux_test_data('test_data/starter_items_test.json')
@@ -1477,24 +1559,18 @@ class StarterItemsTrainer(NextItemsTrainer):
                                                                      "next_items_processed_lower_sorted_uninf"])
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_starters)
         X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_starters)
-
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-
-
         self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("starter")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = Input().scale_inputs(self.X)
+        self.X_test = Input().scale_inputs(self.X_test)
         self.build_new_model()
 
 
     def eval_model(self, model, epoch, x_test, y_test):
         y_pred_prob = []
-        for chunk in utils.chunks(x_test, 1024):
+        for chunk in misc.chunks(x_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
         y_pred_prob = np.array(y_pred_prob)
         y_preds = np.argmax(y_pred_prob, axis=1)
@@ -1512,10 +1588,15 @@ class StarterItemsTrainer(NextItemsTrainer):
         return acc
 
 
-
 class BootsTrainer(NextItemsTrainer):
 
+    def determine_best_eval(self, scores):
+        # epoch counter is 1 based
+        return np.argmax(scores) + 1
+
+
     def train(self):
+        self.num_epochs = 50
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
@@ -1543,24 +1624,18 @@ class BootsTrainer(NextItemsTrainer):
         X_elite, Y_elite = dataloader_elite.get_train_data(NextItemsTrainer.only_boots)
         print("Loading lower train data boots")
         X_lower, Y_lower = dataloader_lower.get_train_data(NextItemsTrainer.only_boots)
-
         self.X = np.concatenate([X_elite, X_lower], axis=0)
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-
-
         self.class_weights = np.array([1.0] * int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
-        self.X = self.X.astype(np.float32)
-        self.X_test = self.X_test.astype(np.float32)
-        model = NextItemModel("boots")
-        self.X = model.scale_inputs(np.array(self.X).astype(np.float32))
-        self.X_test = model.scale_inputs(np.array(self.X_test).astype(np.float32))
+        self.X = Input().scale_inputs(self.X)
+        self.X_test = Input().scale_inputs(self.X_test)
         self.build_new_model()
 
 
     def eval_model(self, model, epoch, x_test, y_test):
         y_pred_prob = []
-        for chunk in utils.chunks(x_test, 1024):
+        for chunk in misc.chunks(x_test, 1024):
             y_pred_prob.extend(model.predict(np.array(chunk)))
         y_pred_prob = np.array(y_pred_prob)
         y_preds = np.argmax(y_pred_prob, axis=1)
@@ -1714,7 +1789,7 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
     def build_new_model(self):
-        utils.remove_old_files(self.train_path)
+        misc.remove_old_files(self.train_path)
         with open(self.train_path + self.acc_file_name, "w") as self.logfile:
             self.monitor_callback = MonitorCallbackRegression(self.logfile)
             scores = self.train_neural_network()
@@ -1805,24 +1880,25 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
 
-
-    # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
-
-    # t = NextItemsTrainer()
-    # t.build_next_items_late_game_model()
-
-    t = WinPredTrainer()
-    t.train()
     # t = BootsTrainer()
     # t.train()
-    # t = StarterItemsTrainer()
-    # t.train()
+
+    t = FirstItemsTrainer()
+    t.train()
+    t = NextItemsTrainer()
+    t.build_next_items_late_game_model()
+    t = StarterItemsTrainer()
+    t.train()
+    t = NextItemsTrainer()
+    t.build_next_items_standard_game_model()
+
     # t = ItemImgTrainer()
     # t.build_new_img_model()
     # s = ChampImgTrainer()
     # s.build_new_img_model()
 
+    # t = WinPredTrainer()
+    # t.train()
     #
     # t.build_champ_embeddings_model()
 

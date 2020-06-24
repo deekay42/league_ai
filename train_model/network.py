@@ -360,14 +360,76 @@ class LolNetwork(Network):
 
 class WinPredNetwork(LolNetwork):
 
-    def __init__(self, champ_dropout, stats_dropout):
+    def  __init__(self, network_config=None):
         super().__init__()
-        self.champ_dropout = champ_dropout
-        self.stats_dropout = stats_dropout
+        if network_config:
+            self.network_config = network_config
+
+
+    def calc_noise(self, flat_in_vec, noise_name):
+        batch_len = tf.shape(flat_in_vec)[0]
+        noise_distrib = tf.distributions.Normal(loc=tf.cast(tf.tile([0.], [batch_len]), tf.float32),
+                                                scale=tf.cast(self.network_config["noise"][noise_name], tf.float32))
+        noise = noise_distrib.sample([1])
+        return noise
+
+
+    def apply_noise(self, in_vec, noise_name):
+        orig_shape = tf.shape(in_vec)
+        flattened_vec = tf.reshape(in_vec, (-1,))
+        noise = self.calc_noise(flattened_vec, noise_name)
+        noise = tf.identity(noise, "noise")
+        noised_vec = flattened_vec + noise
+        noised_vec = tf.clip_by_value(noised_vec, game_constants.game_config_scaled["min"][noise_name],
+                                      game_constants.game_config_scaled[
+            "max"][
+            noise_name])
+        in_vec = tf.reshape(noised_vec, orig_shape)
+        return in_vec
+
+
+    def apply_noise_ints(self, ints, noise_name):
+        ints_flat = tf.reshape(ints, (-1,))
+        draws = tf.random.uniform(shape=[tf.shape(ints_flat)[0]], maxval=1.0, minval=0.0)
+        apply_indices = self.network_config["noise"][noise_name] > draws
+        not_apply_indices = self.network_config["noise"][noise_name] <= draws
+        num_indices = tf.reduce_sum(tf.cast(apply_indices, tf.int32))
+        rand_champ_ints = tf.random.uniform(shape=[num_indices], maxval=self.game_config["total_num_champs"], minval=0,
+                                            dtype=tf.int32)
+
+
+
+        noised_ints = tf.scatter_nd(tf.cast(tf.where(apply_indices), tf.int32), rand_champ_ints, tf.shape(ints_flat))
+        regular_ints = tf.scatter_nd(tf.cast(tf.where(not_apply_indices), tf.int32), tf.cast(ints_flat[not_apply_indices],
+                                                                                       tf.int32),
+                               tf.shape(ints_flat))
+
+
+
+
+        result = tf.cast(regular_ints + noised_ints, tf.int32)
+        result = tf.reshape(result, (-1, self.game_config["champs_per_game"]))
+
+        return result
+
+
+    def apply_noise_flip_one_hot(self, in_vec, noise_name):
+        draws = tf.random.uniform(shape=[tf.shape(in_vec)[0]], maxval=1.0, minval=0.0)
+        apply_indices = self.network_config["noise"][noise_name] > draws
+        not_apply_indices = self.network_config["noise"][noise_name] <= draws
+        num_indices = tf.reduce_sum(tf.cast(apply_indices, tf.int32))
+        outcomes = tf.tile([[1,0], [0,1], [0,0]], [(num_indices+2)//3, 1])
+        outcomes = outcomes[:num_indices]
+        outcomes = tf.random.shuffle(outcomes)
+        outcomes = tf.scatter_nd(tf.cast(tf.where(apply_indices), tf.int32), outcomes, tf.shape(in_vec))
+        in_vec = tf.scatter_nd(tf.cast(tf.where(not_apply_indices), tf.int32), tf.cast(in_vec[not_apply_indices],
+                                                                                       tf.int32),
+                               tf.shape(in_vec))
+
+        return tf.cast(in_vec + outcomes, tf.float32)
 
 
     def build(self):
-
         in_vec = input_data(shape=[None, Input.len], name='input')
         #  1 elements long
         pos = in_vec[:, 0]
@@ -375,108 +437,115 @@ class WinPredNetwork(LolNetwork):
 
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
-        pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
-        opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
 
-        # Make tensor of indices for the first dimension
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
+        cs = in_vec[:, Input.indices["start"]["cs"]:Input.indices["end"]["cs"]]
+        lvl = in_vec[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]]
+        kills = in_vec[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
+        deaths = in_vec[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]]
+        assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
 
-        #  10 elements long
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
-        my_team_champ_ints = champ_ints[:, :5]
-        opp_team_champ_ints = champ_ints[:, 5:]
+        total_gold = in_vec[:, Input.indices["start"]["total_gold"]:Input.indices["end"]["total_gold"]]
+        baron_active = in_vec[:, Input.indices["start"]["baron"]:Input.indices["end"]["baron"]]
+        elder_active = in_vec[:, Input.indices["start"]["elder"]:Input.indices["end"]["elder"]]
+        dragons_killed = in_vec[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]]
+        dragon_soul_type = in_vec[:,Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]]
+        turrets_destroyed = in_vec[:, Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
+        blue_side = in_vec[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]]
 
-
-        # champ_ints = dropout(champ_ints, 0.8)
-        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
-        # 60 elements long
-        item_ints = in_vec[:, Input.items_start:Input.items_end]
-        cs = in_vec[:, Input.cs_start:Input.cs_end]
-        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
-        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
-        kda = in_vec[:, Input.kda_start:Input.kda_end]
-        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
-        cs = cs + neutral_cs
-
-        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
-        target_summ_cs = tf.expand_dims(tf.gather_nd(cs, pos_index), 1)
-        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
-        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
-
-        # my_team_champ_embs = self.noise_embeddings(my_team_champ_ints, "my_champ_emb_scales",
-        #                                                      "my_champ_embs", 1/4)
-        # opp_team_champ_embs = self.noise_embeddings(opp_team_champ_ints, "opp_champ_emb_scales",
-        #                                                   "opp_champ_embs", 1/4)
-        # target_summ_champ_emb_dropout_flat = tf.gather_nd(my_team_champ_embs, pos_index)
-        # opp_summ_champ_emb_dropout_flat = tf.gather_nd(opp_team_champ_embs, opp_index_no_offset)
-        # opp_team_champ_embs_dropout_flat = tf.reshape(opp_team_champ_embs, (-1, 5*3))
-
-        # target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-        #                                                                      [0.05], pos_index, n, 1.0)
-        # opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
-        #     opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
+        dragons_killed = tf.identity(dragons_killed, name='dragons_killed')
+        dragons_killed = self.apply_noise(dragons_killed, "dragons_killed")
+        dragons_killed = tf.identity(dragons_killed, name='dragons_killed_noised')
+        dragons_killed_sum = tf.reduce_sum(tf.reshape(dragons_killed, (-1, 2, 4)), axis=2)
 
 
-        kd = kda[:, 0::3] - kda[:, 1::3]
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
+        dragon_soul_obtained = tf.reduce_sum(tf.reshape(dragon_soul_type, (-1,2,4)), axis=2)
+
+
+
+        kills = self.apply_noise(kills, "kills")
+        deaths = self.apply_noise(deaths, "deaths")
+        assists = self.apply_noise(assists, "assists")
+
+
+        cs = tf.identity(cs, name='cs')
+        cs = self.apply_noise(cs, "cs")
+        cs = tf.identity(cs, name='cs_noised')
+        lvl = tf.identity(lvl, name='lvl')
+        lvl = self.apply_noise(lvl, "lvl")
+        lvl = tf.identity(lvl, name='lvl_noised')
+        total_gold = tf.identity(total_gold, name='total_gold')
+        total_gold = self.apply_noise(total_gold, "total_gold")
+        total_gold = tf.identity(total_gold, name='total_gold_noised')
+
+        turrets_destroyed = tf.identity(turrets_destroyed, name='turrets_destroyed')
+        turrets_destroyed = self.apply_noise(turrets_destroyed, "turrets_destroyed")
+        turrets_destroyed = tf.identity(turrets_destroyed, name='turrets_destroyed_noised')
+
+        champ_ints = tf.identity(champ_ints, name='champs')
+        champ_ints = self.apply_noise_ints(champ_ints, "champs")
+        champ_ints = tf.identity(champ_ints, name='champs_noised')
+
+        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["champs_per_game"], self.game_config["total_num_champs"]))
+
+        baron_active = tf.identity(baron_active, name='baron_active')
+        baron_active = self.apply_noise_flip_one_hot(baron_active, "baron_active")
+        baron_active = tf.identity(baron_active, name='baron_active_noised')
+        elder_active = tf.identity(elder_active, name='elder_active')
+        elder_active = self.apply_noise_flip_one_hot(elder_active, "elder_active")
+        elder_active = tf.identity(elder_active, name='elder_active_noised')
+
+        blue_side = tf.identity(blue_side, name='blue_side')
+        blue_side = self.apply_noise_flip_one_hot(blue_side, "blue_side")
+        blue_side = tf.identity(blue_side, name='blue_side')
+
+        kd = kills-deaths
+
         opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
         opp_cs = tf.expand_dims(cs[:, 5:10], -1)
+        opp_kills = tf.expand_dims(kills[:, 5:10], -1)
+        opp_deaths = tf.expand_dims(deaths[:, 5:10], -1)
+        opp_assists = tf.expand_dims(assists[:, 5:10], -1)
 
-        my_kda = kda[:, :5 * 3]
-        my_kda = tf.reshape(my_kda, (-1, 5, 3))
         my_lvl = tf.expand_dims(lvl[:, :5], -1)
         my_cs = tf.expand_dims(cs[:, :5], -1)
+        my_kills = tf.expand_dims(kills[:, :5], -1)
+        my_deaths = tf.expand_dims(deaths[:, :5], -1)
+        my_assists = tf.expand_dims(assists[:, :5], -1)
 
-        kda_diff = opp_kda - my_kda
+        kills_diff = opp_kills - my_kills
+        deaths_diff = opp_deaths - my_deaths
+        assists_diff = opp_assists - my_assists
         lvl_diff = opp_lvl - my_lvl
         cs_diff = opp_cs - my_cs
 
-        kda_diff = tf.reshape(kda_diff, (-1, 5 * 3))
-        lvl_diff = tf.reshape(lvl_diff, (-1, 5))
+        kills_diff = tf.reshape(kills_diff, (-1, 5))
+        deaths_diff = tf.reshape(deaths_diff, (-1, 5))
+        assists_diff = tf.reshape(assists_diff, (-1, 5))
         cs_diff = tf.reshape(cs_diff, (-1, 5))
+        lvl_diff = tf.reshape(lvl_diff, (-1, 5))
 
-        total_gold = in_vec[:,Input.total_gold_start:Input.total_gold_end]
-        total_gold = tf.reshape(total_gold, (-1,2,5))
-        total_gold_diff = total_gold[:,0] - total_gold[:,1]
 
-        baron_active = in_vec[:,Input.baron_start:Input.baron_end]
-        elder_active = in_vec[:, Input.elder_start:Input.elder_end]
-        dragons_killed = in_vec[:, Input.dragons_killed_start:Input.dragons_killed_end]
-        dragons_killed_sum = tf.reduce_sum(tf.reshape(dragons_killed, (-1,2,4)), axis=2)
-        dragon_soul_obtained = in_vec[:, Input.dragon_soul_start:Input.dragon_soul_end]
-        dragon_soul_type = in_vec[:, Input.dragon_soul_type_start:Input.dragon_soul_type_end]
-        turrets_destroyed = in_vec[:, Input.turrets_start:Input.turrets_end]
-        first_team_has_blue_side = in_vec[:, Input.first_team_blue_start:Input.first_team_blue_end]
 
-        team1_total_kills = tf.reduce_sum(kda[:, 0:15:3], axis=1)
-        team1_total_kills = tf.expand_dims(team1_total_kills, (-1))
-        team2_total_kills = tf.reduce_sum(kda[:, 15:30:3], axis=1)
-        team2_total_kills = tf.expand_dims(team2_total_kills, (-1))
-        team_kills_diff = team1_total_kills - team2_total_kills
-        kd = kda[:, 0::3] - kda[:, 1::3]
+        total_gold = tf.reshape(total_gold, (-1, 2, 5))
+        total_gold_diff = total_gold[:, 0] - total_gold[:, 1]
 
-        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+
+        team_kills_diff = opp_kills - my_kills
+
         team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
-        team1_champs_one_hot = dropout(team1_champs_one_hot, self.champ_dropout,
-                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
         team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
-        team2_champs_one_hot = dropout(team2_champs_one_hot, self.champ_dropout,
+        if self.network_config["champ_dropout"] > 0:
+            team1_champs_one_hot = dropout(team1_champs_one_hot, self.network_config["champ_dropout"],
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+            team2_champs_one_hot = dropout(team2_champs_one_hot, self.network_config["champ_dropout"],
                                        noise_shape=[n, self.game_config["champs_per_team"], 1])
 
         team1_champs_one_hot = tf.reshape(team1_champs_one_hot, (-1, self.game_config["champs_per_team"] *
                                                                  self.game_config["total_num_champs"]))
         team2_champs_one_hot = tf.reshape(team2_champs_one_hot, (-1, self.game_config["champs_per_team"] *
                                                                  self.game_config["total_num_champs"]))
-
-        # team1_champs_k_hot = tf.reduce_sum(team1_champs_one_hot, axis=1)
-        # team2_champs_k_hot = tf.reduce_sum(team2_champs_one_hot, axis=1)
-
-        #dropout should be applied so that equal champs from both teams are dropped
-        # all_champs_one_hot = dropout(all_champs_one_hot, 0.3, noise_shape=[n, self.game_config["champs_per_game"], 1])
-        # all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["total_num_champs"] *
-        #                                                      self.game_config["champs_per_game"]))
-
 
         stats_layer = merge(
             [
@@ -486,7 +555,9 @@ class WinPredNetwork(LolNetwork):
                 # team2_total_kills,
                 team_kills_diff,
                 # kd,
-                kda_diff,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
                 lvl_diff,
                 cs_diff,
                 # kda,
@@ -499,9 +570,11 @@ class WinPredNetwork(LolNetwork):
                 dragon_soul_obtained,
                 dragon_soul_type,
                 turrets_destroyed,
-                first_team_has_blue_side
+                blue_side
             ], mode='concat', axis=1)
-        stats_layer = dropout(stats_layer, self.stats_dropout)
+
+        if self.network_config["stats_dropout"] > 0:
+            stats_layer = dropout(stats_layer, self.network_config["stats_dropout"])
 
         # final_input_layer = merge(
         #     [
@@ -521,7 +594,7 @@ class WinPredNetwork(LolNetwork):
         net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu'))
         # net = dropout(net, self.stats_dropout)
 
-        net = fully_connected(net, 1, activation='sigmoid')
+        net = fully_connected(net, 1, activation='sigmoid', name="final_output")
 
         return regression(net, optimizer='adam',
                                  shuffle_batches=True,
@@ -558,8 +631,8 @@ class WinPredNetworkInit(LolNetwork):
 
         in_vec = input_data(shape=[None, Input.len], name='input')
         n = tf.shape(in_vec)[0]
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
-        first_team_has_blue_side = in_vec[:, Input.first_team_blue_start:Input.first_team_blue_end]
+        champ_ints = in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]]
+        first_team_has_blue_side = in_vec[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]]
 
 
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
@@ -616,6 +689,33 @@ class NextItemNetwork(LolNetwork):
     def build(self):
         pass
 
+    def calc_diff(self, vec, pos_index):
+        target_summ_vec = tf.expand_dims(tf.gather_nd(vec, pos_index), 1)
+        opp_vec = tf.expand_dims(vec[:, 5:10], -1)
+        target_summ_vec_exp = tf.expand_dims(tf.tile(target_summ_vec, multiples=[1, 5]), -1)
+        return opp_vec - target_summ_vec_exp
+
+    def get_items(self, n, items_by_champ):
+        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, self.game_config["champs_per_game"] *
+                                                                            self.game_config["items_per_champ"]]),(-1,))
+        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(self.game_config["champs_per_game"]), 1),
+                            [1,self.game_config["items_per_champ"]]),[n, 1]),(-1,))
+        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
+        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
+                                       tf.int64)
+        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
+                                dense_shape=(n, self.game_config["champs_per_game"], self.game_config[
+                                    "total_num_items"] + 1))
+        items = tf.sparse.to_dense(items, validate_indices=False)
+        return tf.cast(items, tf.float32)
+
+    def final_layer(self, net):
+        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
+        is_training = tflearn.get_training_mode()
+        inference_output = tf.nn.softmax(logits)
+        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+        return net
+
 
     def get_champ_embeddings(self, team_champ_ints, emb_name, scale_name, start, end, pos_index, n, dropout_rate):
         emb_range = end - start
@@ -669,6 +769,7 @@ class NextItemNetwork(LolNetwork):
         my_team_emb_noise = my_team_emb_noise_dist.sample([1])
         my_team_emb_noise = tf.reshape(my_team_emb_noise, (-1, 3))
         return my_team_emb_noise
+
 
     def apply_noise(self, champ_ints, my_team_emb_noise, my_team_champs_embedded):
         is_training = tflearn.get_training_mode()
@@ -891,94 +992,38 @@ class StandardNextItemNetwork(NextItemNetwork):
 
 
     def build(self):
-
         in_vec = input_data(shape=[None, Input.len], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
+        pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
+                      tf.int32)
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
+        item_ints = tf.cast(in_vec[:, Input.indices["start"]["items"]:Input.indices["end"]["items"]], tf.int32)
+        cs = in_vec[:, Input.indices["start"]["cs"]:Input.indices["end"]["cs"]]
+        lvl = in_vec[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]]
+        kills = in_vec[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
+        deaths = in_vec[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]]
+        assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
+        current_gold = in_vec[:, Input.indices["start"]["current_gold"]:Input.indices["end"]["current_gold"]]
+
         pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
-
-        # Make tensor of indices for the first dimension
-
-        #  10 elements long
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
-        my_team_champ_ints = champ_ints[:, :5]
-        opp_team_champ_ints = champ_ints[:, 5:]
-        # champ_ints = dropout(champ_ints, 0.8)
-        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
-        # 60 elements long
-        item_ints = in_vec[:, Input.items_start:Input.items_end]
-        cs = in_vec[:, Input.cs_start:Input.cs_end]
-        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
-        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
-        kda = in_vec[:, Input.kda_start:Input.kda_end]
-        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
-        total_cs = cs + neutral_cs
-
         target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
-        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
-        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
-        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
-
-        # my_team_champ_embs = self.noise_embeddings(my_team_champ_ints, "my_champ_emb_scales",
-        #                                                      "my_champ_embs", 1/4)
-        # opp_team_champ_embs = self.noise_embeddings(opp_team_champ_ints, "opp_champ_emb_scales",
-        #                                                   "opp_champ_embs", 1/4)
-        # target_summ_champ_emb_dropout_flat = tf.gather_nd(my_team_champ_embs, pos_index)
-        # opp_summ_champ_emb_dropout_flat = tf.gather_nd(opp_team_champ_embs, opp_index_no_offset)
-        # opp_team_champ_embs_dropout_flat = tf.reshape(opp_team_champ_embs, (-1, 5*3))
-
-        target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.05], pos_index, n, 1.0)
-        opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
-            opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
-
 
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
             "items_per_champ"], 2])
-        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
-
-        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, self.game_config["champs_per_game"] *
-                                                                            self.game_config["items_per_champ"]]),
-                                   (-1,))
-        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(self.game_config["champs_per_game"]), 1), [1,
-                                                                                                                      self.game_config[
-                                                                                                                          "items_per_champ"]]),
-                                           [n, 1]),
-                                   (-1,))
-
-        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
-
-        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
-                                       tf.int64)
-
-        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
-                                dense_shape=(n, self.game_config["champs_per_game"], self.game_config[
-                                    "total_num_items"] + 1))
-        items = tf.sparse.to_dense(items, validate_indices=False)
+        items = self.get_items(n, items_by_champ)
         items_by_champ_k_hot = items[:, :, 1:]
-
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
+
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
-        pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
-        opp_champ_items = items_by_champ_k_hot[:, 5:10]
 
-        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
-        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
-        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
-        kda_diff = opp_kda - target_summ_kda_exp
-        lvl_diff = opp_lvl - target_summ_lvl_exp
-        cs_diff = opp_cs - target_summ_cs_exp
+        cs_diff = self.calc_diff(cs, pos_index)
+        lvl_diff = self.calc_diff(lvl, pos_index)
+        kills_diff = self.calc_diff(kills, pos_index)
+        deaths_diff = self.calc_diff(deaths, pos_index)
+        assists_diff = self.calc_diff(assists, pos_index)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
         pos_one_hot_tiled = tf.tile(pos_one_hot, multiples=[1, 5])
@@ -986,9 +1031,18 @@ class StandardNextItemNetwork(NextItemNetwork):
         opp_champ_pos = tf.one_hot([0, 1, 2, 3, 4], depth=5)
         opp_champ_pos = tf.reshape(opp_champ_pos, (1, 5, 5))
         opp_champ_pos = tf.tile(opp_champ_pos, multiples=[n, 1, 1])
+
+        kills = tf.identity(kills, "kills")
+        deaths = tf.identity(deaths, "deaths")
+        assists = tf.identity(assists, "assists")
+        cs = tf.identity(cs, "cs")
+        lvl = tf.identity(lvl, "lvl")
+
         enemy_summ_strength_input = merge(
             [
-                kda_diff,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
                 lvl_diff,
                 cs_diff,
                 pos_one_hot_tiled,
@@ -1055,12 +1109,13 @@ class StandardNextItemNetwork(NextItemNetwork):
         # enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
+
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         opp_champs_one_hot = champs_one_hot[:, self.game_config["champs_per_team"]:]
+        opp_champs_one_hot = dropout(opp_champs_one_hot, 0.6, noise_shape=[n, self.game_config["champs_per_team"], 1])
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
-        opp_summ_one_hot = tf.gather_nd(champs_one_hot, opp_index_no_offset)
-
+        opp_summ_one_hot = tf.gather_nd(opp_champs_one_hot, pos_index)
 
         final_input_layer = merge(
             [
@@ -1075,21 +1130,13 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
-
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
         # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
-
-        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
-
-        is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
-
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
-
+        net = self.final_layer(net)
         return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
                                  n_classes=self.game_config["total_num_items"],
                                  shuffle_batches=True,
@@ -1106,82 +1153,39 @@ class NextItemLateGameNetwork(NextItemNetwork):
 
     def build(self):
         in_vec = input_data(shape=[None, Input.len], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
+        pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
+                      tf.int32)
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
+        item_ints = tf.cast(in_vec[:, Input.indices["start"]["items"]:Input.indices["end"]["items"]], tf.int32)
+        cs = in_vec[:, Input.indices["start"]["cs"]:Input.indices["end"]["cs"]]
+        lvl = in_vec[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]]
+        kills = in_vec[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
+        deaths = in_vec[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]]
+        assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
+
         pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
-
-        # Make tensor of indices for the first dimension
-
-        #  10 elements long
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
-
-        # champ_ints = dropout(champ_ints, 0.8)
-        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
-        # 60 elements long
-        item_ints = in_vec[:, Input.items_start:Input.items_end]
-        cs = in_vec[:, Input.cs_start:Input.cs_end]
-        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
-        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
-        kda = in_vec[:, Input.kda_start:Input.kda_end]
-        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
-        total_cs = cs + neutral_cs
-
-        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
-        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
-        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
-        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
 
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
                                                                              [0.1], pos_index, n, 1.0)
         _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
-
         items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
             "items_per_champ"], 2])
-        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
-
-        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, self.game_config["champs_per_game"] *
-                                                                            self.game_config["items_per_champ"]]),
-                                   (-1,))
-        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(self.game_config["champs_per_game"]), 1), [1,
-                                                                                                                      self.game_config[
-                                                                                                                          "items_per_champ"]]),
-                                           [n, 1]),
-                                   (-1,))
-
-        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
-
-        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
-                                       tf.int64)
-
-        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
-                                dense_shape=(n, self.game_config["champs_per_game"], self.game_config[
-                                    "total_num_items"] + 1))
-        items = tf.sparse.to_dense(items, validate_indices=False)
+        items = self.get_items(n, items_by_champ)
         items_by_champ_k_hot = items[:, :, 1:]
-
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
-
-        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
-        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
-        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
-        kda_diff = opp_kda - target_summ_kda_exp
-        lvl_diff = opp_lvl - target_summ_lvl_exp
-        cs_diff = opp_cs - target_summ_cs_exp
+        cs_diff = self.calc_diff(cs, pos_index)
+        lvl_diff = self.calc_diff(lvl, pos_index)
+        kills_diff = self.calc_diff(kills, pos_index)
+        deaths_diff = self.calc_diff(deaths, pos_index)
+        assists_diff = self.calc_diff(assists, pos_index)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
         pos_one_hot = tf.tile(pos_one_hot, multiples=[1, 5])
@@ -1191,7 +1195,9 @@ class NextItemLateGameNetwork(NextItemNetwork):
         opp_champ_pos =  tf.tile(opp_champ_pos, multiples=[n, 1, 1])
         enemy_summ_strength_input = merge(
             [
-                kda_diff,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
                 lvl_diff,
                 cs_diff,
                 pos_one_hot,
@@ -1228,29 +1234,14 @@ class NextItemLateGameNetwork(NextItemNetwork):
                 enemy_summs_strength_output,
                 opp_team_champ_embs_dropout_flat,
                 target_summ_champ_emb_dropout_flat,
-                target_summ_items,
-                target_summ_current_gold
+                target_summ_items
             ], mode='concat', axis=1)
-
-        net = batch_normalization(fully_connected(nonstarter_input_layer, 256, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(nonstarter_input_layer, 256, bias=False,activation='relu',regularizer="L2"))
         net = dropout(net, 0.8)
-        net = batch_normalization(fully_connected(net, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 128, bias=False,activation='relu',regularizer="L2"))
         net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 128, bias=False,
-                                                  activation='relu',
-                                                  regularizer="L2"))
-
-        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
-
-        is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
-
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
-
+        net = batch_normalization(fully_connected(net, 128, bias=False,activation='relu',regularizer="L2"))
+        net = self.final_layer(net)
         return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
                                  n_classes=self.game_config["total_num_items"],
                                  shuffle_batches=True,
@@ -1267,54 +1258,31 @@ class NextItemStarterNetwork(NextItemNetwork):
 
     def build(self):
         in_vec = input_data(shape=[None, Input.len], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
+        pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
+                      tf.int32)
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
         pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
-
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
-
         #0.01 seems to work best
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
                                                                            [0.01], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
-
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
-
         starter_input_layer = merge(
             [
                 opp_summ_champ_emb_dropout_flat,
                 pos_one_hot,
-                # pos_embedded,
-                # pos_embedded_short,
-                # target_summ_champ,
-                # target_summ_opp
-                # target_summ_champ_emb,
-                # target_summ_champ_emb_short1,
                 target_summ_champ_emb_dropout_flat
             ], mode='concat', axis=1)
-
         net = batch_normalization(fully_connected(starter_input_layer, 16, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
-        # net = batch_normalization(fully_connected(net, 16, bias=False,
-        #                                           activation='relu',
-        #                                           regularizer="L2"))
-        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
-
-        is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
-
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
-
+        net = self.final_layer(net)
         return regression(net, optimizer='adam', to_one_hot=True,
                           n_classes=self.game_config["total_num_items"],
                           shuffle_batches=True,
@@ -1327,83 +1295,33 @@ class NextItemBootsNetwork(NextItemNetwork):
 
     def build(self):
         in_vec = input_data(shape=[None, Input.len], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
-        cs = in_vec[:, Input.cs_start:Input.cs_end]
-        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
-        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
-        kda = in_vec[:, Input.kda_start:Input.kda_end]
-
-        total_cs = cs + neutral_cs
-
+        pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
+                      tf.int32)
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
         pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
-
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
-
-
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
                                                                              [0.1], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.05], opp_index_no_offset, n, 1.0)
-
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
-        opp_kda = kda[:, 5 * 3:10 * 3]
-        opp_kda = tf.reshape(opp_kda, (-1, 5, 3))
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(total_cs[:, 5:10], -1)
-
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
-
-        target_summ_cs = tf.expand_dims(tf.gather_nd(total_cs, pos_index), 1)
-        target_summ_kda = tf.gather_nd(tf.reshape(kda, (-1, self.game_config["champs_per_game"], 3)), pos_index)
-        target_summ_lvl = tf.expand_dims(tf.gather_nd(lvl, pos_index), 1)
-        target_summ_kda_exp = tf.reshape(tf.tile(target_summ_kda, multiples=[1, 5]), (-1, 5, 3))
-        target_summ_lvl_exp = tf.expand_dims(tf.tile(target_summ_lvl, multiples=[1, 5]), -1)
-        target_summ_cs_exp = tf.expand_dims(tf.tile(target_summ_cs, multiples=[1, 5]), -1)
-        kda_diff = opp_kda - target_summ_kda_exp
-        lvl_diff = opp_lvl - target_summ_lvl_exp
-        cs_diff = opp_cs - target_summ_cs_exp
-
-        enemy_summ_strength_input = merge(
-            [
-                kda_diff,
-                lvl_diff,
-                cs_diff
-            ], mode='concat', axis=2)
-        enemy_summ_strength_input = tf.reshape(enemy_summ_strength_input, (-1, 5))
-        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
-                                                                          activation='linear', regularizer="L2"))
-        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
-
         input_layer = merge(
             [
                 target_summ_one_hot,
-                # target_summ_champ_emb_dropout_flat,
                 opp_summ_champ_emb_dropout_flat,
                 pos_one_hot,
-                # enemy_summs_strength_output,
                 opp_team_champ_embs_dropout_flat
             ], mode='concat', axis=1)
-
         net = batch_normalization(fully_connected(input_layer, 16, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
-        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
-
-        is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
-
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
-
+        net = self.final_layer(net)
         return regression(net, optimizer='adam', to_one_hot=True,
                           n_classes=self.game_config["total_num_items"],
                           shuffle_batches=True,
@@ -1420,214 +1338,40 @@ class NextItemFirstItemNetwork(NextItemNetwork):
 
     def build(self):
         in_vec = input_data(shape=[None, Input.len], name='input')
-        #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
-
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
+        pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
+                      tf.int32)
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
         pos_index = tf.transpose([batch_index, pos], (1, 0))
-        opp_index_5_offset = tf.transpose([batch_index, pos + self.game_config["champs_per_team"]], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
-
-        # Make tensor of indices for the first dimension
-
-        #  10 elements long
-        champ_ints = in_vec[:, Input.champs_start:Input.champs_end]
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
-
-        # champ_ints = dropout(champ_ints, 0.8)
-        # this does not work since dropout scales inputs, hence embedding lookup fails after that.
-        # 60 elements long
-        item_ints = in_vec[:, Input.items_start:Input.items_end]
-        cs = in_vec[:, Input.cs_start:Input.cs_end]
-        neutral_cs = in_vec[:, Input.neutral_cs_start:Input.neutral_cs_end]
-        lvl = in_vec[:, Input.lvl_start:Input.lvl_end]
-        kda = in_vec[:, Input.kda_start:Input.kda_end]
-        current_gold = in_vec[:, Input.current_gold_start:Input.current_gold_end]
-        total_cs = cs + neutral_cs
-
-        target_summ_current_gold = tf.expand_dims(tf.gather_nd(current_gold, pos_index), 1)
-
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
                                                                              [0.01], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
-
-
-        items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
-            "items_per_champ"], 2])
-        items_by_champ_flat = tf.reshape(items_by_champ, [-1])
-
-        batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, self.game_config["champs_per_game"] *
-                                                                            self.game_config["items_per_champ"]]),
-                                   (-1,))
-        champ_indices = tf.reshape(tf.tile(tf.tile(tf.expand_dims(tf.range(self.game_config["champs_per_game"]), 1), [1,
-                                                                                                                      self.game_config[
-                                                                                                                          "items_per_champ"]]),
-                                           [n, 1]),
-                                   (-1,))
-
-        index_shift = tf.cast(tf.reshape(items_by_champ[:, :, :, 0] + 1, (-1,)), tf.int32)
-
-        item_one_hot_indices = tf.cast(tf.transpose([batch_indices, champ_indices, index_shift], [1, 0]),
-                                       tf.int64)
-
-        items = tf.SparseTensor(indices=item_one_hot_indices, values=tf.reshape(items_by_champ[:, :, :, 1], (-1,)),
-                                dense_shape=(n, self.game_config["champs_per_game"], self.game_config[
-                                    "total_num_items"] + 1))
-        items = tf.sparse.to_dense(items, validate_indices=False)
-        items_by_champ_k_hot = items[:, :, 1:]
-
-        target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
-        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
-
-        # starter_ints = list(ItemManager().get_starter_ints())
-        # starter_one_hots = tf.reduce_sum(tf.one_hot(starter_ints, depth=self.game_config["total_num_items"]), axis=0)
-        # target_summ_items = target_summ_items * tf.cast(
-        #     tf.reshape(tf.tile(tf.logical_not(tf.cast(starter_one_hots, tf.bool)),
-        #                        multiples=[n]), (n, -1)), tf.float32)
-        opp_summ_items = tf.gather_nd(items_by_champ_k_hot, opp_index_5_offset)
-
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
-
         high_prio_inputs = merge(
             [
                 pos_one_hot,
-                # target_summ_items,
-                # target_summ_current_gold,
                 opp_summ_champ_emb_dropout_flat,
                 opp_team_champ_embs_dropout_flat,
                 target_summ_champ_emb_dropout_flat
             ], mode='concat', axis=1)
-
         net = batch_normalization(fully_connected(high_prio_inputs, 32, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
-        # net = dropout(net, 0.9)
-        net = batch_normalization(fully_connected(net, 64, bias=False,
+        net = batch_normalization(fully_connected(net, 32, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
-
-        logits = fully_connected(net, self.game_config["total_num_items"], activation='linear')
-
-        is_training = tflearn.get_training_mode()
-        inference_output = tf.nn.softmax(logits)
-
-        net = tf.cond(is_training, lambda: logits, lambda: inference_output)
-
-        return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
+        net = self.final_layer(net)
+        return regression_custom(net, target_summ_items=None, optimizer='adam', to_one_hot=True,
                                  n_classes=self.game_config["total_num_items"],
                                  shuffle_batches=True,
                                  learning_rate=self.network_config["learning_rate"],
                                  loss=self.class_weighted_sm_ce_loss,
                                  name='target', metric=self.weighted_accuracy)
-
-
-# class ChampEmbeddings:
-#
-#     def __init__(self):
-#         super().__init__()
-#
-#         self.network_config = \
-#             {
-#                 "learning_rate": 0.00025,
-#                 "champ_emb_dim": 3,
-#                 "all_items_emb_dim": 4,
-#                 "champ_all_items_emb_dim": 6,
-#                 "class_weights": [1]
-#             }
-#         self.game_config = \
-#             {
-#                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
-#                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
-#                 "total_num_champs": ChampManager().get_num("int"),
-#
-#                 "total_num_items": ItemManager().get_num("int"),
-#                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
-#             }
-#
-#
-#     def build(self):
-#         total_num_champs = self.game_config["total_num_champs"]
-#         total_num_items = ItemManager().get_num("int")
-#
-#         learning_rate = self.network_config["learning_rate"]
-#
-#         in_vec = input_data(shape=[None, 1+total_num_items], name='input')
-#         champ_ints = in_vec[:, 0]
-#         items = in_vec[:, 1:]
-#
-#         champs_embedded_short1 = embedding(tf.reshape(champ_ints, (-1, 1)), input_dim=total_num_champs, output_dim=3,
-#                                            reuse=tf.AUTO_REUSE,
-#                                            scope="champs_embedded_short1")
-#         champs_embedded_short1 = tf.reshape(champs_embedded_short1, (-1, 3))
-#         final_input_layer = merge(
-#             [
-#                 champs_embedded_short1,
-#                 items
-#             ], mode='concat', axis=1)
-#
-#         net = final_input_layer
-#         net = fully_connected(net, 128, activation='relu', regularizer="L2")
-#         net = fully_connected(net, 1, activation='sigmoid')
-#
-#         return regression(net, optimizer='adam',
-#                                  shuffle_batches=True,
-#                                  learning_rate=learning_rate,
-#                                  loss='binary_crossentropy',
-#                                  name='target', metric=self.bin_acc)
-#
-#     @staticmethod
-#     def bin_acc(preds, targets, input_):
-#         preds = tf.round(preds)
-#         correct_prediction = tf.equal(preds, targets)
-#         all_correct = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), 1)
-#         acc = tf.reduce_mean(all_correct)
-#
-#         return acc
-#
-#
-# class ChampEmbeddings2:
-#
-#     def __init__(self):
-#         super().__init__()
-#
-#         self.network_config = \
-#             {
-#                 "learning_rate": 0.00001,
-#                 "champ_emb_dim": 3,
-#                 "all_items_emb_dim": 4,
-#                 "champ_all_items_emb_dim": 6,
-#                 "class_weights": [1]
-#             }
-#         self.game_config = \
-#             {
-#                 "champs_per_game": game_constants.CHAMPS_PER_GAME,
-#                 "champs_per_team": game_constants.CHAMPS_PER_TEAM,
-#                 "total_num_champs": ChampManager().get_num("int"),
-#
-#                 "total_num_items": ItemManager().get_num("int"),
-#                 "items_per_champ": game_constants.MAX_ITEMS_PER_CHAMP
-#             }
-#
-#
-#     def build(self):
-#         total_num_champs = self.game_config["total_num_champs"]
-#         total_num_items = ItemManager().get_num("int")
-#
-#         in_vec = input_data(shape=[None, total_num_items], name='input')
-#         encoder = tflearn.fully_connected(in_vec, 64)
-#         encoder = tflearn.fully_connected(encoder, 3, name="my_embedding")
-#         decoder = tflearn.fully_connected(encoder, 64)
-#         decoder = tflearn.fully_connected(decoder, total_num_items)
-#
-#         # Regression, with mean square error
-#         return tflearn.regression(decoder, optimizer='adam', learning_rate=0.001,
-#                                  loss='mean_square', metric=None)
-#
-
 
 class ChampEmbeddings:
 

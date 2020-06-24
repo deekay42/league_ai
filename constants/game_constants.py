@@ -22,3 +22,20 @@ NUM_LEAGUES = 27
 NUM_ELITE_LEAGUES = 3
 
 dragon2index = {"AIR_DRAGON":0, "EARTH_DRAGON":1, "FIRE_DRAGON":2, "WATER_DRAGON":3}
+
+max_clip = {"kills": 20,"deaths": 20,"assists": 30, "total_gold": 20000,
+                                          "cs": 400,
+                                          "lvl": 18,
+                                          "dragons_killed": 4.0,
+                                          "turrets_destroyed": 11.0,
+                               "current_gold": 4000.0}
+min_clip = {"kills": 0, "deaths": 0, "assists": 0,
+                                          "total_gold": 500,
+                                          "cs": 0,
+                                          "lvl": 1,
+                                          "dragons_killed": 0.0,
+                                          "turrets_destroyed": 0.0,
+                                          "current_gold": 0.0}
+
+
+

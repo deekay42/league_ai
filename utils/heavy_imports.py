@@ -6,6 +6,8 @@ sstarttime = time.time()
 cv = None
 Item = None
 MinMaxScaler = None
+PowerTransformer = None
+StandardScaler = None
 
 
 def setopencv(val):
@@ -19,6 +21,10 @@ def setcassItem(val):
 def setsklearnItem(val):
     global MinMaxScaler
     MinMaxScaler = val.MinMaxScaler
+    global PowerTransformer
+    PowerTransformer = val.PowerTransformer
+    global StandardScaler
+    StandardScaler = val.StandardScaler
 
 
 def heavy_import(module_name, setter):
@@ -28,7 +34,7 @@ def heavy_import(module_name, setter):
     
     
 def sequence_imports():
-    heavy_import("sklearn.preprocessing.data", setsklearnItem)
+    heavy_import("sklearn.preprocessing", setsklearnItem)
     heavy_import("cassiopeia.core.staticdata.item", setcassItem)
 
 threading.Thread(target=lambda:heavy_import("cv2", setopencv)).start()

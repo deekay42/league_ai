@@ -16,7 +16,7 @@ from train_model import data_loader, train
 from utils import build_path, cass_configured as cass
 from utils.artifact_manager import *
 import arrow
-from utils import utils
+from utils import misc
 from train_model.model import NextItemModel
 from train_model.train import NextItemsTrainer
 from train_model.input_vector import Input
@@ -752,7 +752,7 @@ class ProcessNextItemsTrainingData:
                     component_items,_, insert_item_states,_ = build_path.build_path_nogold(participant_current_items, new_item)
                     prev_event = event
                     for i, (component_item, insert_item_state) in enumerate(zip(component_items, insert_item_states)):
-                        if utils.num_itemslots(Counter(insert_item_state)) > \
+                        if misc.num_itemslots(Counter(insert_item_state)) > \
                                 game_constants.MAX_ITEMS_PER_CHAMP:
                             continue
                         event_copy = prev_event.copy()
@@ -844,7 +844,7 @@ class ProcessNextItemsTrainingData:
                            app_constants.train_paths["next_items_processed_lower_unsorted_uninf"],
                            app_constants.train_paths["next_items_processed_lower_unsorted_complete"]]
         for path in out_paths_elite + out_paths_lower + out_paths_positions:
-            utils.remove_old_files(path)
+            misc.remove_old_files(path)
 
         # number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
         number_of_top_games = [10000,0,0]

@@ -3,7 +3,7 @@ import numpy as np
 import math
 from shapely.geometry import *
 import sys
-from utils import utils
+from utils import misc
 
 LINE_CERTAINTY_THRESHOLD = 20
 MAX_IMAGE_ROTATION = 30
@@ -417,14 +417,14 @@ def projectBoxColumnToBottom(box_column, boxes_vert_diff, bottom):
 def getItemCoordinates(left_side_boxes, right_side_boxes, boxes_vert_diff, left_side_x, right_side_x, size, bottom):
     if math.fabs(left_side_boxes[-1][1][1] - bottom) < 100:
         top_left_trinket_y = left_side_boxes[-1][0][1] - 4 * boxes_vert_diff
-        item_coordinates = utils._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
+        item_coordinates = misc._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
     elif math.fabs(right_side_boxes[-1][1][1] - bottom) < 100:
         top_left_trinket_y = right_side_boxes[-1][0][1] - 4 * boxes_vert_diff
-        item_coordinates = utils._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
+        item_coordinates = misc._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
     else:
         projectBoxColumnToBottom(left_side_boxes, boxes_vert_diff, bottom)
         top_left_trinket_y = left_side_boxes[-1][0][1] - 4 * boxes_vert_diff
-        item_coordinates = utils._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
+        item_coordinates = misc._generate_item_coords(size, left_side_x, right_side_x, boxes_vert_diff, top_left_trinket_y)
     return item_coordinates
 
 
@@ -435,15 +435,15 @@ def lowestBoxIsLower(box_column, SPELL_SLOT_HEIGHT):
 def getSpellCoordinates(left_side_boxes, right_side_boxes, boxes_vert_diff, left_side_x, right_side_x, size, bottom):
     if math.fabs(left_side_boxes[-1][1][1] - bottom) < 100:
         top_left_spell_y = left_side_boxes[-1][0][1] - 4 * (boxes_vert_diff + size) - size
-        spell_coordinates = utils.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
+        spell_coordinates = misc.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
     elif math.fabs(right_side_boxes[-1][1][1] - bottom) < 100:
         top_left_spell_y = right_side_boxes[-1][0][1] - 4 * (boxes_vert_diff + size) - size
-        spell_coordinates = utils.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
+        spell_coordinates = misc.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
     else:
         lowest_box_is_lower = lowestBoxIsLower(left_side_boxes, size)
         projectSpellColumnToBottom(left_side_boxes, boxes_vert_diff, bottom, lowest_box_is_lower, size)
         top_left_spell_y = left_side_boxes[-1][0][1] - 4 * (boxes_vert_diff + size) - size
-        spell_coordinates = utils.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
+        spell_coordinates = misc.generateSpellCoordinates(size, left_side_x, right_side_x, boxes_vert_diff, top_left_spell_y)
     return spell_coordinates
 
 
@@ -484,12 +484,12 @@ def processScoreboard(img_scoreboard, ITEM_SLOT_HEIGHT, SPELL_SLOT_HEIGHT, CHAMP
     # cv.namedWindow("results", cv.WINDOW_NORMAL)
     # cv.imshow('results', img_scoreboard)
     # cv.waitKey(0)
-    item_templates = utils.getItemTemplateDict()
+    item_templates = misc.getItemTemplateDict()
     item_templates = [item_templates["Sweeping Lens (Trinket)"], item_templates["Warding Totem (Trinket)"],
                       item_templates["Farsight Alteration"]]
     # item_templates_gray = [cv.cvtColor(template, cv.COLOR_BGR2GRAY) for template in item_templates]
 
-    spell_templates = utils.getSpellTemplateDict()
+    spell_templates = misc.getSpellTemplateDict()
     spell_templates = [spell_templates["Teleport"], spell_templates["Flash"], spell_templates["Heal"]]
     # spell_templates_gray = [cv.cvtColor(template, cv.COLOR_BGR2GRAY) for template in spell_templates]
 
@@ -521,7 +521,7 @@ def processScoreboard(img_scoreboard, ITEM_SLOT_HEIGHT, SPELL_SLOT_HEIGHT, CHAMP
                                             spells_left_side_x, spells_right_side_x, SPELL_SLOT_HEIGHT,
                                             img_scoreboard.shape[0])
 
-    champ_coordinates = utils.generateChampionCoordsBasedOnSpellCoords(spell_coordinates[0], spell_coordinates[1])
+    champ_coordinates = misc.generateChampionCoordsBasedOnSpellCoords(spell_coordinates[0], spell_coordinates[1])
 
     return item_coordinates, spell_coordinates, champ_coordinates, ITEM_SLOT_HEIGHT, SPELL_SLOT_HEIGHT, CHAMP_SLOT_HEIGHT
 

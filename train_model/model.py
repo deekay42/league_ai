@@ -28,7 +28,7 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 print(f"Took {time.time() - starttime} s")
 print("1.5")
 starttime = time.time()
-from utils.utils import chunks
+from utils.misc import chunks
 # import json
 
 import itertools
@@ -94,10 +94,17 @@ network = None
 
 class Model(ABC):
 
-    def __init__(self, dll_hook=None):
+    def __init__(self, dll_hook=None, model_path=None):
         self.output_node_name = None
         self.artifact_manager = None
         self.dll_hook = dll_hook
+
+        if model_path is None:
+            self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
+            self.model_path = self.model_path.rpartition('.')[0]
+        else:
+            self.model_path = model_path
+
         if not dll_hook:
             global tf, tflearn, network
             tf = importlib.import_module("tensorflow")
@@ -108,7 +115,6 @@ class Model(ABC):
             with self.graph.as_default():
                 self.session = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
             self.model = None
-            self.model_path = None
             self.champ_embs = None
             self.opp_champ_embs = None
 
@@ -119,19 +125,20 @@ class Model(ABC):
             return
         with self.graph.as_default():
             tflearn.is_training(False, session=self.session)
-            
             self.network = self.network.build()
             model = tflearn.DNN(self.network, session=self.session)
             self.session.run(tf.global_variables_initializer())
             try:
-                self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
-                self.model_path = self.model_path.rpartition('.')[0]
                 model.load(self.model_path, create_new_session=False)
                 if self.champ_embs is not None:
-                    embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
-                    model.set_weights(embeddingWeights, self.champ_embs)
-                    embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
-                    model.set_weights(embeddingWeights, self.opp_champ_embs)
+                    try:
+                        embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.champ_embs)
+                        embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
+                        model.set_weights(embeddingWeights, self.opp_champ_embs)
+                    #no embedding layer in this model
+                    except IndexError:
+                        pass
             except Exception as e:
                 print("Unable to open best model files")
                 raise e
@@ -602,7 +609,6 @@ class KDAImgModel(ImgModel):
             return
         self.network = network.DigitRecognitionNetwork(lambda: self.artifact_manager.get_num("img_int"),
                                                        self.network_crop)
-        self.model_path = app_constants.model_paths["best"][self.elements]
 
 
 
@@ -767,150 +773,60 @@ class SelfImgModel(ImgModel):
 
 class GameModel(Model):
 
-    def __init__(self, dll_hook=None):
-        super().__init__(dll_hook)
-        self.cont_slices_by_name = {'total_gold': np.s_[:, Input.total_gold_start:Input.total_gold_end],
-                                    'cs': np.s_[:, Input.cs_start:Input.cs_end],
-                                    'neutral_cs': np.s_[:, Input.neutral_cs_start:Input.neutral_cs_end],
-                                    'xp': np.s_[:, Input.xp_start:Input.xp_end],
-                                    'lvl': np.s_[:, Input.lvl_start:Input.lvl_end],
-                                    'kda': np.s_[:, Input.kda_start:Input.kda_end],
-                                    'cg': np.s_[:, Input.current_gold_start:Input.current_gold_end],
-                                    'turrets': np.s_[:, Input.turrets_start:Input.turrets_end], }
-
-    def scale_inputs(self, X):
-        for slice_name in self.cont_slices_by_name:
-            slice = self.cont_slices_by_name[slice_name]
-            if slice_name == 'cs' or slice_name == 'neutral_cs':
-                scaler = self.fit_input(np.array([[0.0, 300.0]]), slice_name)
-            elif slice_name == 'lvl':
-                scaler = self.fit_input(np.array([[0.0, 18.0]]), slice_name)
-            elif slice_name == 'kda':
-                scaler = self.fit_input(np.array([[0.0, 15]]), slice_name)
-            elif slice_name == 'cg':
-                scaler = self.fit_input(np.array([[0.0, 2000.0]]), slice_name)
-            elif slice_name == 'total_gold':
-                scaler = self.fit_input(np.array([[500.0, 50000.0]]), slice_name)
-            elif slice_name == 'xp':
-                scaler = self.fit_input(np.array([[0.0, 50000.0]]), slice_name)
-            elif slice_name == 'turrets':
-                scaler = self.fit_input(np.array([[0.0, 11.0]]), slice_name)
-            else:
-                print("WTFFFFFFFF")
-            X[slice] = scaler.transform(X[slice])
-        return X
-
-
-    def fit_input(self, X, scaler_name):
-        min_max_scaler = heavy_imports.MinMaxScaler(feature_range=(0, 1))
-        min_max_scaler.fit(np.reshape(X, (-1, 1)))
-        return min_max_scaler
-
+    def __init__(self, dll_hook=None, model_path=None):
+        super().__init__(dll_hook, model_path)
 
 
 class WinPredModel(GameModel):
 
-    def __init__(self, type, dll_hook=None):
+    def __init__(self, type, dll_hook=None, model_path=None, network_config=None):
+
         super().__init__(dll_hook)
 
-
         if type == "standard":
-            self.model_path = app_constants.model_paths["best"]["win_pred_standard"]
+            if model_path is None:
+                model_path = app_constants.model_paths["best"]["win_pred_standard"]
             self.elements = "win_pred_standard"
         elif type == "init":
-            self.model_path = app_constants.model_paths["best"]["win_pred_init"]
+            if model_path is None:
+                model_path = app_constants.model_paths["best"]["win_pred_init"]
             self.elements = "win_pred_init"
 
 
+        if model_path is None:
+            self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
+            self.model_path = self.model_path.rpartition('.')[0]
+        else:
+            self.model_path = model_path
 
+        self.network_config = network_config
         self.input_len = Input.len
-
-        self.output_node_name = "Sigmoid"
+        # self.output_node_name = "Sigmoid"
 
         if dll_hook:
             return
 
         if type == "standard":
-            self.network = network.WinPredNetwork(champ_dropout=0.5, stats_dropout=0.95)
+            self.network = network.WinPredNetwork(self.network_config)
         elif type == "init":
-            self.network = network.WinPredNetworkInit()
+            self.network = network.WinPredNetworkInit(self.network_config)
 
 
-
-    def transform_inputs(self, champs_str,  total_gold, first_team_blue_start, cs=None, lvl=None, kda=None,
-                     baron_active=None,
-                     elder_active=None, dragons=None, dragon_soul_type=None, turrets=None, gameId=0):
-
-        if baron_active is None:
-            baron_active = [0, 0]
-        if elder_active is None:
-            elder_active = [0, 0]
-        if dragons is None:
-            dragons = {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [0,0], "WATER_DRAGON": [0,0]}
-        if cs is None:
-            cs = [0] * 10
-        if lvl is None:
-            lvl = [1] * 10
-        if kda is None:
-            kda = [[0,0,0]]*10
-        if dragon_soul_type is None:
-            dragon_soul_type = ["NONE", "NONE"]
-        if turrets is None:
-            turrets = [0,0]
-
-        dragons_int = [0,0,0,0,0,0,0,0]
-        for dragon_type in dragons:
-            team_dragon_kills = dragons[dragon_type]
-            dragon_index = game_constants.dragon2index[dragon_type]
-            dragons_int[dragon_index] += team_dragon_kills[0]
-            dragons_int[dragon_index+4] += team_dragon_kills[1]
-
-        dragon_soul = [dragon_soul_type[0] != "NONE", dragon_soul_type[1] != "NONE"]
-        dragon_soul_type_ints = [game_constants.dragon2index[soul_team] if soul_team in game_constants.dragon2index
-                                else 0
-                       for soul_team in dragon_soul_type]
-        dragon_soul_type = [0,0,0,0,0,0,0,0]
-        if dragon_soul_type_ints[0] != 0:
-            dragon_soul_type[dragon_soul_type_ints[0]] = 1
-        if dragon_soul_type_ints[1] != 0:
-            dragon_soul_type[4+dragon_soul_type_ints[1]] = 1
-
-
-        x = np.zeros(shape=self.input_len, dtype=np.int64)
-        x[0] = int(gameId)
-        x[Input.champs_start:Input.champs_end] = [ChampManager().lookup_by("name", chstr)["int"] for chstr in champs_str]
-        x[Input.cs_start:Input.cs_end] = cs
-        x[Input.lvl_start:Input.lvl_end] = lvl
-        x[Input.kda_start:Input.kda_end] = np.ravel(kda)
-        x[Input.total_gold_start:Input.total_gold_end] = total_gold
-        x[Input.baron_start:Input.baron_end] = baron_active
-        x[Input.elder_start:Input.elder_end] = elder_active
-        x[Input.dragons_killed_start:Input.dragons_killed_end] = dragons_int
-        x[Input.dragon_soul_type_start:Input.dragon_soul_type_end] = dragon_soul_type
-        x[Input.dragon_soul_start:Input.dragon_soul_end] = dragon_soul
-        x[Input.turrets_start:Input.turrets_end] = turrets
-        x[Input.first_team_blue_start:Input.first_team_blue_end] = first_team_blue_start
-        x = self.scale_inputs(np.array([x]).astype(np.float32))
-
-        return x
-
-
-    def bayes_predict(self, x):
-        tile_factor = 1024
+    def bayes_predict(self, x, tile_factor, raw=False):
         batch_size = 1024
-        x = np.tile(x, [1,1024])
+        x = np.tile(x, [1,tile_factor])
         x = np.reshape(x, (-1, Input.len))
 
-        with self.graph.as_default():
-            tflearn.is_training(True, self.session)
-
-            y = [self.session.run(['FullyConnected_4/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
-                 chunks(x, batch_size)]
+        if raw:
+            with self.graph.as_default():
+                tflearn.is_training(True, self.session)
+                y = [self.session.run(['final_output/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
+                     chunks(x, batch_size)]
+        else:
+            y = [self.model.predict(x_batch) for x_batch in chunks(x, batch_size)]
+            y = np.concatenate(y, axis=0)
 
         y = np.reshape(y, (-1, tile_factor))
-
-
-
         y_mean = np.mean(y, axis=1)
         y_std = np.std(y, axis=1)
         return y_mean, y_std
@@ -938,28 +854,24 @@ class WinPredModel(GameModel):
 
 class NextItemModel(GameModel):
 
-    def __init__(self, type, dll_hook=None):
-        super().__init__(dll_hook)
-
+    def __init__(self, type, dll_hook=None, model_path=None):
 
         self.type = type
         if type == "standard":
-            self.model_path = app_constants.model_paths["best"]["next_items_standard"]
             self.elements = "next_items_standard"
         elif type == "late":
-            self.model_path = app_constants.model_paths["best"]["next_items_late"]
             self.elements = "next_items_late"
         elif type == "starter":
-            self.model_path = app_constants.model_paths["best"]["next_items_starter"]
             self.elements = "next_items_starter"
         elif type == "first_item":
-            self.model_path = app_constants.model_paths["best"]["next_items_first_item"]
             self.elements = "next_items_first_item"
         elif type == "boots":
-            self.model_path = app_constants.model_paths["best"]["next_items_boots"]
             self.elements = "next_items_boots"
+        super().__init__(dll_hook=dll_hook, model_path=model_path)
 
         self.artifact_manager = ItemManager()
+
+
 
         # self.load_model()
 
@@ -1004,13 +916,16 @@ class NextItemModel(GameModel):
 
     def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold, blackout_indices):
         x = np.zeros(shape=self.input_len, dtype=np.int32)
-        x[Input.pos_start:Input.pos_end] = [role]
-        x[Input.champs_start:Input.champs_end] = champs_int
+        x[Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = [role]
+        x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = champs_int
         encoded_items = np.ravel(self.encode_items(items_id, self.artifact_manager))
-        x[Input.items_start:Input.items_end] = encoded_items
-        x[Input.cs_start:Input.cs_end] = cs
-        x[Input.lvl_start:Input.lvl_end] = lvl
-        x[Input.kda_start:Input.kda_end] = np.ravel(kda)
+        x[Input.indices["start"]["items"]:Input.indices["end"]["items"]] = encoded_items
+        x[Input.indices["start"]["cs"]:Input.indices["end"]["cs"]] = cs
+        x[Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]] = lvl
+        kda = np.ravel(kda)
+        x[Input.indices["start"]["kills"]:Input.indices["end"]["kills"]] = kda[0::3]
+        x[Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = kda[1::3]
+        x[Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = kda[2::3]
         num_increments = 20
         granularity = 10
         start = -150
@@ -1022,11 +937,8 @@ class NextItemModel(GameModel):
  
         logger.info(current_gold_list[:,role])
         x = np.tile(x,num_increments).reshape((num_increments,-1))
-        x[:, Input.current_gold_start:Input.current_gold_end] = current_gold_list
-        x = self.scale_inputs(np.array(x).astype(np.float32))
-        lul = False
-        if lul:
-            self.output_logs(x)
+        x[:, Input.indices["start"]["current_gold"]:Input.indices["end"]["current_gold"]] = current_gold_list
+        x = Input().scale_inputs(x)
         result, probabilities = self.predict(x, blackout_indices)
         return result[zero_offset], result, probabilities[zero_offset]
 
