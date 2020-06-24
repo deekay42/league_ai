@@ -1,4 +1,4 @@
-import urllib.request
+import requests
 import dateutil.parser as dt
 import datetime
 import json
@@ -68,7 +68,7 @@ class ScrapeEsportsData:
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
     def fetch_payload(url):
         print(f"attempting to fetch {url}")
-        payload_raw = urllib.request.urlopen(url).read()
+        payload_raw = requests.get(url, timeout=5).text
         payload = json.loads(payload_raw)
         print(f"success\n\n")
         return payload
@@ -140,7 +140,7 @@ class ScrapeEsportsData:
 
             self.prev_baron_active_raw = baron_active
 
-            input_ = {"gameId": data['esportsGameId'],"champs_str": champ_names,
+            input_ = {"scale_inputs": False, "gameId": data['esportsGameId'],"champs_str": champ_names,
                           "total_gold": total_gold,
                           "first_team_blue_start": 1,
                           "cs": cs,
@@ -164,15 +164,15 @@ class ScrapeEsportsData:
 
     def tournament2vec(self, gameIds, game_results):
         x = np.empty(shape=(0,Input.len))
-        y = np.empty(shape=(0,))
+
         for gameId, game_result in zip(gameIds, game_results):
             data_x = self.game2vec(gameId)
             data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen])
             data_x = np.reshape(data_x, (-1, Input.len))
-            if gameId == 0:
+            if game_result == 0:
                 data_x = self.trainer.flip_teams(data_x)
             x = np.concatenate([x, data_x], axis=0)
-            y = np.concatenate([y, np.tile(game_result, [data_x.shape[0]])], axis=0)
+
 
 
         out_dir = app_constants.train_paths["win_pred"]

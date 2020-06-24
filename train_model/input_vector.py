@@ -1,54 +1,281 @@
-from constants import game_constants
+import json
+
+import numpy as np
+
+from constants import game_constants, app_constants
+from utils import heavy_imports
+from utils.artifact_manager import ChampManager
 
 
 class Input:
-        pos_start = 0
-        pos_end = pos_start + 1
-        champs_start = pos_end
-        champs_half = champs_start + game_constants.CHAMPS_PER_TEAM
-        champs_end = champs_start + game_constants.CHAMPS_PER_GAME
-        items_start = champs_end
-        items_half = items_start + game_constants.MAX_ITEMS_PER_CHAMP * 2 * game_constants.CHAMPS_PER_TEAM
-        items_end = items_start + game_constants.MAX_ITEMS_PER_CHAMP * 2 * game_constants.CHAMPS_PER_GAME
-        total_gold_start = items_end
-        total_gold_half = total_gold_start + game_constants.CHAMPS_PER_TEAM
-        total_gold_end = total_gold_start + game_constants.CHAMPS_PER_GAME
-        cs_start = total_gold_end
-        cs_half = cs_start + game_constants.CHAMPS_PER_TEAM
-        cs_end = cs_start + game_constants.CHAMPS_PER_GAME
-        neutral_cs_start = cs_end
-        neutral_cs_half = neutral_cs_start + game_constants.CHAMPS_PER_TEAM
-        neutral_cs_end = neutral_cs_start + game_constants.CHAMPS_PER_GAME
-        xp_start = neutral_cs_end
-        xp_half = xp_start + game_constants.CHAMPS_PER_TEAM
-        xp_end = xp_start + game_constants.CHAMPS_PER_GAME
-        lvl_start = xp_end
-        lvl_half = lvl_start + game_constants.CHAMPS_PER_TEAM
-        lvl_end = lvl_start + game_constants.CHAMPS_PER_GAME
-        kda_start = lvl_end
-        kda_half = kda_start + game_constants.CHAMPS_PER_TEAM * 3
-        kda_end = kda_start + game_constants.CHAMPS_PER_GAME * 3
-        current_gold_start = kda_end
-        current_gold_half = current_gold_start + game_constants.CHAMPS_PER_TEAM
-        current_gold_end = current_gold_start + game_constants.CHAMPS_PER_GAME
-        baron_start = current_gold_end
-        baron_half = baron_start + 1
-        baron_end = baron_start + 2
-        elder_start = baron_end
-        elder_half = elder_start + 1
-        elder_end = elder_start + 2
-        dragons_killed_start = elder_end
-        dragons_killed_half = dragons_killed_start + 4
-        dragons_killed_end = dragons_killed_start + 2*4
-        dragon_soul_start = dragons_killed_end
-        dragon_soul_half = dragon_soul_start + 1
-        dragon_soul_end = dragon_soul_start + 2
-        dragon_soul_type_start = dragon_soul_end
-        dragon_soul_type_half = dragon_soul_type_start + 4
-        dragon_soul_type_end = dragon_soul_type_start + 8
-        turrets_start = dragon_soul_type_end
-        turrets_half = turrets_start + 1
-        turrets_end = turrets_start + 2
-        first_team_blue_start = turrets_end
-        first_team_blue_end = first_team_blue_start + 1
-        len = first_team_blue_end
+    instance = None
+
+    indices = dict()
+    indices["start"] = dict()
+    indices["half"] = dict()
+    indices["end"] = dict()
+    indices["mid"] = dict()
+
+    indices["start"]["gameid"] = 0
+    indices["end"]["gameid"] = indices["start"]["gameid"] + 1
+
+    indices["start"]["pos"] = indices["end"]["gameid"]
+    indices["end"]["pos"] = indices["start"]["pos"] + 1
+
+    indices["start"]["champs"] = indices["end"]["pos"]
+    indices["half"]["champs"] = indices["start"]["champs"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["champs"] = indices["start"]["champs"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["items"] = indices["end"]["champs"]
+    indices["half"]["items"] = indices["start"][
+                                   "items"] + game_constants.MAX_ITEMS_PER_CHAMP * 2 * game_constants.CHAMPS_PER_TEAM
+    indices["end"]["items"] = indices["start"][
+                                  "items"] + game_constants.MAX_ITEMS_PER_CHAMP * 2 * game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["total_gold"] = indices["end"]["items"]
+    indices["half"]["total_gold"] = indices["start"]["total_gold"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["total_gold"] = indices["start"]["total_gold"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["cs"] = indices["end"]["total_gold"]
+    indices["half"]["cs"] = indices["start"]["cs"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["cs"] = indices["start"]["cs"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["lvl"] = indices["end"]["cs"]
+    indices["half"]["lvl"] = indices["start"]["lvl"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["lvl"] = indices["start"]["lvl"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["kills"] = indices["end"]["lvl"]
+    indices["half"]["kills"] = indices["start"]["kills"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["kills"] = indices["start"]["kills"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["deaths"] = indices["end"]["kills"]
+    indices["half"]["deaths"] = indices["start"]["deaths"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["deaths"] = indices["start"]["deaths"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["assists"] = indices["end"]["deaths"]
+    indices["half"]["assists"] = indices["start"]["assists"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["assists"] = indices["start"]["assists"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["current_gold"] = indices["end"]["assists"]
+    indices["half"]["current_gold"] = indices["start"]["current_gold"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["current_gold"] = indices["start"]["current_gold"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["baron"] = indices["end"]["current_gold"]
+    indices["half"]["baron"] = indices["start"]["baron"] + 1
+    indices["end"]["baron"] = indices["start"]["baron"] + 2
+
+    indices["start"]["elder"] = indices["end"]["baron"]
+    indices["half"]["elder"] = indices["start"]["elder"] + 1
+    indices["end"]["elder"] = indices["start"]["elder"] + 2
+
+    indices["start"]["dragons_killed"] = indices["end"]["elder"]
+    indices["half"]["dragons_killed"] = indices["start"]["dragons_killed"] + 4
+    indices["end"]["dragons_killed"] = indices["start"]["dragons_killed"] + 8
+
+    indices["start"]["dragon_soul_type"] = indices["end"]["dragons_killed"]
+    indices["half"]["dragon_soul_type"] = indices["start"]["dragon_soul_type"] + 4
+    indices["end"]["dragon_soul_type"] = indices["start"]["dragon_soul_type"] + 8
+
+    indices["start"]["turrets_destroyed"] = indices["end"]["dragon_soul_type"]
+    indices["half"]["turrets_destroyed"] = indices["start"]["turrets_destroyed"] + 1
+    indices["end"]["turrets_destroyed"] = indices["start"]["turrets_destroyed"] + 2
+
+    indices["start"]["blue_side"] = indices["end"]["turrets_destroyed"]
+    indices["half"]["blue_side"] = indices["start"]["blue_side"] + 1
+    indices["end"]["blue_side"] = indices["half"]["blue_side"] + 1
+
+    len = indices["end"]["blue_side"]
+
+    numeric_slices = {'total_gold',
+                      'cs',
+                      'lvl',
+                      'kills',
+                      'deaths',
+                      'assists',
+                      'current_gold',
+                      'turrets_destroyed',
+                      'dragons_killed'}
+
+    all_slices = {"gameid", "pos", "champs", "items", "total_gold", "cs",
+                  "lvl", "kills", "deaths", "assists",
+                  "current_gold", "baron", "elder" "dragons_killed",
+                  "dragon_soul_type", "turrets_destroyed", "blue_side"}
+
+    nonsymmetric_slices = {"gameid", "pos"}
+
+
+    @staticmethod
+    def fit(input_slice, slice_name):
+        # d = np.reshape(input_slice, (-1, 1))
+        d = input_slice
+        d = np.clip(d, game_constants.min_clip[slice_name], game_constants.max_clip[slice_name])
+        pt = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
+        d_t = pt.fit_transform(d)
+        ss = heavy_imports.StandardScaler()
+        d = ss.fit_transform(d_t)
+        mm = heavy_imports.MinMaxScaler()
+        d = mm.fit_transform(d)
+        return {
+                    "yeo_lambdas": pt.lambdas_.tolist(),
+                    "standard": {"mean": ss.mean_.tolist(), "scale": ss.scale_.tolist(), "var": ss.var_.tolist()},
+                    "minmax": {"min": mm.min_.tolist(), "scale": mm.scale_.tolist()}
+                }
+
+
+    @staticmethod
+    def fit_scale_inputs(X):
+        params = dict()
+        for slice_name in Input.numeric_slices:
+            input_slice = X[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]]
+            diff = Input.indices["half"][slice_name] - Input.indices["start"][slice_name]
+            input_slice_concat = [np.concatenate([input_slice[:, i], input_slice[:, i + diff]],
+                                                 axis=0) for i in
+                                  range(diff)]
+            input_slice_concat = np.transpose(input_slice_concat, (1, 0))
+            params[slice_name] = Input.fit(input_slice_concat, slice_name)
+        return params
+
+
+    @staticmethod
+    def transform_inputs(champs_str, total_gold, first_team_blue_start, cs=None, lvl=None, kda=None,
+                         baron_active=None,
+                         elder_active=None, dragons=None, dragon_soul_type=None, turrets=None, gameId=0,
+                         scale_inputs=True):
+
+        if baron_active is None:
+            baron_active = [0, 0]
+        if elder_active is None:
+            elder_active = [0, 0]
+        if dragons is None:
+            dragons = {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [0, 0],
+                       "WATER_DRAGON": [0, 0]}
+        if cs is None:
+            cs = [0] * 10
+        if lvl is None:
+            lvl = [1] * 10
+        if kda is None:
+            kda = [[0, 0, 0]] * 10
+        if dragon_soul_type is None:
+            dragon_soul_type = ["NONE", "NONE"]
+        if turrets is None:
+            turrets = [0, 0]
+
+        dragons_int = [0, 0, 0, 0, 0, 0, 0, 0]
+        for dragon_type in dragons:
+            team_dragon_kills = dragons[dragon_type]
+            dragon_index = game_constants.dragon2index[dragon_type]
+            dragons_int[dragon_index] += team_dragon_kills[0]
+            dragons_int[dragon_index + 4] += team_dragon_kills[1]
+
+        dragon_soul = [dragon_soul_type[0] != "NONE", dragon_soul_type[1] != "NONE"]
+        dragon_soul_type_ints = [
+            game_constants.dragon2index[soul_team] if soul_team in game_constants.dragon2index
+            else 0
+            for soul_team in dragon_soul_type]
+        dragon_soul_type = [0, 0, 0, 0, 0, 0, 0, 0]
+        if dragon_soul_type_ints[0] != 0:
+            dragon_soul_type[dragon_soul_type_ints[0]] = 1
+        if dragon_soul_type_ints[1] != 0:
+            dragon_soul_type[4 + dragon_soul_type_ints[1]] = 1
+
+        x = np.zeros(shape=Input.input_len, dtype=np.int64)
+        x[0] = int(gameId)
+        x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = [ChampManager().lookup_by(
+            "name",
+            chstr)["int"] for
+                                                                              chstr in
+                                                                              champs_str]
+        x[Input.indices["start"]["cs"]:Input.indices["end"]["cs"]] = cs
+        x[Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]] = lvl
+        x[Input.indices["start"]["kda"]:Input.indices["end"]["kda"]] = np.ravel(kda)
+        x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = total_gold
+        x[Input.indices["start"]["baron"]:Input.indices["end"]["baron"]] = baron_active
+        x[Input.indices["start"]["elder"]:Input.indices["end"]["elder"]] = elder_active
+        x[Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]] = dragons_int
+        x[Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]] = \
+            dragon_soul_type
+        x[Input.indices["start"]["dragon_soul_type_start"]:Input.indices["start"][
+            "dragon_soul_type_end"]] = \
+            dragon_soul
+        x[Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]] = \
+            turrets
+        x[Input.indices["start"]["first_team_blue"]:Input.indices["end"]["first_team_blue"]] = \
+            first_team_blue_start
+
+
+    @staticmethod
+    def scale(scale_dict):
+        result = dict(scale_dict)
+        X = np.zeros(Input.len)
+        for slice_name in Input.numeric_slices:
+            X[Input.indices["start"][slice_name]] = scale_dict[slice_name]
+        X = Input.scale_inputs(X[np.newaxis, :])
+        for slice_name in Input.numeric_slices:
+            result[slice_name] = X[0][Input.indices["start"][slice_name]]
+        return result
+
+
+    @staticmethod
+    def flip_teams(X):
+        X_copy = np.copy(X)
+        for slice in Input.all_slices - Input.nonsymmetric_slices:
+            X_copy[:, Input.indices["start"][slice]:Input.indices["half"][slice]] = \
+                X[:, Input.indices["half"][slice]:Input.indices["end"][slice]]
+            X_copy[:, Input.indices["half"][slice]:Input.indices["end"][slice]] = \
+                X[:, Input.indices["start"][slice]:Input.indices["half"][slice]]
+        return X_copy
+
+
+    def __init__(self):
+        if not Input.instance:
+            Input.instance = Input.__Input()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __Input:
+
+        def __init__(self):
+            with open(app_constants.asset_paths["input_scales"], "r") as f:
+                params = json.load(f)
+
+            self.game_config = None
+
+            self.power_transformers = dict()
+            self.standard_scalers = dict()
+            self.minmax_scalers = dict()
+
+
+            for slice_name in Input.numeric_slices:
+                lambdas = np.tile(params[slice_name]["yeo_lambdas"], [2])
+                scale_norm = np.tile(params[slice_name]["standard"]["scale"], [2])
+                mean = np.tile(params[slice_name]["standard"]["mean"], [2])
+                var = np.tile(params[slice_name]["standard"]["var"], [2])
+                min_mm = np.tile(params[slice_name]["minmax"]["min"], [2])
+                scale_mm = np.tile(params[slice_name]["minmax"]["scale"], [2])
+
+                self.power_transformers[slice_name] = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
+                self.standard_scalers[slice_name] = heavy_imports.StandardScaler()
+                self.minmax_scalers[slice_name] = heavy_imports.MinMaxScaler()
+
+                self.power_transformers[slice_name].lambdas_ = lambdas
+                self.standard_scalers[slice_name].mean_ = mean
+                self.standard_scalers[slice_name].var_ = var
+                self.standard_scalers[slice_name].scale_ = scale_norm
+                self.minmax_scalers[slice_name].min_ = min_mm
+                self.minmax_scalers[slice_name].scale_ = scale_mm
+
+
+        def scale_inputs(self, X):
+            result = np.copy(X).astype(np.float32)
+            for slice_name in Input.numeric_slices:
+                d = result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]]
+                d = np.clip(d, game_constants.min_clip[slice_name], game_constants.max_clip[slice_name])
+                d = self.power_transformers[slice_name].transform(d)
+                d = self.standard_scalers[slice_name].transform(d)
+                # d = self.minmax_scalers[slice_name].transform(d)
+                result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = d
+
+            return result

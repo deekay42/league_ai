@@ -6,7 +6,7 @@ from utils.artifact_manager import ItemManager
 import numpy as np
 # from utils import cass_configured as cass
 # from cassiopeia.core.staticdata import Item
-from utils.utils import itemslots_left, iditem2intitems
+from utils.misc import itemslots_left, iditem2intitems
 
 from utils import heavy_imports
 

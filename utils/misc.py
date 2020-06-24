@@ -1,15 +1,21 @@
+import copy
 import glob
 import os
+import sys
+from collections import Counter
 from tkinter import Tk
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
-import copy
-import sys
+
 import cv2 as cv
-from collections import Counter
+import numpy as np
+
 from utils.artifact_manager import ItemManager
-from constants import game_constants, ui_constants
-import ctypes
+from constants import game_constants,app_constants
+from train_model import data_loader
+from train_model.input_vector import Input
+
+
 
 
 def num_itemslots(items):
@@ -20,7 +26,7 @@ def num_itemslots(items):
     redpot = ItemManager().lookup_by("name", "Elixir of Wrath")["int"]
     bluepot = ItemManager().lookup_by("name", "Elixir of Sorcery")["int"]
     ironpot = ItemManager().lookup_by("name", "Elixir of Iron")["int"]
-    num_single_slot_items = int(items.get(wards, 0)>0) + int(items.get(hpots, 0)>0)
+    num_single_slot_items = int(items.get(wards, 0) > 0) + int(items.get(hpots, 0) > 0)
     reg_item_keys = (set(items.keys()) - {hpots, wards, redpot, bluepot, ironpot})
     num_reg_items = sum([items[key] for key in reg_item_keys])
     return num_single_slot_items + num_reg_items
@@ -31,7 +37,7 @@ def itemslots_left(items=None):
 
 
 def iditem2intitems(items):
-    return Counter({ItemManager().lookup_by("id", str(itemid))["int"]:qty for itemid, qty in items.items()})
+    return Counter({ItemManager().lookup_by("id", str(itemid))["int"]: qty for itemid, qty in items.items()})
 
 
 def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size, self_coords, self_size):
@@ -46,11 +52,35 @@ def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size
     cv.waitKey(0)
 
 
+def plot_hist():
+    import matplotlib.pyplot as plt
+    from sklearn.preprocessing import power_transform, minmax_scale
+    dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                 "next_items_processed_elite_sorted_inf"])
+    X_elite, Y_elite = dataloader_elite.get_train_data()
+
+    d = np.reshape(X_elite[:, Input.current_gold_start:Input.current_gold_end], (-1,1))
+    # d = np.clip(d, game_constants.min_clip["cs"], game_constants.max_clip["cs"])
+    # d = power_transform(d, method='yeo-johnson')
+    # d = minmax_scale(d)
+
+    # An "interface" to matplotlib.axes.Axes.hist() method
+    n, bins, patches = plt.hist(x=d, bins='auto', color='#0504aa',
+                                alpha=0.7, rwidth=0.85)
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlabel('Value')
+    plt.ylabel('Frequency')
+    plt.title('My Very Own Histogram')
+    maxfreq = n.max()
+    plt.ylim(ymax=maxfreq)
+    plt.show()
+    print("lol")
+
 
 def show_coords(img_source, coords, size_x, size_y):
     img = copy.deepcopy(img_source)
     for coord in coords:
-        cv.rectangle(img, tuple(coord), (int(coord[0] + size_x),int( coord[1] + size_y)), (255, 0, 0), 1)
+        cv.rectangle(img, tuple(coord), (int(coord[0] + size_x), int(coord[1] + size_y)), (255, 0, 0), 1)
     cv.namedWindow('image', cv.WINDOW_NORMAL)
     cv.resizeWindow('image', 800, 450)
     cv.imshow("image", img)
@@ -86,7 +116,7 @@ def get_lol_dir():
                 loldir = f.read()
         else:
             loldir = "C:/Riot Games/League of Legends"
-        if not (os.path.isdir(loldir + "/Game")) :
+        if not (os.path.isdir(loldir + "/Game")):
             query_lol_dir()
         else:
             return loldir
@@ -114,10 +144,10 @@ def query_lol_dir():
 
 
 # no need to shuffle here. only costs time. shuffling will happen during training before each epoch
-# @staticmethod
-# def _uniformShuffle(l1, l2):
-#     assert len(l1) == len(l2)
-#     rng_state = np.random.get_state()
-#     np.random.shuffle(l1)
-#     np.random.set_state(rng_state)
-#     np.random.shuffle(l2)
+
+def uniform_shuffle(l1, l2):
+    assert len(l1) == len(l2)
+    rng_state = np.random.get_state()
+    np.random.shuffle(l1)
+    np.random.set_state(rng_state)
+    np.random.shuffle(l2)
