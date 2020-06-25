@@ -222,68 +222,60 @@ class WinPredTrainer(Trainer):
         self.num_epochs = 500
 
 
+        no_noise = {"kills": 0.0,
+                      "deaths": 0.0,
+                      "assists": 0.0,
+                      "total_gold": 0,
+                      "cs": 0,
+                      "lvl": 0.0,
+                      "dragons_killed": 0.0,
+                      "baron": 0.0,
+                      "elder": 0.0,
+                      "blue_side": 0.0,
+                      "champs": 0.0,
+                      "turrets_destroyed": 0.0,
+                        "current_gold": 0.0}
+
+        gauss_noise = {"kills": 0.5,
+                         "deaths": 0.5,
+                         "assists": 0.5,
+                         "total_gold": 500 + 125,
+                         "cs": 10,
+                         "lvl": 0.4,
+                         "dragons_killed": 0.2,
+                         "baron": 0.05,
+                         "elder": 0.05,
+                         "blue_side": 0.2,
+                         "champs": 0.1,
+                         "turrets_destroyed": 0.4,
+                         "current_gold": 125}
+
         self.network_config = dict()
         self.network_config["train"] = {
                 "learning_rate": 0.001,
                 "stats_dropout": 0.9,
                 "champ_dropout": 0.2,
-                "noise": {"kda": 0.0,
-                          "total_gold": 0,
-                          "cs": 0,
-                          "lvl": 0.0,
-                          "dragons_killed": 0.0,
-                          "baron_active": 0,
-                          "elder_active": 0,
-                          "first_team_has_blue_side": 0,
-                          "champs": 0,
-                          "turrets_destroyed": 0.0}}
+                "noise": no_noise}
 
         self.network_config["gauss"] = {
             "learning_rate": 0.001,
             "stats_dropout": 1.0,
             "champ_dropout": 1.0,
-            "noise": {"kda": 0.5,
-                      "total_gold": 500 + 125,
-                      "cs": 10,
-                      "lvl": 0.4,
-                      "dragons_killed": 0.2,
-                      "baron_active": 0.05,
-                      "elder_active": 0.05,
-                      "first_team_has_blue_side": 0.2,
-                      "champs": 0.1,
-                      "turrets_destroyed": 0.4}
+            "noise": gauss_noise
         }
 
         self.network_config["dropout"] = {
             "learning_rate": 0.001,
             "stats_dropout": 0.8,
             "champ_dropout": 0.2,
-            "noise": {"kda": 0.0,
-                      "total_gold": 0,
-                      "cs": 0,
-                      "lvl": 0.0,
-                      "dragons_killed": 0.0,
-                      "baron_active": 0.0,
-                      "elder_active": 0.0,
-                      "first_team_has_blue_side": 0.0,
-                      "champs": 0.0,
-                      "turrets_destroyed": 0.0}
+            "noise": no_noise
         }
 
         self.network_config["standard_eval"] = {
             "learning_rate": 0.001,
             "stats_dropout": 1.0,
             "champ_dropout": 1.0,
-            "noise": {"kda": 0.0,
-                      "total_gold": 0,
-                      "cs": 0,
-                      "lvl": 0.0,
-                      "dragons_killed": 0.0,
-                      "baron_active": 0.0,
-                      "elder_active": 0.0,
-                      "first_team_has_blue_side": 0.0,
-                      "champs": 0.0,
-                      "turrets_destroyed": 0.0}
+            "noise": no_noise
         }
 
 
@@ -295,9 +287,11 @@ class WinPredTrainer(Trainer):
         for config in self.network_config:
             self.network_config[config]["noise"] = Input.scale(self.network_config[config]["noise"])
 
-        game_constants.game_config_scaled = dict()
-        for elem in ["min", "max"]:
-            game_constants.game_config_scaled[elem] = Input.scale(game_constants.min_max_scales_clip[elem])
+        game_constants.min_clip_scaled = dict()
+        game_constants.max_clip_scaled = dict()
+
+        game_constants.min_clip_scaled = Input.scale(game_constants.min_clip)
+        game_constants.max_clip_scaled = Input.scale(game_constants.max_clip)
 
 
 
@@ -366,14 +360,14 @@ class WinPredTrainer(Trainer):
         print("Loading elite train data")
         self.X, _ = dataloader_elite.get_train_data()
         self.X = self.X[:50000]
-
+        X_test_raw_pro, _ = dataloader_pro.get_test_data()
 
         print("Loading elite test data")
-        X_test_raw, _ = dataloader_elite.get_test_data_raw()
+        X_test_raw, _ = dataloader_elite.get_test_data()
 
-        X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
-        X_test_raw_pro = np.concatenate([X_test_raw_pro[:,0:1][:,], np.zeros((X_test_raw_pro.shape[0], 1)),
-                                         X_test_raw_pro[:,1:]], axis=1)
+        # X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
+        # X_test_raw_pro = np.concatenate([X_test_raw_pro[:,0:1][:,], np.zeros((X_test_raw_pro.shape[0], 1)),
+        #                                  X_test_raw_pro[:,1:]], axis=1)
         X_test_raw = X_test_raw[:5000]
         X_test_raw_pro = X_test_raw_pro[:5000]
 
@@ -392,14 +386,18 @@ class WinPredTrainer(Trainer):
 
             # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
 
-            self.test_sets[(tst_desc, "all")] = test_set_all
-            self.test_sets[(tst_desc, "all")] = Input().scale_inputs(test_set_all)
+            self.test_sets[(tst_desc, "all")] = test_set_type
+            self.test_sets[(tst_desc, "all")] = Input().scale_inputs(test_set_type)
 
 
-            num_drags_killed = np.sum(test_set_type[:, Input.dragons_killed_start + 1:Input.dragons_killed_end + 1], axis=1)
-            num_kills = np.sum(test_set_type[:, Input.kda_start + 1:Input.kda_end + 1:3], axis=1)
-            num_towers = np.sum(test_set_type[:, Input.turrets_start + 1:Input.turrets_end + 1], axis=1)
-            max_lvl = np.max(test_set_type[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
+            num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
+                "dragons_killed"]], axis=1)
+            num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
+                "kills"]], axis=1)
+            num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
+                "turrets_destroyed"]], axis=1)
+            max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
+                             axis=1)
 
 
             self.test_sets[(tst_desc, "first_drag")] = self.process_win_pred_measure(test_set_type,
@@ -447,7 +445,7 @@ class WinPredTrainer(Trainer):
         accuracies[network_config_name + "_reg_percentage"] = self.percentage_score(preds_reg, Y_test)
         accuracies[network_config_name + "_reg_abs"] = self.abs_score(preds_reg, Y_test)
 
-        X_test_flipped = Input(X_test).flip_teams().data
+        X_test_flipped = Input().flip_teams(X_test)
         preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
         accuracies[network_config_name + "_reg_percentage_flipped"] = self.percentage_score(preds_flipped,
                                                                                             Y_test_flipped)
@@ -467,7 +465,7 @@ class WinPredTrainer(Trainer):
 
         accuracies = dict()
         accuracies["raw_reg"] = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)
-        accuracies["raw_flipped"] = model.evaluate(Input(X_test).flip_teams().data, np.array(Y_test_flipped),
+        accuracies["raw_flipped"] = model.evaluate(Input().flip_teams(X_test), np.array(Y_test_flipped),
                                                    batch_size=self.batch_size)
 
         model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard_eval"])
@@ -485,29 +483,31 @@ class WinPredTrainer(Trainer):
         sub_accuracies = self.run_network_configs(model, "gauss", X_test, 128)
         accuracies.update(sub_accuracies)
 
-        total_gold_team1 = np.sum(X_test[:,Input.total_gold_start:Input.total_gold_half], axis=1)
-        total_gold_team2 = np.sum(X_test[:, Input.total_gold_half:Input.total_gold_end], axis=1)
+        total_gold_team1 = np.sum(X_test[:,Input.indices["start"]["total_gold"]:Input.indices["half"]["total_gold"]],
+                                  axis=1)
+        total_gold_team2 = np.sum(X_test[:, Input.indices["start"]["total_gold"]:Input.indices["half"]["total_gold"]],
+                                  axis=1)
         accuracies["gold_based_percentage"] = self.percentage_score(total_gold_team1 / (total_gold_team1 +
                                                                                         total_gold_team2), Y_test)
 
 
         accuracies["gold_based_abs"] = self.abs_score(total_gold_team1 > total_gold_team2, Y_test)
 
-        total_kills_team1 = np.sum(X_test[:, Input.kda_start:Input.kda_half:3], axis=1)
-        total_kills_team2 = np.sum(X_test[:, Input.kda_half:Input.kda_end:3], axis=1)
+        total_kills_team1 = np.sum(X_test[:, Input.indices["start"]["kills"]:Input.indices["half"]["kills"]], axis=1)
+        total_kills_team2 = np.sum(X_test[:, Input.indices["half"]["kills"]:Input.indices["end"]["kills"]], axis=1)
         sum_team_kills = total_kills_team1 + total_kills_team2
         zero_indices = sum_team_kills == 0
         nonzero_indices = sum_team_kills != 0
         kda_based_win_percentage = np.zeros(sum_team_kills.shape)
         kda_based_win_percentage[zero_indices] = 0.5
         kda_based_win_percentage[nonzero_indices] = total_kills_team1[nonzero_indices] / sum_team_kills[nonzero_indices]
-        accuracies["kda_based_percentage"] = self.percentage_score(kda_based_win_percentage, Y_test)
+        accuracies["kill_based_percentage"] = self.percentage_score(kda_based_win_percentage, Y_test)
 
         kda_based_win_abs = np.zeros(sum_team_kills.shape)
         kda_based_win_abs[total_kills_team1 == total_kills_team2] = 0.5
         kda_based_win_abs[total_kills_team1 > total_kills_team2] = 1
         kda_based_win_abs[total_kills_team1 < total_kills_team2] = 0
-        accuracies["kda_based_abs"] = self.abs_score(kda_based_win_abs, Y_test)
+        accuracies["kill_based_abs"] = self.abs_score(kda_based_win_abs, Y_test)
 
         return accuracies
 
@@ -535,16 +535,17 @@ class WinPredTrainer(Trainer):
         X_result = []
         match_id_blacklist = set()
         for i, example in enumerate(X[cond]):
-            if example[0] in match_id_blacklist:
+            current_matchid = example[Input.indices["start"]["gameid"]]
+            if current_matchid in match_id_blacklist:
                 continue
             else:
-                match_id_blacklist.add(example[0])
-                X_result.append(example[1:])
+                match_id_blacklist.add(current_matchid)
+                X_result.append(example)
         return np.array(X_result)
 
 
     def flip_data(self, X):
-        X_result = np.concatenate([X.flip_teams().data, X.data], axis=0)
+        X_result = np.concatenate([Input.flip_teams(X), X], axis=0)
         Y_result = [0] * (len(X_result) // 2) + [1] * (len(X_result) // 2)
         Y_result = np.array(Y_result)[:, np.newaxis]
 
@@ -1880,17 +1881,17 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
 
-    # t = BootsTrainer()
-    # t.train()
-
+    t = BootsTrainer()
+    t.train()
+    t = StarterItemsTrainer()
+    t.train()
     t = FirstItemsTrainer()
     t.train()
     t = NextItemsTrainer()
     t.build_next_items_late_game_model()
-    t = StarterItemsTrainer()
-    t.train()
     t = NextItemsTrainer()
     t.build_next_items_standard_game_model()
+
 
     # t = ItemImgTrainer()
     # t.build_new_img_model()
