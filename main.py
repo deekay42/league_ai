@@ -208,7 +208,7 @@ class Main(FileSystemEventHandler):
         # if Main.shouldTerminate():
         #     return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
-        # self.next_item_model_late.load_model()
+        self.next_item_model_late.load_model()
         # if Main.shouldTerminate():
         #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
@@ -216,11 +216,11 @@ class Main(FileSystemEventHandler):
         # if Main.shouldTerminate():
         #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
-        # self.next_item_model_first_item.load_model()
+        self.next_item_model_first_item.load_model()
         # if Main.shouldTerminate():
         #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
-        # self.next_item_model_boots.load_model()
+        self.next_item_model_boots.load_model()
         # if Main.shouldTerminate():
         #     return
         self.champ_img_model = ChampImgModel(self.res_converter, dll_hook=dll_hook)
@@ -963,7 +963,7 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-m.process_image(f"test_data/screenshots/Screen107.png")
+m.process_image(f"test_data/screenshots/Screen109.png")
 # for i in range(678,720):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 

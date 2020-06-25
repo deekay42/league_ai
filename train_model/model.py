@@ -781,17 +781,11 @@ class WinPredModel(GameModel):
 
     def __init__(self, type, dll_hook=None, model_path=None, network_config=None):
 
-        super().__init__(dll_hook)
-
         if type == "standard":
-            if model_path is None:
-                model_path = app_constants.model_paths["best"]["win_pred_standard"]
             self.elements = "win_pred_standard"
         elif type == "init":
-            if model_path is None:
-                model_path = app_constants.model_paths["best"]["win_pred_init"]
             self.elements = "win_pred_init"
-
+        super().__init__(dll_hook=dll_hook, model_path=model_path)
 
         if model_path is None:
             self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]

@@ -200,7 +200,7 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         X[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = deaths
         X[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = assists
 
-        blues = train_test[:, legacy_indices["start"]["first_team_blue"]]
+        blues = train_test[:, legacy_indices["start"]["first_team_blue"]].astype(np.int32)
         blue_side = np.zeros((train_test.shape[0], 2))
         blue_side[np.arange(blues.shape[0]), blues] = 1
         X[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]] = blue_side
@@ -469,6 +469,6 @@ def run_init_fit_scale():
 
 
 
-# import time
-# time.sleep(5)
-# run_init_fit_scale()
+import time
+time.sleep(5)
+run_init_fit_scale()

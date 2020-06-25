@@ -356,6 +356,13 @@ class LolNetwork(Network):
                 "champ_emb_dim"])).astype(np.float32)
 
 
+    def calc_team_diff(self, vec):
+        result = tf.expand_dims(vec[:, self.game_config["champs_per_team"]:self.game_config["champs_per_game"]], -1) - \
+                 tf.expand_dims(vec[:, :self.game_config["champs_per_team"]], -1)
+        result = tf.reshape(result, (-1, 5))
+        return result
+
+
 
 
 class WinPredNetwork(LolNetwork):
@@ -380,10 +387,8 @@ class WinPredNetwork(LolNetwork):
         noise = self.calc_noise(flattened_vec, noise_name)
         noise = tf.identity(noise, "noise")
         noised_vec = flattened_vec + noise
-        noised_vec = tf.clip_by_value(noised_vec, game_constants.game_config_scaled["min"][noise_name],
-                                      game_constants.game_config_scaled[
-            "max"][
-            noise_name])
+        noised_vec = tf.clip_by_value(noised_vec, game_constants.min_clip_scaled[noise_name],
+                                      game_constants.max_clip_scaled[noise_name])
         in_vec = tf.reshape(noised_vec, orig_shape)
         return in_vec
 
@@ -446,8 +451,8 @@ class WinPredNetwork(LolNetwork):
         assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
 
         total_gold = in_vec[:, Input.indices["start"]["total_gold"]:Input.indices["end"]["total_gold"]]
-        baron_active = in_vec[:, Input.indices["start"]["baron"]:Input.indices["end"]["baron"]]
-        elder_active = in_vec[:, Input.indices["start"]["elder"]:Input.indices["end"]["elder"]]
+        baron = in_vec[:, Input.indices["start"]["baron"]:Input.indices["end"]["baron"]]
+        elder = in_vec[:, Input.indices["start"]["elder"]:Input.indices["end"]["elder"]]
         dragons_killed = in_vec[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]]
         dragon_soul_type = in_vec[:,Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]]
         turrets_destroyed = in_vec[:, Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
@@ -489,12 +494,12 @@ class WinPredNetwork(LolNetwork):
         all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["champs_per_game"], self.game_config["total_num_champs"]))
 
-        baron_active = tf.identity(baron_active, name='baron_active')
-        baron_active = self.apply_noise_flip_one_hot(baron_active, "baron_active")
-        baron_active = tf.identity(baron_active, name='baron_active_noised')
-        elder_active = tf.identity(elder_active, name='elder_active')
-        elder_active = self.apply_noise_flip_one_hot(elder_active, "elder_active")
-        elder_active = tf.identity(elder_active, name='elder_active_noised')
+        baron = tf.identity(baron, name='baron')
+        baron = self.apply_noise_flip_one_hot(baron, "baron")
+        baron = tf.identity(baron, name='baron_noised')
+        elder = tf.identity(elder, name='elder')
+        elder = self.apply_noise_flip_one_hot(elder, "elder")
+        elder = tf.identity(elder, name='elder_noised')
 
         blue_side = tf.identity(blue_side, name='blue_side')
         blue_side = self.apply_noise_flip_one_hot(blue_side, "blue_side")
@@ -502,37 +507,16 @@ class WinPredNetwork(LolNetwork):
 
         kd = kills-deaths
 
-        opp_lvl = tf.expand_dims(lvl[:, 5:10], -1)
-        opp_cs = tf.expand_dims(cs[:, 5:10], -1)
-        opp_kills = tf.expand_dims(kills[:, 5:10], -1)
-        opp_deaths = tf.expand_dims(deaths[:, 5:10], -1)
-        opp_assists = tf.expand_dims(assists[:, 5:10], -1)
 
-        my_lvl = tf.expand_dims(lvl[:, :5], -1)
-        my_cs = tf.expand_dims(cs[:, :5], -1)
-        my_kills = tf.expand_dims(kills[:, :5], -1)
-        my_deaths = tf.expand_dims(deaths[:, :5], -1)
-        my_assists = tf.expand_dims(assists[:, :5], -1)
+        kills_diff = self.calc_team_diff(kills)
+        deaths_diff = self.calc_team_diff(deaths)
+        assists_diff = self.calc_team_diff(assists)
+        lvl_diff = self.calc_team_diff(lvl)
+        cs_diff = self.calc_team_diff(cs)
+        total_gold_diff = self.calc_team_diff(total_gold)
 
-        kills_diff = opp_kills - my_kills
-        deaths_diff = opp_deaths - my_deaths
-        assists_diff = opp_assists - my_assists
-        lvl_diff = opp_lvl - my_lvl
-        cs_diff = opp_cs - my_cs
-
-        kills_diff = tf.reshape(kills_diff, (-1, 5))
-        deaths_diff = tf.reshape(deaths_diff, (-1, 5))
-        assists_diff = tf.reshape(assists_diff, (-1, 5))
-        cs_diff = tf.reshape(cs_diff, (-1, 5))
-        lvl_diff = tf.reshape(lvl_diff, (-1, 5))
-
-
-
-        total_gold = tf.reshape(total_gold, (-1, 2, 5))
-        total_gold_diff = total_gold[:, 0] - total_gold[:, 1]
-
-
-        team_kills_diff = opp_kills - my_kills
+        team_kills_diff = tf.reduce_sum(kills_diff, keep_dims=True, axis=1)
+        team_gold_diff = tf.reduce_sum(total_gold_diff, keep_dims=True, axis=1)
 
         team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
         team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
@@ -551,6 +535,7 @@ class WinPredNetwork(LolNetwork):
             [
                 # total_gold,
                 total_gold_diff,
+                team_gold_diff,
                 # team1_total_kills,
                 # team2_total_kills,
                 team_kills_diff,
@@ -563,8 +548,8 @@ class WinPredNetwork(LolNetwork):
                 # kda,
                 lvl,
                 # total_cs,
-                baron_active,
-                elder_active,
+                baron,
+                elder,
                 dragons_killed,
                 dragons_killed_sum,
                 dragon_soul_obtained,
@@ -689,7 +674,7 @@ class NextItemNetwork(LolNetwork):
     def build(self):
         pass
 
-    def calc_diff(self, vec, pos_index):
+    def calc_diff_from_target_summ(self, vec, pos_index):
         target_summ_vec = tf.expand_dims(tf.gather_nd(vec, pos_index), 1)
         opp_vec = tf.expand_dims(vec[:, 5:10], -1)
         target_summ_vec_exp = tf.expand_dims(tf.tile(target_summ_vec, multiples=[1, 5]), -1)
@@ -1019,11 +1004,11 @@ class StandardNextItemNetwork(NextItemNetwork):
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
 
-        cs_diff = self.calc_diff(cs, pos_index)
-        lvl_diff = self.calc_diff(lvl, pos_index)
-        kills_diff = self.calc_diff(kills, pos_index)
-        deaths_diff = self.calc_diff(deaths, pos_index)
-        assists_diff = self.calc_diff(assists, pos_index)
+        cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
+        lvl_diff = self.calc_diff_from_target_summ(lvl, pos_index)
+        kills_diff = self.calc_diff_from_target_summ(kills, pos_index)
+        deaths_diff = self.calc_diff_from_target_summ(deaths, pos_index)
+        assists_diff = self.calc_diff_from_target_summ(assists, pos_index)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
         pos_one_hot_tiled = tf.tile(pos_one_hot, multiples=[1, 5])
@@ -1181,11 +1166,11 @@ class NextItemLateGameNetwork(NextItemNetwork):
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
 
-        cs_diff = self.calc_diff(cs, pos_index)
-        lvl_diff = self.calc_diff(lvl, pos_index)
-        kills_diff = self.calc_diff(kills, pos_index)
-        deaths_diff = self.calc_diff(deaths, pos_index)
-        assists_diff = self.calc_diff(assists, pos_index)
+        cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
+        lvl_diff = self.calc_diff_from_target_summ(lvl, pos_index)
+        kills_diff = self.calc_diff_from_target_summ(kills, pos_index)
+        deaths_diff = self.calc_diff_from_target_summ(deaths, pos_index)
+        assists_diff = self.calc_diff_from_target_summ(assists, pos_index)
 
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
         pos_one_hot = tf.tile(pos_one_hot, multiples=[1, 5])

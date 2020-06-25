@@ -699,6 +699,10 @@ class ProcessNextItemsTrainingData:
                         continue
                     y_item = self.item_manager.lookup_by("id", str(event['itemId']))
                     y = y_item["int"]
+
+
+
+
                     uninf_example = [[pos], champs, np.ravel(items_at_time_x),
                                                      np.around(event['total_gold']).astype(int),
                                                      np.around(event['cs']).astype(int),
