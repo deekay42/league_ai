@@ -255,16 +255,16 @@ class Input:
                 # min_mm = np.tile(params[slice_name]["minmax"]["min"], [slice_len])
                 # scale_mm = np.tile(params[slice_name]["minmax"]["scale"], [slice_len])
 
-                self.power_transformers[slice_name] = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
+                # self.power_transformers[slice_name] = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
                 self.standard_scalers[slice_name] = heavy_imports.StandardScaler()
-                self.minmax_scalers[slice_name] = heavy_imports.MinMaxScaler()
+                # self.minmax_scalers[slice_name] = heavy_imports.MinMaxScaler()
 
-                self.power_transformers[slice_name].lambdas_ = lambdas
+                # self.power_transformers[slice_name].lambdas_ = lambdas
                 self.standard_scalers[slice_name].mean_ = mean
                 self.standard_scalers[slice_name].var_ = var
                 self.standard_scalers[slice_name].scale_ = scale_norm
-                self.minmax_scalers[slice_name].min_ = min_mm
-                self.minmax_scalers[slice_name].scale_ = scale_mm
+                # self.minmax_scalers[slice_name].min_ = min_mm
+                # self.minmax_scalers[slice_name].scale_ = scale_mm
 
 
         def scale_inputs(self, X):
