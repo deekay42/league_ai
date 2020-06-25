@@ -248,12 +248,12 @@ class Input:
 
             for slice_name in Input.numeric_slices:
                 slice_len = Input.indices["end"][slice_name] - Input.indices["start"][slice_name]
-                lambdas = np.tile(params[slice_name]["yeo_lambdas"], [slice_len])
+                # lambdas = np.tile(params[slice_name]["yeo_lambdas"], [slice_len])
                 scale_norm = np.tile(params[slice_name]["standard"]["scale"], [slice_len])
                 mean = np.tile(params[slice_name]["standard"]["mean"], [slice_len])
                 var = np.tile(params[slice_name]["standard"]["var"], [slice_len])
-                min_mm = np.tile(params[slice_name]["minmax"]["min"], [slice_len])
-                scale_mm = np.tile(params[slice_name]["minmax"]["scale"], [slice_len])
+                # min_mm = np.tile(params[slice_name]["minmax"]["min"], [slice_len])
+                # scale_mm = np.tile(params[slice_name]["minmax"]["scale"], [slice_len])
 
                 self.power_transformers[slice_name] = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
                 self.standard_scalers[slice_name] = heavy_imports.StandardScaler()
