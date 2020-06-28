@@ -149,11 +149,13 @@ class Input:
 
     @staticmethod
     def dict2vec(input_dict):
-
-        x = np.zeros(shape=Input.input_len, dtype=np.float32)
+        x = np.zeros(shape=Input.len, dtype=np.uint64)
         for slice_name in Input.all_slices:
-            x[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = input_dict[slice_name] if\
-                slice_name in input_dict else 0
+            if slice_name in input_dict:
+                assert np.all(np.array(input_dict[slice_name]) >= 0)
+                x[Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = input_dict[slice_name]
+            else:
+                x[Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = 0
         return x
 
 
@@ -202,7 +204,7 @@ class Input:
 
 
     @staticmethod
-    def scale(scale_dict):
+    def scale_abs(scale_dict):
         result = dict(scale_dict)
         X = np.zeros(Input.len)
         for slice_name in Input.numeric_slices:
@@ -210,6 +212,21 @@ class Input:
         X = Input().scale_inputs(X[np.newaxis, :])
         for slice_name in Input.numeric_slices:
             result[slice_name] = X[0][Input.indices["start"][slice_name]]
+        return result
+
+
+    @staticmethod
+    def scale_rel(scale_dict):
+        result = dict(scale_dict)
+        X = np.zeros(Input.len)
+        for slice_name in Input.numeric_slices:
+            X[Input.indices["start"][slice_name]] = scale_dict[slice_name]
+            X[Input.indices["start"][slice_name]:Input.indices["end"][
+                slice_name]] = X[Input.indices["start"][slice_name]:Input.indices["end"][
+                slice_name]] / Input().standard_scalers[
+                                   slice_name].scale_
+            result[slice_name] = X[Input.indices["start"][slice_name]]
+
         return result
 
 
@@ -268,6 +285,8 @@ class Input:
 
 
         def scale_inputs(self, X):
+            if X.size==0:
+                return np.empty((1,Input.len))
             result = np.copy(X).astype(np.float32)
             for slice_name in Input.numeric_slices:
                 d = result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]]

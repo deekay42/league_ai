@@ -20,6 +20,8 @@ import sklearn
 from tflearn.data_utils import to_categorical
 from scipy import spatial
 from train_model.input_vector import Input
+from prettytable import PrettyTable
+
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -234,12 +236,12 @@ class WinPredTrainer(Trainer):
                       "blue_side": 0.0,
                       "champs": 0.0,
                       "turrets_destroyed": 0.0,
-                        "current_gold": 0.0}
+                      "current_gold": 0.0}
 
         gauss_noise = {"kills": 0.5,
                          "deaths": 0.5,
                          "assists": 0.5,
-                         "total_gold": 500 + 125,
+                         "total_gold": 125,
                          "cs": 10,
                          "lvl": 0.4,
                          "dragons_killed": 0.2,
@@ -253,7 +255,7 @@ class WinPredTrainer(Trainer):
         self.network_config = dict()
         self.network_config["train"] = {
                 "learning_rate": 0.001,
-                "stats_dropout": 0.9,
+                "stats_dropout": 1.0,
                 "champ_dropout": 0.2,
                 "noise": no_noise}
 
@@ -271,7 +273,7 @@ class WinPredTrainer(Trainer):
             "noise": no_noise
         }
 
-        self.network_config["standard_eval"] = {
+        self.network_config["standard"] = {
             "learning_rate": 0.001,
             "stats_dropout": 1.0,
             "champ_dropout": 1.0,
@@ -279,19 +281,19 @@ class WinPredTrainer(Trainer):
         }
 
 
-        self.network = WinPredNetwork(self.network_config["train"])
+        self.network_arch = WinPredNetwork(self.network_config["train"])
         self.model = WinPredModel("standard")
 
         self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
         self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
         for config in self.network_config:
-            self.network_config[config]["noise"] = Input.scale(self.network_config[config]["noise"])
+            self.network_config[config]["noise"] = Input.scale_rel(self.network_config[config]["noise"])
 
         game_constants.min_clip_scaled = dict()
         game_constants.max_clip_scaled = dict()
 
-        game_constants.min_clip_scaled = Input.scale(game_constants.min_clip)
-        game_constants.max_clip_scaled = Input.scale(game_constants.max_clip)
+        game_constants.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
+        game_constants.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
 
 
 
@@ -301,7 +303,7 @@ class WinPredTrainer(Trainer):
             with self.graph.as_default():
                 with self.session:
                     tflearn.is_training(True, self.session)
-                    self.network = self.network.build()
+                    self.network = self.network_arch.build()
                     model = tflearn.DNN(self.network, session=self.session)
                     self.session.run(tf.global_variables_initializer())
                     if hasattr(self, 'champ_embs') and self.champ_embs is not None:
@@ -316,9 +318,12 @@ class WinPredTrainer(Trainer):
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
-                        model.save(self.train_path + self.model_name + str(epoch + 1))
-                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
-                        scores.append(score)
+                        print(model.evaluate(self.X_unflipped, self.Y_unflipped, batch_size=self.batch_size)[0])
+                        print(model.evaluate(Input.flip_teams(self.X_unflipped), np.reshape([0.0] * self.X.shape[0], (-1,1)),
+                                             batch_size=self.batch_size)[0])
+                        # model.save(self.train_path + self.model_name + str(epoch + 1))
+                        # score = self.eval_model(model, epoch, self.X_test, self.Y_test)
+                        # scores.append(score)
         return scores
 
 
@@ -351,69 +356,75 @@ class WinPredTrainer(Trainer):
 
 
     def train(self):
-        print("Loading training data")
+
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_uninf"])
         dataloader_pro = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["win_pred"])
         # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
-        self.X, _ = dataloader_elite.get_train_data()
-        self.X = self.X[:50000]
-        X_test_raw_pro, _ = dataloader_pro.get_test_data()
-
+        # self.X, _ = dataloader_elite.get_train_data()
+        self.X = np.load("small.npy")
+        # self.X = np.zeros((100,226))
+        # self.X = self.X[::100][:50000]
+        self.X = np.tile(self.X[self.X[:,Input.indices["start"]["total_gold"]]>500][::100], (100, 1))
+        # self.X = self.X[self.X[:, Input.indices["start"]["total_gold"]] > 500][::1000]
+        # X_test_raw_pro, _ = dataloader_pro.get_test_data()
+        # X_test_raw_pro = np.zeros((100, 226))
         print("Loading elite test data")
-        X_test_raw, _ = dataloader_elite.get_test_data()
+        # X_test_raw, _ = dataloader_elite.get_test_data()
+        # X_test_raw = np.zeros((100, 226))
 
         # X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
-        # X_test_raw_pro = np.concatenate([X_test_raw_pro[:,0:1][:,], np.zeros((X_test_raw_pro.shape[0], 1)),
-        #                                  X_test_raw_pro[:,1:]], axis=1)
-        X_test_raw = X_test_raw[:5000]
-        X_test_raw_pro = X_test_raw_pro[:5000]
-
-        # X_test_raw = Input(X_test_raw)
-        # X_test_raw_pro = Input(X_test_raw_pro)
-
+        # X_test_raw = X_test_raw[::100][:5000]
+        # X_test_raw_pro = X_test_raw_pro[::100][:5000]
 
 
         self.X = Input().scale_inputs(self.X)
+
+        self.X_unflipped = self.X
+        self.Y_unflipped = np.reshape([1.0] * self.X.shape[0], (-1,1))
+
         self.X, self.Y = self.flip_data(self.X)
-        # utils.uniform_shuffle(self.X, self.Y)
 
-        self.test_sets = {}
+        # self.X = np.zeros((100000, Input.len))
+        # self.X[::2,Input.indices["start"]["total_gold"]] = 1
+        # self.Y = np.array([[1], [0]] * 50000)
+        # self.Y = np.zeros((100000, 1))
+        # self.Y[::2] = 1
 
-        for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
+        # misc.uniform_shuffle(self.X, self.Y)
 
-            # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
-
-            self.test_sets[(tst_desc, "all")] = test_set_type
-            self.test_sets[(tst_desc, "all")] = Input().scale_inputs(test_set_type)
-
-
-            num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
-                "dragons_killed"]], axis=1)
-            num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
-                "kills"]], axis=1)
-            num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
-                "turrets_destroyed"]], axis=1)
-            max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
-                             axis=1)
-
-
-            self.test_sets[(tst_desc, "first_drag")] = self.process_win_pred_measure(test_set_type,
-                                                                                     num_drags_killed == 1)
-            self.test_sets[(tst_desc, "first_kill")] = self.process_win_pred_measure(test_set_type,
-                                                                                     num_kills == 1)
-            self.test_sets[(tst_desc, "first_tower")] = self.process_win_pred_measure(test_set_type,
-                                                                                      num_towers == 1)
-
-            self.test_sets[(tst_desc, "init")] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
-            self.test_sets[(tst_desc, "first_lvl_6")] = self.process_win_pred_measure(test_set_type,
-                                                                                      max_lvl == 6)
-            self.test_sets[(tst_desc, "first_lvl_11")] = self.process_win_pred_measure(test_set_type,
-                                                                                       max_lvl == 11)
-            self.test_sets[(tst_desc, "first_lvl_16")] = self.process_win_pred_measure(test_set_type,
-                                                                                       max_lvl == 16)
+        # self.test_sets = {}
+        #
+        # for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
+        #     self.test_sets[tst_desc] = dict()
+        #     # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
+        #
+        #     self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
+        #
+        #     num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
+        #         "dragons_killed"]], axis=1)
+        #     num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
+        #         "kills"]], axis=1)
+        #     num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
+        #         "turrets_destroyed"]], axis=1)
+        #     max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
+        #                      axis=1)
+        #
+        #     self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type,
+        #                                                                              num_drags_killed == 1)
+        #     self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type,
+        #                                                                              num_kills == 1)
+        #     self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type,
+        #                                                                               num_towers == 1)
+        #     self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
+        #     self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type,
+        #                                                                               max_lvl == 6)
+        #     self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type,
+        #                                                                                max_lvl == 11)
+        #     self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type,
+        #                                                                                max_lvl == 16)
 
         self.Y_test = self.X_test = []
         self.build_new_model()
@@ -427,108 +438,146 @@ class WinPredTrainer(Trainer):
 
 
     def percentage_score(self, preds, targets):
-        error = np.abs(targets - preds)
+        error = np.abs(np.ravel(targets) - np.ravel(preds))
         score = 1 - error
         return np.mean(score)
 
 
     def abs_score(self, preds, targets):
-        corrects = np.equal(np.round(preds), np.ravel(targets))
+        corrects = np.equal(np.ravel(np.round(preds)), np.ravel(targets))
         return np.mean(corrects)
 
 
-    def run_network_configs(self, model, network_config_name, X_test, tile_factor):
+    def eval(self, model, X_test, tile_factor):
         Y_test = [[1.]] * X_test.shape[0]
         Y_test_flipped = [[0.]] * X_test.shape[0]
         accuracies = dict()
         preds_reg, _ = model.bayes_predict(X_test, tile_factor=tile_factor)
-        accuracies[network_config_name + "_reg_percentage"] = self.percentage_score(preds_reg, Y_test)
-        accuracies[network_config_name + "_reg_abs"] = self.abs_score(preds_reg, Y_test)
+        accuracies["%_reg"] = self.percentage_score(preds_reg, Y_test)
+        accuracies["abs_reg"] = self.abs_score(preds_reg, Y_test)
 
         X_test_flipped = Input().flip_teams(X_test)
         preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
-        accuracies[network_config_name + "_reg_percentage_flipped"] = self.percentage_score(preds_flipped,
-                                                                                            Y_test_flipped)
-        accuracies[network_config_name + "_reg_abs_flipped"] = self.abs_score(preds_flipped, Y_test_flipped)
+        accuracies["%_flipped"] = self.percentage_score(preds_flipped, Y_test_flipped)
+        accuracies["abs_flipped"] = self.abs_score(preds_flipped, Y_test_flipped)
 
         preds_sym = preds_reg / (preds_reg + preds_flipped)
-        accuracies[network_config_name + "_reg_percentage_sym"] = self.percentage_score(preds_sym, Y_test)
-        accuracies[network_config_name + "_reg_abs_sym"] = self.abs_score(preds_sym, Y_test)
+        accuracies["%_sym"] = self.percentage_score(preds_sym, Y_test)
+        accuracies["abs_sym"] = self.abs_score(preds_sym, Y_test)
 
         return accuracies
 
 
-    def eval_test_set(self, model, X_test, epoch):
-        Y_test = [[1.]] * X_test.shape[0]
-        Y_test_flipped = [[0.]] * X_test.shape[0]
-        model_path = app_constants.model_paths["train"]["win_pred_standard"] + "my_model" + str(epoch+1)
-
+    def calc_kda_based_win(self, X_test):
         accuracies = dict()
-        accuracies["raw_reg"] = model.evaluate(np.array(X_test), np.array(Y_test), batch_size=self.batch_size)
-        accuracies["raw_flipped"] = model.evaluate(Input().flip_teams(X_test), np.array(Y_test_flipped),
-                                                   batch_size=self.batch_size)
+        Y_test = [[1.]] * X_test.shape[0]
+        kills_scaled = X_test[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
+        kills_unscaled = Input().standard_scalers["kills"].inverse_transform(kills_scaled)
+        kills_team1_unscaled_sum = np.sum(kills_unscaled[:, :game_constants.CHAMPS_PER_TEAM], axis=1)
+        kills_team2_unscaled_sum = np.sum(kills_unscaled[:, game_constants.CHAMPS_PER_TEAM:], axis=1)
 
-        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard_eval"])
-        model.load_model()
-        sub_accuracies = self.run_network_configs(model, "standard", X_test, 1)
-        accuracies.update(sub_accuracies)
-
-        # model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["dropout"])
-        # model.load_model()
-        # sub_accuracies = self.run_network_configs(model, "dropout", X_test)
-        # accuracies.update(sub_accuracies)
-
-        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
-        model.load_model()
-        sub_accuracies = self.run_network_configs(model, "gauss", X_test, 128)
-        accuracies.update(sub_accuracies)
-
-        total_gold_team1 = np.sum(X_test[:,Input.indices["start"]["total_gold"]:Input.indices["half"]["total_gold"]],
-                                  axis=1)
-        total_gold_team2 = np.sum(X_test[:, Input.indices["start"]["total_gold"]:Input.indices["half"]["total_gold"]],
-                                  axis=1)
-        accuracies["gold_based_percentage"] = self.percentage_score(total_gold_team1 / (total_gold_team1 +
-                                                                                        total_gold_team2), Y_test)
-
-
-        accuracies["gold_based_abs"] = self.abs_score(total_gold_team1 > total_gold_team2, Y_test)
-
-        total_kills_team1 = np.sum(X_test[:, Input.indices["start"]["kills"]:Input.indices["half"]["kills"]], axis=1)
-        total_kills_team2 = np.sum(X_test[:, Input.indices["half"]["kills"]:Input.indices["end"]["kills"]], axis=1)
-        sum_team_kills = total_kills_team1 + total_kills_team2
+        sum_team_kills = kills_team1_unscaled_sum + kills_team2_unscaled_sum
         zero_indices = sum_team_kills == 0
         nonzero_indices = sum_team_kills != 0
         kda_based_win_percentage = np.zeros(sum_team_kills.shape)
         kda_based_win_percentage[zero_indices] = 0.5
-        kda_based_win_percentage[nonzero_indices] = total_kills_team1[nonzero_indices] / sum_team_kills[nonzero_indices]
-        accuracies["kill_based_percentage"] = self.percentage_score(kda_based_win_percentage, Y_test)
+        kda_based_win_percentage[nonzero_indices] = kills_team1_unscaled_sum[nonzero_indices] / sum_team_kills[
+            nonzero_indices]
+        percentage_score = self.percentage_score(kda_based_win_percentage, Y_test)
 
         kda_based_win_abs = np.zeros(sum_team_kills.shape)
-        kda_based_win_abs[total_kills_team1 == total_kills_team2] = 0.5
-        kda_based_win_abs[total_kills_team1 > total_kills_team2] = 1
-        kda_based_win_abs[total_kills_team1 < total_kills_team2] = 0
-        accuracies["kill_based_abs"] = self.abs_score(kda_based_win_abs, Y_test)
+        kda_based_win_abs[kills_team1_unscaled_sum == kills_team2_unscaled_sum] = 0.5
+        kda_based_win_abs[kills_team1_unscaled_sum > kills_team2_unscaled_sum] = 1
+        kda_based_win_abs[kills_team1_unscaled_sum < kills_team2_unscaled_sum] = 0
+        abs_score = self.abs_score(kda_based_win_abs, Y_test)
+
+        accuracies["%_reg"] = percentage_score
+        accuracies["abs_reg"] = abs_score
+        accuracies["%_flipped"] = percentage_score
+        accuracies["abs_flipped"] = abs_score
+        accuracies["%_sym"] = percentage_score
+        accuracies["abs_sym"] = abs_score
 
         return accuracies
 
 
+    def calc_gold_based_win(self, X_test):
+        Y_test = [[1.]] * X_test.shape[0]
+        accuracies = dict()
+        total_gold_scaled = X_test[:, Input.indices["start"]["total_gold"]:Input.indices["end"]["total_gold"]]
+        total_gold_unscaled = Input().standard_scalers["total_gold"].inverse_transform(total_gold_scaled)
+        total_gold_team1_unscaled_sum = np.sum(total_gold_unscaled[:, :game_constants.CHAMPS_PER_TEAM], axis=1)
+        total_gold_team2_unscaled_sum = np.sum(total_gold_unscaled[:, game_constants.CHAMPS_PER_TEAM:], axis=1)
+        percentage_score = self.percentage_score(total_gold_team1_unscaled_sum / (total_gold_team1_unscaled_sum +
+                                                                                         total_gold_team2_unscaled_sum),
+                                                        Y_test)
+        abs_score = self.abs_score(total_gold_team1_unscaled_sum > total_gold_team2_unscaled_sum,
+                                                   Y_test)
+        accuracies["%_reg"] = percentage_score
+        accuracies["abs_reg"] = abs_score
+        accuracies["%_flipped"] = percentage_score
+        accuracies["abs_flipped"] = abs_score
+        accuracies["%_sym"] = percentage_score
+        accuracies["abs_sym"] = abs_score
+
+        return accuracies
+
+
+    def run_network_configs(self, model, tile_factor):
+        accuracies = dict()
+        model.load_model()
+        for test_set_name in self.test_sets:
+            accuracies[test_set_name] = dict()
+            for test_name, X in self.test_sets[test_set_name].items():
+                accuracies[test_set_name][test_name] = self.eval(model, X, tile_factor)
+        return accuracies
+
+
     def eval_model(self, model, epoch, X_test, Y_test):
-        accs = []
+        accuracies = dict()
         for output in [sys.stdout, self.logfile]:
             output.write("Epoch {0}\n".format(epoch + 1))
 
-        for name, X in self.test_sets.items():
-            current_accs = self.eval_test_set(model, X, epoch)
-            accs.append(current_accs)
+        model_path = app_constants.model_paths["train"]["win_pred_standard"] + "my_model" + str(epoch + 1)
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard"])
+        accuracies["standard"] = self.run_network_configs(model, 1)
+
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
+        accuracies["gauss"] = self.run_network_configs(model, 128)
+
+        accuracies["gold"] = dict()
+        for test_set_name in self.test_sets:
+            accuracies["gold"][test_set_name] = dict()
+            for test_name, X in self.test_sets[test_set_name].items():
+                accuracies["gold"][test_set_name][test_name] = self.calc_gold_based_win(X)
+
+        accuracies["kills"] = dict()
+        for test_set_name in self.test_sets:
+            accuracies["kills"][test_set_name] = dict()
+            for test_name, X in self.test_sets[test_set_name].items():
+                accuracies["kills"][test_set_name][test_name] = self.calc_kda_based_win(X)
+
+        for model_name in accuracies:
+            print(model_name.upper() +"  " +"*"*50)
+            t = PrettyTable([' ', '', '%_sym', 'abs_sym', '% reg', '% flip', 'abs reg', 'abs flip'])
+            for test_set_name in accuracies[model_name]:
+                t.add_row([test_set_name, '','','','','','',''])
+                for test_name in accuracies[model_name][test_set_name]:
+                    tmp = accuracies[model_name][test_set_name][test_name]
+                    tmp = [tmp["%_sym"], tmp["abs_sym"], tmp["%_reg"], tmp["%_flipped"], tmp["abs_reg"],
+                           tmp["abs_flipped"]]
+                    tmp = np.round(tmp, decimals=3).astype(str).tolist()
+                    t.add_row(['', test_name] + tmp)
             for output in [sys.stdout, self.logfile]:
-                for measure in current_accs:
-                    output.write("{0} {1} {1:.4f}\n".format(name, measure, current_accs[measure]))
+                output.write(t.get_string())
+                output.write('\n\n')
+
 
         for output in [sys.stdout, self.logfile]:
             output.write("\n\n")
             output.flush()
 
-        return accs
+        return accuracies
 
 
     def extract_first_occurence_per_match(self, X, cond):
@@ -548,6 +597,7 @@ class WinPredTrainer(Trainer):
         X_result = np.concatenate([Input.flip_teams(X), X], axis=0)
         Y_result = [0] * (len(X_result) // 2) + [1] * (len(X_result) // 2)
         Y_result = np.array(Y_result)[:, np.newaxis]
+
 
         return X_result, Y_result
 
@@ -1881,14 +1931,14 @@ if __name__ == "__main__":
     # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
     #                           "opp_champ_embs_dst")
 
-    t = BootsTrainer()
-    t.train()
-    t = StarterItemsTrainer()
-    t.train()
-    t = FirstItemsTrainer()
-    t.train()
-    t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
+    # t = BootsTrainer()
+    # t.train()
+    # t = StarterItemsTrainer()
+    # t.train()
+    # t = FirstItemsTrainer()
+    # t.train()
+    # t = NextItemsTrainer()
+    # t.build_next_items_late_game_model()
     t = NextItemsTrainer()
     t.build_next_items_standard_game_model()
 
