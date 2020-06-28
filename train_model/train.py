@@ -1223,7 +1223,7 @@ class NextItemsTrainer(Trainer):
         self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
         self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
         self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
-        
+
 
         self.train_y_distrib = Counter(self.Y)
         self.test_y_distrib = Counter(self.Y_test)

@@ -1121,6 +1121,7 @@ class NextItemLateGameNetwork(NextItemNetwork):
         items_by_champ_k_hot = items[:, :, 1:]
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        target_summ_items = dropout(target_summ_items, 0.8)
 
         cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
         lvl_diff = self.calc_diff_from_target_summ(lvl, pos_index)
