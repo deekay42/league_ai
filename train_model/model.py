@@ -933,6 +933,8 @@ class NextItemModel(GameModel):
         x = np.tile(x,num_increments).reshape((num_increments,-1))
         x[:, Input.indices["start"]["current_gold"]:Input.indices["end"]["current_gold"]] = current_gold_list
         x = Input().scale_inputs(x)
+        if self.type in {"standard"}:
+            x = np.concatenate([x, [[0]] * x.shape[0]], axis=1)
         result, probabilities = self.predict(x, blackout_indices)
         return result[zero_offset], result, probabilities[zero_offset]
 
