@@ -1194,23 +1194,35 @@ class NextItemsTrainer(Trainer):
         self.train_path = app_constants.model_paths["train"]["next_items_standard"]
         self.best_path = app_constants.model_paths["best"]["next_items_standard"]
 
-        print("Loading training data")
+
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_inf"])
-        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-        #                                                              "next_items_processed_lower_sorted_inf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_inf"])
+        print("Loading elite train data")
         X_elite, Y_elite = dataloader_elite.get_train_data()
-        print("Loading test data")
+        print("Loading elite test data")
         X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
 
-        # X_lower, Y_lower = dataloader_lower.get_train_data()
-        # print("Loading test data")
-        # X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+        X_elite = X_elite[:1000]
+        Y_lower = Y_elite[:1000]
         #
-        # self.X = np.concatenate([X_elite, X_lower], axis=0)
-        # self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-        # self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
-        # self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+        # print("Loading lower train data")
+        # X_lower, Y_lower = dataloader_lower.get_train_data()
+        print("Loading lower test data")
+        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+
+        X_lower = np.copy(X_elite)
+        X_elite = np.concatenate([X_elite, [[1]] * X_elite.shape[0]], axis=1)
+        X_lower = np.concatenate([X_lower, [[1 / 3]] * X_lower.shape[0]], axis=1)
+
+        X_test_elite = np.concatenate([X_test_elite, [[0]] * X_test_elite.shape[0]], axis=1)
+        X_test_lower = np.concatenate([X_test_lower, [[0]] * X_test_lower.shape[0]], axis=1)
+
+        self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
         self.X = X_elite
         self.Y = Y_elite
         self.X_test = X_test_elite
