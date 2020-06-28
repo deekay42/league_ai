@@ -1212,7 +1212,7 @@ class NextItemsTrainer(Trainer):
         print("Loading lower test data")
         X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
-        X_lower = np.copy(X_elite)
+        # X_lower = np.copy(X_elite)
         X_elite = np.concatenate([X_elite, [[1]] * X_elite.shape[0]], axis=1)
         X_lower = np.concatenate([X_lower, [[1 / 3]] * X_lower.shape[0]], axis=1)
 
