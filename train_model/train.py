@@ -1204,11 +1204,11 @@ class NextItemsTrainer(Trainer):
         print("Loading elite test data")
         X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
 
-        X_elite = X_elite[:1000]
-        Y_lower = Y_elite[:1000]
+        # X_elite = X_elite[:1000]
+        # Y_lower = Y_elite[:1000]
         #
-        # print("Loading lower train data")
-        # X_lower, Y_lower = dataloader_lower.get_train_data()
+        print("Loading lower train data")
+        X_lower, Y_lower = dataloader_lower.get_train_data()
         print("Loading lower test data")
         X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
