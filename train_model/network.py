@@ -10,6 +10,7 @@ from tflearn.layers.embedding_ops import embedding
 from tflearn.layers.estimator import regression, regression_custom
 from tflearn.layers.merge_ops import merge
 from tflearn.layers.normalization import batch_normalization
+from tflearn.initializations import variance_scaling
 
 from constants import game_constants
 from constants.ui_constants import ResConverter
@@ -382,6 +383,8 @@ class WinPredNetwork(LolNetwork):
 
 
     def apply_noise(self, in_vec, noise_name):
+        if self.network_config["noise"][noise_name] == 0:
+            return in_vec
         orig_shape = tf.shape(in_vec)
         flattened_vec = tf.reshape(in_vec, (-1,))
         noise = self.calc_noise(flattened_vec, noise_name)
@@ -394,6 +397,8 @@ class WinPredNetwork(LolNetwork):
 
 
     def apply_noise_ints(self, ints, noise_name):
+        if self.network_config["noise"][noise_name] == 0:
+            return ints
         ints_flat = tf.reshape(ints, (-1,))
         draws = tf.random.uniform(shape=[tf.shape(ints_flat)[0]], maxval=1.0, minval=0.0)
         apply_indices = self.network_config["noise"][noise_name] > draws
@@ -401,17 +406,10 @@ class WinPredNetwork(LolNetwork):
         num_indices = tf.reduce_sum(tf.cast(apply_indices, tf.int32))
         rand_champ_ints = tf.random.uniform(shape=[num_indices], maxval=self.game_config["total_num_champs"], minval=0,
                                             dtype=tf.int32)
-
-
-
         noised_ints = tf.scatter_nd(tf.cast(tf.where(apply_indices), tf.int32), rand_champ_ints, tf.shape(ints_flat))
         regular_ints = tf.scatter_nd(tf.cast(tf.where(not_apply_indices), tf.int32), tf.cast(ints_flat[not_apply_indices],
                                                                                        tf.int32),
                                tf.shape(ints_flat))
-
-
-
-
         result = tf.cast(regular_ints + noised_ints, tf.int32)
         result = tf.reshape(result, (-1, self.game_config["champs_per_game"]))
 
@@ -419,6 +417,8 @@ class WinPredNetwork(LolNetwork):
 
 
     def apply_noise_flip_one_hot(self, in_vec, noise_name):
+        if self.network_config["noise"][noise_name] == 0:
+            return in_vec
         draws = tf.random.uniform(shape=[tf.shape(in_vec)[0]], maxval=1.0, minval=0.0)
         apply_indices = self.network_config["noise"][noise_name] > draws
         not_apply_indices = self.network_config["noise"][noise_name] <= draws
@@ -557,9 +557,14 @@ class WinPredNetwork(LolNetwork):
                 turrets_destroyed,
                 blue_side
             ], mode='concat', axis=1)
+        stats_layer = tf.identity(stats_layer, "stats")
+
 
         if self.network_config["stats_dropout"] > 0:
             stats_layer = dropout(stats_layer, self.network_config["stats_dropout"])
+
+
+        stats_layer = tf.identity(stats_layer, "stats_dropout")
 
         # final_input_layer = merge(
         #     [
@@ -570,17 +575,24 @@ class WinPredNetwork(LolNetwork):
 
         net = stats_layer
 
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu',
+                                                  weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
+                                                  weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(team_gold_diff, 32, bias=False, activation='relu', weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu'))
+        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu', weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
+        team_gold_diff = tf.identity(team_gold_diff, name="tgd")
 
-        net = fully_connected(net, 1, activation='sigmoid', name="final_output")
 
+        net = fully_connected(total_gold, 1024, activation='relu', weights_init=variance_scaling(uniform=True))
+        net = fully_connected(net, 512, activation='relu', weights_init=variance_scaling(uniform=True))
+        net = fully_connected(net, 1, weights_init="xavier", activation='sigmoid', name="final_output")
+        # net = (net+1)/2
+        # net = fully_connected(net, 1, activation='sigmoid', name="final_output")
         return regression(net, optimizer='adam',
                                  shuffle_batches=True,
                                  learning_rate=self.network_config["learning_rate"],
@@ -591,7 +603,9 @@ class WinPredNetwork(LolNetwork):
     @staticmethod
     def bin_acc(preds, targets, input_):
         preds = tf.reshape(preds, (-1,))
+        preds = tf.identity(preds, name="preds")
         targets = tf.reshape(targets, (-1,))
+        targets = tf.identity(targets, name="targets")
         preds = tf.round(preds)
         correct_prediction = tf.equal(preds, targets)
         acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
@@ -1002,6 +1016,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
 
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        target_summ_items = dropout(target_summ_items, 0.9)
 
 
         cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
@@ -1117,9 +1132,9 @@ class StandardNextItemNetwork(NextItemNetwork):
             ], mode='concat', axis=1)
         net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
-        # net = dropout(net, 0.85)
+        net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
-        # net = dropout(net, 0.9)
+        net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
         net = self.final_layer(net)
         return regression_custom(net, target_summ_items=target_summ_items_sparse, optimizer='adam', to_one_hot=True,
