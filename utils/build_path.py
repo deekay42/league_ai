@@ -21,10 +21,12 @@ from utils import heavy_imports
 #         return comp.gold.total / (comp.gold.total - total_discount)
 
 class InsufficientGold(Exception):
-    pass
+    def __init__(self, item):
+        self.item = item
 
 class NoPathFound(Exception):
-    pass
+    def __init__(self, item):
+        self.item = item
 
 # this method is not deterministic. there may be multiple paths to a given build
 def _build_path(prev_avail_items, next_i, abs_items):
@@ -299,9 +301,11 @@ def build_path_for_gold(item, current_items, gold):
     scores = [score_build_path(path, current_items, gold) for path in bps]
     scores = [score for score in scores if itemslots_left(iditem2intitems(score[2][-1])) >= 0]
     if not scores:
-        raise NoPathFound()
+        # raise NoPathFound(item)
+        return [], []
     if np.all(np.array(scores)[:,0]<0):
-        raise InsufficientGold()
+        # raise InsufficientGold(item)
+        return [], []
     max_score = -9999999
     max_score_index = -1
     for i, c_score in enumerate(scores):
@@ -310,7 +314,7 @@ def build_path_for_gold(item, current_items, gold):
             max_score = c_score[0]
     score, buy_seq, abs_items = scores[max_score_index]
 
-    return buy_seq, abs_items
+    return buy_seq, abs_items[1:]
 
 # lol = build_path_for_gold(cass.Item(id=3153, region="EUW"), Counter({1036:1, 3133:2, 1042:1, 1043:1}), 1450)
 # bc = build_cost(cass.Item(id=1401, region="EUW"), Counter({1039:1}))

@@ -566,33 +566,30 @@ class WinPredNetwork(LolNetwork):
 
         stats_layer = tf.identity(stats_layer, "stats_dropout")
 
-        # final_input_layer = merge(
-        #     [
-        #         team1_champs_one_hot,
-        #         team2_champs_one_hot,
-        #         stats_layer
-        #     ], mode='concat', axis=1)
+        final_input_layer = merge(
+            [
+                team1_champs_one_hot,
+                team2_champs_one_hot,
+                stats_layer
+            ], mode='concat', axis=1)
 
-        net = stats_layer
+        net = final_input_layer
 
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
+                                                  weights_init=variance_scaling(uniform=True)))
+        # net = dropout(net, self.stats_dropout)
         net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(team_gold_diff, 32, bias=False, activation='relu', weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu', weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, self.stats_dropout)
-        team_gold_diff = tf.identity(team_gold_diff, name="tgd")
+        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu',
+                                                  weights_init=variance_scaling(uniform=True)))
 
+        net = fully_connected(net, 1, weights_init="xavier", activation='tanh', name="final_output")
+        net = (net+1)/2
 
-        net = fully_connected(total_gold, 1024, activation='relu', weights_init=variance_scaling(uniform=True))
-        net = fully_connected(net, 512, activation='relu', weights_init=variance_scaling(uniform=True))
-        net = fully_connected(net, 1, weights_init="xavier", activation='sigmoid', name="final_output")
-        # net = (net+1)/2
-        # net = fully_connected(net, 1, activation='sigmoid', name="final_output")
         return regression(net, optimizer='adam',
                                  shuffle_batches=True,
                                  learning_rate=self.network_config["learning_rate"],
@@ -956,7 +953,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         target_summ_items_sparse = tf.gather_nd(items_by_champ, pos_index)
 
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
-        target_summ_items = dropout(target_summ_items, 0.9)
+        # target_summ_items = dropout(target_summ_items, 0.9)
 
 
         cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
