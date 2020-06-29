@@ -256,7 +256,7 @@ class WinPredTrainer(Trainer):
         self.network_config["train"] = {
                 "learning_rate": 0.001,
                 "stats_dropout": 0.8,
-                "champ_dropout": 0.2,
+                "champ_dropout": 0.3,
                 "noise": no_noise}
 
         self.network_config["gauss"] = {
@@ -539,7 +539,7 @@ class WinPredTrainer(Trainer):
         accuracies["standard"] = self.run_network_configs(model, 1)
 
         model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
-        accuracies["gauss"] = self.run_network_configs(model, 32)
+        accuracies["gauss"] = self.run_network_configs(model, 16)
 
         accuracies["gold"] = dict()
         for test_set_name in self.test_sets:
