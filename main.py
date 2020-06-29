@@ -258,10 +258,11 @@ class Main(FileSystemEventHandler):
                                                    "Iron",
                                 "Elixir of Sorcery"]
         
-        num_full_items = [0, 1, 2, 3]
+        num_full_items = [0, 1, 2, 3, 4, 5]
         thresholds = [0, 0.1, 0.25, .7, 1.1]
-        max_leftover_gold_threshold = [299, 499, 1999, 1999]
+        max_leftover_gold_threshold = [299, 499, 1999, 1999, 1999, 1999]
         self.threshold = 0.3
+        self.gold_tolerance = 50
         self.max_leftover_gold_threshold = 500
         self.skipped = False
         self.skipped_item = None
@@ -270,7 +271,7 @@ class Main(FileSystemEventHandler):
         self.max_leftover_gold_thresholds_dict = dict(zip(num_full_items, max_leftover_gold_threshold))
         
         self.commonality_to_items = dict()
-        for i in range(len(num_full_items)):
+        for i in range(len(thresholds)-1):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
@@ -375,7 +376,7 @@ class Main(FileSystemEventHandler):
             current_gold = self.current_gold
 
         if next_item["name"] == "Empty":
-            return [], [items], 0, False
+            return [], [], []
 
         # if self.network_type == "first_item":
         #     return [next_item], [items], 0, False
@@ -383,9 +384,10 @@ class Main(FileSystemEventHandler):
         l = cass_item.name
         if not list(cass_item.builds_from):
             if current_gold >= cass_item.gold.base:
-                return [next_item], [items + Counter({next_item["int"]: 1})], cass_item.gold.base, True
+                return [next_item], [items + Counter({next_item["int"]: 1})], [cass_item.gold.base]
             else:
-                return [], [items], 0, False
+                # raise InsufficientGold(next_item)
+                return [], [], []
         items_by_id = Counter({int(self.item_manager.lookup_by("int", item_id)["id"]): qty for item_id,
                                                                                                qty in items.items()})
 
@@ -398,11 +400,11 @@ class Main(FileSystemEventHandler):
         next_items = [self.item_manager.lookup_by("id", str(item_.id)) for item_ in next_items]
         abs_items = [Counter([self.item_manager.lookup_by("id", str(item))["int"] for item, qty in
                               abs_items_counter.items() for _ in range(qty)]) for abs_items_counter in abs_items]
-        cost = sum([heavy_imports.Item(id=(int(item["main_img"]) if "main_img" in
+        cost = [heavy_imports.Item(id=(int(item["main_img"]) if "main_img" in
                                                          item else int(item["id"])),
-                              region="EUW").gold.base for item in next_items])
-        item_reached = next_item["id"] == next_items[-1]["id"]
-        return next_items, abs_items, cost, item_reached
+                              region="EUW").gold.base for item in next_items]
+
+        return next_items, abs_items, cost
 
 
     def remove_low_value_items(self, items, blacklist):
@@ -437,19 +439,47 @@ class Main(FileSystemEventHandler):
 
 
     def predict_with_threshold(self, delta_items=Counter()):
-        next_item, next_predicted_items, confidence = self.predict_next_item(delta_items=delta_items)
-        if confidence < self.threshold and self.network_type == "standard":
-            logger.info("Super low confidence in that one. Falling back to late game network.")
-            self.network_type = "late"
-            self.model = self.next_item_model_late
-            return self.predict_next_item(model=self.next_item_model_late, delta_items=delta_items)[:2]
-        else:
-            return next_item, next_predicted_items
+        next_items, confidences = self.predict_next_item(delta_items=delta_items)
+        tmp = sorted(np.transpose([next_items, confidences]), key=lambda a: a[1])
+        tmp = [[next_item, confidence] for (next_item, confidence) in tmp if next_item["name"]!="Empty"]
+        if tmp == []:
+            return [], [], []
+        next_items, confidences = np.transpose(tmp)
+        for item, confidence in zip(next_items[::-1], confidences[::-1]):
+            items_buy_seq, abs_items, cost = self.build_path(item, current_gold=self.current_gold + self.gold_tolerance)
+            if items_buy_seq == []:
+                continue
+            # if cost[0] <= self.current_gold + self.gold_tolerance:
+                # return item, next_items, abs_items, item_cost
+
+            if confidence < self.threshold and self.network_type == "standard":
+                logger.info("Super low confidence in that one. Falling back to late game network.")
+                self.network_type = "late"
+                self.model = self.next_item_model_late
+                item = self.predict_next_item(model=self.next_item_model_late,
+                                                        delta_items=delta_items)[0][0]
+                items_buy_seq, abs_items, cost = self.build_path(item)
+
+            return items_buy_seq, abs_items, cost
+        return [], [], []
+
+
+    # def select_affordable_item(self, items, tolerance):
+    #     item_cost_lookup = dict()
+    #     for item in items[::-1]:
+    #         if item["int"] in item_cost_lookup:
+    #             item_cost = item_cost_lookup[item["int"]]
+    #         else:
+    #             next_items, abs_items, item_cost = self.build_path(item, current_gold=10000)
+    #             item_cost_lookup[item["int"]] = item_cost
+    #         if item_cost <= current_gold + tolerance:
+    #             return item, next_items, abs_items, item_cost
+    #     raise InsufficientGold()
 
 
     def try_item_reduction(self, blacklist):
         items_five, delta_five, items_six, delta_six = self.remove_low_value_items(self.items[self.role], blacklist)
-        next_items, abs_items, cost, item_reached = [], [self.items[self.role]], 0, False
+        next_items, abs_items, cost = [], [self.items[self.role]], 0
         next_item = None
         delta_items = None
 
@@ -461,22 +491,14 @@ class Main(FileSystemEventHandler):
             self.items[self.role] = items_reduction
             delta_items = deltas
 
-            next_item, next_predicted_items = self.predict_with_threshold(delta_items=delta_items)
-            try:
-                if self.network_type == "standard":
-                    next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
-                        next_predicted_items, self.current_gold, 30)
-                else:
-                    next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
-            except (NoPathFound, InsufficientGold) as e:
+            next_items, abs_items, cost = self.predict_with_threshold(delta_items=delta_items)
+            if next_items == [] or next_items[0]["name"] == "Empty":
                 continue
-
-            if next_item["name"] == "Empty":
-                continue
+            next_item = next_items[0]
 
             if itemslots_left(abs_items[-1]) >= 0:
                 break
-        return next_item, delta_items, next_items, abs_items, cost, item_reached
+        return next_item, delta_items, next_items, abs_items, cost
 
 
     def true_completes_owned(self):
@@ -515,19 +537,6 @@ class Main(FileSystemEventHandler):
                 logger.info("USING FIRST ITEM GAME MODEL")
 
 
-    def select_affordable_item(self, items, current_gold, tolerance):
-        item_cost_lookup = dict()
-        for item in items[::-1]:
-            if item["int"] in item_cost_lookup:
-                item_cost = item_cost_lookup[item["int"]]
-            else:
-                next_items, abs_items, item_cost, item_reached = self.build_path(item, current_gold=10000)
-                item_cost_lookup[item["int"]] = item_cost
-            if item_cost <= current_gold + tolerance:
-                return item, next_items, abs_items, item_cost, item_reached
-        raise InsufficientGold()
-
-
     def analyze_champ(self):
         if self.role > 4:
             self.swap_teams_all()
@@ -535,36 +544,32 @@ class Main(FileSystemEventHandler):
         while self.current_gold > 0:
             self.select_right_network()
             if itemslots_left(self.items[self.role]) <= 0:
-                next_item, delta_items, next_items, abs_items, cost, item_reached = self.try_item_reduction(Counter(
+                next_item, delta_items, next_items, abs_items, cost = self.try_item_reduction(Counter(
                     [i["int"] for i in result]))
             else:
                 delta_items = None
-                next_item, next_predicted_items = self.predict_with_threshold()
-                try:
-                    if self.network_type == "standard":
-                        next_item, next_items, abs_items, cost, item_reached = self.select_affordable_item(
-                            next_predicted_items, self.current_gold, 30)
-                    else:
-                        next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
-                except (ValueError, InsufficientGold, NoPathFound) as e:
-                    logger.info(e)
-                    logger.info("EXCEPTION")
-                    logger.info(traceback.print_exc())
+                next_items, abs_items, cost = self.predict_with_threshold()
+                if next_items == []:
                     if self.current_gold >= self.max_leftover_gold_threshold and self.true_completes_owned() < 3 and \
                             not self.skipped:
-                        self.skip_item(next_item)
+                        self.skip_item(e.item)
+                        if delta_items:
+                            self.add_deltas_back(delta_items)
                         continue
                     return self.pad_result(result)
 
+                next_item = next_items[0]
             if self.is_end_of_buy(next_item, delta_items, next_items):
                 if self.network_type != "starter" and self.current_gold >= self.max_leftover_gold_threshold and \
                         self.true_completes_owned() < 3 and not self.skipped:
                     self.skip_item(next_item)
+                    if delta_items:
+                        self.add_deltas_back(delta_items)
                     continue
                 else:
-                    return self.pad_result(result, next_items, abs_items[-1].copy())
+                    return self.pad_result(result, next_items, abs_items)
 
-            self.current_gold -= cost
+            self.current_gold -= sum(cost)
             self.items[self.role] = abs_items[-1].copy()
             result.extend(next_items)
             current_summ_items = [self.item_manager.lookup_by("int", item) for item in self.items[self.role]]
@@ -592,14 +597,9 @@ class Main(FileSystemEventHandler):
     def pad_result(self, result, next_items=None, abs_items=None):
         if not result and hasattr(self, "network_type") and self.network_type not in ["starter", "first_item"]:
             self.network_type = "late"
-            next_item = self.predict_next_item(model=self.next_item_model_late)[0]
-            try:
-                next_items, abs_items, cost, item_reached = self.build_path(next_item, self.current_gold + 30)
-            except (ValueError, InsufficientGold, NoPathFound) as e:
-                logger.info(e)
-                logger.info("EXCEPTION")
-                logger.info(traceback.print_exc())
-                next_items = None
+            next_item = self.predict_next_item(model=self.next_item_model_late)[0][0]
+
+            next_items, abs_items, _ = self.build_path(next_item, self.current_gold + 30)
             if next_items:
                 return next_items
             else:
@@ -613,30 +613,31 @@ class Main(FileSystemEventHandler):
 
 
     def is_end_of_buy(self, next_item, delta_items, next_items):
-        return (self.network_type == "standard" and next_item["name"] == "Empty") \
+        return (next_items == [] or next_item == [] \
+            or self.network_type == "standard" and next_item["name"] == "Empty") \
             or (self.items[self.role].get(self.ward_int, 0) >= 1 and next_item["int"] == self.ward_int) \
             or (self.contains_elixir(self.items[self.role]) and self.contains_elixir(Counter({next_item["int"]: 1}))) \
             or delta_items and ((next_item["int"] in delta_items and (next_item['int'] != self.ward_int))
                                 or (next_item["name"] in self.removable_items)) \
-            or next_items == [] \
             or (self.network_type in ["starter"] and self.current_gold == 500)
 
 
     def add_aux_items(self, result, next_items, abs_items):
         if self.network_type == "starter":
-            self.items[self.role] = abs_items
+            if abs_items != []:
+                self.items[self.role] = abs_items[-1]
             result.extend(next_items)
             self.current_gold -= heavy_imports.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
 
         if not np.any(["Elixir" in item["name"] for item in result]) and self.current_gold >= 500:
-            elixir = self.predict_next_item(model=self.next_item_model_late)[0]
+            elixir = self.predict_next_item(model=self.next_item_model_late)[0][0]
             if "Elixir" in elixir["name"]:
                 result.append(elixir)
                 self.current_gold -= heavy_imports.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
         while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
-            next_extra_item = self.predict_next_item(model=self.next_item_model_standard)[0]
+            next_extra_item = self.predict_next_item(model=self.next_item_model_standard)[0][0]
             if next_extra_item["name"] in {"Control Ward", "Health Potion"} or \
                 next_extra_item["name"] in {"Refillable Potion"} and self.network_type == "starter":
                 self.buy_one_off_item(next_extra_item, result)
@@ -908,8 +909,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -963,8 +964,8 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-m.process_image(f"test_data/screenshots/Screen109.png")
-# for i in range(678,720):
+m.process_image(f"test_data/screenshots/Screen67.png")
+# for i in range(0,120):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()

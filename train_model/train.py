@@ -255,8 +255,8 @@ class WinPredTrainer(Trainer):
         self.network_config = dict()
         self.network_config["train"] = {
                 "learning_rate": 0.001,
-                "stats_dropout": 1.0,
-                "champ_dropout": 0.2,
+                "stats_dropout": 0.8,
+                "champ_dropout": 0.1,
                 "noise": no_noise}
 
         self.network_config["gauss"] = {
@@ -314,16 +314,12 @@ class WinPredTrainer(Trainer):
                     scores = []
                     for epoch in range(self.num_epochs):
                         x, y = self.get_train_data()
-
                         model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
-                        print(model.evaluate(self.X_unflipped, self.Y_unflipped, batch_size=self.batch_size)[0])
-                        print(model.evaluate(Input.flip_teams(self.X_unflipped), np.reshape([0.0] * self.X.shape[0], (-1,1)),
-                                             batch_size=self.batch_size)[0])
-                        # model.save(self.train_path + self.model_name + str(epoch + 1))
-                        # score = self.eval_model(model, epoch, self.X_test, self.Y_test)
-                        # scores.append(score)
+                        model.save(self.train_path + self.model_name + str(epoch + 1))
+                        score = self.eval_model(model, epoch, self.X_test, self.Y_test)
+                        scores.append(score)
         return scores
 
 
@@ -363,19 +359,19 @@ class WinPredTrainer(Trainer):
         # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
-        # self.X, _ = dataloader_elite.get_train_data()
-        self.X = np.load("small.npy")
+        self.X, _ = dataloader_elite.get_train_data()
+        # self.X = np.load("small.npy")
         # self.X = np.zeros((100,226))
         # self.X = self.X[::100][:50000]
-        self.X = np.tile(self.X[self.X[:,Input.indices["start"]["total_gold"]]>500][::100], (100, 1))
+        # self.X = np.tile(self.X[self.X[:,Input.indices["start"]["total_gold"]]>500], (10, 1))
         # self.X = self.X[self.X[:, Input.indices["start"]["total_gold"]] > 500][::1000]
         # X_test_raw_pro, _ = dataloader_pro.get_test_data()
         # X_test_raw_pro = np.zeros((100, 226))
         print("Loading elite test data")
-        # X_test_raw, _ = dataloader_elite.get_test_data()
-        # X_test_raw = np.zeros((100, 226))
+        X_test_raw, _ = dataloader_elite.get_test_data()
+        # X_test_raw = np.zeros((10000, 226))
 
-        # X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
+        X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
         # X_test_raw = X_test_raw[::100][:5000]
         # X_test_raw_pro = X_test_raw_pro[::100][:5000]
 
@@ -395,36 +391,36 @@ class WinPredTrainer(Trainer):
 
         # misc.uniform_shuffle(self.X, self.Y)
 
-        # self.test_sets = {}
-        #
-        # for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
-        #     self.test_sets[tst_desc] = dict()
-        #     # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
-        #
-        #     self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
-        #
-        #     num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
-        #         "dragons_killed"]], axis=1)
-        #     num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
-        #         "kills"]], axis=1)
-        #     num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
-        #         "turrets_destroyed"]], axis=1)
-        #     max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
-        #                      axis=1)
-        #
-        #     self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type,
-        #                                                                              num_drags_killed == 1)
-        #     self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type,
-        #                                                                              num_kills == 1)
-        #     self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type,
-        #                                                                               num_towers == 1)
-        #     self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
-        #     self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type,
-        #                                                                               max_lvl == 6)
-        #     self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type,
-        #                                                                                max_lvl == 11)
-        #     self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type,
-        #                                                                                max_lvl == 16)
+        self.test_sets = {}
+
+        for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
+            self.test_sets[tst_desc] = dict()
+            # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
+
+            self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
+
+            num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
+                "dragons_killed"]], axis=1)
+            num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
+                "kills"]], axis=1)
+            num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
+                "turrets_destroyed"]], axis=1)
+            max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
+                             axis=1)
+
+            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type,
+                                                                                     num_drags_killed == 1)
+            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type,
+                                                                                     num_kills == 1)
+            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type,
+                                                                                      num_towers == 1)
+            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
+            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type,
+                                                                                      max_lvl == 6)
+            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type,
+                                                                                       max_lvl == 11)
+            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type,
+                                                                                       max_lvl == 16)
 
         self.Y_test = self.X_test = []
         self.build_new_model()
@@ -1947,9 +1943,10 @@ if __name__ == "__main__":
     # t = FirstItemsTrainer()
     # t.train()
     # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
+    # t = NextItemsTrainer()
     # t.build_next_items_late_game_model()
-    t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
+
 
 
     # t = ItemImgTrainer()
@@ -1957,8 +1954,8 @@ if __name__ == "__main__":
     # s = ChampImgTrainer()
     # s.build_new_img_model()
 
-    # t = WinPredTrainer()
-    # t.train()
+    t = WinPredTrainer()
+    t.train()
     #
     # t.build_champ_embeddings_model()
 

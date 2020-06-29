@@ -9,7 +9,7 @@ starttime = time.time()
 import glob
 # import threading
 from abc import ABC, abstractmethod
-
+import math
 print("1.1")
 starttime = time.time()
 import cv2 as cv
@@ -28,7 +28,7 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
 print(f"Took {time.time() - starttime} s")
 print("1.5")
 starttime = time.time()
-from utils.misc import chunks
+from utils.misc import chunks, split
 # import json
 
 import itertools
@@ -808,17 +808,21 @@ class WinPredModel(GameModel):
 
     def bayes_predict(self, x, tile_factor, raw=False):
         batch_size = 1024
-        x = np.tile(x, [1,tile_factor])
-        x = np.reshape(x, (-1, Input.len))
+        assert batch_size/tile_factor == batch_size//tile_factor
 
-        if raw:
-            with self.graph.as_default():
-                tflearn.is_training(True, self.session)
-                y = [self.session.run(['final_output/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
-                     chunks(x, batch_size)]
-        else:
-            y = [self.model.predict(x_batch) for x_batch in chunks(x, batch_size)]
-            y = np.concatenate(y, axis=0)
+
+        # if raw:
+        #     with self.graph.as_default():
+        #         tflearn.is_training(True, self.session)
+        #         y = [self.session.run(['final_output/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
+        #              chunks(x, batch_size)]
+        # else:
+        y = np.empty((0,1))
+        num_samples_per_batch = batch_size//tile_factor
+        for samples in chunks(x, num_samples_per_batch):
+            x_batch = np.tile(samples, [1, tile_factor])
+            x_batch = np.reshape(x_batch, (-1, Input.len))
+            y = np.concatenate([y,self.model.predict(x_batch)],axis=0)
 
         y = np.reshape(y, (-1, tile_factor))
         y_mean = np.mean(y, axis=1)
@@ -920,9 +924,9 @@ class NextItemModel(GameModel):
         x[Input.indices["start"]["kills"]:Input.indices["end"]["kills"]] = kda[0::3]
         x[Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = kda[1::3]
         x[Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = kda[2::3]
-        num_increments = 20
-        granularity = 10
-        start = -150
+        num_increments = 15
+        granularity = 100
+        start = -200
         zero_offset = -start // granularity
         current_gold_list = np.zeros((num_increments,10))
         current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(start,
@@ -935,8 +939,7 @@ class NextItemModel(GameModel):
         x = Input().scale_inputs(x)
         if self.type in {"standard"}:
             x = np.concatenate([x, [[0]] * x.shape[0]], axis=1)
-        result, probabilities = self.predict(x, blackout_indices)
-        return result[zero_offset], result, probabilities[zero_offset]
+        return self.predict(x, blackout_indices)
 
 
     @staticmethod
