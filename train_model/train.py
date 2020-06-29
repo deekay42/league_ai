@@ -256,7 +256,7 @@ class WinPredTrainer(Trainer):
         self.network_config["train"] = {
                 "learning_rate": 0.001,
                 "stats_dropout": 0.8,
-                "champ_dropout": 0.25,
+                "champ_dropout": 0.2,
                 "noise": no_noise}
 
         self.network_config["gauss"] = {
