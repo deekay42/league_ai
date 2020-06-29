@@ -1940,8 +1940,8 @@ if __name__ == "__main__":
     # t.train()
     # t = StarterItemsTrainer()
     # t.train()
-    # t = FirstItemsTrainer()
-    # t.train()
+    t = FirstItemsTrainer()
+    t.train()
     # t = NextItemsTrainer()
     # t.build_next_items_standard_game_model()
     # t = NextItemsTrainer()
@@ -1954,8 +1954,8 @@ if __name__ == "__main__":
     # s = ChampImgTrainer()
     # s.build_new_img_model()
 
-    t = WinPredTrainer()
-    t.train()
+    # t = WinPredTrainer()
+    # t.train()
     #
     # t.build_champ_embeddings_model()
 
