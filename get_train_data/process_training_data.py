@@ -933,10 +933,10 @@ class ProcessNextItemsTrainingData:
         dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_lower_sorted_complete"])
         X_elite, _ = dataloader_elite.get_train_data()
-        X_elite = np.unique(X_elite[:, Input.indices['start']['champs']:Input.indices['end']['champs']])
+        X_elite = np.unique(X_elite[:, Input.indices['start']['champs']:Input.indices['end']['champs']], axis=0)
         print("Elite done")
         X_lower, _ = dataloader_lower.get_train_data()
-        X_lower = np.unique(X_lower[:, Input.indices['start']['champs']:Input.indices['end']['champs']])
+        X_lower = np.unique(X_lower[:, Input.indices['start']['champs']:Input.indices['end']['champs']], axis=0)
         print("Lower done")
         X = np.concatenate([X_elite, X_lower], axis=0)
         self.champs_vs_roles = dict()
