@@ -259,7 +259,7 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Sorcery"]
         
         num_full_items = [0, 1, 2, 3, 4, 5]
-        thresholds = [0, 0.1, 0.25, .7, 1.1]
+        thresholds = [0, 0.05, 0.2, .7, 1.1]
         max_leftover_gold_threshold = [299, 499, 1999, 1999, 1999, 1999]
         self.threshold = 0.3
         self.gold_tolerance = 50
