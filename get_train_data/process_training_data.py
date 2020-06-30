@@ -939,6 +939,7 @@ class ProcessNextItemsTrainingData:
         X_lower = np.unique(X_lower[:, Input.indices['start']['champs']:Input.indices['end']['champs']])
         print("Lower done")
         X = np.concatenate([X_elite, X_lower], axis=0)
+        self.champs_vs_roles = dict()
         champ_configs = np.unique(X)
         self.stat_champs_vs_roles(champ_configs)
         champs_vs_roles_rel = self.calc_champ_role_stats()[0]
