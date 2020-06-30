@@ -941,7 +941,9 @@ class ProcessNextItemsTrainingData:
         X = np.concatenate([X_elite, X_lower], axis=0)
         self.champs_vs_roles = dict()
         champ_configs = np.unique(X)
-        self.stat_champs_vs_roles(champ_configs)
+        print(champ_configs.shape)
+        for champ_config in champ_configs:
+            self.stat_champs_vs_roles(champ_config)
         champs_vs_roles_rel = self.calc_champ_role_stats()[0]
         with open(app_constants.asset_paths["champ_vs_roles"], "w") as f:
             f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
