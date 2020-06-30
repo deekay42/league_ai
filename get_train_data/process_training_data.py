@@ -935,12 +935,13 @@ class ProcessNextItemsTrainingData:
         X_elite, _ = dataloader_elite.get_train_data()
         X_elite = np.unique(X_elite[:, Input.indices['start']['champs']:Input.indices['end']['champs']], axis=0)
         print("Elite done")
+
         X_lower, _ = dataloader_lower.get_train_data()
         X_lower = np.unique(X_lower[:, Input.indices['start']['champs']:Input.indices['end']['champs']], axis=0)
         print("Lower done")
         X = np.concatenate([X_elite, X_lower], axis=0)
         self.champs_vs_roles = dict()
-        champ_configs = np.unique(X)
+        champ_configs = np.unique(X, axis=0)
         print(champ_configs.shape)
         for champ_config in champ_configs:
             self.stat_champs_vs_roles(champ_config)
