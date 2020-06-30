@@ -490,10 +490,7 @@ class ProcessNextItemsTrainingData:
         for i, (unsorted_data, sorted_data) in enumerate(zip(unsorted_dataset_paths, sorted_dataset_paths)):
             print(f"Writing dataset: {i}")
             self.update_roles_by_dataset(gameId2roles, unsorted_data,sorted_data)
-            if i == 0:
-                champs_vs_roles_rel = self.calc_champ_role_stats()[0]
-                with open(app_constants.asset_paths["champ_vs_roles"], "w") as f:
-                    f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
+
 
 
     def update_roles_by_dataset(self, gameId2roles, unsorted_path, sorted_path):
@@ -930,6 +927,25 @@ class ProcessNextItemsTrainingData:
         print("All complete.")
 
 
+    def champ_vs_roles_elite_lower(self):
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_complete"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_complete"])
+        X_elite, _ = dataloader_elite.get_train_data()
+        X_elite = np.unique(X_elite[:, Input.indices['start']['champs']:Input.indices['end']['champs']])
+        print("Elite done")
+        X_lower, _ = dataloader_lower.get_train_data()
+        X_lower = np.unique(X_lower[:, Input.indices['start']['champs']:Input.indices['end']['champs']])
+        print("Lower done")
+        X = np.concatenate([X_elite, X_lower], axis=0)
+        champ_configs = np.unique(X)
+        self.stat_champs_vs_roles(champ_configs)
+        champs_vs_roles_rel = self.calc_champ_role_stats()[0]
+        with open(app_constants.asset_paths["champ_vs_roles"], "w") as f:
+            f.write(json.dumps(champs_vs_roles_rel, separators=(',', ':')))
+
+
 
 if __name__ == "__main__":
     # p = ProcessPositionsTrainingData(50000, arrow.Arrow(2019, 7, 14, 0, 0, 0))
@@ -937,6 +953,7 @@ if __name__ == "__main__":
 
     regions = ["KR", "EUW", "NA", "EUNE", "BR", "TR", "LAS", "LAN", "RU", "JP", "OCE"]
     l = ProcessNextItemsTrainingData()
+    l.champ_vs_roles_elite_lower()
 
     # games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
     #                             300, 250, 200, 150, 100, 50]
@@ -954,15 +971,15 @@ if __name__ == "__main__":
     # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
     # s = train.PositionsTrainer()
     # s.train()
-    l.update_roles()
-    t = NextItemsTrainer()
-    print("NOW TRAINING EARLY GAME")
-    try:
-        t.build_next_items_standard_game_model()
-    except Exception as e:
-        print(e)
-    print("NOW TRAINING LATE GAME")
-    try:
-        t.build_next_items_late_game_model()
-    except Exception as e:
-        print(e)
+    # l.update_roles()
+    # t = NextItemsTrainer()
+    # print("NOW TRAINING EARLY GAME")
+    # try:
+    #     t.build_next_items_standard_game_model()
+    # except Exception as e:
+    #     print(e)
+    # print("NOW TRAINING LATE GAME")
+    # try:
+    #     t.build_next_items_late_game_model()
+    # except Exception as e:
+    #     print(e)
