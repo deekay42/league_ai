@@ -1943,10 +1943,10 @@ if __name__ == "__main__":
     t.train()
     t = StarterItemsTrainer()
     t.train()
-    # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
-    # t = NextItemsTrainer()
-    # t.build_next_items_late_game_model()
+    t = NextItemsTrainer()
+    t.build_next_items_standard_game_model()
+    t = NextItemsTrainer()
+    t.build_next_items_late_game_model()
 
 
 

@@ -1287,7 +1287,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.01], pos_index, n, 1.0)
+                                                                             [0.1], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
@@ -1301,7 +1301,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         net = batch_normalization(fully_connected(high_prio_inputs, 32, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
-        net = batch_normalization(fully_connected(net, 32, bias=False,
+        net = batch_normalization(fully_connected(net, 64, bias=False,
                                                   activation='relu',
                                                   regularizer="L2"))
         net = self.final_layer(net)
