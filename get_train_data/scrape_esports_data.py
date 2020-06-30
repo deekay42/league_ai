@@ -3,8 +3,6 @@ import dateutil.parser as dt
 import datetime
 import json
 from train_model.input_vector import Input
-from train_model.model import WinPredModel
-from train_model.train import WinPredTrainer
 import numpy as np
 from utils.artifact_manager import ChampManager
 from constants import game_constants, app_constants
@@ -15,20 +13,19 @@ import math
 class ScrapeEsportsData:
 
     def __init__(self):
+        self.reset()
+
+    def reset(self):
         self.elder_start_timer = None
         self.baron_start_timer = None
-        self.baron_active = [0,0]
-        self.prev_baron_active_raw = [0,0]
-        self.elder_active = [0,0]
-        self.prev_elder_active_raw = [0,0]
+        self.baron_active = [0, 0]
+        self.prev_baron_active_raw = [0, 0]
+        self.elder_active = [0, 0]
+        self.prev_elder_active_raw = [0, 0]
         self.prev_blue_team_dragons = None
         self.prev_red_team_dragons = None
-        self.dragon2index = {"cloud": "AIR_DRAGON", "mountain": "EARTH_DRAGON", "infernal":"FIRE_DRAGON",
-                             "ocean":"WATER_DRAGON"}
-
-        self.trainer = WinPredTrainer()
-        self.model = WinPredModel(type="standard")
-        # self.model.load_model()
+        self.dragon2cap = {"cloud": "AIR_DRAGON", "mountain": "EARTH_DRAGON", "infernal": "FIRE_DRAGON",
+                           "ocean": "WATER_DRAGON"}
 
     @staticmethod
     def generate_live_feed(match_id):
@@ -73,9 +70,6 @@ class ScrapeEsportsData:
         print(f"success\n\n")
         return payload
 
-# lol = generate_live_feed(104242514815381917, "2020-05-28T07:20:10.000Z")
-# print(list(lol))
-
 
     def snapshot2vec(self, data):
         champ_names = [participant['championId'] for participant in data['gameMetadata']['blueTeamMetadata'][
@@ -93,8 +87,8 @@ class ScrapeEsportsData:
             lvl = [participant['level'] for participant in frame[
                 'blueTeam']['participants'] + frame['redTeam']['participants']]
             towers = [frame['blueTeam']['towers'],frame['redTeam']['towers']]
-            dragon_soul_blue = "NONE"
-            dragon_soul_red = "NONE"
+            dragon_soul_blue = [0,0,0,0]
+            dragon_soul_red = [0,0,0,0]
 
             if (self.baron_active[0] or self.baron_active[1]) and frame_timestamp > \
                     self.baron_start_timer + datetime.timedelta(seconds=game_constants.BARON_DURATION):
@@ -103,7 +97,7 @@ class ScrapeEsportsData:
                     self.elder_start_timer + datetime.timedelta(seconds=game_constants.ELDER_DURATION):
                 self.elder_active = [0, 0]
 
-            dragons = {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [0, 0], "WATER_DRAGON": [0, 0]}
+            dragons_killed = np.zeros((2,4))
             blue_team_dragons = frame['blueTeam']['dragons']
             red_team_dragons = frame['redTeam']['dragons']
 
@@ -123,14 +117,14 @@ class ScrapeEsportsData:
                 self.prev_red_team_dragons = red_team_dragons
 
             for dragon in blue_team_dragons:
-                dragons[self.dragon2index[dragon]][0] += 1
+                dragons_killed[0][game_constants.dragon2index[self.dragon2cap[dragon]]] += 1
             for dragon in red_team_dragons:
-                dragons[self.dragon2index[dragon]][1] += 1
+                dragons_killed[1][game_constants.dragon2index[self.dragon2cap[dragon]]] += 1
 
             if len(blue_team_dragons) >= 4:
-                dragon_soul_blue = self.dragon2index[blue_team_dragons[3]]
+                dragon_soul_blue[game_constants.dragon2index[self.dragon2cap[blue_team_dragons[3]]]] = 1
             elif len(red_team_dragons) >= 4:
-                dragon_soul_red = self.dragon2index[red_team_dragons[3]]
+                dragon_soul_red[game_constants.dragon2index[self.dragon2cap[red_team_dragons[3]]]] = 1
 
             baron_active = [frame['blueTeam']['barons'], frame['redTeam']['barons']]
             if baron_active != self.prev_baron_active_raw:
@@ -140,19 +134,30 @@ class ScrapeEsportsData:
 
             self.prev_baron_active_raw = baron_active
 
-            input_ = {"scale_inputs": False, "gameId": data['esportsGameId'],"champs_str": champ_names,
+            champs = [ChampManager().lookup_by("name", chname)["int"] for chname in champ_names]
+
+            kda = np.ravel(kda)
+            input_ = {
+                          "gameid": int(data['esportsGameId']),
+                          "champs": champs,
                           "total_gold": total_gold,
-                          "first_team_blue_start": 1,
+                          "blue_side": [1, 0],
                           "cs": cs,
                           "lvl": lvl,
-                          "kda": kda,
-                          "baron_active": self.baron_active,
-                          "elder_active": self.elder_active,
-                          "dragons": dragons,
-                          "dragon_soul_type": [dragon_soul_blue, dragon_soul_red],
-                          "turrets": towers}
+                          "kills": kda[0::3],
+                          "deaths": kda[1::3],
+                          "assists": kda[2::3],
+                          "baron": self.baron_active,
+                          "elder": self.elder_active,
+                          "dragons_killed": np.ravel(dragons_killed),
+                          "dragon_soul_type": dragon_soul_blue + dragon_soul_red,
+                          "turrets_destroyed": towers}
+            try:
+                x = Input.dict2vec(input_)
+            except AssertionError:
+                print("some vals were negative")
+                raise
 
-            x = self.model.transform_inputs(**input_)
             yield x
 
 
@@ -163,14 +168,15 @@ class ScrapeEsportsData:
 
 
     def tournament2vec(self, gameIds, game_results):
-        x = np.empty(shape=(0,Input.len))
+        x = np.empty(shape=(0,Input.len), dtype=np.uint64)
 
         for gameId, game_result in zip(gameIds, game_results):
+            self.reset()
             data_x = self.game2vec(gameId)
-            data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen])
+            data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen], dtype=np.uint64)
             data_x = np.reshape(data_x, (-1, Input.len))
             if game_result == 0:
-                data_x = self.trainer.flip_teams(data_x)
+                data_x = Input.flip_teams(data_x)
             x = np.concatenate([x, data_x], axis=0)
 
 
