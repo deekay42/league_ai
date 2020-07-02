@@ -133,112 +133,112 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        # logger.info("Starting main")
-        # self.onTimeout = False
-        # self.loldir = misc.get_lol_dir()
-        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        # self.screenshot_dir_created = False
-        # logger.info("Go tlol dir !")
-        # self.config = configparser.ConfigParser()
-        # logger.info("Reading config")
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        #
-        # while True:
-        #     try:
-        #     # res = 1440,810
-        #         res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        #         break
-        #     except KeyError as e:
-        #         print(repr(e))
-        #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
-        #         misc.get_lol_dir()
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        #
-        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        #
-        # if too_many_screenshots:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Warning",
-        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        #
-        #
+        logger.info("Starting main")
+        self.onTimeout = False
+        self.loldir = misc.get_lol_dir()
+        self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        self.screenshot_dir_created = False
+        logger.info("Go tlol dir !")
+        self.config = configparser.ConfigParser()
+        logger.info("Reading config")
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        
+        while True:
+            try:
+            # res = 1440,810
+                res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+                break
+            except KeyError as e:
+                print(repr(e))
+                os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
+                misc.get_lol_dir()
+        
+        try:
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            show_names_in_sb = False
+        
+        try:
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            print(repr(e))
+            flipped_sb = False
+        
+        try:
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            print(repr(e))
+            hud_scale = 0.5
+        
+        
+        if flipped_sb:
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        
+        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        
+        if too_many_screenshots:
+            Tk().withdraw()
+            messagebox.showinfo("Warning",
+                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        
+        
         
 
         # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
-        self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
+        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
         logger.info("Loading res cvt")
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        # dll_hook = CPredict()
-        dll_hook = None
+        dll_hook = CPredict()
+        # dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.champ_img_model = ChampImgModel(self.res_converter, dll_hook=dll_hook)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.item_img_model = ItemImgModel(self.res_converter, dll_hook=dll_hook)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.self_img_model = SelfImgModel(self.res_converter, dll_hook=dll_hook)
         self.self_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.kda_img_model = KDAImgModel(self.res_converter, dll_hook=dll_hook)
         self.kda_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -259,7 +259,7 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Sorcery"]
         
         num_full_items = [0, 1, 2, 3, 4, 5]
-        thresholds = [0, 0.05, 0.2, .7, 1.1]
+        thresholds = [0, 0.02, 0.03, .05, 1.1]
         max_leftover_gold_threshold = [299, 499, 1999, 1999, 1999, 1999]
         self.threshold = 0.3
         self.gold_tolerance = 50
@@ -275,7 +275,7 @@ class Main(FileSystemEventHandler):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
-        # Main.test_connection()
+        Main.test_connection()
 
 
     def set_res_converter(self, res_cvt):
@@ -341,8 +341,8 @@ class Main(FileSystemEventHandler):
 
     def predict_next_item(self, model=None, role=None, champs=None, items=None, cs=None, lvl=None, kda=None,
                           delta_items=Counter()):
-        if model is None:
-            model = self.next_item_model
+        
+                
         if role is None:
             role = self.role
         if champs is None:
@@ -355,6 +355,17 @@ class Main(FileSystemEventHandler):
             lvl = self.lvl
         if kda is None:
             kda = self.kda
+        if model is None:
+            model = self.next_item_model
+        elif model == "standard":
+            model = self.next_item_model_standard
+        elif model == "late":
+            if np.any(np.isin(list(items[role].keys()), list(ItemManager().get_full_item_ints()))):
+                model = self.next_item_model_late
+                print("using LATE network")
+            else:
+                print("using FIRST ITEM network")
+                model = self.next_item_model_first_item
         champs_int = [int(champ["int"]) for champ in champs]
         items_id = self.all_items_counter2items_list(items, "int")
         items_id = [[int(item["id"]) for item in summ_items] for summ_items in items_id]
@@ -438,8 +449,8 @@ class Main(FileSystemEventHandler):
         self.role -= 5
 
 
-    def predict_with_threshold(self, delta_items=Counter()):
-        next_items, confidences = self.predict_next_item(delta_items=delta_items)
+    def predict_with_threshold(self, delta_items=Counter(), model=None):
+        next_items, confidences = self.predict_next_item(delta_items=delta_items, model=model)
         tmp = sorted(np.transpose([next_items, confidences]), key=lambda a: a[1])
         tmp = [[next_item, confidence] for (next_item, confidence) in tmp if next_item["name"]!="Empty"]
         if tmp == []:
@@ -456,8 +467,7 @@ class Main(FileSystemEventHandler):
                 logger.info("Super low confidence in that one. Falling back to late game network.")
                 self.network_type = "late"
                 self.model = self.next_item_model_late
-                item = self.predict_next_item(model=self.next_item_model_late,
-                                                        delta_items=delta_items)[0][0]
+                item = self.predict_next_item(model="late", delta_items=delta_items)[0][0]
                 items_buy_seq, abs_items, cost = self.build_path(item)
 
             return items_buy_seq, abs_items, cost
@@ -588,20 +598,17 @@ class Main(FileSystemEventHandler):
             logger.info("skip first_item  to boots")
         else:
             self.skipped = True
-            next_item = self.predict_next_item(model=self.next_item_model_late)[0][0]
+            next_item = self.predict_next_item(model="late")[0][0]
             abs_items = self.build_path(next_item, 4000)[1]
             self.items[self.role] = abs_items[-1].copy()
             self.skipped_item = next_item
             logger.info("skip from late to next late")
 
 
-
-
-
     def pad_result(self, result, next_items=None, abs_items=None):
         if not result and hasattr(self, "network_type") and self.network_type not in ["starter", "first_item"]:
             self.network_type = "late"
-            next_item = self.predict_next_item(model=self.next_item_model_late)[0][0]
+            next_item = self.predict_next_item(model="late")[0][0]
 
             next_items, abs_items, _ = self.build_path(next_item, self.current_gold + 30)
             if next_items:
@@ -628,29 +635,39 @@ class Main(FileSystemEventHandler):
 
     def add_aux_items(self, result, next_items, abs_items):
         if self.network_type == "starter":
+            print("abs starter aux")
+            print(abs_items)
+            print(self.items)
             if abs_items != []:
                 self.items[self.role] = abs_items[-1]
+            print(self.items)
             result.extend(next_items)
             self.current_gold -= heavy_imports.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
 
         if not np.any(["Elixir" in item["name"] for item in result]) and self.current_gold >= 500:
-            elixir = self.predict_next_item(model=self.next_item_model_late)[0][0]
+            elixir = self.predict_next_item(model='late')[0][0]
             if "Elixir" in elixir["name"]:
                 result.append(elixir)
                 self.current_gold -= heavy_imports.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
         while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
-            next_extra_item = self.predict_next_item(model=self.next_item_model_standard)[0][0]
-            if next_extra_item["name"] in {"Control Ward", "Health Potion"} or \
-                next_extra_item["name"] in {"Refillable Potion"} and self.network_type == "starter":
-                self.buy_one_off_item(next_extra_item, result)
+            print("abs starter aux111")
+            next_extra_item , _, _ = self.predict_with_threshold(model="standard")
+            print(next_extra_item)
+            if next_extra_item != [] and (next_extra_item[0]["name"] in {"Control Ward", "Health Potion"} or \
+                (next_extra_item[0]["name"] in {"Refillable Potion"} and self.network_type == "starter")):
+                self.buy_one_off_item(next_extra_item[0], result)
             else:
                 break
-        return result
+        if result != []:
+            return result
+        else:
+            return [self.predict_next_item(model="late")[0][0]]
 
 
     def buy_one_off_item(self, item, result):
+        print("one off")
         result.append(item)
         self.current_gold -= heavy_imports.Item(id=(int(item["id"])), region="EUW").gold.base
         self.items[self.role] += Counter({item["int"]: 1})
@@ -965,10 +982,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-m = Main()
+# m = Main()
 # m.run()
 
-m.process_image(f"test_data/screenshots/Screen19.png")
+# m.process_image(f"test_data/screenshots/Screen19.png")
 # for i in range(0,120):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 

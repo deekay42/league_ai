@@ -99,13 +99,15 @@ class Model(ABC):
         self.artifact_manager = None
         self.dll_hook = dll_hook
 
-        if model_path is None:
-            self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
-            self.model_path = self.model_path.rpartition('.')[0]
-        else:
-            self.model_path = model_path
+        
 
         if not dll_hook:
+            if model_path is None:
+                self.model_path = glob.glob(app_constants.model_paths["best"][self.elements] + "my_model*")[0]
+                self.model_path = self.model_path.rpartition('.')[0]
+            else:
+                self.model_path = model_path
+
             global tf, tflearn, network
             tf = importlib.import_module("tensorflow")
             tflearn = importlib.import_module("tflearn")
