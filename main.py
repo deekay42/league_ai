@@ -142,7 +142,7 @@ class Main(FileSystemEventHandler):
         self.config = configparser.ConfigParser()
         logger.info("Reading config")
         self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        
+
         while True:
             try:
             # res = 1440,810
@@ -152,41 +152,41 @@ class Main(FileSystemEventHandler):
                 print(repr(e))
                 os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
                 misc.get_lol_dir()
-        
+
         try:
             show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         except KeyError as e:
             print(repr(e))
             show_names_in_sb = False
-        
+
         try:
             flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         except KeyError as e:
             print(repr(e))
             flipped_sb = False
-        
+
         try:
             hud_scale = float(self.config['HUD']['GlobalScale'])
         except KeyError as e:
             print(repr(e))
             hud_scale = 0.5
-        
-        
+
+
         if flipped_sb:
             Tk().withdraw()
             messagebox.showinfo("Error",
                                 "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
             raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        
+
         too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        
+
         if too_many_screenshots:
             Tk().withdraw()
             messagebox.showinfo("Warning",
                                 f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        
-        
-        
+
+
+
 
         # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
@@ -259,8 +259,8 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Sorcery"]
         
         num_full_items = [0, 1, 2, 3, 4, 5]
-        thresholds = [0, 0.02, 0.03, .05, 1.1]
-        max_leftover_gold_threshold = [299, 499, 1999, 1999, 1999, 1999]
+        thresholds = [0, 0.1, 0.25, .7, 1.1]
+        max_leftover_gold_threshold = [349, 499, 1999, 1999, 1999, 1999]
         self.threshold = 0.3
         self.gold_tolerance = 50
         self.max_leftover_gold_threshold = 500
@@ -930,8 +930,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -985,8 +985,8 @@ class Main(FileSystemEventHandler):
 # m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen19.png")
-# for i in range(0,120):
+# m.process_image(f"test_data/screenshots/Screen445.png")
+# for i in range(386,396):
 #     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
