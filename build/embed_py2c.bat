@@ -63,6 +63,7 @@ mkdir %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\champ2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\item2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\self2id.json %OUT_DIR%\assets\data
+COPY %PYTHONDIR%\..\assets\data\input_scales.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\kda2id.json %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\my_champ_embs_normed.npy %OUT_DIR%\assets\data
 COPY %PYTHONDIR%\..\assets\data\opp_champ_embs_normed.npy %OUT_DIR%\assets\data

@@ -12,7 +12,7 @@ import numpy as np
 
 from utils.artifact_manager import ItemManager
 from constants import game_constants,app_constants
-from train_model import data_loader
+# from train_model import data_loader
 from train_model.input_vector import Input
 
 
@@ -52,29 +52,29 @@ def show_coords_all(img_source, champ_coords, champ_size, item_coords, item_size
     cv.waitKey(0)
 
 
-def plot_hist():
-    import matplotlib.pyplot as plt
-    from sklearn.preprocessing import power_transform, minmax_scale
-    dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                 "next_items_processed_elite_sorted_inf"])
-    X_elite, Y_elite = dataloader_elite.get_train_data()
+# def plot_hist():
+#     import matplotlib.pyplot as plt
+#     from sklearn.preprocessing import power_transform, minmax_scale
+#     dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+#                                                                  "next_items_processed_elite_sorted_inf"])
+#     X_elite, Y_elite = dataloader_elite.get_train_data()
 
-    d = np.reshape(X_elite[:, Input.current_gold_start:Input.current_gold_end], (-1,1))
-    # d = np.clip(d, game_constants.min_clip["cs"], game_constants.max_clip["cs"])
-    # d = power_transform(d, method='yeo-johnson')
-    # d = minmax_scale(d)
+#     d = np.reshape(X_elite[:, Input.current_gold_start:Input.current_gold_end], (-1,1))
+#     # d = np.clip(d, game_constants.min_clip["cs"], game_constants.max_clip["cs"])
+#     # d = power_transform(d, method='yeo-johnson')
+#     # d = minmax_scale(d)
 
-    # An "interface" to matplotlib.axes.Axes.hist() method
-    n, bins, patches = plt.hist(x=d, bins='auto', color='#0504aa',
-                                alpha=0.7, rwidth=0.85)
-    plt.grid(axis='y', alpha=0.75)
-    plt.xlabel('Value')
-    plt.ylabel('Frequency')
-    plt.title('My Very Own Histogram')
-    maxfreq = n.max()
-    plt.ylim(ymax=maxfreq)
-    plt.show()
-    print("lol")
+#     # An "interface" to matplotlib.axes.Axes.hist() method
+#     n, bins, patches = plt.hist(x=d, bins='auto', color='#0504aa',
+#                                 alpha=0.7, rwidth=0.85)
+#     plt.grid(axis='y', alpha=0.75)
+#     plt.xlabel('Value')
+#     plt.ylabel('Frequency')
+#     plt.title('My Very Own Histogram')
+#     maxfreq = n.max()
+#     plt.ylim(ymax=maxfreq)
+#     plt.show()
+#     print("lol")
 
 
 def show_coords(img_source, coords, size_x, size_y):
