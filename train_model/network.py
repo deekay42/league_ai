@@ -689,7 +689,7 @@ class NextItemNetwork(LolNetwork):
         target_summ_vec = tf.expand_dims(tf.gather_nd(vec, pos_index), 1)
         opp_vec = tf.expand_dims(vec[:, 5:10], -1)
         target_summ_vec_exp = tf.expand_dims(tf.tile(target_summ_vec, multiples=[1, 5]), -1)
-        return opp_vec - target_summ_vec_exp
+        return target_summ_vec_exp - opp_vec
 
     def get_items(self, n, items_by_champ):
         batch_indices = tf.reshape(tf.tile(tf.expand_dims(tf.range(n), 1), [1, self.game_config["champs_per_game"] *
@@ -928,6 +928,7 @@ class StandardNextItemNetwork(NextItemNetwork):
 
 
     def build(self):
+        #the +1 is for the last element which is the example importance
         in_vec = input_data(shape=[None, Input.len+ 1], name='input')
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
@@ -970,6 +971,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         opp_champ_pos = tf.tile(opp_champ_pos, multiples=[n, 1, 1])
 
         kills = tf.identity(kills, "kills")
+        kills_diff = tf.identity(kills_diff, "kills_diff")
         deaths = tf.identity(deaths, "deaths")
         assists = tf.identity(assists, "assists")
         cs = tf.identity(cs, "cs")
@@ -1056,6 +1058,13 @@ class StandardNextItemNetwork(NextItemNetwork):
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_one_hot = tf.gather_nd(opp_champs_one_hot, pos_index)
 
+        kills_diff = tf.reshape(kills_diff, (-1, self.game_config["champs_per_team"]))
+        deaths_diff = tf.reshape(deaths_diff, (-1, self.game_config["champs_per_team"]))
+        assists_diff = tf.reshape(assists_diff, (-1, self.game_config["champs_per_team"]))
+        lvl_diff = tf.reshape(lvl_diff, (-1, self.game_config["champs_per_team"]))
+        cs_diff = tf.reshape(cs_diff, (-1, self.game_config["champs_per_team"]))
+        
+
         final_input_layer = merge(
             [
                 # target_summ_champ_emb_dropout_flat,
@@ -1065,7 +1074,12 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_one_hot,
                 opp_summ_one_hot,
                 pos_one_hot,
-                enemy_summs_strength_output,
+                # enemy_summs_strength_output,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
+                lvl_diff,
+                cs_diff,
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)

@@ -1191,34 +1191,41 @@ class NextItemsTrainer(Trainer):
         self.best_path = app_constants.model_paths["best"]["next_items_standard"]
 
 
-        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_inf"])
-        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_inf"])
-        print("Loading elite train data")
-        X_elite, Y_elite = dataloader_elite.get_train_data()
-        print("Loading elite test data")
-        X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
-
-        # X_elite = X_elite[:1000]
-        # Y_lower = Y_elite[:1000]
+        # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_elite_sorted_inf"])
+        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+        #                                                              "next_items_processed_lower_sorted_inf"])
+        # print("Loading elite train data")
+        # X_elite, Y_elite = dataloader_elite.get_train_data()
+        # print("Loading elite test data")
+        # X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
         #
-        print("Loading lower train data")
-        X_lower, Y_lower = dataloader_lower.get_train_data()
-        print("Loading lower test data")
-        X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+        # # X_elite = X_elite[:1000]
+        # # Y_lower = Y_elite[:1000]
+        # #
+        # print("Loading lower train data")
+        # X_lower, Y_lower = dataloader_lower.get_train_data()
+        # print("Loading lower test data")
+        # X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
+        #
+        # # X_lower = np.copy(X_elite)
+        # X_elite = np.concatenate([X_elite, [[1]] * X_elite.shape[0]], axis=1)
+        # X_lower = np.concatenate([X_lower, [[1 / 3]] * X_lower.shape[0]], axis=1)
+        #
+        # X_test_elite = np.concatenate([X_test_elite, [[0]] * X_test_elite.shape[0]], axis=1)
+        # X_test_lower = np.concatenate([X_test_lower, [[0]] * X_test_lower.shape[0]], axis=1)
+        #
+        # self.X = np.concatenate([X_elite, X_lower], axis=0)
+        # self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
+        # self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
+        # self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+        self.X = np.load("small.npy")
+        self.X = np.concatenate([self.X, np.ones((self.X.shape[0],1))], axis=1)
+        self.X_test = self.X[:10]
 
-        # X_lower = np.copy(X_elite)
-        X_elite = np.concatenate([X_elite, [[1]] * X_elite.shape[0]], axis=1)
-        X_lower = np.concatenate([X_lower, [[1 / 3]] * X_lower.shape[0]], axis=1)
 
-        X_test_elite = np.concatenate([X_test_elite, [[0]] * X_test_elite.shape[0]], axis=1)
-        X_test_lower = np.concatenate([X_test_lower, [[0]] * X_test_lower.shape[0]], axis=1)
-
-        self.X = np.concatenate([X_elite, X_lower], axis=0)
-        self.Y = np.concatenate([Y_elite, Y_lower], axis=0)
-        self.X_test = np.concatenate([X_test_elite, X_test_lower], axis=0)
-        self.Y_test = np.concatenate([Y_test_elite, Y_test_lower], axis=0)
+        self.Y = np.ones((self.X.shape[0],))
+        self.Y_test = self.Y[:10]
 
 
         self.train_y_distrib = Counter(self.Y)
