@@ -994,8 +994,8 @@ class StandardNextItemNetwork(NextItemNetwork):
 
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         # since it may dip below zero with negative weights.
-        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 1, bias=False,
-                                                                          activation='linear', regularizer="L2"))
+        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 3, bias=False,
+                                                                          activation='relu', regularizer="L2"))
         enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
         # enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
         #
@@ -1067,10 +1067,10 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
-        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
         # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
         net = self.final_layer(net)
