@@ -1063,7 +1063,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         assists_diff = tf.reshape(assists_diff, (-1, self.game_config["champs_per_team"]))
         lvl_diff = tf.reshape(lvl_diff, (-1, self.game_config["champs_per_team"]))
         cs_diff = tf.reshape(cs_diff, (-1, self.game_config["champs_per_team"]))
-        
+
 
         final_input_layer = merge(
             [
