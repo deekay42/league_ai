@@ -994,9 +994,11 @@ class StandardNextItemNetwork(NextItemNetwork):
 
         # EDIT: above does not work with the valid_mag_idx = tf.reshape(tf.greater_equal(ets_magnitude, 1e-7), (-1,))
         # since it may dip below zero with negative weights.
-        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, 3, bias=False,
+
+        opp_strength_emb_dim = 3
+        enemy_summs_strength_output = batch_normalization(fully_connected(enemy_summ_strength_input, opp_strength_emb_dim, bias=False,
                                                                           activation='relu', regularizer="L2"))
-        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5))
+        enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5*opp_strength_emb_dim))
         # enemy_summs_strength_output = tf.reshape(enemy_summs_strength_output, (-1, 5, 1))
         #
         # # ets_magnitude = tf.norm(enemy_team_strength, axis=1, keep_dims=True)
