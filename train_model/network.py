@@ -1075,11 +1075,6 @@ class StandardNextItemNetwork(NextItemNetwork):
                 opp_summ_one_hot,
                 pos_one_hot,
                 enemy_summs_strength_output,
-                # kills_diff,
-                # deaths_diff,
-                # assists_diff,
-                # lvl_diff,
-                # cs_diff,
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
