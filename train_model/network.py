@@ -1074,20 +1074,18 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_one_hot,
                 opp_summ_one_hot,
                 pos_one_hot,
-                # enemy_summs_strength_output,
-                kills_diff,
-                deaths_diff,
-                assists_diff,
-                lvl_diff,
-                cs_diff,
+                enemy_summs_strength_output,
+                # kills_diff,
+                # deaths_diff,
+                # assists_diff,
+                # lvl_diff,
+                # cs_diff,
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
-        net = batch_normalization(fully_connected(final_input_layer, 1024, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu', regularizer="L2"))
-        # net = dropout(net, 0.9)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
         net = self.final_layer(net)
         return regression_custom(net,original_input=in_vec, target_summ_items=target_summ_items_sparse,
