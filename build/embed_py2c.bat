@@ -1,8 +1,15 @@
 REM this script needs to be given the path to the pythondir. there it'll create a folder named dist with all required dlls and libs
 REM it will also create cython.h in the include dir in the pythondir
 
+echo Starting embed script
+echo %~1 
+echo %~2
+echo %~3
 if [%1]==[] goto usage
 if [%2]==[] goto usage
+if [%3]==[] goto usage
+
+
 
 set PYTHONPATH=C:\Program Files\Python37\python37.zip;C:\Program Files\Python37\DLLs;C:\Program Files\Python37\lib;C:\Program Files\Python37;C:\Users\Dom\AppData\Roaming\Python\Python37\site-packages;C:\Program Files\Python37\lib\site-packages
 set PYTHONHOME=C:\Program Files\Python37
@@ -10,15 +17,20 @@ set VSLIBS=C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Redi
 set WINSDKLIBS=C:\Program Files (x86)\Windows Kits\10\Redist\10.0.17763.0\ucrt\DLLs\x64
 set PATH=%WINSDKLIBS%;%PATH%;%PYTHONPATH%
 call vcvars64.bat
-set INIT_DIR=%cd%
 CALL :NORMALIZEPATH %~1 
 set PYTHONDIR=%RETVAL%
 CALL :NORMALIZEPATH %~2
 set OUT_DIR=%RETVAL%
+CALL :NORMALIZEPATH %~3
+set INIT_DIR=%RETVAL%
 echo %PYTHONDIR%
 echo %OUT_DIR%
-rmdir /s /q %OUT_DIR%
-mkdir %OUT_DIR%
+echo %INIT_DIR%
+if not exist %OUT_DIR%\..\releaseflag exit
+echo release flag exists
+del %OUT_DIR%\..\releaseflag
+REM rmdir /s /q %OUT_DIR%
+REM mkdir %OUT_DIR%
 REM rmdir /s /q .\dist
 cd %PYTHONDIR%
 rmdir /s /q .\tmp_build
@@ -95,10 +107,10 @@ ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\item_imgs %OUT_DIR%\assets\item_imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\kda %OUT_DIR%\assets\train_imgs\kda *.* /S
 
-exit /B
+exit /B 0
 
 :usage
-@echo Usage: Need to specify 1:pythondir 2:out_dir
+@echo Usage: Need to specify 1:pythondir 2:out_dir 3:windows_dir
 exit /B 1
 
 :NORMALIZEPATH
