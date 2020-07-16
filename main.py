@@ -930,8 +930,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -975,6 +975,7 @@ class Main(FileSystemEventHandler):
                     observer.schedule(self, path=self.listener_dir)
                     observer.start()
                     self.screenshot_dir_created = False
+            
             observer.stop()
             os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
         except KeyboardInterrupt:
