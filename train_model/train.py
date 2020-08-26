@@ -1200,20 +1200,20 @@ class NextItemsTrainer(Trainer):
         print("Loading elite test data")
         X_test_elite, Y_test_elite = dataloader_elite.get_test_data()
 
-        X_elite = X_elite[:1000]
-        Y_elite = Y_elite[:1000]
-        X_test_elite = X_test_elite[:1000]
-        Y_test_elite = Y_test_elite[:1000]
+        # X_elite = X_elite[:1000]
+        # Y_elite = Y_elite[:1000]
+        # X_test_elite = X_test_elite[:1000]
+        # Y_test_elite = Y_test_elite[:1000]
         #
         print("Loading lower train data")
         X_lower, Y_lower = dataloader_lower.get_train_data()
         print("Loading lower test data")
         X_test_lower, Y_test_lower = dataloader_lower.get_test_data()
 
-        X_lower = X_lower[:1000]
-        Y_lower = Y_lower[:1000]
-        X_test_lower = X_test_lower[:1000]
-        Y_test_lower = Y_test_lower[:1000]
+        # X_lower = X_lower[:1000]
+        # Y_lower = Y_lower[:1000]
+        # X_test_lower = X_test_lower[:1000]
+        # Y_test_lower = Y_test_lower[:1000]
 
         # X_lower = np.copy(X_elite)
         X_elite = np.concatenate([X_elite, [[1]] * X_elite.shape[0]], axis=1)
@@ -1279,9 +1279,10 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def only_starters(data):
+        y = data[:, -1].astype(int)
         pos = data[:, Input.indices["start"]["pos"]]
         all_starter_items_ints = ItemManager().get_starter_ints()
-        starter_items = np.isin(data[:, -1], list(all_starter_items_ints))
+        starter_items = np.isin(y, list(all_starter_items_ints))
         data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
         data_items = np.reshape(data_items, (-1, 5, 12))
         empty_items = data_items[range(len(pos)), pos, 1] == 6
@@ -1290,7 +1291,7 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def no_full_items_completed(data):
-        y = data[:, -1]
+        y = data[:, -1].astype(int)
         starter_ints = ItemManager().get_starter_ints()
         full_item_ints = ItemManager().get_full_item_ints()
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
@@ -1308,7 +1309,7 @@ class NextItemsTrainer(Trainer):
 
     @staticmethod
     def only_full_items_completed(data):
-        y = data[:, -1]
+        y = data[:, -1].astype(int)
         starter_ints = ItemManager().get_starter_ints()
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
 
@@ -1953,7 +1954,7 @@ if __name__ == "__main__":
     t = NextItemsTrainer()
     t.build_next_items_standard_game_model()
     # t = NextItemsTrainer()
-    # t.build_next_items_late_game_model()
+    t.build_next_items_late_game_model()
 
 
 
