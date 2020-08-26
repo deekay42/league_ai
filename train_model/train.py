@@ -1280,7 +1280,7 @@ class NextItemsTrainer(Trainer):
     @staticmethod
     def only_starters(data):
         y = data[:, -1].astype(int)
-        pos = data[:, Input.indices["start"]["pos"]]
+        pos = data[:, Input.indices["start"]["pos"]].astype(np.int32)
         all_starter_items_ints = ItemManager().get_starter_ints()
         starter_items = np.isin(y, list(all_starter_items_ints))
         data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
@@ -1313,7 +1313,7 @@ class NextItemsTrainer(Trainer):
         starter_ints = ItemManager().get_starter_ints()
         exclude_starters = np.logical_not(np.isin(y, list(starter_ints)))
 
-        pos = data[:, Input.indices["start"]["pos"]]
+        pos = data[:, Input.indices["start"]["pos"]].astype(np.int32)
         full_item_ints = ItemManager().get_full_item_ints()
         data_items = data[:, data_loader.legacy_indices["start"]["items"]:data_loader.legacy_indices["end"]["items"]]
         data_items = np.reshape(data_items, (-1, 5, 12))
