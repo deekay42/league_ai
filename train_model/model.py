@@ -413,8 +413,8 @@ class ImgModel(Model):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
         
-        # from utils import utils
-        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
+        # from utils import misc
+        # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
         #                   self.res_converter.lookup(self.elements, "y_crop"))
 
         sub_imgs = [whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements,
@@ -551,8 +551,8 @@ class TesseractModel:
     def get_raw_slide_imgs(self, whole_img):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
-        # from utils import utils
-        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
+        # from utils import misc
+        # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
         slide_imgs = [
             whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
             int(round(coord[0])):int(round(coord[0] + self.res_converter.lookup(self.elements, "x_width")))]
@@ -686,8 +686,9 @@ class KDAImgModel(ImgModel):
     def extract_imgs(self, whole_img):
         coords = list(self.get_coords())
         coords = np.reshape(coords, (-1, 2))
-        # from utils import utils
-        # utils.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
+        from utils import misc
+        # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),
+        #               self.res_converter.lookup(self.elements, "y_height"))
 
         slide_imgs = [
             whole_img[coord[1]:int(round(coord[1] + self.res_converter.lookup(self.elements, "y_height"))),
@@ -717,6 +718,9 @@ class CurrentGoldImgModel(TesseractModel):
 
     def get_raw_slide_imgs(self, whole_img):
         x,y,w,h = self.res_converter.generate_current_gold_coords()
+        # from utils import misc
+        # misc.show_coords(whole_img, [(int(x),int(y))] , int(w), int(h))
+
         slide_imgs = [whole_img[int(round(y)):int(round(y + h)), int(round(x)):int(round(x+w))]]
         return slide_imgs
 
@@ -926,9 +930,9 @@ class NextItemModel(GameModel):
         x[Input.indices["start"]["kills"]:Input.indices["end"]["kills"]] = kda[0::3]
         x[Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = kda[1::3]
         x[Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = kda[2::3]
-        num_increments = 15
+        num_increments = 5
         granularity = 100
-        start = -200
+        start = 00
         zero_offset = -start // granularity
         current_gold_list = np.zeros((num_increments,10))
         current_gold_list[:,role] = np.array([current_gold]*num_increments) + np.array(range(start,
@@ -1030,88 +1034,90 @@ class NextItemModel(GameModel):
         return items, np.max(y, axis=1)
 
 
-# class PositionsModel(Model):
+class PositionsModel(Model):
 
-#     def __init__(self):
-#         super().__init__()
-#         self.network = network.PositionsNetwork()
-#         self.model_path = app_constants.model_paths["best"]["positions"]
-#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-#         self.champ_manager = ChampManager()
-#         self.spell_manager = SimpleManager("spells")
-#         self.elements = "positions"
-#         self.load_model()
-#         self.lock = threading.Lock()
+    def __init__(self):
+        self.elements = "positions"
+        self.model_path = app_constants.model_paths["best"]["positions"]
+        super().__init__()
+        self.network = network.PositionsNetwork()
 
+        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+        self.champ_manager = ChampManager()
+        self.spell_manager = SimpleManager("spells")
 
-#     def predict(self, x):
-#         with self.lock:
-#             with self.graph.as_default():
-#                 pred = self.model.predict([x])
-#                 with tf.Session() as sess:
-#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-#                     final_pred = sess.run(final_pred)[0]
-#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-#             # the champ ids need to be ints, otherwise jq fails
-#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
-#             return dict(zip(champ_roles, champ_ids))
+        self.load_model()
+        self.lock = threading.Lock()
 
 
-#     def multi_predict_perm(self, x):
-#         with self.lock:
-#             with self.graph.as_default():
-#                 with tf.Session() as sess:
-#                     x = network.PositionsNetwork.permutate_inputs(x)
+    def predict(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                pred = self.model.predict([x])
+                with tf.Session() as sess:
+                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+                    final_pred = sess.run(final_pred)[0]
+            champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-#                     chunk_len = 1000
-#                     x = tf.reshape(x, (-1,120,55))
-#                     i = 0
-#                     final_pred = []
-#                     while i < int(x.shape[0]):
-#                         print(i/int(x.shape[0]))
-#                         next_chunk = x[i:i+chunk_len]
-#                         next_chunk = tf.reshape(next_chunk, (-1,55))
-#                         chunk_pred = self.model.predict(sess.run(next_chunk))
-#                         i += chunk_len
-#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-#                         final_pred.extend(sess.run(best_perms).tolist())
-
-#         result = []
-#         for sorted_team in final_pred:
-#             sorted_team_perm = [0] * 5
-#             for i, pos in enumerate(sorted_team):
-#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
-#             result.append(sorted_team_perm)
-#         return result
+            # the champ ids need to be ints, otherwise jq fails
+            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
+            return dict(zip(champ_roles, champ_ids))
 
 
+    def multi_predict_perm(self, x):
+        with self.lock:
+            with self.graph.as_default():
+                with tf.Session() as sess:
+                    x = network.PositionsNetwork.permutate_inputs(x)
 
-#     def multi_predict(self, x):
+                    chunk_len = 1000
+                    x = tf.reshape(x, (-1,120,55))
+                    i = 0
+                    final_pred = []
+                    while i < int(x.shape[0]):
+                        print(i/int(x.shape[0]))
+                        next_chunk = x[i:i+chunk_len]
+                        next_chunk = tf.reshape(next_chunk, (-1,55))
+                        chunk_pred = self.model.predict(sess.run(next_chunk))
+                        i += chunk_len
+                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+                        final_pred.extend(sess.run(best_perms).tolist())
+
+        result = []
+        for sorted_team in final_pred:
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+        return result
+
+
+
+    def multi_predict(self, x):
         
-#         with self.lock:
-#             with self.graph.as_default():
-#                 pred = self.model.predict(x)
-#                 with Session() as sess:
-#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-#                     final_pred = sess.run(final_pred)
-#         result = []
-#         for sorted_team, unsorted_team in zip(final_pred, x):
-#             sorted_team_perm = [0] * 5
-#             for i, pos in enumerate(sorted_team):
-#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
-#             result.append(sorted_team_perm)
-#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+        with self.lock:
+            with self.graph.as_default():
+                pred = self.model.predict(x)
+                with Session() as sess:
+                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+                    final_pred = sess.run(final_pred)
+        result = []
+        for sorted_team, unsorted_team in zip(final_pred, x):
+            sorted_team_perm = [0] * 5
+            for i, pos in enumerate(sorted_team):
+                sorted_team_perm[self.permutations[tuple(pos)]] = i
+            result.append(sorted_team_perm)
+            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
 
-#             # the champ ids need to be ints, otherwise jq fails
-#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-#             # result.append(dict(zip(champ_roles, champ_ids)))
+            # the champ ids need to be ints, otherwise jq fails
+            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+            # result.append(dict(zip(champ_roles, champ_ids)))
 
-#         return result
+        return result
 
 
 

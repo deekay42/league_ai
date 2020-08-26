@@ -88,7 +88,7 @@ class Res_16_9(ResolutionBase):
         self.coords["current_gold"]["max_y_height"] = 24
 
         self.coords["kda"]["x_start"] = 610
-        self.coords["kda"]["y_start"] = 339
+        self.coords["kda"]["y_start"] = 337
         self.coords["kda"]["y_height"] = 17
         self.coords["kda"]["x_width"] = 90
         self.coords["kda"]["x_diff"] = 574
@@ -107,7 +107,7 @@ class Res_16_9(ResolutionBase):
 
 
         self.coords["lvl"]["x_start"] = 521
-        self.coords["lvl"]["y_start"] = 362
+        self.coords["lvl"]["y_start"] = 360
         self.coords["lvl"]["y_height"] = 13
         self.coords["lvl"]["x_width"] = 18
         self.coords["lvl"]["x_diff"] = self.coords["kda"]["x_diff"]

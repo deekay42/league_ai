@@ -559,71 +559,95 @@ class ProcessNextItemsTrainingData:
             match_id2perm[gameId] = permutation
         return match_id2perm
 
+    def map_game_id_str2int(self, gameId):
+        underscoreindex = gameId.rfind("_")
+        if underscoreindex == -1:
+            region_prefix = "000"
+        else:
+            region = gameId[:underscoreindex]
+            try:
+                region_prefix = game_constants.region2int[region]
+            except KeyError:
+                region_prefix = "000"
+        gameId_int = str(region_prefix) + gameId[underscoreindex + 1:]
+        gameId_int = int(gameId_int)
+        return gameId_int
 
     def apply_roles_to_unsorted_processed(self, match_id2perm, unsorted_processed):
         champs_per_game = game_constants.CHAMPS_PER_GAME
         items_per_champ = game_constants.MAX_ITEMS_PER_CHAMP
 
-        region2int = {"KR":100, "EUW":200, "NA":300, "EUNE":400, "BR":500, "TR":600, "LAS":700, "LAN":800, "RU":900, \
-                     "JP":1000, "OCE":1100}
         for gameId in unsorted_processed:
             try:
                 current_game = unsorted_processed[gameId]
                 if current_game.size == 0:
                     continue
-                underscoreindex = gameId.rfind("_")
-                if underscoreindex == -1:
-                    region_prefix = "000"
-                else:
-                    region = gameId[:underscoreindex]
-                    try:
-                        region_prefix = region2int[region]
-                    except KeyError:
-                        region_prefix = "000"
-                gameId_int = str(region_prefix) + gameId[underscoreindex+1:]
-                gameId_int = int(gameId_int)
+                gameId_int = self.map_game_id_str2int(gameId)
                 gameIds = [[gameId_int]] * current_game.shape[0]
                 #this will throw a keyerror if the game is already sorted
                 permutation = match_id2perm[gameId]
                 new_pos_map = {i:permutation.index(i) for i in [0,1,2,3,4]}
-                updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, Input.pos_start:Input.pos_end]]
+                updated_positions = [[new_pos_map[pos[0]]] for pos in current_game[:, Input.indices["start"][
+                                                                                          "pos"]:Input.indices["end"][
+                    "pos"]]]
+
+                permutable_elements = {"champs", "total_gold", "cs", "lvl", "kills", "deaths", "assists",
+                                       "current_gold"}
+                nonpermutable_elements = {"baron", "elder", "dragons_killed", "dragon_soul_type",
+                                          "turrets_destroyed", "blue_side"}
+                reordered_result = np.zeros((current_game.shape[0], Input.len + 1), dtype=np.float64)
+                for slice_name in permutable_elements:
+                    reordered_result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = \
+                        current_game[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]][:, permutation]
+                for slice_name in nonpermutable_elements:
+                    reordered_result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = \
+                        current_game[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]]
+                reordered_result[:, Input.indices["start"]["gameid"]:Input.indices["end"]["gameid"]] = gameIds
+                reordered_result[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = updated_positions
+                reordered_result[:, Input.indices["start"]["items"]:Input.indices["end"]["items"]] = \
+                    current_game[:, Input.indices["start"]["items"]:Input.indices["end"]["items"]].reshape((-1, champs_per_game, items_per_champ * 2))[:,
+                                                   permutation].reshape(-1, champs_per_game * items_per_champ * 2)
+                reordered_result[:, -1:] = current_game[:, -1:]
 
 
-                reordered_result = np.concatenate([gameIds, updated_positions,
-                                                   current_game[:, Input.champs_start:Input.champs_end][:, permutation],
-                                                   current_game[:, Input.items_start:Input.items_end].reshape((-1, champs_per_game,
-                                                                                                   items_per_champ * 2))[
-                                                   :,
-                                                   permutation].reshape(-1, champs_per_game * items_per_champ * 2),
-                                                   current_game[:, Input.total_gold_start:Input.total_gold_end][:, permutation],
-                                                   current_game[:, Input.cs_start:Input.cs_end][:, permutation],
-                                                   current_game[:, Input.neutral_cs_start:Input.neutral_cs_end][:, permutation],
-                                                   current_game[:, Input.xp_start:Input.xp_end][:, permutation],
-                                                   current_game[:, Input.lvl_start:Input.lvl_end][:, permutation],
-                                                   current_game[:, Input.kda_start:Input.kda_end].reshape((-1, champs_per_game,
-                                                                                               3))[:,
-                                                   permutation].reshape((-1,
-                                                                         champs_per_game * 3)),
-                                                   current_game[:, Input.current_gold_start:Input.current_gold_end][:, permutation],
-                                                   current_game[:, Input.baron_start:Input.baron_end],
-                                                   current_game[:, Input.elder_start:Input.elder_end],
-                                                   current_game[:, Input.dragons_killed_start:Input.dragons_killed_end],
-                                                   current_game[:, Input.dragon_soul_start:Input.dragon_soul_end],
-                                                   current_game[:,
-                                                   Input.dragon_soul_type_start:Input.dragon_soul_type_end],
-                                                   current_game[:, Input.turrets_start:Input.turrets_end],
-                                                   current_game[:,
-                                                   Input.first_team_blue_start:Input.first_team_blue_end],
-
-
-                                                   current_game[:, -1:]], axis=1)
-                sorted_champs = reordered_result[:, Input.champs_start+1:Input.champs_end+1][0]
+                #
+                # reordered_result = np.concatenate([gameIds, updated_positions,
+                #                                    current_game[:, Input.champs_start:Input.champs_end][:, permutation],
+                #                                    current_game[:, Input.items_start:Input.items_end].reshape((-1, champs_per_game,
+                #                                                                                    items_per_champ * 2))[
+                #                                    :,
+                #                                    permutation].reshape(-1, champs_per_game * items_per_champ * 2),
+                #                                    current_game[:, Input.total_gold_start:Input.total_gold_end][:, permutation],
+                #                                    current_game[:, Input.cs_start:Input.cs_end][:, permutation],
+                #                                    current_game[:, Input.neutral_cs_start:Input.neutral_cs_end][:, permutation],
+                #                                    current_game[:, Input.xp_start:Input.xp_end][:, permutation],
+                #                                    current_game[:, Input.lvl_start:Input.lvl_end][:, permutation],
+                #                                    current_game[:, Input.kda_start:Input.kda_end].reshape((-1, champs_per_game,
+                #                                                                                3))[:,
+                #                                    permutation].reshape((-1,
+                #                                                          champs_per_game * 3)),
+                #                                    current_game[:, Input.current_gold_start:Input.current_gold_end][:, permutation],
+                #                                    current_game[:, Input.baron_start:Input.baron_end],
+                #                                    current_game[:, Input.elder_start:Input.elder_end],
+                #                                    current_game[:, Input.dragons_killed_start:Input.dragons_killed_end],
+                #                                    current_game[:, Input.dragon_soul_start:Input.dragon_soul_end],
+                #                                    current_game[:,
+                #                                    Input.dragon_soul_type_start:Input.dragon_soul_type_end],
+                #                                    current_game[:, Input.turrets_start:Input.turrets_end],
+                #                                    current_game[:,
+                #                                    Input.first_team_blue_start:Input.first_team_blue_end],
+                #
+                #
+                #                                    current_game[:, -1:]], axis=1)
+                # sorted_champs = reordered_result[:, Input.champs_start+1:Input.champs_end+1][0]
+                sorted_champs = reordered_result[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]][0]
                 self.stat_champs_vs_roles(sorted_champs)
                 yield reordered_result
             except KeyError as e:
-                sorted_champs = current_game[:, Input.champs_start:Input.champs_end][0]
+                sorted_champs = current_game[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]][0]
                 self.stat_champs_vs_roles(sorted_champs)
-                yield np.concatenate([gameIds, current_game], axis=1)
+                current_game[:,Input.indices["start"]["gameid"]:Input.indices["end"]["gameid"]] = gameIds
+                yield current_game
 
 
     def stat_champs_vs_roles(self, sorted_champs):
@@ -697,29 +721,38 @@ class ProcessNextItemsTrainingData:
                     y_item = self.item_manager.lookup_by("id", str(event['itemId']))
                     y = y_item["int"]
 
+                    # uninf_example = [[pos], champs, np.ravel(items_at_time_x),
+                    #                                  np.around(event['total_gold']).astype(int),
+                    #                                  np.around(event['cs']).astype(int),
+                    #                                  np.around(event['neutral_cs']).astype(int),
+                    #                                  np.around(event['xp']).astype(int),
+                    #                                  np.around(event['lvl']).astype(int),
+                    #                                  np.ravel(event['kda']).tolist(),
+                    #                                  np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
+                    #                                  np.ravel(event["baron_active"]).astype(int),
+                    #                                  np.ravel(event["elder_active"]).astype(int),
+                    #                                  np.ravel(event["dragons_killed"]).astype(int),
+                    #                                  np.ravel(event["dragon_soul_obtained"]).astype(int),
+                    #                                  np.ravel(event["dragon_soul_type"]).astype(int),
+                    #                                  np.ravel(event["turrets_destroyed"]).astype(int),
+                    #                                  np.ravel(event["first_team_blue"]).astype(int),
+                    #                                  [y]
+                    #                                  ]
+                    uninf_example = np.zeros((Input.len+1,), dtype=np.float64)
+                    for slice_name in Input.all_slices - {"gameid", "pos", "champs", "items", "current_gold"}:
 
-
-
-                    uninf_example = [[pos], champs, np.ravel(items_at_time_x),
-                                                     np.around(event['total_gold']).astype(int),
-                                                     np.around(event['cs']).astype(int),
-                                                     np.around(event['neutral_cs']).astype(int),
-                                                     np.around(event['xp']).astype(int),
-                                                     np.around(event['lvl']).astype(int),
-                                                     np.ravel(event['kda']).tolist(),
-                                                     np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(int),
-                                                     np.ravel(event["baron_active"]).astype(int),
-                                                     np.ravel(event["elder_active"]).astype(int),
-                                                     np.ravel(event["dragons_killed"]).astype(int),
-                                                     np.ravel(event["dragon_soul_obtained"]).astype(int),
-                                                     np.ravel(event["dragon_soul_type"]).astype(int),
-                                                     np.ravel(event["turrets_destroyed"]).astype(int),
-                                                     np.ravel(event["first_team_blue"]).astype(int),
-                                                     [y]
-                                                     ]
-                    out_uninf.append(np.concatenate(uninf_example, 0))
+                        uninf_example[Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = \
+                            np.ravel(event[slice_name]).astype(int)
+                    uninf_example[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = champs
+                    uninf_example[Input.indices["start"]["items"]:Input.indices["end"]["items"]] = np.ravel(items_at_time_x)
+                    uninf_example[Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = [pos]
+                    uninf_example[Input.indices["start"]["current_gold"]:Input.indices["end"]["current_gold"]] = \
+                        np.around(event['current_gold_sloped'] + np.array(delta_current_gold))
+                    uninf_example[Input.indices["start"]["gameid"]:Input.indices["end"]["gameid"]] = self.map_game_id_str2int(game['gameId'])
+                    uninf_example[-1] = y
+                    out_uninf.append(uninf_example)
                     if event['itemId'] == 0:
-                        out_inf.append(np.concatenate(uninf_example, 0))
+                        out_inf.append(uninf_example)
                         continue
 
                     if current_index in index2comp_item_state:
@@ -727,25 +760,28 @@ class ProcessNextItemsTrainingData:
                         for summ_pos, next_complete_item in enumerate(summ_next_items):
                             if next_complete_item == 0 or next_complete_item["id"] == 0:
                                 continue
-                            complete_example = [[summ_pos], champs, np.ravel(items_at_time_x),
-                                             np.around(event['total_gold']).astype(int),
-                                             np.around(event['cs']).astype(int),
-                                             np.around(event['neutral_cs']).astype(int),
-                                             np.around(event['xp']).astype(int),
-                                             np.around(event['lvl']).astype(int),
-                                             np.ravel(event['kda']).tolist(),
-                                             np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(
-                                                 int),
-                                                np.ravel(event["baron_active"]).astype(int),
-                                                np.ravel(event["elder_active"]).astype(int),
-                                                np.ravel(event["dragons_killed"]).astype(int),
-                                                np.ravel(event["dragon_soul_obtained"]).astype(int),
-                                                np.ravel(event["dragon_soul_type"]).astype(int),
-                                                np.ravel(event["turrets_destroyed"]).astype(int),
-                                                np.ravel(event["first_team_blue"]).astype(int),
-                                             [next_complete_item["int"]]
-                                             ]
-                            out_complete.append(np.concatenate(complete_example, 0))
+                            # complete_example = [[summ_pos], champs, np.ravel(items_at_time_x),
+                            #                  np.around(event['total_gold']).astype(int),
+                            #                  np.around(event['cs']).astype(int),
+                            #                  np.around(event['neutral_cs']).astype(int),
+                            #                  np.around(event['xp']).astype(int),
+                            #                  np.around(event['lvl']).astype(int),
+                            #                  np.ravel(event['kda']).tolist(),
+                            #                  np.around(event['current_gold_sloped'] + np.array(delta_current_gold)).astype(
+                            #                      int),
+                            #                     np.ravel(event["baron_active"]).astype(int),
+                            #                     np.ravel(event["elder_active"]).astype(int),
+                            #                     np.ravel(event["dragons_killed"]).astype(int),
+                            #                     np.ravel(event["dragon_soul_obtained"]).astype(int),
+                            #                     np.ravel(event["dragon_soul_type"]).astype(int),
+                            #                     np.ravel(event["turrets_destroyed"]).astype(int),
+                            #                     np.ravel(event["first_team_blue"]).astype(int),
+                            #                  [next_complete_item["int"]]
+                            #                  ]
+                            complete_example = np.copy(uninf_example)
+                            complete_example[Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = [summ_pos]
+                            complete_example[-1] = next_complete_item["int"]
+                            out_complete.append(complete_example)
 
 
 
@@ -766,25 +802,37 @@ class ProcessNextItemsTrainingData:
                             y = self.item_manager.lookup_by("id", str(component_item.id))["int"]
                             if y == 0:
                                 print(f"y==0 gameId {str(game['gameId'])}")
-                            out_inf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
-                                                           np.around(event_copy['total_gold']).astype(int),
-                                                           np.around(event_copy['cs']).astype(int),
-                                                           np.around(event_copy['neutral_cs']).astype(int),
-                                                           np.around(event_copy['xp']).astype(int),
-                                                           np.around(event_copy['lvl']).astype(int),
-                                                           np.ravel(event_copy['kda']).tolist(),
-                                                           np.around(event_copy['current_gold_sloped'] + np.array(
-                                                               delta_current_gold)).astype(int),
-                                                           np.ravel(event["baron_active"]).astype(int),
-                                                           np.ravel(event["elder_active"]).astype(int),
-                                                           np.ravel(event["dragons_killed"]).astype(int),
-                                                           np.ravel(event["dragon_soul_obtained"]).astype(int),
-                                                           np.ravel(event["dragon_soul_type"]).astype(int),
-                                                           np.ravel(event["turrets_destroyed"]).astype(int),
-                                                           np.ravel(event["first_team_blue"]).astype(int),
 
-                                                           [y]
-                                                           ], 0))
+                            inf_example = np.copy(uninf_example)
+                            inf_example[Input.indices["start"]["items"]:Input.indices["end"]["items"]] = \
+                                np.ravel(items_at_time_x)
+                            inf_example[-1] = y
+                            inf_example[Input.indices["start"]["current_gold"]:Input.indices["end"]["current_gold"]] = \
+                                np.around(event_copy['current_gold_sloped'] + np.array(delta_current_gold)).astype(int)
+                            out_inf.append(inf_example)
+
+                            #
+                            #
+                            #
+                            # out_inf.append(np.concatenate([[pos], champs, np.ravel(items_at_time_x),
+                            #                                np.around(event_copy['total_gold']).astype(int),
+                            #                                np.around(event_copy['cs']).astype(int),
+                            #                                np.around(event_copy['neutral_cs']).astype(int),
+                            #                                np.around(event_copy['xp']).astype(int),
+                            #                                np.around(event_copy['lvl']).astype(int),
+                            #                                np.ravel(event_copy['kda']).tolist(),
+                            #                                np.around(event_copy['current_gold_sloped'] + np.array(
+                            #                                    delta_current_gold)).astype(int),
+                            #                                np.ravel(event["baron_active"]).astype(int),
+                            #                                np.ravel(event["elder_active"]).astype(int),
+                            #                                np.ravel(event["dragons_killed"]).astype(int),
+                            #                                np.ravel(event["dragon_soul_obtained"]).astype(int),
+                            #                                np.ravel(event["dragon_soul_type"]).astype(int),
+                            #                                np.ravel(event["turrets_destroyed"]).astype(int),
+                            #                                np.ravel(event["first_team_blue"]).astype(int),
+                            #
+                            #                                [y]
+                            #                                ], 0))
                         except ValueError as e:
                             pass
 
@@ -957,7 +1005,7 @@ if __name__ == "__main__":
 
     regions = ["KR", "EUW", "NA", "EUNE", "BR", "TR", "LAS", "LAN", "RU", "JP", "OCE"]
     l = ProcessNextItemsTrainingData()
-    l.champ_vs_roles_elite_lower()
+    # l.champ_vs_roles_elite_lower()
 
     # games_by_top_leagues = [4000, 3000,2000,1000,950,900,850, 800, 750, 700, 650, 600, 550, 500, 450, 400, 350,
     #                             300, 250, 200, 150, 100, 50]
@@ -970,20 +1018,22 @@ if __name__ == "__main__":
     number_of_top_games = 10000
     number_of_lower_games = 20000
 
-    # start_date = cass.Patch.latest(region="NA").start
+    start_date = cass.Patch.latest(region="NA").start
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
     # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
+
+    # l.start_processing([3422740467], "NA", ".", ".", ".", 1,0, "lol")
     # s = train.PositionsTrainer()
     # s.train()
-    # l.update_roles()
-    # t = NextItemsTrainer()
-    # print("NOW TRAINING EARLY GAME")
-    # try:
-    #     t.build_next_items_standard_game_model()
-    # except Exception as e:
-    #     print(e)
-    # print("NOW TRAINING LATE GAME")
-    # try:
-    #     t.build_next_items_late_game_model()
-    # except Exception as e:
-    #     print(e)
+    l.update_roles()
+    t = NextItemsTrainer()
+    print("NOW TRAINING EARLY GAME")
+    try:
+        t.build_next_items_standard_game_model()
+    except Exception as e:
+        print(e)
+    print("NOW TRAINING LATE GAME")
+    try:
+        t.build_next_items_late_game_model()
+    except Exception as e:
+        print(e)
