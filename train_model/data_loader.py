@@ -179,8 +179,9 @@ class SortedNextItemsDataLoader(DataLoaderBase):
             self.read_test_from_np_files()
         if cond:
             self.test = self.test[cond(self.test)]
-        X = self.legacy_transform(self.test)
-        Y = self.test[:, -1]
+        # X = self.legacy_transform(self.test)
+        X = self.test[:, :-1]
+        Y = self.test[:, -1].astype(np.int32)
         return X,Y
 
     def legacy_transform(self, train_test):
@@ -201,8 +202,8 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         X[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = assists
 
         blues = train_test[:, legacy_indices["start"]["first_team_blue"]].astype(np.int32)
-        blue_side = np.zeros((train_test.shape[0], 2))
-        blue_side[np.arange(blues.shape[0]), blues] = 1
+        blue_side = np.ones((train_test.shape[0], 2))
+        blue_side[np.arange(blues.shape[0]), blues] = 0
         X[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]] = blue_side
 
         total_cs = train_test[:, legacy_indices["start"]["cs"]:legacy_indices["end"]["cs"]] + train_test[:,
@@ -221,9 +222,9 @@ class SortedNextItemsDataLoader(DataLoaderBase):
         if cond:
             self.train = self.train[cond(self.train)]
 
-        X = self.legacy_transform(self.train)
-
-        Y = self.train[:,-1]
+        # X = self.legacy_transform(self.train)
+        X = self.train[:, :-1]
+        Y = self.train[:,-1].astype(np.int32)
         # self.stat_items()
         return X, Y
 

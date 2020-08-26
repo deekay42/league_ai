@@ -36,6 +36,7 @@ min_clip = {"kills": 0, "deaths": 0, "assists": 0,
                                           "dragons_killed": 0.0,
                                           "turrets_destroyed": 0.0,
                                           "current_gold": 0.0}
-
+region2int = {"KR":100, "EUW":200, "NA":300, "EUNE":400, "BR":500, "TR":600, "LAS":700, "LAN":800, "RU":900, \
+                     "JP":1000, "OCE":1100}
 
 

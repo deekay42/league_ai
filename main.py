@@ -1,130 +1,37 @@
 #DONT CHANGE THESE IMPORTS. PYINSTALLER NEEDS THESE
-print("starting load")
 import time
 import threading
 import importlib
-sstarttime = time.time()
-
-
-from utils import heavy_imports 
-
-print("starting load 1")
-starttime = time.time()
+from utils import heavy_imports
 import os
-print(f"Took {time.time() - starttime} s")
-print("2")
-starttime = time.time()
 import configparser
-print(f"Took {time.time() - starttime} s")
-print("3")
-starttime = time.time()
 import traceback
-print(f"Took {time.time() - starttime} s")
-print("4")
-starttime = time.time()
 from tkinter import Tk
-print(f"Took {time.time() - starttime} s")
-print("5")
-starttime = time.time()
 from tkinter import messagebox
-print(f"Took {time.time() - starttime} s")
-print("6")
-# starttime = time.time()
-# import cv2 as cv
-# print(f"Took {time.time() - starttime} s")
-print("7")
-starttime = time.time()
 import numpy as np
-print(f"Took {time.time() - starttime} s")
-print("8")
-starttime = time.time()
 import cProfile
-print(f"Took {time.time() - starttime} s")
-print("9")
-starttime = time.time()
 import io
-print(f"Took {time.time() - starttime} s")
-print("10")
-starttime = time.time()
 import pstats
-print(f"Took {time.time() - starttime} s")
-print("11")
-starttime = time.time()
 import copy
-print(f"Took {time.time() - starttime} s")
-print("12")
-starttime = time.time()
 import glob
-print(f"Took {time.time() - starttime} s")
-print("13")
-starttime = time.time()
 import json
-print(f"Took {time.time() - starttime} s")
-print("14")
-starttime = time.time()
 from collections import Counter
-starttime = time.time()
-print(f"Took {time.time() - starttime} s")
-# print("15")
-# starttime = time.time()
-# # from utils import cass_configured as cass
-# from cassiopeia.core.staticdata import Item
-# print(f"Took {time.time() - starttime} s")
-print("16")
-starttime = time.time()
 from range_key_dict import RangeKeyDict
-print(f"Took {time.time() - starttime} s")
-print("17")
-starttime = time.time()
 from watchdog.events import FileSystemEventHandler
-print(f"Took {time.time() - starttime} s")
-print("18")
-starttime = time.time()
 from watchdog.observers import Observer
-print(f"Took {time.time() - starttime} s")
-print("19")
-starttime = time.time()
 from constants import ui_constants, game_constants, app_constants
-print(f"Took {time.time() - starttime} s")
-print("20")
-starttime = time.time()
 from train_model.model import ChampImgModel, ItemImgModel, SelfImgModel, NextItemModel, CSImgModel, \
     KDAImgModel, CurrentGoldImgModel, LvlImgModel, MultiTesseractModel, CPredict
-print(f"Took {time.time() - starttime} s")
-print("22")
-starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager
-print(f"Took {time.time() - starttime} s")
-print("23")
-starttime = time.time()
 from utils.build_path import build_path_for_gold, InsufficientGold, NoPathFound
-print(f"Took {time.time() - starttime} s")
-print("24")
-starttime = time.time()
 from utils.misc import itemslots_left
-print(f"Took {time.time() - starttime} s")
-print("25")
-starttime = time.time()
 from utils import misc
-print(f"Took {time.time() - starttime} s")
-print("26")
-starttime = time.time()
 import configparser
-print(f"Took {time.time() - starttime} s")
-print("27")
-starttime = time.time()
 import logging
-print(f"Took {time.time() - starttime} s")
-print("28")
-starttime = time.time()
 import sys
-print(f"Took {time.time() - starttime} s")
-
-print(f"OVERALL Took {time.time() - sstarttime} s")
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)
 # logger.addHandler(logging.StreamHandler(sys.stdout))
-
 
 
 class NoMoreItemSlots(Exception):
@@ -133,112 +40,113 @@ class NoMoreItemSlots(Exception):
 class Main(FileSystemEventHandler):
 
     def __init__(self):
-        logger.info("Starting main")
-        self.onTimeout = False
-        self.loldir = misc.get_lol_dir()
-        self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        self.screenshot_dir_created = False
-        logger.info("Go tlol dir !")
-        self.config = configparser.ConfigParser()
-        logger.info("Reading config")
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-
-        while True:
-            try:
-            # res = 1440,810
-                res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-                break
-            except KeyError as e:
-                print(repr(e))
-                os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
-                misc.get_lol_dir()
-
-        try:
-            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            show_names_in_sb = False
-
-        try:
-            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        except KeyError as e:
-            print(repr(e))
-            flipped_sb = False
-
-        try:
-            hud_scale = float(self.config['HUD']['GlobalScale'])
-        except KeyError as e:
-            print(repr(e))
-            hud_scale = 0.5
-
-
-        if flipped_sb:
-            Tk().withdraw()
-            messagebox.showinfo("Error",
-                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-            raise Exception("League IQ does not work if the scoreboard is mirrored.")
-
-        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-
-        if too_many_screenshots:
-            Tk().withdraw()
-            messagebox.showinfo("Warning",
-                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-
-
-
-
-        # self.res_converter = ui_constants.ResConverter(1920, 1200, 0.48)
+        # logger.info("Starting main")
+        # self.onTimeout = False
+        # self.loldir = misc.get_lol_dir()
+        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        # self.screenshot_dir_created = False
+        # logger.info("Go tlol dir !")
+        # self.config = configparser.ConfigParser()
+        # logger.info("Reading config")
+        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        #
+        # while True:
+        #     try:
+        #     # res = 1440,810
+        #         res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        #         break
+        #     except KeyError as e:
+        #         print(repr(e))
+        #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
+        #         misc.get_lol_dir()
+        #
+        # try:
+        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     show_names_in_sb = False
+        #
+        # try:
+        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        # except KeyError as e:
+        #     print(repr(e))
+        #     flipped_sb = False
+        #
+        # try:
+        #     hud_scale = float(self.config['HUD']['GlobalScale'])
+        # except KeyError as e:
+        #     print(repr(e))
+        #     hud_scale = 0.5
+        #
+        #
+        # if flipped_sb:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Error",
+        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        #
+        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        #
+        # if too_many_screenshots:
+        #     Tk().withdraw()
+        #     messagebox.showinfo("Warning",
+        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        #
+        #
+        #
+        #
+        self.res_converter = ui_constants.ResConverter(1920, 1080, 0.48)
+        self.res_converter = ui_constants.ResConverter(1920, 1080, 1.0)
         # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
         logger.info("Loading res cvt")
-        self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        dll_hook = CPredict()
-        # dll_hook = None
+        # dll_hook = CPredict()
+        dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(self.res_converter, dll_hook=dll_hook)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(self.res_converter, dll_hook=dll_hook)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(self.res_converter, dll_hook=dll_hook)
         self.self_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.kda_img_model = KDAImgModel(self.res_converter, dll_hook=dll_hook)
         self.kda_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
                                                      CSImgModel(self.res_converter),
                                                      CurrentGoldImgModel(self.res_converter)])
@@ -930,8 +838,8 @@ class Main(FileSystemEventHandler):
             print(e)
             print(traceback.print_exc())
             out_string = "0"
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -983,12 +891,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen445.png")
-# for i in range(386,396):
-#     m.process_image(f"test_data/screenshots/Screen{i}.png")
+# m.process_image(f"test_data/screenshots/Screen36.png")
+for i in range(35,58):
+    m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
 

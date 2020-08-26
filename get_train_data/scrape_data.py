@@ -237,10 +237,12 @@ class Scraper:
 
                 winning_team = match.blue_team
                 losing_team = match.red_team
-                first_team_blue = 1
+                first_team_blue = [1,0]
                 if losing_team.win:
                     winning_team, losing_team = losing_team, winning_team
-                    first_team_blue = 0
+                    first_team_blue = [0,1]
+
+
                 print("Determine win team complete")
                 teams = []
                 for team in [winning_team, losing_team]:
@@ -371,13 +373,20 @@ class Scraper:
 
                         elif event_type == "BUILDING_KILL":
                             if event.killer_id == 0:
-                                pass
+                                # pass
                                 # if event.team_id == 100 and blue_team_wins:
-                                if event._data[cass.EventData].side == 100 and first_team_blue or \
-                                    event._data[cass.EventData].side == 200 and not first_team_blue:
-                                    team = 1
+                                # if event._data[cass.EventData].side == 100 and first_team_blue or \
+                                #     event._data[cass.EventData].side == 200 and not first_team_blue:
+                                if event.side == cass.Side.red:
+                                    if first_team_blue == [1,0]:
+                                        team = 0
+                                    else:
+                                        team = 1
                                 else:
-                                    team = 0
+                                    if first_team_blue == [1, 0]:
+                                        team = 1
+                                    else:
+                                        team = 0
                             else:
                                 team = int(participant_id2header_participants_index[event.killer_id] >= 5)
                             if event.building_type == "TOWER_BUILDING":
@@ -438,19 +447,22 @@ class Scraper:
                                      "timestamp": int(event.timestamp.total_seconds() * 1000),
                                      "total_gold": np.around(event_total_gold.copy(), 2).tolist(),
                                      "current_gold_sloped": np.around(event_current_gold.copy(), 2).tolist(),
-                                     "cs": np.around(event_cs.copy(), 2).tolist(),
-                                     "neutral_cs": np.around(event_neutral_cs.copy(), 2).tolist(),
+                                     "cs": (np.around(event_cs.copy(), 2) + np.around(event_neutral_cs.copy(),
+                                                                                     2)).tolist(),
+
                                      "xp": np.around(event_xp.copy(), 2).tolist(),
                                      "lvl": event_lvl.copy(),
-                                     "kda": np.ravel(kda).tolist().copy(),
+                                     "kills": np.ravel(kda)[0::3].tolist().copy(),
+                                     "deaths": np.ravel(kda)[1::3].tolist().copy(),
+                                     "assists": np.ravel(kda)[2::3].tolist().copy(),
                                      "frame_index": frame_index + 1,
-                                     "baron_active": baron_active.copy(),
-                                     "elder_active": elder_active.copy(),
+                                     "baron": baron_active.copy(),
+                                     "elder": elder_active.copy(),
                                      "dragons_killed": np.ravel(dragon_kills).tolist().copy(),
-                                     "dragon_soul_obtained": dragon_soul_obtained.copy(),
+
                                      "dragon_soul_type": np.ravel(dragon_soul_type).tolist().copy(),
                                      "turrets_destroyed": turrets_destroyed.copy(),
-                                     "first_team_blue": first_team_blue
+                                     "blue_side": first_team_blue
                                      })
 
 
