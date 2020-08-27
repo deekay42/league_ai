@@ -58,8 +58,8 @@ class Res_16_9(ResolutionBase):
         self.coords["champs"]["x_crop"] = 28
         self.coords["champs"]["y_crop"] = 28
 
-        self.coords["items"]["x_start"] = 715
-        self.coords["items"]["y_start"] = 332
+        self.coords["items"]["x_start"] = 714
+        self.coords["items"]["y_start"] = 331
         self.coords["items"]["x_diff"] = 571
         self.coords["items"]["y_diff"] = 76
         self.coords["items"]["x_crop"] = 29
