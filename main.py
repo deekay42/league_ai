@@ -894,7 +894,7 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen36.png")
+# m.process_image(f"test_data/screenshots/Screen40.png")
 for i in range(35,58):
     m.process_image(f"test_data/screenshots/Screen{i}.png")
 

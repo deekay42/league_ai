@@ -1329,8 +1329,8 @@ class NextItemsTrainer(Trainer):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        my_champ_embs_normed = np.load("champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1442,8 +1442,8 @@ class FirstItemsTrainer(NextItemsTrainer):
 
         self.X_test_aux, self.Y_test_aux = self.build_aux_test_data('test_data/first_items_test.json')
 
-        my_champ_embs_normed = np.load("champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1605,8 +1605,8 @@ class StarterItemsTrainer(NextItemsTrainer):
         self.X_test, self.Y_test = self.build_aux_test_data('test_data/starter_items_test.json')
 
 
-        my_champ_embs_normed = np.load("champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1667,8 +1667,8 @@ class BootsTrainer(NextItemsTrainer):
         self.X_test, self.Y_test = self.build_aux_test_data('test_data/boots_items_test.json')
 
 
-        my_champ_embs_normed = np.load("champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -2001,7 +2001,7 @@ class ChampsEmbeddingTrainer(Trainer):
                     # embs, dst = self.extract_embeddings(model, 'my_embedding/MatMul:0')
                     # np.save(emb_type, np.concatenate([embs, np.expand_dims(dst, axis=-1)], axis=1))
                     embs_normed = embs / np.expand_dims(np.linalg.norm(embs, axis=-1), axis=-1)
-                    np.save(emb_type+"_normed", embs_normed)
+                    np.save(app_constants.asset_paths[emb_type+"_normed"], embs_normed)
 
 
 

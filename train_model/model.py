@@ -906,8 +906,8 @@ class NextItemModel(GameModel):
             self.network = network.NextItemBootsNetwork()
         
 
-        my_champ_embs_normed = np.load(app_constants.asset_paths["my_champs_embeddings"])
-        opp_champ_embs_normed = np.load(app_constants.asset_paths["opp_champs_embeddings"])
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
