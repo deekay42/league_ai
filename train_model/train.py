@@ -1329,8 +1329,8 @@ class NextItemsTrainer(Trainer):
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load("champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1442,8 +1442,8 @@ class FirstItemsTrainer(NextItemsTrainer):
 
         self.X_test_aux, self.Y_test_aux = self.build_aux_test_data('test_data/first_items_test.json')
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load("champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1605,8 +1605,8 @@ class StarterItemsTrainer(NextItemsTrainer):
         self.X_test, self.Y_test = self.build_aux_test_data('test_data/starter_items_test.json')
 
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load("champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1667,8 +1667,8 @@ class BootsTrainer(NextItemsTrainer):
         self.X_test, self.Y_test = self.build_aux_test_data('test_data/boots_items_test.json')
 
 
-        my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
+        my_champ_embs_normed = np.load("champ_embs_normed.npy")
+        opp_champ_embs_normed = np.load("vs_champ_embs_normed.npy")
         my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
 
@@ -1722,20 +1722,82 @@ class ChampsEmbeddingTrainer(Trainer):
     def __init__(self):
         super().__init__()
         self.manager = ItemManager()
-        self.num_epochs = 2000
+        self.num_epochs = 3
         self.q = None
         self.network = ChampEmbeddings()
 
+    def load_champ_item_dist(self):
+
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        distrib = [Counter() for _ in range(ChampManager().get_num("int"))]
+        vs_distrib = [Counter() for _ in range(ChampManager().get_num("int"))]
+        X, _ = dataloader_elite.get_train_data()
+        known_gameIds = set()
+        complete_items = set([i["int"] for i in list(ItemManager().get_completes().values())])
+        for x in X[::-1]:
+            gameid = int(x[Input.indices["start"]["gameid"]])
+            if gameid in known_gameIds:
+                continue
+            else:
+                known_gameIds.add(gameid)
+                champs = x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]].astype(np.int32)
+                items = x[Input.indices["start"]["items"]:Input.indices["end"]["items"]:2].astype(np.int32)
+
+                for i, champ_int in enumerate(champs):
+                    champ_items = items[i * 6:(i + 1) * 6]
+                    champ_items = [i for i in champ_items if i in complete_items]
+                    opp_items = items[:30] if i >= 5 else items[30:]
+                    opp_items = [i for i in opp_items if i in complete_items]
+                    distrib[champ_int] += Counter(champ_items)
+                    vs_distrib[champ_int] += Counter(opp_items)
+
+        if 0 in distrib:
+            del distrib[0]
+        if -1 in distrib:
+            del distrib[-1]
+        if 0 in vs_distrib:
+            del vs_distrib[0]
+        if -1 in vs_distrib:
+            del vs_distrib[-1]
+
+        distrib = [dict(zip(champ_distrib.keys(), np.array(list(champ_distrib.values())) / sum(champ_distrib.values())))
+                   for champ_distrib
+                   in distrib]
+        vs_distrib = [dict(zip(champ_distrib.keys(), np.array(list(champ_distrib.values())) / sum(champ_distrib.values(
+
+        )))) for champ_distrib in vs_distrib]
+        distrib = [sorted(d.items(), key=lambda a: a[1])[-20:] for d in distrib]
+        vs_distrib = [sorted(d.items(), key=lambda a: a[1])[-20:] for d in vs_distrib]
+        num_champs = ChampManager().get_num("int")
+        num_items = ItemManager().get_num("int")
+        distrib_arr = np.zeros((num_champs, num_items))
+        vs_distrib_arr = np.zeros((num_champs, num_items))
+
+        for i in range(num_champs):
+            for idx, val in distrib[i]:
+                distrib_arr[i, idx] = val
+            for idx, val in vs_distrib[i]:
+                vs_distrib_arr[i, idx] = val
+        self.champ_item_dist = dict()
+        self.champ_item_dist["champ_embs"] = distrib_arr[1:]
+        self.champ_item_dist["vs_champ_embs"] = vs_distrib_arr[1:]
+        # np.save("champ_item_dist.npy", distrib_arr)
+        # np.save("vs_champ_item_dist.npy", vs_distrib_arr)
+        #
+        # print("all_done")
 
     def determine_best_eval(self, scores):
         # epoch counter is 1 based
-        return np.argmax(scores[:, 0]) + 1
+        return np.argmax(scores) + 1
 
 
     #     def get_train_data(self):
     #         return np.array(self.X)[:,1:], np.array(self.X)[:,1:]
+
     def get_train_data(self, reps=10000):
-        return np.tile(np.array(self.X)[:,1:], [reps, 1]), np.tile(np.array(self.X)[:,0], reps)
+        # return np.tile(np.array(self.X)[:,1:], [reps, 1]), np.tile(np.array(self.X)[:,0], reps)
+        return np.tile(np.array(self.X), [reps, 1]), np.tile(np.arange(ChampManager().get_num("int") - 1), reps)
 
 
 
@@ -1861,11 +1923,14 @@ class ChampsEmbeddingTrainer(Trainer):
         self.save_best_model(best_model_index)
 
 
-    def build_champ_embeddings_model(self, distrib):
-        self.train_path = app_constants.model_paths["train"]["next_items_starter"]
-        self.best_path = app_constants.model_paths["best"]["next_items_starter"]
-        print("Loading training data")
+    def build_champ_embeddings_model(self):
+        for emb_type in ["champ_embs", "vs_champ_embs"]:
 
+            self.train_path = app_constants.model_paths["train"][emb_type]
+            self.best_path = app_constants.model_paths["best"][emb_type]
+            self.X = self.champ_item_dist[emb_type]
+            self.build_new_model()
+            self.get_embedding_for_model(emb_type)
         # dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
         #                                                              "next_items_processed_elite_sorted_complete"])
         #
@@ -1876,9 +1941,9 @@ class ChampsEmbeddingTrainer(Trainer):
         # for champ_int, item in zip(champ_ints, items):
         #     self.X.append(np.concatenate([[champ_int], item], axis=0))
 
-        self.X = distrib
+
         # self.X = np.load("champ_item_distrib.npy")
-        self.build_new_model()
+
 
 
     def train_neural_network(self):
@@ -1886,7 +1951,7 @@ class ChampsEmbeddingTrainer(Trainer):
             with tf.Graph().as_default():
                 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
                     tflearn.is_training(True)
-                    self.network = self.network.build()
+                    self.network = ChampEmbeddings().build()
                     model = tflearn.DNN(self.network, session=sess)
                     sess.run(tf.global_variables_initializer())
                     scores = []
@@ -1896,7 +1961,7 @@ class ChampsEmbeddingTrainer(Trainer):
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
                         model.save(self.train_path + self.model_name + str(epoch + 1))
-                        self.eval_model(model, epoch)
+                        scores.append(self.eval_model(model, epoch))
 
         return scores
 
@@ -1911,50 +1976,52 @@ class ChampsEmbeddingTrainer(Trainer):
                                                     model.targets)
         embeddings = model.predictor.evaluate(feed_dict, [layer_name], x.shape[0])[0]
         # tree = spatial.KDTree(embeddings)
-        d = tree.query(embeddings, k=2)
-        d = d[0][:,1]
-        return embeddings, d
+        # d = tree.query(embeddings, k=2)
+        # d = d[0][:,1]
+        # return embeddings, d
+        return embeddings
 
 
 
 
 
 
-    def get_embedding_for_model(self, path, distrib, out_path, out_path_normed):
-        self.X = distrib
+    def get_embedding_for_model(self, emb_type):
         with tf.device("/gpu:0"):
             with tf.Graph().as_default():
                 with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
                     tflearn.is_training(False)
-                    self.network = self.network.build()
+                    self.network = ChampEmbeddings().build()
                     model = tflearn.DNN(self.network, session=sess)
                     sess.run(tf.global_variables_initializer())
+                    path = glob.glob(app_constants.model_paths["best"][emb_type] + "my_model*")[0]
+                    path = path.rpartition('.')[0]
                     model.load(path)
-                    embs, dst = self.extract_embeddings(model, 'my_embedding/MatMul:0')
-                    np.save(out_path, np.concatenate([embs, np.expand_dims(dst, axis=-1)], axis=1))
+                    embs = self.extract_embeddings(model, 'my_embedding/MatMul:0')
+                    # embs, dst = self.extract_embeddings(model, 'my_embedding/MatMul:0')
+                    # np.save(emb_type, np.concatenate([embs, np.expand_dims(dst, axis=-1)], axis=1))
                     embs_normed = embs / np.expand_dims(np.linalg.norm(embs, axis=-1), axis=-1)
-                    np.save(out_path_normed, embs_normed)
+                    np.save(emb_type+"_normed", embs_normed)
 
 
 
 
 if __name__ == "__main__":
     # t = ChampsEmbeddingTrainer()
-    # t.build_champ_embeddings_model(np.load("vs_champ_item_distrib.npy"))
-    # t.get_embedding_for_model('models/best/next_items/starter/my_model17', np.load("vs_champ_item_distrib.npy"),
-    #                           "opp_champ_embs_dst")
+    # t.load_champ_item_dist()
+    # t.build_champ_embeddings_model()
 
-
-    # t = FirstItemsTrainer()
-    # t.train()
-    # t = BootsTrainer()
-    # t.train()
-    # t = StarterItemsTrainer()
-    # t.train()
     t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
-    # t = NextItemsTrainer()
     t.build_next_items_late_game_model()
+    t = FirstItemsTrainer()
+    t.train()
+    t = BootsTrainer()
+    t.train()
+    t = StarterItemsTrainer()
+    t.train()
+    # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
+
 
 
 
@@ -2037,6 +2104,11 @@ if __name__ == "__main__":
     # ax.set_zlabel('Z Label')
     #
     # plt.show()
+
+
+
+
+
 
 
 
