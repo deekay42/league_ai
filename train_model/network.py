@@ -896,7 +896,7 @@ class NextItemNetwork(LolNetwork):
         class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
                                                                           "class_weights"], dtype=tf.float32)), 1)
         if original_input is not None:
-            scaled_weights = class_weights * original_input[:,226]
+            scaled_weights = class_weights * original_input[:,Input.len]
         else:
             scaled_weights = class_weights
 
@@ -1321,7 +1321,7 @@ class NextItemFirstItemNetwork(NextItemNetwork):
                                  loss=self.class_weighted_sm_ce_loss,
                                  name='target', metric=self.weighted_accuracy)
 
-class ChampEmbeddings:
+class ChampEmbeddings(NextItemNetwork):
 
     def __init__(self):
         super().__init__()
@@ -1345,6 +1345,7 @@ class ChampEmbeddings:
             }
 
 
+    #given the common items for a champ we're predicting the champ int
     def build(self):
         total_num_champs = self.game_config["total_num_champs"]
         total_num_items = ItemManager().get_num("int")
@@ -1369,10 +1370,3 @@ class ChampEmbeddings:
                                  learning_rate=self.network_config["learning_rate"],
                                  loss=self.class_weighted_sm_ce_loss,
                                  name='target')
-
-    def class_weighted_sm_ce_loss(self, y_pred, y_true, target_summ_items_sparse):
-
-        class_weights = tf.reduce_sum(tf.multiply(y_true, tf.constant(self.network_config[
-                                                                          "class_weights"], dtype=tf.float32)), 1)
-
-        return tf.losses.softmax_cross_entropy(y_true, y_pred, weights=class_weights)
