@@ -289,11 +289,11 @@ class WinPredTrainer(Trainer):
         for config in self.network_config:
             self.network_config[config]["noise"] = Input.scale_rel(self.network_config[config]["noise"])
 
-        game_constants.min_clip_scaled = dict()
-        game_constants.max_clip_scaled = dict()
-
-        game_constants.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
-        game_constants.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
+        # game_constants.min_clip_scaled = dict()
+        # game_constants.max_clip_scaled = dict()
+        #
+        # game_constants.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
+        # game_constants.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
 
 
 
@@ -356,10 +356,13 @@ class WinPredTrainer(Trainer):
         dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
                                                                      "next_items_processed_elite_sorted_uninf"])
         dataloader_pro = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["win_pred"])
-        # dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-        #                                                              "next_items_processed_lower_sorted_uninf"])
+        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_lower_sorted_uninf"])
         print("Loading elite train data")
-        self.X, _ = dataloader_elite.get_train_data()
+        X_elite, _ = dataloader_elite.get_train_data()
+        # X_lower, _ = dataloader_lower.get_train_data()
+        # self.X = np.concatenate([X_elite, X_lower], axis=0)
+        self.X = X_elite
         # self.X = np.load("small.npy")
         # self.X = np.zeros((100,226))
         # self.X = self.X[::100][:50000]
@@ -504,9 +507,13 @@ class WinPredTrainer(Trainer):
         total_gold_unscaled = Input().standard_scalers["total_gold"].inverse_transform(total_gold_scaled)
         total_gold_team1_unscaled_sum = np.sum(total_gold_unscaled[:, :game_constants.CHAMPS_PER_TEAM], axis=1)
         total_gold_team2_unscaled_sum = np.sum(total_gold_unscaled[:, game_constants.CHAMPS_PER_TEAM:], axis=1)
-        percentage_score = self.percentage_score(total_gold_team1_unscaled_sum / (total_gold_team1_unscaled_sum +
-                                                                                         total_gold_team2_unscaled_sum),
-                                                        Y_test)
+        # percentage_score = self.percentage_score(total_gold_team1_unscaled_sum / (total_gold_team1_unscaled_sum +
+        #                                                                                  total_gold_team2_unscaled_sum),
+        #                                                 Y_test)
+        percentage_score = self.percentage_score(0.5 + 0.5*np.maximum(np.minimum((total_gold_team1_unscaled_sum -
+                                                    total_gold_team2_unscaled_sum)/10000, 1),-1),
+                                                 Y_test)
+
         abs_score = self.abs_score(total_gold_team1_unscaled_sum > total_gold_team2_unscaled_sum,
                                                    Y_test)
         accuracies["%_reg"] = percentage_score
@@ -539,7 +546,7 @@ class WinPredTrainer(Trainer):
         accuracies["standard"] = self.run_network_configs(model, 1)
 
         model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
-        accuracies["gauss"] = self.run_network_configs(model, 16)
+        accuracies["gauss"] = self.run_network_configs(model, 4)
 
         accuracies["gold"] = dict()
         for test_set_name in self.test_sets:
@@ -2011,16 +2018,16 @@ if __name__ == "__main__":
     # t.load_champ_item_dist()
     # t.build_champ_embeddings_model()
 
-    t = NextItemsTrainer()
-    t.build_next_items_late_game_model()
-    t = FirstItemsTrainer()
-    t.train()
-    t = BootsTrainer()
-    t.train()
-    t = StarterItemsTrainer()
-    t.train()
     # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
+    # t.build_next_items_late_game_model()
+    # t = FirstItemsTrainer()
+    # t.train()
+    # t = BootsTrainer()
+    # t.train()
+    # t = StarterItemsTrainer()
+    # t.train()
+    t = NextItemsTrainer()
+    t.build_next_items_standard_game_model()
 
 
 
