@@ -1066,8 +1066,8 @@ class StandardNextItemNetwork(NextItemNetwork):
         lvl_diff = tf.reshape(lvl_diff, (-1, self.game_config["champs_per_team"]))
         cs_diff = tf.reshape(cs_diff, (-1, self.game_config["champs_per_team"]))
 
-        _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
-            opp_team_champ_ints, "opp_champ_embs", [0.01], opp_index_no_offset, n, 1.0)
+        # _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+        #     opp_team_champ_ints, "opp_champ_embs", [0.01], opp_index_no_offset, n, 1.0)
 
         final_input_layer = merge(
             [
