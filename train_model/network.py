@@ -1074,7 +1074,7 @@ class StandardNextItemNetwork(NextItemNetwork):
                 # target_summ_champ_emb_dropout_flat,
                 # opp_summ_champ_emb_dropout_flat,
                 # opp_team_champ_embs_dropout_flat,
-                opp_team_champ_embs_dropout_flat,
+                opp_champs_k_hot,
                 target_summ_one_hot,
                 opp_summ_one_hot,
                 pos_one_hot,
@@ -1082,7 +1082,7 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
-        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
