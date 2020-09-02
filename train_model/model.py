@@ -779,9 +779,10 @@ class WinPredModel(GameModel):
 
 
 
-    def bayes_predict_sym(self, x, x_flipped):
-        blue_team_wins_score, blue_team_wins_std  = self.bayes_predict(x)
-        red_team_wins_score, red_team_wins_std = self.bayes_predict(x_flipped)
+    def bayes_predict_sym(self, x, tile_factor):
+        x_flipped = Input().flip_teams(x)
+        blue_team_wins_score, blue_team_wins_std  = self.bayes_predict(x, tile_factor)
+        red_team_wins_score, red_team_wins_std = self.bayes_predict(x_flipped, tile_factor)
         total_score = blue_team_wins_score + red_team_wins_score
         return blue_team_wins_score/total_score
 
@@ -1118,8 +1119,8 @@ if __name__ == "__main__":
     # print(model.predict(x))
     # print(model.predict(x_flipped))
 
-    from train_model.train import WinPredTrainer
-    t = WinPredTrainer()
+    # from train_model.train import WinPredTrainer
+    # t = WinPredTrainer()
 
     # test_x = np.load("training_data/win_pred/test_x.npz")['arr_0']
     # test_y = np.load("training_data/win_pred/test_y.npz")['arr_0']

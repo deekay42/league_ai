@@ -8,7 +8,12 @@ from utils.artifact_manager import ChampManager
 from constants import game_constants, app_constants
 from retrying import retry
 import math
-
+from train_model.model import WinPredModel
+import time
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from webdriver_manager.chrome import ChromeDriverManager
+import requests
 
 class ScrapeEsportsData:
 
@@ -27,6 +32,7 @@ class ScrapeEsportsData:
         self.dragon2cap = {"cloud": "AIR_DRAGON", "mountain": "EARTH_DRAGON", "infernal": "FIRE_DRAGON",
                            "ocean": "WATER_DRAGON"}
 
+
     @staticmethod
     def generate_live_feed(match_id):
         seconds_inc = 10
@@ -34,7 +40,7 @@ class ScrapeEsportsData:
         starting_time = dt.parse(ScrapeEsportsData.fetch_payload(url)['frames'][0]['rfc460Timestamp'])
         secs = starting_time.second
         starting_time = starting_time.replace(second=0, microsecond=0)
-        starting_time += datetime.timedelta(seconds=10*math.ceil(secs/10))
+        starting_time += datetime.timedelta(seconds=10 * math.ceil(secs / 10))
         duration = 0
         prev_timestamp = None
         tolerance = 0
@@ -47,9 +53,13 @@ class ScrapeEsportsData:
             duration += seconds_inc
             time_it_s = time_it.isoformat().replace('+00:00', 'Z')
             url = f"https://feed.lolesports.com/livestats/v1/window/{match_id}?startingTime={time_it_s}"
-            payload = ScrapeEsportsData.fetch_payload(url)
-            current_timestamp = payload['frames'][0]['rfc460Timestamp']
-            print(current_timestamp)
+            while True:
+                try:
+                    payload = ScrapeEsportsData.fetch_payload(url)
+                    current_timestamp = payload['frames'][0]['rfc460Timestamp']
+                    break
+                except KeyError:
+                    time.sleep(1)
             if current_timestamp == prev_timestamp:
                 if tolerance > 15:
                     break
@@ -60,14 +70,12 @@ class ScrapeEsportsData:
             yield payload
             prev_timestamp = current_timestamp
 
-
     @staticmethod
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
     def fetch_payload(url):
         print(f"attempting to fetch {url}")
         payload_raw = requests.get(url, timeout=5).text
         payload = json.loads(payload_raw)
-        print(f"success\n\n")
         return payload
 
 
@@ -167,6 +175,67 @@ class ScrapeEsportsData:
             yield self.snapshot2vec(snapshot)
 
 
+    def live_game2odds(self, gameId):
+        snapshots = s.generate_live_feed(gameId)
+
+        gauss_noise = {"kills": 0.5,
+                       "deaths": 0.5,
+                       "assists": 0.5,
+                       "total_gold": 125,
+                       "cs": 10,
+                       "lvl": 0.4,
+                       "dragons_killed": 0.2,
+                       "baron": 0.05,
+                       "elder": 0.05,
+                       "blue_side": 0.2,
+                       "champs": 0.1,
+                       "turrets_destroyed": 0.4,
+                       "current_gold": 125}
+        network_config = {
+            "learning_rate": 0.001,
+            "stats_dropout": 1.0,
+            "champ_dropout": 1.0,
+            "noise": gauss_noise
+        }
+
+        driver = webdriver.Firefox()
+
+        driver.get('https://www.pinnacle.com/en/soccer/france-national/fc-bastia-borgo-vs-bastia/1164026681')
+        # driver.get("https://www.bet365.com/#/IP/EV204480595520980842C151")
+
+        p = []
+
+
+        model = WinPredModel("standard", network_config=network_config)
+        model.load_model()
+        first_turret = False
+        for snapshot in snapshots:
+            x = np.array(list(self.snapshot2vec(snapshot)))[-1:]
+            turrets = x[0][Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
+            if not first_turret and sum(turrets==1):
+                first_turret = True
+                print("FIRST TURRET DESTROYED")
+
+            p = []
+            while p == []:
+                p = driver.find_elements_by_class_name("price")
+            live_odds_blue = float(p[0].text)
+            live_odds_red = float(p[1].text)
+
+            p_odds_blue = (1/live_odds_blue)/(1/live_odds_blue + 1/live_odds_red)
+            p_odds_red = (1 / live_odds_red) / (1 / live_odds_blue + 1 / live_odds_red)
+            pred_odds_blue = model.bayes_predict_sym(x, 128)[0]
+            print("  Betting blue team win: "+str(p_odds_blue))
+            print("Predicted blue team win: " + str(pred_odds_blue))
+            if pred_odds_blue > p_odds_blue:
+                print("You should bet on BLUE. Diff: "+str(p_odds_blue - pred_odds_blue))
+            else:
+                print("You should bet on RED. Diff: " + str(p_odds_blue - pred_odds_blue))
+            print("\n\n")
+
+
+
+
     def tournament2vec(self, gameIds, game_results):
         x = np.empty(shape=(0,Input.len), dtype=np.uint64)
 
@@ -185,6 +254,7 @@ class ScrapeEsportsData:
         filename = out_dir + "test_x.npz"
         with open(filename, "wb") as writer:
             np.savez_compressed(writer, x)
+
 
 
 #
@@ -207,11 +277,16 @@ gameIds = [
 104174992730350799, 104174992730350800, 104174992730350801,
 104174992730350817,104174992730350818,104174992730350819,
 104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
+104174992730350829,104174992730350830,104174992730350831,104174992730350832,
+104174992730350823,104174992730350824,104174992730350825,104174992730350826,104174992730350827,
 #LCK
 104174613333860706, 104174613333860707,
 104174613333926330, 104174613333926331, 104174613333926332,
 104174613333860666,104174613333860667,
 104174613333860746, 104174613333860747,
+104174613353718215,104174613353783752,104174613353783753,
+104174613353783755,104174613353783756,104174613353783757,
+
 #LPL
 #does not have live stats
 # 104282610721221959,104282610721221960,104282610721221961,104282610721221962,
@@ -222,7 +297,9 @@ gameIds = [
 104169295295132788,104169295295132789,104169295295132790,
 104169295295132800, 104169295295132801,104169295295132802,104169295295132803,
 104169295295132794,104169295295132795,104169295295132796,
-
+104169295295198348,104169295295198349,104169295295198350,104169295295198351,
+104169295295132806,104169295295132807,104169295295198344,104169295295198345,104169295295198346,
+104169295295198354,104169295295198355,104169295295198356
            ]
 game_results = [
     #LCS
@@ -234,11 +311,17 @@ game_results = [
 1,1,1,
 1,0,0,
 1,1,1,1,1,
+0,0,0,1,
+0,1,1,1,1,
 #LCK
 1,0,
 0,0,1,
 0,1,
 0,1,
+0,1,0,
+1,1,1,
+
+
 #LPL
 # 1,1,0,0,
 # 1,1,0,1,
@@ -247,13 +330,21 @@ game_results = [
 #LEC
 0,0,1,
 1,0,1,1,
-    0,0,0
-
+0,0,0,
+0,1,0,0,
+0,1,0,1,0,
+1,0,0,
 ]
 # gameIds = [104242514815381919]
 # game_results = [0]
+# s.live_game2odds(104174992730350827)
 s.tournament2vec(gameIds, game_results)
+# 104169295295132807
+# 104169295295198344
+# 104169295295198345
+# 104169295295198346
 #
+
 # X = np.load("training_data/win_pred/test_x.npz")['arr_0']
 # Y = np.load("training_data/win_pred/test_y.npz")['arr_0']
 # result = np.empty((Input.len,))
