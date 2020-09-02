@@ -373,6 +373,9 @@ class WinPredNetwork(LolNetwork):
         if network_config:
             self.network_config = network_config
 
+        self.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
+        self.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
+
 
     def calc_noise(self, flat_in_vec, noise_name):
         batch_len = tf.shape(flat_in_vec)[0]
@@ -390,8 +393,8 @@ class WinPredNetwork(LolNetwork):
         noise = self.calc_noise(flattened_vec, noise_name)
         noise = tf.identity(noise, "noise")
         noised_vec = flattened_vec + noise
-        noised_vec = tf.clip_by_value(noised_vec, game_constants.min_clip_scaled[noise_name],
-                                      game_constants.max_clip_scaled[noise_name])
+        noised_vec = tf.clip_by_value(noised_vec, self.min_clip_scaled[noise_name],
+                                      self.max_clip_scaled[noise_name])
         in_vec = tf.reshape(noised_vec, orig_shape)
         return in_vec
 
@@ -538,7 +541,7 @@ class WinPredNetwork(LolNetwork):
                 team_gold_diff,
                 # team1_total_kills,
                 # team2_total_kills,
-                team_kills_diff,
+                # team_kills_diff,
                 # kd,
                 # kills_diff,
                 # deaths_diff,
@@ -575,13 +578,13 @@ class WinPredNetwork(LolNetwork):
 
         net = final_input_layer
 
-        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',
+        # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
+        #                                           weights_init=variance_scaling(uniform=True)))
+        # net = dropout(net, self.stats_dropout)
+        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 128, bias=False, activation='relu',
-                                                  weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
         net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu',
@@ -956,7 +959,6 @@ class StandardNextItemNetwork(NextItemNetwork):
         target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
         # target_summ_items = dropout(target_summ_items, 0.9)
 
-
         cs_diff = self.calc_diff_from_target_summ(cs, pos_index)
         lvl_diff = self.calc_diff_from_target_summ(lvl, pos_index)
         kills_diff = self.calc_diff_from_target_summ(kills, pos_index)
@@ -1050,7 +1052,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         # enemy_team_lane_output = batch_normalization(fully_connected(net, 32, bias=False,
         #                                                                   activation='relu',  regularizer="L2"))
 
-
+        opp_team_champ_ints = champ_ints[:, 5:]
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         opp_champs_one_hot = champs_one_hot[:, self.game_config["champs_per_team"]:]
         opp_champs_one_hot = dropout(opp_champs_one_hot, 0.6, noise_shape=[n, self.game_config["champs_per_team"], 1])
@@ -1064,13 +1066,15 @@ class StandardNextItemNetwork(NextItemNetwork):
         lvl_diff = tf.reshape(lvl_diff, (-1, self.game_config["champs_per_team"]))
         cs_diff = tf.reshape(cs_diff, (-1, self.game_config["champs_per_team"]))
 
+        _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
+            opp_team_champ_ints, "opp_champ_embs", [0.01], opp_index_no_offset, n, 1.0)
 
         final_input_layer = merge(
             [
                 # target_summ_champ_emb_dropout_flat,
                 # opp_summ_champ_emb_dropout_flat,
                 # opp_team_champ_embs_dropout_flat,
-                opp_champs_k_hot,
+                opp_team_champ_embs_dropout_flat,
                 target_summ_one_hot,
                 opp_summ_one_hot,
                 pos_one_hot,
@@ -1078,7 +1082,7 @@ class StandardNextItemNetwork(NextItemNetwork):
                 target_summ_current_gold,
                 target_summ_items,
             ], mode='concat', axis=1)
-        net = batch_normalization(fully_connected(final_input_layer, 512, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(final_input_layer, 256, bias=False, activation='relu',
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
