@@ -576,15 +576,15 @@ class WinPredNetwork(LolNetwork):
                 stats_layer
             ], mode='concat', axis=1)
 
-        net = final_input_layer
+        net = stats_layer
 
         # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
         #                                           weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
+        net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',
                                                   weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
         net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu',

@@ -15,7 +15,7 @@ from train_model import generate, data_loader
 from train_model.model import *
 from train_model.network import *
 from utils import misc
-from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
+from utils.artifact_manager import ChampManager, ItemManager, SimpleManager, SelfManager
 import sklearn
 from tflearn.data_utils import to_categorical
 from scipy import spatial
@@ -674,6 +674,28 @@ class DynamicTrainingDataTrainer(Trainer):
 
     def eval_model(self, model, epoch):
         print("now eval")
+
+        # for i, img in enumerate(self.X_test):
+        #     cv.imshow(str(i), img)
+        # cv.waitKey(0)
+        y = model.predict(self.X_test)
+        y = [np.argmax(y_) for y_ in y]
+        # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+        # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+        y_actual = self.Y_test
+        # print("Pred Actual")
+        for i in range(len(y_actual)):
+            a_text = self.manager.lookup_by('img_int', y[i])['name']
+            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+            a = y[i]
+            b = y_actual[i]
+            if not np.all(np.equal(a, b)):
+                print(f"----->{i}: {a_text} {b_text}")
+            else:
+                print(f"{i}: {a_text} {b_text}")
+        print("Raw test data predictions: {0}".format(y))
+        print("Actual test data  values : {0}".format(y_actual))
+
         if not self.X_preprocessed_test:
             self.X_preprocessed_test = [[misc.preprocess(x, 1, 3) for x in self.X_test],
                                         [misc.preprocess(x, 1, 5) for x in self.X_test],
@@ -783,44 +805,6 @@ class DynamicTrainingDataTrainer(Trainer):
                                   callbacks=self.monitor_callback)
                         model.save(self.train_path + self.model_name + str(epoch + 1))
 
-
-                        # for i, img in enumerate(self.X_test[280:]):
-                        #     cv.imshow(str(i), img)
-                        # cv.waitKey(0)
-                        y = model.predict(self.X_test)
-                        y = [np.argmax(y_) for y_ in y]
-                        # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
-                        # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
-                        y_actual = self.Y_test
-                        # print("Pred Actual")
-                        for i in range(len(y_actual)):
-                            a_text = self.manager.lookup_by('img_int', y[i])['name']
-                            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
-                            a = y[i]
-                            b = y_actual[i]
-                            if not np.all(np.equal(a,b)):
-                                print(f"----->{i}: {a_text} {b_text}")
-                            else:
-                                print(f"{i}: {a_text} {b_text}")
-                        print("Raw test data predictions: {0}".format(y))
-                        print("Actual test data  values : {0}".format(y_actual))
-
-                        # y = model.predict(self.X_test)
-                        # y = [np.argmax(y_) for y_ in np.reshape(y, (4, 10))]
-                        # y = to_categorical(y, 10).flatten()
-                        # y_test = [np.argmax(y_) for y_ in np.reshape(self.Y_test, (4, 10))]
-                        # y_test = to_categorical(y_test, 10).flatten()
-                        # print("Pred Actual")
-                        # for i in range(len(y)):
-                        #     a = self.self_manager.lookup_by('img_int', y[i])['name']
-                        #     b = self.self_manager.lookup_by('img_int', self.Y_test[i][0])['name']
-                        #     if a != b:
-                        #         print(f"----->{i}: {a} {b}")
-                        #     else:
-                        #         print(f"{i}: {a} {b}")
-                        # print("Raw test data predictions: {0}".format(y))
-                        # print("Actual test data  values : {0}".format(self.Y_test))
-
                         score = self.eval_model(model, epoch)
                         scores.append(score)
         return scores
@@ -903,8 +887,6 @@ class ItemImgTrainer(DynamicTrainingDataTrainer):
     def __init__(self):
         self.model = ItemImgModel
         self.elements = "items"
-
-
         self.epoch_size = 100
         super().__init__()
         self.manager = ItemManager()
@@ -922,10 +904,56 @@ class SelfTrainer(DynamicTrainingDataTrainer):
         self.elements = "self"
         self.epoch_size = 1000
         super().__init__()
-
+        self.manager = SelfManager()
         self.network = SelfImgNetwork()
-        self.training_data_generator = lambda: generate.generate_training_data(self.manager.get_imgs(), self.epoch_size,
-                                                                               self.network_crop, True)
+        self.X_test, self.Y_test = self.load_test_data()
+        imgs = list(self.manager.get_imgs().values())
+        imgs.append(heavy_imports.cv.imread(app_constants.asset_paths["self"] + "Not Self Dead.png"))
+        imgs.append(heavy_imports.cv.imread(app_constants.asset_paths["self"] + "Self Dead.png"))
+        labels = [0,1,0,1]
+
+        self.training_data_generator = lambda: generate.generate_training_data_multiclass(imgs,labels, self.epoch_size,
+                                                                               self.network_crop)
+        self.num_epochs = 100
+
+    def eval_model(self, model, epoch):
+        print("now eval")
+
+        # for i, img in enumerate(self.X_test):
+        #     cv.imshow(str(i), img)
+        # cv.waitKey(0)
+        y = model.predict(self.X_test)
+        y = np.reshape(y, (3,10))
+        y = to_categorical([np.argmax(y_) for y_ in y], 10)
+        y = np.ravel(y)
+
+        # y = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in y]
+        # y_actual = [np.argmax(np.reshape(y_,(5,5)), axis=1) for y_ in self.Y_test]
+        y_actual = self.Y_test
+        # print("Pred Actual")
+        for i in range(len(y_actual)):
+            a_text = self.manager.lookup_by('img_int', y[i])['name']
+            b_text = self.manager.lookup_by('img_int', self.Y_test[i])['name']
+            a = y[i]
+            b = y_actual[i]
+            if not np.all(np.equal(a, b)):
+                print(f"----->{i}: {a_text} {b_text}")
+            else:
+                print(f"{i}: {a_text} {b_text}")
+        print("Raw test data predictions: {0}".format(y))
+        print("Actual test data  values : {0}".format(y_actual))
+
+        if not self.X_preprocessed_test:
+            self.X_preprocessed_test = [[misc.preprocess(x, 1, 3) for x in self.X_test],
+                                        [misc.preprocess(x, 1, 5) for x in self.X_test],
+                                        [misc.preprocess(x, 2, 3) for x in self.X_test],
+                                        [misc.preprocess(x, 2, 5) for x in self.X_test]]
+        main_eval = model.evaluate(np.array(self.X_test), np.array(self.Y_test)[:,np.newaxis], batch_size=self.batch_size)[0]
+        extra_eval = [model.evaluate(np.array(X), np.array(self.Y_test)[:,np.newaxis], batch_size=self.batch_size) for X
+                      in self.X_preprocessed_test]
+        extra_eval = np.reshape(extra_eval, -1)
+        self.log_output(main_eval, extra_eval, epoch)
+        return main_eval, extra_eval
 
 
 class PositionsTrainer(Trainer):
@@ -2026,8 +2054,8 @@ if __name__ == "__main__":
     # t.train()
     # t = StarterItemsTrainer()
     # t.train()
-    t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
 
 
 
@@ -2036,7 +2064,8 @@ if __name__ == "__main__":
     # t.build_new_img_model()
     # s = ChampImgTrainer()
     # s.build_new_img_model()
-
+    s = SelfTrainer()
+    s.build_new_img_model()
     # t = WinPredTrainer()
     # t.train()
     #
