@@ -35,6 +35,8 @@ base_img = cv.imread('res/sample3.png')
 
 
 def skewColor(img, rate):
+    if rate == 0:
+        return img
     r_channel_skew = np.random.randint(-int(rate * 256), int(rate * 256))
     g_channel_skew = np.random.randint(-int(rate * 256), int(rate * 256))
     b_channel_skew = np.random.randint(-int(rate * 256), int(rate * 256))
@@ -57,6 +59,8 @@ def move(img, x_dst, y_dst):
 
 
 def blur(img, rate):
+    if rate == 0:
+        return img
     rate = np.random.randint(rate)
     kernel = np.random.choice([3, 5, 7])
     for i in range(rate):
@@ -65,6 +69,8 @@ def blur(img, rate):
 
 
 def noisy(img, noise_typ, rate=1):
+    if rate == 0:
+        return img
     rate *= np.random.random()
     if noise_typ == "gauss":
         noisy = img + gauss
@@ -103,6 +109,8 @@ def thick(img, rate):
 
 
 def pixelate(img, rate):
+    if rate == 0 or rate >=1:
+        return img
     rate *= np.random.random()
     img_height = img.shape[0]
     img_width = img.shape[1]
@@ -112,6 +120,8 @@ def pixelate(img, rate):
 
 
 def grayOut(img, rate):
+    if rate == 0:
+        return img
     if np.random.random() < rate:
         return np.stack((cv.cvtColor(img, cv.COLOR_BGR2GRAY),) * 3, -1)
     else:
@@ -126,6 +136,8 @@ def mirror(img):
 
 
 def changeBrightness(img, value):
+    if value == 0:
+        return img
     value = np.random.randint(-value, value, dtype=np.int8)
 
     hsv = cv.cvtColor(img, cv.COLOR_BGR2HSV)
@@ -233,6 +245,8 @@ def overlayText(img):
 
 
 def occlude(img, num_circles, circle_size, darkness_rate):
+    if darkness_rate == 0:
+        return img
     circle_size *= np.random.random()
     num_circles = np.random.randint(0, num_circles)
     result = img.copy().astype(np.int16)
@@ -262,6 +276,8 @@ def translucentOverlay(img):
 
 
 def changeContrast(img, rate):
+    if rate == 0:
+        return img
     img = np.int16(img)
     rate = np.random.randint(0, rate)
     rate -= rate
@@ -747,6 +763,24 @@ kda_config = \
         "gray_rate": 0.3
     }
 
+self_config = \
+    {
+        "angle": 360,
+        "num_circles": 1,
+        "circle_size": 1.0,
+        "darkness_rate": 0.1,
+        "color_change_rate": 0.07,
+        "blur_rate": 3,
+        "pixelate_rate": 0.5,
+        "brightness_rate": 20,
+        "line_rate": 0,
+        "contrast_rate": 10,
+        "translate_rate": 0.4,
+        "resize_rate": 0.2,
+        "gaussian_rate": 2,
+        "gray_rate": 0.2
+    }
+
 
 #
 # spell_imgs_global = utils.getSpellTemplateDict()
@@ -1024,7 +1058,44 @@ def generate_training_data_champs(imgs, epochs, new_size, extra_dim=False):
     return (images, classes)
 
 
-def generate_training_data(imgs, epochs, new_size, extra_dim=False):
+def generate_training_data_multiclass(imgs,labels, epochs, new_size):
+    max_crop_rate = self_config["translate_rate"]
+    images = []
+    classes = []
+    img_size = imgs[0].shape[0]
+    global gauss
+
+
+    for _ in range(epochs):
+        for image, label in zip(imgs, labels):
+            # we're not using the whole image. instead, we're cropping it to a square shape of a random sub portion of the original image
+            new_top_left_x = np.random.randint(0, int(img_size * max_crop_rate))
+            new_top_left_y = np.random.randint(0, int(img_size * max_crop_rate))
+            max_size = img_size - max(new_top_left_x, new_top_left_y)
+            min_size = max_size - max_crop_rate * img_size
+            crop_size = np.random.randint(min_size, max_size)
+
+            gauss = np.random.normal(0, self_config["gaussian_rate"], (*new_size, 3))
+
+            # cv.imshow('original', image)
+            # cv.imshow('gray', grayimg)
+            # cv.imshow('mod', mod)
+            # cv.waitKey(0)
+
+            image = image[new_top_left_x:new_top_left_x + crop_size, new_top_left_y:new_top_left_y + crop_size]
+
+            image = cv.resize(image, new_size, interpolation=cv.INTER_AREA)
+
+            image = messUpItem(image, self_config)
+
+            images.append(image)
+            classes.append(label)
+
+    classes = np.array(classes)[:, np.newaxis]
+    return (images, classes)
+
+
+def generate_training_data(imgs, epochs, new_size):
     max_crop_rate = 0.25
     images = []
     classes = []
@@ -1057,8 +1128,6 @@ def generate_training_data(imgs, epochs, new_size, extra_dim=False):
 
             images.append(image)
             classes.append(key)
-    if extra_dim:
-        classes = np.array(classes)[:, np.newaxis]
 
     return (images, classes)
 
@@ -1172,11 +1241,11 @@ def generate_training_data_rect(imgs, epochs, new_size):
 if __name__ == "__main__":
     import copy
 
-    img_orig = cv.imread('../assets/train_imgs/items/0.png')
+    img_orig = cv.imread('../assets/train_imgs/self/Self.png')
     cv.imshow("original", img_orig)
     while True:
         img = copy.deepcopy(img_orig)
         # img = generate_training_data_champs({"lol": img}, 1, (20, 20))[0][0]
-        img = generate_training_data({"lol": img}, 1, (20, 20))[0][0]
+        img = generate_training_data_multiclass([img], [1], 1, (20, 20))[0][0]
         cv.imshow("text", img)
         cv.waitKey(0)
