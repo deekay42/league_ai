@@ -25,7 +25,7 @@ import logging
 import sys
 from train_model.input_vector import Input
 
-logger = logging.getLogger("main")
+logger = logging.getLogger("python")
 
 # if platform.system() == "Windows":
 #     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
@@ -335,8 +335,12 @@ class ImgModel(Model):
         super().__init__(dll_hook)
         self.output_node_name = "FullyConnected_1/Softmax"
         if res_converter:
-            self.network_crop = res_converter.network_crop[self.elements]
-            self.res_converter = res_converter
+            self.set_res_cvt(res_converter)
+
+
+    def set_res_cvt(self, res_cvt):
+        self.network_crop = res_cvt.network_crop[self.elements]
+        self.res_converter = res_cvt
 
 
     def predict(self, img):
@@ -418,8 +422,7 @@ class MultiTesseractModel:
 
 class TesseractModel:
 
-    def __init__(self, res_converter):
-        self.res_converter = res_converter
+    def __init__(self, res_converter=None):
         sep_imgs = [heavy_imports.cv.imread(app_constants.asset_paths["kda"]+str(i)+".png", heavy_imports.cv.IMREAD_GRAYSCALE) for i in range(10)]
         sep_img = np.concatenate(sep_imgs, axis=1)
         sep_img = sep_img[2:-2]
@@ -438,6 +441,12 @@ class TesseractModel:
         # self.right_separator = heavy_imports.cv.erode(self.right_separator, kernel, iterations=1)
         _, self.right_separator = heavy_imports.cv.threshold(self.right_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
         _, self.left_separator = heavy_imports.cv.threshold(self.left_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+        if res_converter:
+            self.set_res_cvt(res_converter)
+
+
+    def set_res_cvt(self, res_cvt):
+        self.res_converter = res_cvt
 
 
     def extract_slide_img(self, slide_img):
@@ -523,14 +532,14 @@ class TesseractModel:
 
 class CSImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "cs"
         super().__init__(res_converter)
 
 
 class LvlImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "lvl"
         super().__init__(res_converter)
 
@@ -652,7 +661,7 @@ class KDAImgModel(ImgModel):
 
 class CurrentGoldImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "current_gold"
         super().__init__(res_converter)
 
@@ -1140,34 +1149,3 @@ if __name__ == "__main__":
     # equals = np.equal(preds, test_y)
     # avg_score = np.mean(equals)
     # print(avg_score)
-
-    gold_ratios = np.array([12.5, 10.2, 14.1, 15.0, 7.8])
-    gold_ratios = gold_ratios / np.sum(gold_ratios)
-    input_4027 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
-                                 "Ezreal",
-                                 "Karma"],
-                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-                  "total_gold": np.concatenate([gold_ratios * 29400, gold_ratios * 27700], axis=0),
-                  "first_team_blue_start": 1,
-                  "cs": [143, 115, 167, 176, 29, 151, 114, 167, 159, 28],
-                  "lvl": [12, 10, 12, 11, 8, 12, 10, 11, 10, 7],
-                  "kda": [[2, 1, 0], [0, 0, 3], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 1, 1], [1, 1, 0], [0, 0, 0],
-                          [0, 1, 0],
-                          [0, 1, 0]],
-                  "baron_active": [0, 0],
-                  "elder_active": [0, 0],
-                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [1, 0],
-                              "WATER_DRAGON": [0, 1]},
-                  "dragon_soul_type": ["NONE", "NONE"],
-                  "turrets": [0, 0]}
-
-
-    x = model.transform_inputs(**input_4027)
-    x_flipped = t.flip_teams(x)
-    print(model.bayes_predict_sym(x,x_flipped))
-    print(model.bayes_predict(x))
-    print(model.bayes_predict(x_flipped))
-    print(model.predict(x))
-    print(model.predict(x_flipped))
-    print("\n\n")
-
