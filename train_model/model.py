@@ -1,90 +1,31 @@
 import time
 import threading
 import importlib
-sstarttime = time.time()
-
 from utils import heavy_imports
-
-starttime = time.time()
 import glob
 # import threading
 from abc import ABC, abstractmethod
 import math
-print("1.1")
-starttime = time.time()
 import cv2 as cv
-print(f"Took {time.time() - starttime} s")
-print("1.2")
-starttime = time.time()
 import numpy as np
-print(f"Took {time.time() - starttime} s")
-print("1.3")
-starttime = time.time()
 from constants import game_constants, app_constants, ui_constants
-print(f"Took {time.time() - starttime} s")
-print("1.4")
-starttime = time.time()
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-print(f"Took {time.time() - starttime} s")
-print("1.5")
-starttime = time.time()
 from utils.misc import chunks, split
 # import json
-
 import itertools
-print(f"Took {time.time() - starttime} s")
-print("1.6")
-starttime = time.time()
 from collections import Counter
-print(f"Took {time.time() - starttime} s")
-print("1.7")
-starttime = time.time()
 import os
-print(f"Took {time.time() - starttime} s")
-print("1.8")
-starttime = time.time()
 import platform
-print(f"Took {time.time() - starttime} s")
-# print("1.9")
-# starttime = time.time()
-# from sklearn.preprocessing.data import MinMaxScaler
-# print(f"Took {time.time() - starttime} s")
-print("1.10")
-starttime = time.time()
 from tesserocr import PyTessBaseAPI
-print(f"Took {time.time() - starttime} s")
-print("1.11")
-starttime = time.time()
 import pathlib
-print(f"Took {time.time() - starttime} s")
-print("1.12")
-starttime = time.time()
 import ctypes
-print(f"Took {time.time() - starttime} s")
-print("1.13")
-starttime = time.time()
 from numpy.ctypeslib import ndpointer
-print(f"Took {time.time() - starttime} s")
-print("1.14")
-starttime = time.time()
 import importlib
-print(f"Took {time.time() - starttime} s")
-print("1.15")
-starttime = time.time()
 import logging
-print(f"Took {time.time() - starttime} s")
-print("1.16")
-starttime = time.time()
 import sys
-print(f"Took {time.time() - starttime} s")
-print("1.17")
-starttime = time.time()
 from train_model.input_vector import Input
-print(f"Took {time.time() - starttime} s")
-print("1.18")
-starttime = time.time()
 
-logger = logging.getLogger("main")
+logger = logging.getLogger("python")
 
 # if platform.system() == "Windows":
 #     pytesseract.pytesseract.tesseract_cmd = os.path.abspath('Tesseract-OCR/tesseract.exe')
@@ -394,8 +335,12 @@ class ImgModel(Model):
         super().__init__(dll_hook)
         self.output_node_name = "FullyConnected_1/Softmax"
         if res_converter:
-            self.network_crop = res_converter.network_crop[self.elements]
-            self.res_converter = res_converter
+            self.set_res_cvt(res_converter)
+
+
+    def set_res_cvt(self, res_cvt):
+        self.network_crop = res_cvt.network_crop[self.elements]
+        self.res_converter = res_cvt
 
 
     def predict(self, img):
@@ -477,8 +422,7 @@ class MultiTesseractModel:
 
 class TesseractModel:
 
-    def __init__(self, res_converter):
-        self.res_converter = res_converter
+    def __init__(self, res_converter=None):
         sep_imgs = [heavy_imports.cv.imread(app_constants.asset_paths["kda"]+str(i)+".png", heavy_imports.cv.IMREAD_GRAYSCALE) for i in range(10)]
         sep_img = np.concatenate(sep_imgs, axis=1)
         sep_img = sep_img[2:-2]
@@ -497,6 +441,12 @@ class TesseractModel:
         # self.right_separator = heavy_imports.cv.erode(self.right_separator, kernel, iterations=1)
         _, self.right_separator = heavy_imports.cv.threshold(self.right_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
         _, self.left_separator = heavy_imports.cv.threshold(self.left_separator, 0, 255, heavy_imports.cv.THRESH_BINARY + heavy_imports.cv.THRESH_OTSU)
+        if res_converter:
+            self.set_res_cvt(res_converter)
+
+
+    def set_res_cvt(self, res_cvt):
+        self.res_converter = res_cvt
 
 
     def extract_slide_img(self, slide_img):
@@ -582,14 +532,14 @@ class TesseractModel:
 
 class CSImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "cs"
         super().__init__(res_converter)
 
 
 class LvlImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "lvl"
         super().__init__(res_converter)
 
@@ -711,7 +661,7 @@ class KDAImgModel(ImgModel):
 
 class CurrentGoldImgModel(TesseractModel):
 
-    def __init__(self, res_converter):
+    def __init__(self, res_converter=None):
         self.elements = "current_gold"
         super().__init__(res_converter)
 
@@ -1041,90 +991,90 @@ class NextItemModel(GameModel):
         return items, np.max(y, axis=1)
 
 
-class PositionsModel(Model):
+# class PositionsModel(Model):
 
-    def __init__(self):
-        self.elements = "positions"
-        self.model_path = app_constants.model_paths["best"]["positions"]
-        super().__init__()
-        self.network = network.PositionsNetwork()
+#     def __init__(self):
+#         self.elements = "positions"
+#         self.model_path = app_constants.model_paths["best"]["positions"]
+#         super().__init__()
+#         self.network = network.PositionsNetwork()
 
-        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-        self.champ_manager = ChampManager()
-        self.spell_manager = SimpleManager("spells")
+#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+#         self.champ_manager = ChampManager()
+#         self.spell_manager = SimpleManager("spells")
 
-        self.load_model()
-        self.lock = threading.Lock()
-
-
-    def predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict([x])
-                with tf.Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)[0]
-            champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-            # the champ ids need to be ints, otherwise jq fails
-            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
-            return dict(zip(champ_roles, champ_ids))
+#         self.load_model()
+#         self.lock = threading.Lock()
 
 
-    def multi_predict_perm(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                with tf.Session() as sess:
-                    x = network.PositionsNetwork.permutate_inputs(x)
+#     def predict(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict([x])
+#                 with tf.Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)[0]
+#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-                    chunk_len = 1000
-                    x = tf.reshape(x, (-1,120,55))
-                    i = 0
-                    final_pred = []
-                    while i < int(x.shape[0]):
-                        print(i/int(x.shape[0]))
-                        next_chunk = x[i:i+chunk_len]
-                        next_chunk = tf.reshape(next_chunk, (-1,55))
-                        chunk_pred = self.model.predict(sess.run(next_chunk))
-                        i += chunk_len
-                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-                        final_pred.extend(sess.run(best_perms).tolist())
-
-        result = []
-        for sorted_team in final_pred:
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-        return result
+#             # the champ ids need to be ints, otherwise jq fails
+#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
+#             return dict(zip(champ_roles, champ_ids))
 
 
+#     def multi_predict_perm(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 with tf.Session() as sess:
+#                     x = network.PositionsNetwork.permutate_inputs(x)
 
-    def multi_predict(self, x):
+#                     chunk_len = 1000
+#                     x = tf.reshape(x, (-1,120,55))
+#                     i = 0
+#                     final_pred = []
+#                     while i < int(x.shape[0]):
+#                         print(i/int(x.shape[0]))
+#                         next_chunk = x[i:i+chunk_len]
+#                         next_chunk = tf.reshape(next_chunk, (-1,55))
+#                         chunk_pred = self.model.predict(sess.run(next_chunk))
+#                         i += chunk_len
+#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+#                         final_pred.extend(sess.run(best_perms).tolist())
+
+#         result = []
+#         for sorted_team in final_pred:
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#         return result
+
+
+
+#     def multi_predict(self, x):
         
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict(x)
-                with Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)
-        result = []
-        for sorted_team, unsorted_team in zip(final_pred, x):
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict(x)
+#                 with Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)
+#         result = []
+#         for sorted_team, unsorted_team in zip(final_pred, x):
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
 
-            # the champ ids need to be ints, otherwise jq fails
-            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-            # result.append(dict(zip(champ_roles, champ_ids)))
+#             # the champ ids need to be ints, otherwise jq fails
+#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+#             # result.append(dict(zip(champ_roles, champ_ids)))
 
-        return result
+#         return result
 
 
 
@@ -1205,34 +1155,3 @@ if __name__ == "__main__":
     # equals = np.equal(preds, test_y)
     # avg_score = np.mean(equals)
     # print(avg_score)
-
-    gold_ratios = np.array([12.5, 10.2, 14.1, 15.0, 7.8])
-    gold_ratios = gold_ratios / np.sum(gold_ratios)
-    input_4027 = {"champs_str": ["Aatrox", "Graves", "TwistedFate", "Yasuo", "Gragas", "Kennen", "LeeSin", "Zoe",
-                                 "Ezreal",
-                                 "Karma"],
-                  # "total_gold": [3500,2500,500,500,500,500,500,500,500,500],
-                  "total_gold": np.concatenate([gold_ratios * 29400, gold_ratios * 27700], axis=0),
-                  "first_team_blue_start": 1,
-                  "cs": [143, 115, 167, 176, 29, 151, 114, 167, 159, 28],
-                  "lvl": [12, 10, 12, 11, 8, 12, 10, 11, 10, 7],
-                  "kda": [[2, 1, 0], [0, 0, 3], [0, 0, 2], [2, 0, 0], [0, 0, 2], [0, 1, 1], [1, 1, 0], [0, 0, 0],
-                          [0, 1, 0],
-                          [0, 1, 0]],
-                  "baron_active": [0, 0],
-                  "elder_active": [0, 0],
-                  "dragons": {"AIR_DRAGON": [0, 0], "EARTH_DRAGON": [0, 0], "FIRE_DRAGON": [1, 0],
-                              "WATER_DRAGON": [0, 1]},
-                  "dragon_soul_type": ["NONE", "NONE"],
-                  "turrets": [0, 0]}
-
-
-    x = model.transform_inputs(**input_4027)
-    x_flipped = t.flip_teams(x)
-    print(model.bayes_predict_sym(x,x_flipped))
-    print(model.bayes_predict(x))
-    print(model.bayes_predict(x_flipped))
-    print(model.predict(x))
-    print(model.predict(x_flipped))
-    print("\n\n")
-
