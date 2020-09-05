@@ -413,9 +413,9 @@ class ImgModel(Model):
         coords = self.get_coords()
         coords = np.reshape(coords, (-1, 2))
         
-        # from utils import misc
-        # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
-        #                   self.res_converter.lookup(self.elements, "y_crop"))
+        from utils import misc
+        misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
+                          self.res_converter.lookup(self.elements, "y_crop"))
 
         sub_imgs = [whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements,
                                                                                                   "y_crop"))),
