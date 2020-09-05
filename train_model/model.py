@@ -727,6 +727,12 @@ class SelfImgModel(ImgModel):
         return role_index
 
 
+    def extract_imgs(self, whole_img):
+        imgs = super().extract_imgs(whole_img)
+        # imgs = [np.clip(img*4.0, 0, 255).astype(np.uint8) for img in imgs]
+        return imgs
+
+
 class GameModel(Model):
 
     def __init__(self, dll_hook=None, model_path=None):

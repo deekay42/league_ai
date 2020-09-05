@@ -234,6 +234,41 @@ class ItemManager:
                     not ("multiples_allowed" in item and item["multiples_allowed"]))}
 
 
+class SelfManager:
+    instance = None
+
+
+    def __init__(self):
+        if not SelfManager.instance:
+            SelfManager.instance = SelfManager.__SelfManager()
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+
+    class __SelfManager(ArtifactManager):
+
+        def __init__(self):
+            super().__init__(data_path=app_constants.asset_paths["self_json"],
+                             assets_path=app_constants.asset_paths["self"])
+
+
+        def build_lookup_dicts(self):
+            virtuals = []
+            int_counter = 0
+            img_int_counter = 0
+            for json_artifact in self.base_dict.values():
+                if "main_img" in json_artifact:
+                    virtuals.append(json_artifact)
+                else:
+                    self._handle_vanilla_artifacts(json_artifact, int_counter, img_int_counter)
+                    int_counter += 1
+                    img_int_counter += 1
+
+            for json_virtual in virtuals:
+                self._handle_virtual_artifacts(json_virtual, img_int_counter)
+                img_int_counter += 1
 
 
 class SimpleManager(ArtifactManager):

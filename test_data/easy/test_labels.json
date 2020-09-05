@@ -220,7 +220,7 @@
         "Hextech Gunblade", "Sorcerer's Shoes", "Seeker's Armguard","Stopwatch", "The Dark Seal", "Empty", "Warding Totem (Trinket)",
         "Stormrazor", "Rapid Firecannon", "B. F. Sword","Boots of Swiftness", "Doran's Blade", "Refillable Potion", "Warding Totem (Trinket)",
         "Ardent Censer", "Athene's Unholy Grail","Sorcerer's Shoes", "Shard of True Ice", "Control Ward", "Empty", "Oracle Lens"],
-    "self": 0,
+    "self": null,
     "res": "1440,900",
     "summ_names_displayed": false,
     "current_gold": null,
@@ -241,7 +241,7 @@
         "Morellonomicon", "Lost Chapter", "Sorcerer's Shoes","Health Potion", "Empty", "Empty", "Warding Totem (Trinket)",
         "Blade of the Ruined King", "Stormrazor", "Berserker's Greaves", "Doran's Blade","Cloth Armor", "Empty", "Warding Totem (Trinket)",
         "Morellonomicon", "Lost Chapter","Seeker's Armguard", "Amplifying Tome", "Shard of True Ice", "Boots of Speed", "Warding Totem (Trinket)"],
-    "self": 0,
+    "self": null,
     "res": "1440,900",
     "summ_names_displayed": false,
     "current_gold": null,
@@ -262,7 +262,7 @@
         "Morellonomicon", "Lost Chapter", "Sorcerer's Shoes","Blasting Wand", "Health Potion", "Empty", "Warding Totem (Trinket)",
         "Blade of the Ruined King", "Stormrazor", "Berserker's Greaves", "Giant's Belt", "Doran's Blade","Cloth Armor", "Warding Totem (Trinket)",
         "Morellonomicon", "Zhonya's Hourglass", "Lost Chapter", "Shard of True Ice", "Boots of Speed","Empty",  "Warding Totem (Trinket)"],
-    "self": 0,
+    "self": null,
     "res": "1440,900",
     "summ_names_displayed": false,
     "current_gold": null,
@@ -284,7 +284,7 @@
         "Doran's Ring","Health Potion","Empty", "Empty", "Empty","Empty",  "Warding Totem (Trinket)",
         "Corrupting Potion", "Empty", "Empty", "Empty", "Empty", "Empty", "Warding Totem (Trinket)",
         "Doran's Shield", "Health Potion", "Empty", "Empty", "Empty", "Empty",  "Warding Totem (Trinket)"],
-    "self": 0,
+    "self": null,
     "res": "1920,1080",
     "summ_names_displayed": false,
     "current_gold": null,
@@ -292,6 +292,42 @@
     "kda": null,
     "cs": null,
     "lvl": null
-  }
+  },
 
+  "30" : {
+    "champs":null,
+    "items":null,
+    "self": ["Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Self", "Not Self", "Not Self"],
+    "res": "1600,900",
+    "summ_names_displayed": true,
+    "current_gold": null,
+    "filename": "Screen11.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "31" : {
+    "champs":null,
+    "items":null,
+    "self": ["Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Self", "Not Self", "Not Self"],
+    "res": "1600,900",
+    "summ_names_displayed": true,
+    "current_gold": null,
+    "filename": "Screen12.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  },
+  "32" : {
+    "champs":null,
+    "items":null,
+    "self": ["Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Not Self", "Self", "Not Self", "Not Self"],
+    "res": "1600,900",
+    "summ_names_displayed": true,
+    "current_gold": null,
+    "filename": "Screen13.png",
+    "kda": null,
+    "cs": null,
+    "lvl": null
+  }
 }

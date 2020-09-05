@@ -14,6 +14,7 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
+from fractions import Fraction
 
 class ScrapeEsportsData:
 
@@ -197,41 +198,70 @@ class ScrapeEsportsData:
             "champ_dropout": 1.0,
             "noise": gauss_noise
         }
+        urls = ['https://www.bet365.com/#/IP/EV204480595521782162C151',
+                'https://www.pinnacle.com/en/esports/league-of-legends-vcs/gam-map-1-vs-evos-map-1/1164447326',
+                'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18386959/gam-esports-vs-evos-esports-bo5']
+        css_scrapers = [lambda: drivers[0].find_elements_by_class_name("price"),
+                       lambda: drivers[1].find_elements_by_class_name("betbutton__odds")]
+        options = webdriver.ChromeOptions()
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        drivers = [webdriver.Chrome(ChromeDriverManager().install(), options=options) for _ in urls]
+        converters = [float, Fraction]
+        for url, driver in zip(urls,drivers):
+            driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+                "userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.53 Safari/537.36'})
+            driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            driver.get(url)
+        swap_teams = True
 
-        driver = webdriver.Firefox()
-
-        driver.get('https://www.pinnacle.com/en/soccer/france-national/fc-bastia-borgo-vs-bastia/1164026681')
-        # driver.get("https://www.bet365.com/#/IP/EV204480595520980842C151")
-
-        p = []
-
+        scraped_odds_blue = np.zeros((len(drivers),))
+        scraped_odds_red = np.zeros((len(drivers),))
+        p_odds_blue = np.zeros((len(drivers),))
 
         model = WinPredModel("standard", network_config=network_config)
         model.load_model()
         first_turret = False
         for snapshot in snapshots:
+
             x = np.array(list(self.snapshot2vec(snapshot)))[-1:]
             turrets = x[0][Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
             if not first_turret and sum(turrets==1):
                 first_turret = True
                 print("FIRST TURRET DESTROYED")
 
-            p = []
-            while p == []:
-                p = driver.find_elements_by_class_name("price")
-            live_odds_blue = float(p[0].text)
-            live_odds_red = float(p[1].text)
-
-            p_odds_blue = (1/live_odds_blue)/(1/live_odds_blue + 1/live_odds_red)
-            p_odds_red = (1 / live_odds_red) / (1 / live_odds_blue + 1 / live_odds_red)
             pred_odds_blue = model.bayes_predict_sym(x, 128)[0]
-            print("  Betting blue team win: "+str(p_odds_blue))
             print("Predicted blue team win: " + str(pred_odds_blue))
-            if pred_odds_blue > p_odds_blue:
-                print("You should bet on BLUE. Diff: "+str(p_odds_blue - pred_odds_blue))
-            else:
-                print("You should bet on RED. Diff: " + str(p_odds_blue - pred_odds_blue))
+            print("\n")
+            for i, css_scraper in enumerate(css_scrapers):
+                tmp = []
+                for _ in range(3):
+                    tmp = css_scraper()
+                    if tmp != []:
+                        break
+                    time.sleep(1)
+                else:
+                    continue
+                try:
+                    scraped_odds_blue[i] = float(converters[i](tmp[0].text))
+                    scraped_odds_red[i] = float(converters[i](tmp[1].text))
+                    if swap_teams:
+                        scraped_odds_blue[i], scraped_odds_red[i] = scraped_odds_red[i], scraped_odds_blue[i]
+                except:
+                    continue
+                p_odds_blue[i] = (1/scraped_odds_blue[i])/(1/scraped_odds_blue[i] + 1/scraped_odds_red[i])
+                print('\t' + urls[i])
+                print("\tOdds: " + str(p_odds_blue[i]))
+                if pred_odds_blue > p_odds_blue[i]:
+                    print("\tYou should bet on BLUE. Diff: " + str(p_odds_blue[i] - pred_odds_blue))
+                else:
+                    print("\tYou should bet on RED. Diff: " + str(p_odds_blue[i] - pred_odds_blue))
+                print("\n")
+            print("-" * 100)
             print("\n\n")
+
+
+
 
 
 
@@ -267,78 +297,78 @@ s = ScrapeEsportsData()
 #                    104242514817020337, 104242514817020338, 104242514817020339, 104242514817020342, 104242514817020343,
 #                    104242514817020344, 104242514817020348, 104242514817020349, 104242514817020350, 104242514817020351]
 # game_results = [0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0]
-gameIds = [
-    #LCS
-    104174992730350781, 104174992730350782, 104174992730350783,
-           104174992730350775, 104174992730350776, 104174992730350777, 104174992730350778, 104174992730350779,
-           104174992730350787, 104174992730350788, 104174992730350789,
-           104174992730350793, 104174992730350794, 104174992730350795,
-           104174992730350805, 104174992730350806, 104174992730350807, 104174992730350808,
-104174992730350799, 104174992730350800, 104174992730350801,
-104174992730350817,104174992730350818,104174992730350819,
-104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
-104174992730350829,104174992730350830,104174992730350831,104174992730350832,
-104174992730350823,104174992730350824,104174992730350825,104174992730350826,104174992730350827,
-#LCK
-104174613333860706, 104174613333860707,
-104174613333926330, 104174613333926331, 104174613333926332,
-104174613333860666,104174613333860667,
-104174613333860746, 104174613333860747,
-104174613353718215,104174613353783752,104174613353783753,
-104174613353783755,104174613353783756,104174613353783757,
-
-#LPL
-#does not have live stats
-# 104282610721221959,104282610721221960,104282610721221961,104282610721221962,
-# 104282610721221965,104282610721221966,104282610721221967,104282610721221968,
-# 104282610721221971,104282610721221972,104282610721221973,104282610721221974,
-# 104282610721221977,104282610721221978,104282610721221979,
-#LEC
-104169295295132788,104169295295132789,104169295295132790,
-104169295295132800, 104169295295132801,104169295295132802,104169295295132803,
-104169295295132794,104169295295132795,104169295295132796,
-104169295295198348,104169295295198349,104169295295198350,104169295295198351,
-104169295295132806,104169295295132807,104169295295198344,104169295295198345,104169295295198346,
-104169295295198354,104169295295198355,104169295295198356
-           ]
-game_results = [
-    #LCS
-    0,0,1,
-                1,0,1,0,1,
-                0,0,1,
-                1,0,1,
-                0,1,1,0,
-1,1,1,
-1,0,0,
-1,1,1,1,1,
-0,0,0,1,
-0,1,1,1,1,
-#LCK
-1,0,
-0,0,1,
-0,1,
-0,1,
-0,1,0,
-1,1,1,
-
-
-#LPL
-# 1,1,0,0,
-# 1,1,0,1,
-# 0,1,0,1,
+# gameIds = [
+#     #LCS
+#     104174992730350781, 104174992730350782, 104174992730350783,
+#            104174992730350775, 104174992730350776, 104174992730350777, 104174992730350778, 104174992730350779,
+#            104174992730350787, 104174992730350788, 104174992730350789,
+#            104174992730350793, 104174992730350794, 104174992730350795,
+#            104174992730350805, 104174992730350806, 104174992730350807, 104174992730350808,
+# 104174992730350799, 104174992730350800, 104174992730350801,
+# 104174992730350817,104174992730350818,104174992730350819,
+# 104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
+# 104174992730350829,104174992730350830,104174992730350831,104174992730350832,
+# 104174992730350823,104174992730350824,104174992730350825,104174992730350826,104174992730350827,
+# #LCK
+# 104174613333860706, 104174613333860707,
+# 104174613333926330, 104174613333926331, 104174613333926332,
+# 104174613333860666,104174613333860667,
+# 104174613333860746, 104174613333860747,
+# 104174613353718215,104174613353783752,104174613353783753,
+# 104174613353783755,104174613353783756,104174613353783757,
+#
+# #LPL
+# #does not have live stats
+# # 104282610721221959,104282610721221960,104282610721221961,104282610721221962,
+# # 104282610721221965,104282610721221966,104282610721221967,104282610721221968,
+# # 104282610721221971,104282610721221972,104282610721221973,104282610721221974,
+# # 104282610721221977,104282610721221978,104282610721221979,
+# #LEC
+# 104169295295132788,104169295295132789,104169295295132790,
+# 104169295295132800, 104169295295132801,104169295295132802,104169295295132803,
+# 104169295295132794,104169295295132795,104169295295132796,
+# 104169295295198348,104169295295198349,104169295295198350,104169295295198351,
+# 104169295295132806,104169295295132807,104169295295198344,104169295295198345,104169295295198346,
+# 104169295295198354,104169295295198355,104169295295198356
+#            ]
+# game_results = [
+#     #LCS
+#     0,0,1,
+#                 1,0,1,0,1,
+#                 0,0,1,
+#                 1,0,1,
+#                 0,1,1,0,
+# 1,1,1,
+# 1,0,0,
+# 1,1,1,1,1,
+# 0,0,0,1,
+# 0,1,1,1,1,
+# #LCK
+# 1,0,
 # 0,0,1,
-#LEC
-0,0,1,
-1,0,1,1,
-0,0,0,
-0,1,0,0,
-0,1,0,1,0,
-1,0,0,
-]
+# 0,1,
+# 0,1,
+# 0,1,0,
+# 1,1,1,
+#
+#
+# #LPL
+# # 1,1,0,0,
+# # 1,1,0,1,
+# # 0,1,0,1,
+# # 0,0,1,
+# #LEC
+# 0,0,1,
+# 1,0,1,1,
+# 0,0,0,
+# 0,1,0,0,
+# 0,1,0,1,0,
+# 1,0,0,
+# ]
 # gameIds = [104242514815381919]
 # game_results = [0]
-# s.live_game2odds(104174992730350827)
-s.tournament2vec(gameIds, game_results)
+s.live_game2odds(104174992730350827)
+# s.tournament2vec(gameIds, game_results)
 # 104169295295132807
 # 104169295295198344
 # 104169295295198345

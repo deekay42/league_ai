@@ -69,8 +69,8 @@ class Res_16_9(ResolutionBase):
         self.coords["items"]["summ_names_x_offset"] = -9
         self.coords["items"]["summ_names_y_offset"] = 10
 
-        self.coords["self"]["x_start"] = 392
-        self.coords["self"]["y_start"] = 360
+        self.coords["self"]["x_start"] = 390
+        self.coords["self"]["y_start"] = 356
         self.coords["self"]["x_diff"] = 571
         self.coords["self"]["y_diff"] = 76
         self.coords["self"]["x_crop"] = 17
@@ -142,8 +142,8 @@ class Res_8_5(ResolutionBase):
         self.coords["items"]["summ_names_x_offset"] = -7
         self.coords["items"]["summ_names_y_offset"] = 8
 
-        self.coords["self"]["x_start"] = 247
-        self.coords["self"]["y_start"] = 300
+        self.coords["self"]["x_start"] = 245
+        self.coords["self"]["y_start"] = 296
         self.coords["self"]["x_diff"] = 476
         self.coords["self"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["self"]["x_crop"] = 15
@@ -199,14 +199,14 @@ class Res_1366_768(ResolutionBase):
         self.coords["champs"]["x_start"] = 352
         self.coords["champs"]["y_start"] = 234
         self.coords["champs"]["x_diff"] = 409
-        self.coords["champs"]["y_diff"] = 55
+        self.coords["champs"]["y_diff"] = 53.5
         self.coords["champs"]["x_crop"] = 21
         self.coords["champs"]["y_crop"] = 21
 
         self.coords["items"]["x_start"] = 508
         self.coords["items"]["y_start"] = 236
         self.coords["items"]["x_diff"] = 407
-        self.coords["items"]["y_diff"] = 55
+        self.coords["items"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["items"]["x_crop"] = 19
         self.coords["items"]["y_crop"] = 19
         self.coords["items"]["x_inner_offset"] = 2
@@ -215,9 +215,9 @@ class Res_1366_768(ResolutionBase):
         self.coords["items"]["summ_names_y_offset"] = 7
 
         self.coords["self"]["x_start"] = 278
-        self.coords["self"]["y_start"] = 254
+        self.coords["self"]["y_start"] = 253
         self.coords["self"]["x_diff"] = 408
-        self.coords["self"]["y_diff"] = 55
+        self.coords["self"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["self"]["x_crop"] = 13
         self.coords["self"]["y_crop"] = 13
 
@@ -241,7 +241,7 @@ class Res_1366_768(ResolutionBase):
         self.coords["kda"]["y_height"] = 10
         self.coords["kda"]["x_width"] = 58
         self.coords["kda"]["x_diff"] = 408
-        self.coords["kda"]["y_diff"] = 55
+        self.coords["kda"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["kda"]["x_crop"] = 5
         self.coords["kda"]["y_crop"] = 8
 
@@ -275,14 +275,14 @@ class Res_4_3(ResolutionBase):
         self.coords["champs"]["x_start"] = 183
         self.coords["champs"]["y_start"] = 235
         self.coords["champs"]["x_diff"] = 409
-        self.coords["champs"]["y_diff"] = 55
+        self.coords["champs"]["y_diff"] = 53.8
         self.coords["champs"]["x_crop"] = 20
         self.coords["champs"]["y_crop"] = 20
 
         self.coords["items"]["x_start"] = 337
-        self.coords["items"]["y_start"] = 236
+        self.coords["items"]["y_start"] = 235
         self.coords["items"]["x_diff"] = 406
-        self.coords["items"]["y_diff"] = 55
+        self.coords["items"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["items"]["x_crop"] = 20
         self.coords["items"]["y_crop"] = 20
         self.coords["items"]["x_inner_offset"] = 2
@@ -290,10 +290,10 @@ class Res_4_3(ResolutionBase):
         self.coords["items"]["summ_names_x_offset"] = -6
         self.coords["items"]["summ_names_y_offset"] = 6
 
-        self.coords["self"]["x_start"] = 108
-        self.coords["self"]["y_start"] = 254
+        self.coords["self"]["x_start"] = 107
+        self.coords["self"]["y_start"] = 253
         self.coords["self"]["x_diff"] = 406
-        self.coords["self"]["y_diff"] = 55
+        self.coords["self"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["self"]["x_crop"] = 11
         self.coords["self"]["y_crop"] = 11
 
@@ -313,7 +313,7 @@ class Res_4_3(ResolutionBase):
         self.coords["kda"]["y_height"] = 10
         self.coords["kda"]["x_width"] = 56
         self.coords["kda"]["x_diff"] = 409
-        self.coords["kda"]["y_diff"] = 55
+        self.coords["kda"]["y_diff"] = self.coords["champs"]["y_diff"]
         self.coords["kda"]["x_crop"] = 5
         self.coords["kda"]["y_crop"] = 8
 
