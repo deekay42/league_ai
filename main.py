@@ -29,127 +29,84 @@ from utils import misc
 import configparser
 import logging
 import sys
-logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
-# logger.addHandler(logging.StreamHandler(sys.stdout))
+logger = logging.getLogger("python")
+logger.propagate = False
+if (logger.hasHandlers()):
+    logger.handlers.clear()
 
+ch = logging.StreamHandler(sys.stdout)
+# ch.setLevel(logging.INFO)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.setLevel(logging.INFO)
+logger.info("Starting main")
 
 class NoMoreItemSlots(Exception):
     pass
 
-class Main(FileSystemEventHandler):
 
-    def __init__(self):
-        # logger.info("Starting main")
-        # self.onTimeout = False
-        # self.loldir = misc.get_lol_dir()
-        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        # self.screenshot_dir_created = False
-        # logger.info("Go tlol dir !")
-        # self.config = configparser.ConfigParser()
-        # logger.info("Reading config")
-        # self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
-        #
-        # while True:
-        #     try:
-        #     # res = 1440,810
-        #         res = int(self.config['General']['Width']), int(self.config['General']['Height'])
-        #         break
-        #     except KeyError as e:
-        #         print(repr(e))
-        #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
-        #         misc.get_lol_dir()
-        #
-        # try:
-        #     show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     show_names_in_sb = False
-        #
-        # try:
-        #     flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
-        # except KeyError as e:
-        #     print(repr(e))
-        #     flipped_sb = False
-        #
-        # try:
-        #     hud_scale = float(self.config['HUD']['GlobalScale'])
-        # except KeyError as e:
-        #     print(repr(e))
-        #     hud_scale = 0.5
-        #
-        #
-        # if flipped_sb:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Error",
-        #                         "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
-        #     raise Exception("League IQ does not work if the scoreboard is mirrored.")
-        #
-        # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        #
-        # if too_many_screenshots:
-        #     Tk().withdraw()
-        #     messagebox.showinfo("Warning",
-        #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        #
-        #
-        #
-        #
-        self.res_converter = ui_constants.ResConverter(1920, 1080, 0.48)
-        self.res_converter = ui_constants.ResConverter(1920, 1080, 1.0)
-        # self.res_converter = ui_constants.ResConverter(1440, 900, 0.48)
-        logger.info("Loading res cvt")
-        # self.res_converter = ui_constants.ResConverter(*res, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+class Main(FileSystemEventHandler):
+        
+
+    def __init__(self):        
+        self.onTimeout = False
+        self.loldir = misc.get_lol_dir()
+        self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        self.screenshot_dir_created = False
+        logger.info("Go tlol dir !")
+        self.config = configparser.ConfigParser()
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        # dll_hook = CPredict()
-        dll_hook = None
+        dll_hook = CPredict()
+        # dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        # if Main.shouldTerminate():
-        #     return
-        self.champ_img_model = ChampImgModel(self.res_converter, dll_hook=dll_hook)
+        if Main.shouldTerminate():
+            return
+        self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
         self.champ_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
-        self.item_img_model = ItemImgModel(self.res_converter, dll_hook=dll_hook)
+        if Main.shouldTerminate():
+            return
+        self.item_img_model = ItemImgModel(dll_hook=dll_hook)
         self.item_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
-        self.self_img_model = SelfImgModel(self.res_converter, dll_hook=dll_hook)
+        if Main.shouldTerminate():
+            return
+        self.self_img_model = SelfImgModel(dll_hook=dll_hook)
         self.self_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
-        self.kda_img_model = KDAImgModel(self.res_converter, dll_hook=dll_hook)
+        if Main.shouldTerminate():
+            return
+        self.kda_img_model = KDAImgModel(dll_hook=dll_hook)
         self.kda_img_model.load_model()
-        # if Main.shouldTerminate():
-        #     return
-        self.tesseract_models = MultiTesseractModel([LvlImgModel(self.res_converter),
-                                                     CSImgModel(self.res_converter),
-                                                     CurrentGoldImgModel(self.res_converter)])
+        if Main.shouldTerminate():
+            return
+        self.tesseract_models = MultiTesseractModel([LvlImgModel(),
+                                                     CSImgModel(),
+                                                     CurrentGoldImgModel()])
         logger.info("All models loaded!")
         self.previous_champs = None
         self.previous_kda = None
@@ -196,13 +153,75 @@ class Main(FileSystemEventHandler):
             model.res_converter = res_cvt
 
 
+    def read_config(self):
+        logger.info("Reading config")
+        show_names_in_sb = False
+        hud_scale = 0.5
+        
+        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        if self.config == []:
+            logger.info("Looks like game.cfg wasnt found")
+            logger.error(e)
+            logger.error(traceback.print_exc())
+            return show_names_in_sb, hud_scale
+    
+        # while True:
+        #     try:
+        #     # res = 1440,810
+        #         logger.info("Reading height & width")
+        #         res = int(self.config['General']['Width']), int(self.config['General']['Height'])
+        #         logger.info(res)
+        #         break
+        #     except KeyError as e:
+        #         logger.info("Failed")
+        #         print(repr(e))
+        #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
+        #         misc.get_lol_dir()
+        
+        try:
+            logger.info("Reading summondernamesinscoreboard")
+            show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
+        except KeyError as e:
+            logger.info(repr(e))
+        
+        try:
+            logger.info("Reading mirroredscoreboard")
+            flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
+        except KeyError as e:
+            logger.info(repr(e))
+            flipped_sb = False
+        
+        try:
+            logger.info("Reading globalscale")
+            hud_scale = float(self.config['HUD']['GlobalScale'])
+        except KeyError as e:
+            logger.info(repr(e))
+        
+        if flipped_sb:
+            logger.info("Scoreboard is flipped. Oh no.")
+            Tk().withdraw()
+            messagebox.showinfo("Error",
+                                "League IQ does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
+            raise Exception("League IQ does not work if the scoreboard is mirrored.")
+        
+        too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
+        
+        if too_many_screenshots:
+            logger.info("Too many screenshots. Oh no.")
+            Tk().withdraw()
+            messagebox.showinfo("Warning",
+                                f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League IQ may stop working if the folder grows too large. Make sure to delete old screenshots.")
+        
+        return show_names_in_sb, hud_scale
+        
+
     @staticmethod
     def test_connection(timeout=0):
         try:
             lol = heavy_imports.Item(id=3040, region="EUW").name[-1]
         except Exception as e:
-            print(e)
-            print(f"Connection error. Retry in {timeout}")
+            logger.info(e)
+            logger.info(f"Connection error. Retry in {timeout}")
             time.sleep(timeout)
             Main.test_connection(5)
 
@@ -270,9 +289,9 @@ class Main(FileSystemEventHandler):
         elif model == "late":
             if np.any(np.isin(list(items[role].keys()), list(ItemManager().get_full_item_ints()))):
                 model = self.next_item_model_late
-                print("using LATE network")
+                logger.info("using LATE network")
             else:
-                print("using FIRST ITEM network")
+                logger.info("using FIRST ITEM network")
                 model = self.next_item_model_first_item
         champs_int = [int(champ["int"]) for champ in champs]
         items_id = self.all_items_counter2items_list(items, "int")
@@ -523,7 +542,7 @@ class Main(FileSystemEventHandler):
                 return next_items
             else:
                 if self.skipped_item:
-                    print(f"skipped item returned is {self.skipped_item}")
+                    logger.info(f"skipped item returned is {self.skipped_item}")
                     return [self.skipped_item]
                 else:
                     return [next_item]
@@ -542,13 +561,9 @@ class Main(FileSystemEventHandler):
 
 
     def add_aux_items(self, result, next_items, abs_items):
-        if self.network_type == "starter":
-            print("abs starter aux")
-            print(abs_items)
-            print(self.items)
+        if self.network_type == "starter":            
             if abs_items != []:
                 self.items[self.role] = abs_items[-1]
-            print(self.items)
             result.extend(next_items)
             self.current_gold -= heavy_imports.Item(id=(int(next_items[0]["id"])), region="EUW").gold.base
 
@@ -560,9 +575,7 @@ class Main(FileSystemEventHandler):
                 self.current_gold -= heavy_imports.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
         while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
-            print("abs starter aux111")
             next_extra_item , _, _ = self.predict_with_threshold(model="standard")
-            print(next_extra_item)
             if next_extra_item != [] and (next_extra_item[0]["name"] in {"Control Ward", "Health Potion"} or \
                 (next_extra_item[0]["name"] in {"Refillable Potion"} and self.network_type == "starter")):
                 self.buy_one_off_item(next_extra_item[0], result)
@@ -575,7 +588,6 @@ class Main(FileSystemEventHandler):
 
 
     def buy_one_off_item(self, item, result):
-        print("one off")
         result.append(item)
         self.current_gold -= heavy_imports.Item(id=(int(item["id"])), region="EUW").gold.base
         self.items[self.role] += Counter({item["int"]: 1})
@@ -694,10 +706,21 @@ class Main(FileSystemEventHandler):
     def process_image(self, img_path):
 
         logger.info('you pressed tab + f12 ' + img_path)
-
+        
         try:
             logger.info("Now trying to predict image")
             screenshot = heavy_imports.cv.imread(img_path)
+            y_dim,x_dim,_ = screenshot.shape
+            show_names_in_sb, hud_scale = self.read_config()
+            logger.info(f"{x_dim}, {y_dim} - hud_scale: {hud_scale}, show_names: {show_names_in_sb}")
+            res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+            self.champ_img_model.set_res_cvt(res_converter)
+            self.kda_img_model.set_res_cvt(res_converter)
+            self.item_img_model.set_res_cvt(res_converter)
+            self.self_img_model.set_res_cvt(res_converter)
+            for tesseract_model in self.tesseract_models.tesseractmodels:
+                tesseract_model.set_res_cvt(res_converter)
+
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             logger.info("Trying to predict champ imgs")
 
@@ -717,26 +740,28 @@ class Main(FileSystemEventHandler):
             try:
                 self.lvl = tesseract_result[:10]
             except Exception as e:
-                logger.info(e)
+                logger.error(e)
                 self.lvl = [0] * 10
             self.lvl = self.repair_failed_predictions(self.lvl, 1, 18)
 
             try:
                 self.cs = tesseract_result[10:20]
             except Exception as e:
-                logger.info(e)
+                logger.error(e)
                 self.cs = [0] * 10
             self.cs = self.repair_failed_predictions(self.cs, 0, 400)
             try:
                 self.current_gold = tesseract_result[-1]
             except Exception as e:
-                logger.info(e)
-                self.current_gold = 500
+                logger.error(e)
+                self.current_gold = 1500
 
             if self.current_gold > 4000:
+                logger.error("CG > 4000 detected. Resetting to 4000")
                 self.current_gold = 4000
             elif self.current_gold < 0 or self.current_gold is None:
-                self.current_gold = 500
+                logger.error("CG < 0 or None detected. Resetting to 1500")
+                self.current_gold = 1500
 
             logger.info(f"Lvl:\n {self.lvl}\n")
             logger.info(f"CS:\n {self.cs}\n")
@@ -796,11 +821,13 @@ class Main(FileSystemEventHandler):
 
 
         except FileNotFoundError as e:
-            print(e)
+            logger.info("Filenotfounderror")
+            logger.info(e)
             return
         except Exception as e:
-            print(e)
-            traceback.print_exc()
+            logger.info("Exception")
+            logger.info(e)
+            logger.info(traceback.print_exc())
             return
 
         # remove items that the network is not trained on, such as control wards
@@ -834,12 +861,12 @@ class Main(FileSystemEventHandler):
             for item in items_to_buy[1:]:
                 out_string += "," + str(item["id"])
         except Exception as e:
-            print("Unable to predict next item")
-            print(e)
-            print(traceback.print_exc())
+            logger.error("Unable to predict next item")
+            logger.error(e)
+            logger.error(traceback.print_exc())
             out_string = "0"
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-        #     f.write(out_string)
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+            f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -873,7 +900,7 @@ class Main(FileSystemEventHandler):
             while not Main.shouldTerminate():
                 time.sleep(1)
                 if self.screenshot_dir_created:
-                    print("screenshot dir created!")
+                    logger.info("screenshot dir created!")
                     observer.unschedule_all()
                     observer.stop()
                     observer = Observer()
@@ -891,12 +918,12 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-m = Main()
+# m = Main()
 # m.run()
 
 # m.process_image(f"test_data/screenshots/Screen40.png")
-for i in range(35,58):
-    m.process_image(f"test_data/screenshots/Screen{i}.png")
+# for i in range(35,58):
+    # m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
 
