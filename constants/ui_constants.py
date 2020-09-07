@@ -365,14 +365,18 @@ class ResConverter:
             raise Exception("Screen resolution not supported: " + str(self.x) + " " + str(self.y))
 
 
-    def generate_std_coords(self, elements):
+    def generate_std_coords(self, elements, mask=[1]*10):
+        counter = 0
         for team_offset in [0, self.lookup(elements, "x_diff")]:
             for row in range(5):
-                yield round(self.lookup(elements, "x_start") + team_offset), \
-                      round(row * self.lookup(elements, "y_diff") + self.lookup(elements, "y_start"))
+                if mask[counter] == 1:
+                    yield round(self.lookup(elements, "x_start") + team_offset), \
+                          round(row * self.lookup(elements, "y_diff") + self.lookup(elements, "y_start"))
+                counter += 1
 
 
-    def generate_item_coords(self):
+    def generate_item_coords(self, mask=[1]*10):
+        counter = 0
         item_x_offset = self.lookup("items", "x_inner_offset")
         item_y_offset = item_x_offset
         if self.summ_names_displayed:
@@ -382,10 +386,13 @@ class ResConverter:
 
         for team_offset in [0, self.lookup("items", "x_diff")]:
             for row in range(5):
+                if mask[counter] == 0:
+                    continue
                 for item in range(7):
                     yield round(self.lookup("items", "x_start") + team_offset + item_x_offset + item * self.lookup(
                         "items", "x_item_spacing")), \
                           round(row * self.lookup("items", "y_diff") + self.lookup("items", "y_start") + item_y_offset)
+                counter += 1
 
 
 

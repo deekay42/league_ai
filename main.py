@@ -52,58 +52,60 @@ class Main(FileSystemEventHandler):
 
     def __init__(self):        
         self.onTimeout = False
-        self.loldir = misc.get_lol_dir()
-        self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        self.screenshot_dir_created = False
-        logger.info("Go tlol dir !")
+
+        self.loldir = ""
+        # self.loldir = misc.get_lol_dir()
+        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        # self.screenshot_dir_created = False
+        # logger.info("Go tlol dir !")
         self.config = configparser.ConfigParser()
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        dll_hook = CPredict()
-        # dll_hook = None
+        # dll_hook = CPredict()
+        dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
         self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.item_img_model = ItemImgModel(dll_hook=dll_hook)
         self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.self_img_model = SelfImgModel(dll_hook=dll_hook)
         self.self_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.kda_img_model = KDAImgModel(dll_hook=dll_hook)
         self.kda_img_model.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.tesseract_models = MultiTesseractModel([LvlImgModel(),
                                                      CSImgModel(),
                                                      CurrentGoldImgModel()])
@@ -266,7 +268,8 @@ class Main(FileSystemEventHandler):
         return result
 
 
-    def predict_next_item(self, model=None, role=None, champs=None, items=None, cs=None, lvl=None, kda=None,
+    def predict_next_item(self, model=None, role=None, champs=None, items=None, cs=None, lvl=None, kills=None,
+                          deaths=None, assists=None,
                           delta_items=Counter()):
         
                 
@@ -280,8 +283,12 @@ class Main(FileSystemEventHandler):
             cs = self.cs
         if lvl is None:
             lvl = self.lvl
-        if kda is None:
-            kda = self.kda
+        if kills is None:
+            kills = self.kills
+        if deaths is None:
+            deaths = self.deaths
+        if assists is None:
+            assists = self.assists
         if model is None:
             model = self.next_item_model
         elif model == "standard":
@@ -302,7 +309,7 @@ class Main(FileSystemEventHandler):
             if items[role]:
                 summ_owned_completes = list(self.get_blackout_items(items[role] + delta_items))
 
-        return model.predict_easy(role, champs_int, items_id, cs, lvl, kda, self.current_gold,
+        return model.predict_easy(role, champs_int, items_id, cs, lvl, kills, deaths, assists, self.current_gold,
                                   summ_owned_completes)
 
 
@@ -372,7 +379,9 @@ class Main(FileSystemEventHandler):
         self.items = self.swap_teams(self.items)
         self.lvl = self.swap_teams(self.lvl)
         self.cs = self.swap_teams(self.cs)
-        self.kda = self.swap_teams(self.kda)
+        self.kills = self.swap_teams(self.kills)
+        self.deaths = self.swap_teams(self.deaths)
+        self.assists = self.swap_teams(self.assists)
         self.role -= 5
 
 
@@ -689,8 +698,14 @@ class Main(FileSystemEventHandler):
         self.onTimeout = False
 
 
-    def repair_failed_predictions(self, predictions, lower, upper):
-        assert (len(predictions) == 10)
+    def repair_failed_predictions(self, predictions, lower, upper, mask):
+        avg = sum(predictions) // len(predictions)
+        if sum(mask) < 10:
+            new_pred = np.full(10, -1)
+            new_pred[np.array(mask).astype(bool)] = predictions
+            predictions = new_pred
+
+
         for i in range(len(predictions)):
             # this pred is wrong
             if predictions[i] is None or upper < predictions[i] or predictions[i] < lower:
@@ -699,7 +714,7 @@ class Main(FileSystemEventHandler):
                 if opp_pred_valid:
                     predictions[i] = predictions[opp_index]
                 else:
-                    predictions[i] = sum(predictions) / 10
+                    predictions[i] = avg
         return predictions
 
 
@@ -713,7 +728,9 @@ class Main(FileSystemEventHandler):
             y_dim,x_dim,_ = screenshot.shape
             show_names_in_sb, hud_scale = self.read_config()
             logger.info(f"{x_dim}, {y_dim} - hud_scale: {hud_scale}, show_names: {show_names_in_sb}")
-            res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+            # res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+            res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=0.02,
+                                                      summ_names_displayed=show_names_in_sb)
             self.champ_img_model.set_res_cvt(res_converter)
             self.kda_img_model.set_res_cvt(res_converter)
             self.item_img_model.set_res_cvt(res_converter)
@@ -724,32 +741,41 @@ class Main(FileSystemEventHandler):
             # utils.show_coords(screenshot, self.champ_img_model.coords, self.champ_img_model.img_size)
             logger.info("Trying to predict champ imgs")
 
-            self.champs = list(self.champ_img_model.predict(screenshot))
+            self.champs = np.array(list(self.champ_img_model.predict(screenshot)))
+            mask = [1 if champ['name'] != 'Empty' else 0 for champ in self.champs]
+            self.champs[~np.array(mask).astype(bool)] = [ChampManager().lookup_by("name", "Pantheon")]*(10-sum(mask))
             logger.info(f"Champs: {self.champs}\n")
 
             try:
-                self.kda = list(self.kda_img_model.predict(screenshot))
+                self.tmp_kda = np.array(list(self.kda_img_model.predict(screenshot, mask)))
+                self.kills = self.tmp_kda[:,0]
+                self.deaths = self.tmp_kda[:, 1]
+                self.assists = self.tmp_kda[:, 2]
             except Exception as e:
-                self.kda = [[0, 0, 0]] * 10
-            logger.info(f"KDA:\n {self.kda}\n")
-            self.kda = np.array(self.kda)
-            self.kda[:, 0] = self.repair_failed_predictions(self.kda[:, 0], 0, 25)
-            self.kda[:, 1] = self.repair_failed_predictions(self.kda[:, 1], 0, 25)
-            self.kda[:, 2] = self.repair_failed_predictions(self.kda[:, 2], 0, 25)
-            tesseract_result = list(self.tesseract_models.predict(screenshot))
+                self.kills = [0]*10
+                self.deaths = [0] * 10
+                self.assists = [0] * 10
+            self.kills = self.repair_failed_predictions(self.kills, 0, 25, mask)
+            self.deaths = self.repair_failed_predictions(self.deaths, 0, 25, mask)
+            self.assists = self.repair_failed_predictions(self.assists, 0, 25, mask)
+
+            logger.info(f"kills:\n {self.kills}\n")
+            logger.info(f"deaths:\n {self.deaths}\n")
+            logger.info(f"assists:\n {self.assists}\n")
+            tesseract_result = list(self.tesseract_models.predict(screenshot, mask))
             try:
-                self.lvl = tesseract_result[:10]
+                self.lvl = tesseract_result[:sum(mask)]
             except Exception as e:
                 logger.error(e)
                 self.lvl = [0] * 10
-            self.lvl = self.repair_failed_predictions(self.lvl, 1, 18)
+            self.lvl = self.repair_failed_predictions(self.lvl, 1, 18, mask)
 
             try:
-                self.cs = tesseract_result[10:20]
+                self.cs = tesseract_result[sum(mask):2*sum(mask)]
             except Exception as e:
                 logger.error(e)
                 self.cs = [0] * 10
-            self.cs = self.repair_failed_predictions(self.cs, 0, 400)
+            self.cs = self.repair_failed_predictions(self.cs, 0, 400, mask)
             try:
                 self.current_gold = tesseract_result[-1]
             except Exception as e:
@@ -767,7 +793,14 @@ class Main(FileSystemEventHandler):
             logger.info(f"CS:\n {self.cs}\n")
             logger.info(f"Current Gold:\n {self.current_gold}\n")
             logger.info("Trying to predict item imgs. \nHere are the raw items: ")
-            self.items = list(self.item_img_model.predict(screenshot))
+            self.items = list(self.item_img_model.predict(screenshot, mask))
+
+            if sum(mask) < 10:
+                self.items = np.reshape(self.items, (-1, 7))
+                new_pred = np.full((10,7), ItemManager().lookup_by("name","Empty"))
+                new_pred[np.array(mask).astype(bool)] = self.items
+                self.items = np.ravel(new_pred)
+
             self.items = [self.item_manager.lookup_by("int", item["int"]) for item in self.items]
             logger.info("Here are the converted items:")
             for i, item in enumerate(self.items):
@@ -789,7 +822,9 @@ class Main(FileSystemEventHandler):
             # the previous prediction
             if not self.previous_champs:
                 self.previous_champs = [Counter({champ_int: 1}) for champ_int in champs_int]
-                self.previous_kda = self.kda
+                self.previous_kills = self.kills
+                self.previous_deaths = self.deaths
+                self.previous_assists = self.assists
                 self.previous_cs = self.cs
                 self.previous_lvl = self.lvl
                 self.previous_role = self.role
@@ -797,9 +832,9 @@ class Main(FileSystemEventHandler):
             else:
                 champ_overlap = np.sum(np.equal(self.champs, prev_champs2champs(self.previous_champs)))
                 # only look at top 3 kdas since the lower ones often are overlapped
-                k_increase = np.all(np.greater_equal(self.kda[:3, 0], self.previous_kda[:3, 0]))
-                d_increase = np.all(np.greater_equal(self.kda[:3, 1], self.previous_kda[:3, 1]))
-                a_increase = np.all(np.greater_equal(self.kda[:3, 2], self.previous_kda[:3, 2]))
+                k_increase = np.all(np.greater_equal(self.kills[:3], self.previous_kills[:3]))
+                d_increase = np.all(np.greater_equal(self.deaths[:3], self.previous_deaths[:3]))
+                a_increase = np.all(np.greater_equal(self.assists[:3], self.previous_assists[:3]))
                 # cs_increase = np.all(np.greater_equal(cs, self.previous_cs))
                 # lvl_increase = np.all(np.greater_equal(cs, self.previous_cs))
                 # all_increased = k_increase and d_increase and a_increase and cs_increase and lvl_increase
@@ -814,7 +849,9 @@ class Main(FileSystemEventHandler):
                 # this is a new game
                 else:
                     self.previous_champs = [Counter({champ_int: 1}) for champ_int in champs_int]
-                self.previous_kda = self.kda
+                self.previous_kills = self.kills
+                self.previous_deaths = self.deaths
+                self.previous_assists = self.assists
                 self.previous_cs = self.cs
                 self.previous_lvl = self.lvl
                 self.previous_role = self.role
@@ -918,10 +955,10 @@ class Main(FileSystemEventHandler):
         observer.join()
 
 
-# m = Main()
+m = Main()
 # m.run()
 
-# m.process_image(f"test_data/screenshots/Screen40.png")
+m.process_image(f"test_data/resolutions/Screen478.png")
 # for i in range(35,58):
     # m.process_image(f"test_data/screenshots/Screen{i}.png")
 
