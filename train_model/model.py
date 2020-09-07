@@ -343,24 +343,24 @@ class ImgModel(Model):
         self.res_converter = res_cvt
 
 
-    def predict(self, img):
-        x = self.extract_imgs(img)
+    def predict(self, img, mask=[1]*10):
+        x = self.extract_imgs(img, mask)
         img_ints = self.predict2int(np.array(x))
         predicted_artifacts = (self.artifact_manager.lookup_by("img_int", artifact_int) for artifact_int in img_ints)
         return predicted_artifacts
 
 
-    def get_coords(self):
-        return list(self.res_converter.generate_std_coords(self.elements))
+    def get_coords(self, mask=[1]*10):
+        return list(self.res_converter.generate_std_coords(self.elements, mask))
 
 
-    def extract_imgs(self, whole_img):
-        coords = self.get_coords()
+    def extract_imgs(self, whole_img, mask=[1]*10):
+        coords = self.get_coords(mask)
         coords = np.reshape(coords, (-1, 2))
         
-        from utils import misc
-        misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
-                          self.res_converter.lookup(self.elements, "y_crop"))
+        # from utils import misc
+        # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_crop"),
+        #                   self.res_converter.lookup(self.elements, "y_crop"))
 
         sub_imgs = [whole_img[int(round(coord[1])):int(round(coord[1] + self.res_converter.lookup(self.elements,
                                                                                                   "y_crop"))),
@@ -388,10 +388,10 @@ class MultiTesseractModel:
             self.tess.End()
 
 
-    def predict(self, whole_img):
+    def predict(self, whole_img, mask=[1]*10):
         slide_imgs = []
         for model in self.tesseractmodels:
-            slide_imgs.extend(model.extract_all_slide_imgs(whole_img))
+            slide_imgs.extend(model.extract_all_slide_imgs(whole_img,mask))
         y_heights = [slide_img.shape[0] for slide_img in slide_imgs]
 
         y_height = Counter(y_heights).most_common(1)[0][0]
@@ -494,12 +494,12 @@ class TesseractModel:
         return img_binarized
 
 
-    def get_coords(self):
-        return list(self.res_converter.generate_std_coords(self.elements))
+    def get_coords(self, mask=[1]*10):
+        return list(self.res_converter.generate_std_coords(self.elements, mask))
 
 
-    def get_raw_slide_imgs(self, whole_img):
-        coords = self.get_coords()
+    def get_raw_slide_imgs(self, whole_img, mask=[1]*10):
+        coords = self.get_coords(mask)
         coords = np.reshape(coords, (-1, 2))
         # from utils import misc
         # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),self.res_converter.lookup(self.elements, "y_height"))
@@ -510,12 +510,11 @@ class TesseractModel:
         return slide_imgs
 
 
-    def extract_all_slide_imgs(self, whole_img):
-
-        slide_imgs = self.get_raw_slide_imgs(whole_img)
+    def extract_all_slide_imgs(self, whole_img, mask=[1]*10):
+        slide_imgs = self.get_raw_slide_imgs(whole_img, mask)
         # for img in slide_imgs:
         #     heavy_imports.cv.imshow("f", img)
-        #     heavy_imports.cv.waitKey(0)
+        # heavy_imports.cv.waitKey(0)
         result = [self.extract_slide_img(slide_img) for slide_img in slide_imgs]
         # for img in result:
         #     heavy_imports.cv.imshow("f", img)
@@ -560,12 +559,12 @@ class KDAImgModel(ImgModel):
         if dll_hook:
             return
         self.network = network.DigitRecognitionNetwork(lambda: self.artifact_manager.get_num("img_int"),
-                                                       self.network_crop)
+                                                       ui_constants.ResConverter.network_crop["kda"])
 
 
 
-    def predict(self, whole_img):
-        imgs, num_elements = self.extract_imgs(whole_img)
+    def predict(self, whole_img, mask):
+        imgs, num_elements = self.extract_imgs(whole_img, mask)
         img_ints = self.predict2int(np.array(imgs))
         predicted_artifacts = [self.artifact_manager.lookup_by("img_int", artifact_int)["name"] for artifact_int in
                                img_ints]
@@ -633,8 +632,8 @@ class KDAImgModel(ImgModel):
         # heavy_imports.cv.waitKey(0)
 
 
-    def extract_imgs(self, whole_img):
-        coords = list(self.get_coords())
+    def extract_imgs(self, whole_img, mask):
+        coords = list(self.get_coords(mask))
         coords = np.reshape(coords, (-1, 2))
         from utils import misc
         # misc.show_coords(whole_img, coords, self.res_converter.lookup(self.elements, "x_width"),
@@ -666,7 +665,7 @@ class CurrentGoldImgModel(TesseractModel):
         super().__init__(res_converter)
 
 
-    def get_raw_slide_imgs(self, whole_img):
+    def get_raw_slide_imgs(self, whole_img, mask):
         x,y,w,h = self.res_converter.generate_current_gold_coords()
         # from utils import misc
         # misc.show_coords(whole_img, [(int(x),int(y))] , int(w), int(h))
@@ -699,8 +698,8 @@ class ItemImgModel(ImgModel):
         self.network = network.ItemImgNetwork()
 
 
-    def get_coords(self):
-        return list(self.res_converter.generate_item_coords())
+    def get_coords(self, mask=[1]*10):
+        return list(self.res_converter.generate_item_coords(mask))
 
 
 class SelfImgModel(ImgModel):
@@ -875,7 +874,7 @@ class NextItemModel(GameModel):
         
 
 
-    def predict_easy(self, role, champs_int, items_id, cs, lvl, kda, current_gold, blackout_indices):
+    def predict_easy(self, role, champs_int, items_id, cs, lvl, kills, deaths, assists, current_gold, blackout_indices):
         x = np.zeros(shape=self.input_len, dtype=np.int32)
         x[Input.indices["start"]["pos"]:Input.indices["end"]["pos"]] = [role]
         x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = champs_int
@@ -883,10 +882,10 @@ class NextItemModel(GameModel):
         x[Input.indices["start"]["items"]:Input.indices["end"]["items"]] = encoded_items
         x[Input.indices["start"]["cs"]:Input.indices["end"]["cs"]] = cs
         x[Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]] = lvl
-        kda = np.ravel(kda)
-        x[Input.indices["start"]["kills"]:Input.indices["end"]["kills"]] = kda[0::3]
-        x[Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = kda[1::3]
-        x[Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = kda[2::3]
+
+        x[Input.indices["start"]["kills"]:Input.indices["end"]["kills"]] = kills
+        x[Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]] = deaths
+        x[Input.indices["start"]["assists"]:Input.indices["end"]["assists"]] = assists
         num_increments = 5
         granularity = 100
         start = 00
