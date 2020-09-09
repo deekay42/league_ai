@@ -113,6 +113,7 @@ class Trainer(ABC):
                     if hasattr(self, 'champ_embs') and self.champ_embs is not None:
                         embeddingWeights = tflearn.get_layer_variables_by_name('my_champ_embs')[0]
                         model.set_weights(embeddingWeights, self.champ_embs)
+                    if hasattr(self, 'opp_champ_embs') and self.opp_champ_embs is not None:
                         embeddingWeights = tflearn.get_layer_variables_by_name('opp_champ_embs')[0]
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
@@ -1207,16 +1208,16 @@ class NextItemsTrainer(Trainer):
 
 
     def build_next_items_standard_game_model(self):
-        self.num_epochs = 20
+        self.num_epochs = 50
         self.target_names = [target["name"] for target in sorted(list(ItemManager().get_ints().values()), key=lambda
             x: x["int"])]
 
-        # my_champ_embs_normed = np.load("my_champ_embs_normed.npy")
-        # opp_champ_embs_normed = np.load("opp_champ_embs_normed.npy")
-        # my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
+        my_champ_embs_normed = np.load(app_constants.asset_paths["champ_embs_normed"])
+        # opp_champ_embs_normed = np.load(app_constants.asset_paths["vs_champ_embs_normed"])
+        my_champ_embs_normed = np.concatenate([[[0, 0, 0]], my_champ_embs_normed], axis=0)
         # opp_champ_embs_normed = np.concatenate([[[0, 0, 0]], opp_champ_embs_normed], axis=0)
-        #
-        # self.champ_embs = my_champ_embs_normed
+
+        self.champ_embs = my_champ_embs_normed
         # self.opp_champ_embs = opp_champ_embs_normed
         #
         #
@@ -2054,8 +2055,8 @@ if __name__ == "__main__":
     # t.train()
     # t = StarterItemsTrainer()
     # t.train()
-    # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
+    t = NextItemsTrainer()
+    t.build_next_items_standard_game_model()
 
 
 
@@ -2064,8 +2065,8 @@ if __name__ == "__main__":
     # t.build_new_img_model()
     # s = ChampImgTrainer()
     # s.build_new_img_model()
-    s = SelfTrainer()
-    s.build_new_img_model()
+    # s = SelfTrainer()
+    # s.build_new_img_model()
     # t = WinPredTrainer()
     # t.train()
     #

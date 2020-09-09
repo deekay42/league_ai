@@ -98,6 +98,8 @@ train_paths["accountids"] = train_paths["next_items"] + "summoner_account_ids"
 train_paths["sorted_matches_path"] = train_paths["next_items"] + "matches_sorted.json"
 train_paths["presorted_matches_path"] = train_paths["next_items"] + "matches_presorted.json"
 
+train_paths["win_pred_"] = base_train_path + "win_pred" + os.sep
+
 asset_paths["champ_vs_roles"] = asset_paths["jsons"] + "champ_vs_roles.json"
 asset_paths["champ_embs_normed"] = asset_paths["jsons"] + "champ_embs_normed.npy"
 asset_paths["vs_champ_embs_normed"] = asset_paths["jsons"] + "vs_champ_embs_normed.npy"
