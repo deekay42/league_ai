@@ -1,4 +1,3 @@
-import requests
 import dateutil.parser as dt
 import datetime
 import json
@@ -14,8 +13,23 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 import requests
-from fractions import Fraction
 import traceback
+import asyncio
+import logging
+from aiohttp_retry import RetryClient
+from aiohttp import ClientSession
+import aiohttp
+import sys
+
+
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s:%(name)s: %(message)s",
+    level=logging.DEBUG,
+    datefmt="%H:%M:%S",
+    stream=sys.stderr,
+)
+logger = logging.getLogger("areq")
+logging.getLogger("chardet.charsetprober").disabled = True
 
 class GameNotStarted(Exception):
     pass
@@ -24,6 +38,16 @@ class ScrapeEsportsData:
 
     def __init__(self):
         self.reset()
+        self.base_url = "https://feed.lolesports.com/livestats/v1/window/"
+        self.invalid_statuses = {x for x in range(100, 600)}
+        self.invalid_statuses.remove(200)
+        self.invalid_statuses.remove(429)
+        self.retry_client = RetryClient()
+
+
+    def __del__(self):
+        self.retry_client.close()
+
 
     def reset(self):
         self.elder_start_timer = None
@@ -38,8 +62,7 @@ class ScrapeEsportsData:
                            "ocean": "WATER_DRAGON"}
 
 
-    @staticmethod
-    def generate_live_feed(match_id, max_tolerance=15):
+    def generate_live_feed(self, match_id):
         seconds_inc = 10
         url = f"https://feed.lolesports.com/livestats/v1/window/{match_id}"
 
@@ -49,46 +72,178 @@ class ScrapeEsportsData:
         except Exception:
             raise GameNotStarted()
 
-
         secs = starting_time.second
         starting_time = starting_time.replace(second=0, microsecond=0)
         starting_time += datetime.timedelta(seconds=10 * math.ceil(secs / 10))
+
         duration = 0
-        prev_timestamp = None
-        tolerance = 0
+        game_finished = False
         # counter = 0
-        while True:
+        while not game_finished:
             # counter += 1
             # if counter > 10:
             #     break
+
             time_it = starting_time + datetime.timedelta(seconds=duration)
             duration += seconds_inc
             time_it_s = time_it.isoformat().replace('+00:00', 'Z')
-            url = f"https://feed.lolesports.com/livestats/v1/window/{match_id}?startingTime={time_it_s}"
+            url = self.base_url + str(match_id) + f"?startingTime={time_it_s}"
             while True:
                 try:
                     payload = ScrapeEsportsData.fetch_payload(url)
-                    current_timestamp = payload['frames'][0]['rfc460Timestamp']
+                    game_finished = payload['frames'][-1] != 'finished'
+                    # current_timestamp = payload['frames'][0]['rfc460Timestamp']
                     break
                 except KeyError:
                     time.sleep(1)
-            if current_timestamp == prev_timestamp:
-                if tolerance > max_tolerance:
-                    break
-                else:
-                    tolerance += 1
-                    continue
-            tolerance = 0
+            # if current_timestamp == prev_timestamp:
+            #     if tolerance > max_tolerance:
+            #         break
+            #     else:
+            #         tolerance += 1
+            #         continue
+            # tolerance = 0
+
             yield payload
-            prev_timestamp = current_timestamp
+            # prev_timestamp = current_timestamp
+
+
+    async def fetch_html(self, url: str, headers=None) -> str:
+        """GET request wrapper to fetch page HTML.
+
+        kwargs are passed to `session.request()`.
+        """
+        try:
+            async with self.retry_client.get(url, retry_attempts=10,
+                                    retry_for_statuses=self.invalid_statuses, headers=headers if headers is not None \
+                else {}) as response:
+                return await response.text()
+        except (
+            aiohttp.ClientError,
+            aiohttp.http_exceptions.HttpProcessingError,
+        ) as e:
+            logger.error(
+                "aiohttp exception for %s [%s]: %s",
+                url,
+                getattr(e, "status", None),
+                getattr(e, "message", None),
+            )
+            raise e
+        except Exception as e:
+            logger.exception(
+                "Non-aiohttp exception occured:  %s", getattr(e, "__dict__", {})
+            )
+            raise e
+
+
+
+    async def download_finished_game(self, match_id):
+        seconds_inc = 10
+        url = f"https://feed.lolesports.com/livestats/v1/window/{match_id}"
+        init_payload = ScrapeEsportsData.fetch_payload_no_retry(url)
+        starting_time = dt.parse(init_payload['frames'][0]['rfc460Timestamp'])
+        secs = starting_time.second
+        starting_time = starting_time.replace(second=0, microsecond=0)
+        starting_time += datetime.timedelta(seconds=10 * math.ceil(secs / 10))
+
+        ending_time = starting_time + datetime.timedelta(hours=5)
+        end_url = self.base_url + str(match_id) + f"?startingTime={ending_time}"
+        final_payload = ScrapeEsportsData.fetch_payload(end_url)
+        is_finished = final_payload['frames'][-1]['gameState'] == 'finished'
+        if is_finished:
+            ending_time = dt.parse(init_payload['frames'][-1]['rfc460Timestamp'])
+
+        urls = []
+        duration = 0
+        time_it = starting_time
+        while time_it != ending_time:
+            time_it = starting_time + datetime.timedelta(seconds=duration)
+            duration += seconds_inc
+            time_it_s = time_it.isoformat().replace('+00:00', 'Z')
+            urls.append(self.base_url + str(match_id) + f"?startingTime={time_it_s}")
+
+        frames = [self.fetch_html(url=url) for url in urls]
+        return await asyncio.gather(*frames)
+
 
     @staticmethod
     @retry(wait_exponential_multiplier=1000, wait_exponential_max=10000)
-    def fetch_payload(url):
+    def fetch_payload(url, headers=None):
         print(f"attempting to fetch {url}")
-        payload_raw = requests.get(url, timeout=5).text
+        payload_raw = requests.get(url, timeout=5, headers=headers if headers else {}).text
         payload = json.loads(payload_raw)
         return payload
+
+
+    async def eventids2gameids(self, event_ids):
+        url = "https://esports-api.lolesports.com/persisted/gw/getEventDetails?hl=en-US&id="
+        futures = [self.fetch_html(url + str(event_id), headers={"x-api-key":
+                                                                         "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"})
+                   for event_id in event_ids]
+        payloads = await asyncio.gather(*futures)
+        game_ids = []
+        for payload in payloads:
+            for game in payload['data']['event']['match']['games']:
+                if game['state'] not in {"completed", "unneeded"}:
+                    print("ERRRRRRRRRRRROR")
+                    raise Exception()
+                game_ids.append(game['id'])
+        return game_ids
+
+
+
+    async def scrape_games(self):
+        leagues = ["LEC", "LCK", "LCS"]
+        outcomes_file_prefix = "outcomes_"
+        event_ids_file_prefix = "event_ids_"
+        outcomes = []
+        blue_team_champs = []
+        red_team_champs = []
+        event_ids = []
+        game_ids = []
+
+        for league in leagues:
+            with open(app_constants.train_paths["win_pred"] + outcomes_file_prefix + league + ".json") as f:
+                print(league)
+                contents = np.array(json.load(f))
+                outcomes.extend(contents[0::3])
+                blue_team_champs.extend(contents[1::3])
+                red_team_champs.extend(contents[2::3])
+            with open(app_constants.train_paths["win_pred"] + event_ids_file_prefix + league + ".json") as f:
+                event_ids.extend(json.load(f))
+            game_ids = []
+            for event_id in event_ids:
+                game_ids.extend(list(await self.eventids2gameids([event_id])))
+
+        champs = []
+        for b, r in zip(blue_team_champs, red_team_champs):
+            blue_champs = [ChampManager().lookup_by("name", c)["int"] for c in b]
+            red_champs = [ChampManager().lookup_by("name", c)["int"] for c in r]
+            champs.append(blue_champs + red_champs)
+
+
+        assert len(game_ids) == len(outcomes)
+        print("-"*50 + "  Got all game IDs  "+"-"*50)
+
+        x = np.empty((0,Input.len))
+        async with ClientSession() as client:
+            retry_client = RetryClient(client)
+            with open(app_constants.train_paths["win_pred"] + "train.npz", "wb") as result_file:
+                try:
+                    for game_id, team_comps, outcome in zip(game_ids, champs, outcomes):
+                        print(f"Getting gameId: {game_id}")
+
+                        vec = self.gameids2vec(game_ids, outcomes)
+                        x = np.concatenate([x, vec], axis=0)
+                except Exception:
+                    print(traceback.print_exc())
+                    np.savez_compressed(result_file, x)
+                    await retry_client.close()
+                    raise
+            await retry_client.close()
+        np.savez_compressed(result_file, x)
+        print("done")
+
 
     def fetch_payload_no_retry(url):
         print(f"INIT attempting to fetch {url}")
@@ -188,7 +343,7 @@ class ScrapeEsportsData:
 
 
     def game2vec(self, gameId):
-        snapshots = list(s.generate_live_feed(gameId))
+        snapshots = s.download_finished_game(gameId)
         for snapshot in snapshots:
             yield self.snapshot2vec(snapshot)
 
@@ -221,7 +376,7 @@ class ScrapeEsportsData:
         #update xpath
         gameId = 104174992730350842
         swap_teams = True
-        snapshots = s.generate_live_feed(gameId, 1000)
+        snapshots = s.generate_live_feed(gameId)
 
         urls = [
             # 'https://sports.betway.com/en/sports/evt/6329588',
@@ -264,7 +419,7 @@ class ScrapeEsportsData:
                 print("Game not started yet")
                 pred_odds_blue = 0.5
                 time.sleep(1)
-                snapshots = s.generate_live_feed(gameId, 1000)
+                snapshots = s.generate_live_feed(gameId)
 
 
             print("Predicted blue team win: " + str(pred_odds_blue))
@@ -296,12 +451,10 @@ class ScrapeEsportsData:
                 p_odds_blue[i] = (1/scraped_odds_blue[i])
                 p_odds_red[i] = (1 / scraped_odds_red[i])
 
-
                 print("\tRaw odds blue: " + str(raw_blue[i]))
                 print("\tRaw odds red: " + str(raw_red[i]))
                 print("\tOdds blue: " + str(p_odds_blue[i]))
                 print("\tOdds red: " + str(p_odds_red[i]))
-
 
                 print("\n")
 
@@ -356,31 +509,35 @@ class ScrapeEsportsData:
 
 
 
-    def tournament2vec(self, gameIds, game_results):
+    def gameids2vec(self, gameIds, game_results):
         x = np.empty(shape=(0,Input.len), dtype=np.uint64)
 
         for gameId, game_result in zip(gameIds, game_results):
             self.reset()
-            data_x = self.game2vec(gameId)
+            try:
+                data_x = self.game2vec(gameId)
+            except Exception as e:
+                logger.exception(
+                    "Error while downloading game. Skip."
+                )
+                continue
             data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen], dtype=np.uint64)
             data_x = np.reshape(data_x, (-1, Input.len))
+            # if champs is not None:
+            #     data_x[:,Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = champs
             if game_result == 0:
                 data_x = Input.flip_teams(data_x)
             x = np.concatenate([x, data_x], axis=0)
+        return x
 
-
-
-        out_dir = app_constants.train_paths["win_pred"]
-        filename = out_dir + "test_x.npz"
-        with open(filename, "wb") as writer:
-            np.savez_compressed(writer, x)
-
+async def run_async():
+    s = ScrapeEsportsData()
+    s.scrape_games()
 
 
 #
 #
 #
-s = ScrapeEsportsData()
 # gameIds = [104242514815381917, 104242514815381915, 104242514815381913, 104242514815381919, 104242514815381911,
 #                    104242514815381921, 104242514816168363, 104242514816168357, 104242514816168355, 104242514816168365,
 #                    104242514816168361, 104242514816168359, 104251966834409897, 104252200467817589, 104242514817020336,
@@ -461,10 +618,23 @@ game_results = [
 1,0,0,0,0,
 1,0,0
 ]
+
 # gameIds = [104242514815381919]
 # game_results = [0]
-s.live_game2odds(104169295295198367)
-# s.tournament2vec(gameIds, game_results)
+
+# $x('string(//tr[contains(@class,"multirow-highlighter")])')
+# a =$x("//div[@class='EventMatch']/a/@href")
+# for(var i=0;i<200;++i)
+#     console.log(a[i].textContent)
+asyncio.run(run_async())
+
+# s.live_game2odds(104169295295198367)
+
+# x = s.tournament2vec(gameIds, game_results)
+# out_dir = app_constants.train_paths["win_pred"]
+# filename = out_dir + "test_x.npz"
+# with open(filename, "wb") as writer:
+#     np.savez_compressed(writer, x)
 # 104169295295132807
 # 104169295295198344
 # 104169295295198345
@@ -489,3 +659,6 @@ s.live_game2odds(104169295295198367)
 # for data in data_x_flipped:
 #     print(data)
 # s.game2vec(104242514815381917, "2020-05-28T07:20:10.000Z")
+
+
+
