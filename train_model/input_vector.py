@@ -4,7 +4,6 @@ import numpy as np
 
 from constants import game_constants, app_constants
 from utils import heavy_imports
-from utils.artifact_manager import ChampManager
 
 
 class Input:
@@ -109,7 +108,7 @@ class Input:
         # d = np.reshape(input_slice, (-1, 1))
         d = input_slice
         d = np.clip(d, game_constants.min_clip[slice_name], game_constants.max_clip[slice_name])
-        #this is a nonlinear transformation, afterwards the following equation no longer necessarily holds true:
+        # this is a nonlinear transformation, afterwards the following equation no longer necessarily holds true:
         # sum([topkills, jgkills, midkills, adckills, suppkills]) == team1_kills
         # pt = heavy_imports.PowerTransformer(method='yeo-johnson', standardize=False)
         # d_t = pt.fit_transform(d)
@@ -118,13 +117,13 @@ class Input:
         # mm = heavy_imports.MinMaxScaler()
         # d = mm.fit_transform(d)
         return {
-                    # "yeo_lambdas": pt.lambdas_.tolist(),
-                    "standard": {"mean": ss.mean_.tolist(), "scale": ss.scale_.tolist(), "var": ss.var_.tolist()},
-                    # "minmax": {"min": mm.min_.tolist(), "scale": mm.scale_.tolist()}
-                }
+            # "yeo_lambdas": pt.lambdas_.tolist(),
+            "standard": {"mean": ss.mean_.tolist(), "scale": ss.scale_.tolist(), "var": ss.var_.tolist()},
+            # "minmax": {"min": mm.min_.tolist(), "scale": mm.scale_.tolist()}
+        }
 
 
-    #slices must be scaled uniformly or else you cannot perform derivative features since the scales are different
+    # slices must be scaled uniformly or else you cannot perform derivative features since the scales are different
     @staticmethod
     def fit_scale_inputs(X):
         params = dict()
@@ -136,10 +135,10 @@ class Input:
             #                                      axis=0) for i in
             #                       range(diff)]
             # input_slice_concat = np.transpose(input_slice_concat, (1, 0))
-            params[slice_name] = Input.fit(np.reshape(input_slice, (-1,1)), slice_name)
+            params[slice_name] = Input.fit(np.reshape(input_slice, (-1, 1)), slice_name)
 
         kda_slices = np.reshape([X[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] for
-                               slice_name in kda_slice_names], (-1,1))
+                                 slice_name in kda_slice_names], (-1, 1))
         kda_params = Input.fit(kda_slices, slice_name)
         for slice_name in kda_slice_names:
             params[slice_name] = kda_params
@@ -159,77 +158,6 @@ class Input:
         return x
 
 
-        # dragons_int = [0, 0, 0, 0, 0, 0, 0, 0]
-        # for dragon_type in dragons:
-        #     team_dragon_kills = dragons[dragon_type]
-        #     dragon_index = game_constants.dragon2index[dragon_type]
-        #     dragons_int[dragon_index] += team_dragon_kills[0]
-        #     dragons_int[dragon_index + 4] += team_dragon_kills[1]
-        #
-        # dragon_soul = [dragon_soul_type[0] != "NONE", dragon_soul_type[1] != "NONE"]
-        # dragon_soul_type_ints = [
-        #     game_constants.dragon2index[soul_team] if soul_team in game_constants.dragon2index
-        #     else 0
-        #     for soul_team in dragon_soul_type]
-        # dragon_soul_type = [0, 0, 0, 0, 0, 0, 0, 0]
-        # if dragon_soul_type_ints[0] != 0:
-        #     dragon_soul_type[dragon_soul_type_ints[0]] = 1
-        # if dragon_soul_type_ints[1] != 0:
-        #     dragon_soul_type[4 + dragon_soul_type_ints[1]] = 1
-
-
-
-        # x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = \
-        #     [ChampManager().lookup_by("name",chstr)["int"] for
-        #                                                                       chstr in
-        #                                                                       champs_str]
-        # x[Input.indices["start"]["cs"]:Input.indices["end"]["cs"]] = cs
-        # x[Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]] = lvl
-        # x[Input.indices["start"]["kda"]:Input.indices["end"]["kda"]] = np.ravel(kda)
-        # x[Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = total_gold
-        # x[Input.indices["start"]["baron"]:Input.indices["end"]["baron"]] = baron_active
-        # x[Input.indices["start"]["elder"]:Input.indices["end"]["elder"]] = elder_active
-        # x[Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]] = dragons_int
-        # x[Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]] = \
-        #     dragon_soul_type
-        # x[Input.indices["start"]["dragon_soul_type_start"]:Input.indices["start"][
-        #     "dragon_soul_type_end"]] = \
-        #     dragon_soul
-        # x[Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]] = \
-        #     turrets
-        # x[Input.indices["start"]["first_team_blue"]:Input.indices["end"]["first_team_blue"]] = \
-        #     first_team_blue_start
-
-        return x
-
-
-    @staticmethod
-    def scale_abs(scale_dict):
-        result = dict(scale_dict)
-        X = np.zeros(Input.len)
-        for slice_name in Input.numeric_slices:
-            X[Input.indices["start"][slice_name]] = scale_dict[slice_name]
-        X = Input().scale_inputs(X[np.newaxis, :])
-        for slice_name in Input.numeric_slices:
-            result[slice_name] = X[0][Input.indices["start"][slice_name]]
-        return result
-
-
-    @staticmethod
-    def scale_rel(scale_dict):
-        result = dict(scale_dict)
-        X = np.zeros(Input.len)
-        for slice_name in Input.numeric_slices:
-            X[Input.indices["start"][slice_name]] = scale_dict[slice_name]
-            X[Input.indices["start"][slice_name]:Input.indices["end"][
-                slice_name]] = X[Input.indices["start"][slice_name]:Input.indices["end"][
-                slice_name]] / Input().standard_scalers[
-                                   slice_name].scale_
-            result[slice_name] = X[Input.indices["start"][slice_name]]
-
-        return result
-
-
     @staticmethod
     def flip_teams(X):
         X_copy = np.copy(X)
@@ -243,7 +171,7 @@ class Input:
 
     def __init__(self):
         if not Input.instance:
-            Input.instance = Input.__Input()
+            Input.instance = Input.__Input(Input.numeric_slices, Input.indices, Input.len)
 
 
     def __getattr__(self, name):
@@ -252,19 +180,24 @@ class Input:
 
     class __Input:
 
-        def __init__(self):
-            with open(app_constants.asset_paths["input_scales"], "r") as f:
+        def get_params_path(self):
+            return app_constants.asset_paths["input_scales"]
+
+
+        def __init__(self, numeric_slices, indices, length):
+            with open(self.get_params_path(), "r") as f:
                 params = json.load(f)
 
             self.game_config = None
-
+            self.numeric_slices = numeric_slices
+            self.indices = indices
+            self.length = length
             self.power_transformers = dict()
             self.standard_scalers = dict()
             self.minmax_scalers = dict()
 
-
-            for slice_name in Input.numeric_slices:
-                slice_len = Input.indices["end"][slice_name] - Input.indices["start"][slice_name]
+            for slice_name in self.numeric_slices:
+                slice_len = self.indices["end"][slice_name] - self.indices["start"][slice_name]
                 # lambdas = np.tile(params[slice_name]["yeo_lambdas"], [slice_len])
                 scale_norm = np.tile(params[slice_name]["standard"]["scale"], [slice_len])
                 mean = np.tile(params[slice_name]["standard"]["mean"], [slice_len])
@@ -285,15 +218,287 @@ class Input:
 
 
         def scale_inputs(self, X):
-            if X.size==0:
-                return np.empty((1,Input.len))
+            if X.size == 0:
+                return np.empty((1, self.length))
             result = np.copy(X).astype(np.float32)
-            for slice_name in Input.numeric_slices:
-                d = result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]]
+            for slice_name in self.numeric_slices:
+                d = result[:, self.indices["start"][slice_name]:self.indices["end"][slice_name]]
                 d = np.clip(d, game_constants.min_clip[slice_name], game_constants.max_clip[slice_name])
                 # d = self.power_transformers[slice_name].transform(d)
                 d = self.standard_scalers[slice_name].transform(d)
                 # d = self.minmax_scalers[slice_name].transform(d)
-                result[:, Input.indices["start"][slice_name]:Input.indices["end"][slice_name]] = d
+                result[:, self.indices["start"][slice_name]:self.indices["end"][slice_name]] = d
 
             return result
+
+
+class InputWinPred():
+    instance = None
+
+    indices = dict()
+    indices["start"] = dict()
+    indices["half"] = dict()
+    indices["end"] = dict()
+    indices["mid"] = dict()
+
+
+
+    indices["start"]["champs"] = 0
+    indices["half"]["champs"] = indices["start"]["champs"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["champs"] = indices["start"]["champs"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["total_gold"] = indices["end"]["champs"]
+    indices["half"]["total_gold"] = indices["start"]["total_gold"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["total_gold"] = indices["start"]["total_gold"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["cs"] = indices["end"]["total_gold"]
+    indices["half"]["cs"] = indices["start"]["cs"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["cs"] = indices["start"]["cs"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["lvl"] = indices["end"]["cs"]
+    indices["half"]["lvl"] = indices["start"]["lvl"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["lvl"] = indices["start"]["lvl"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["kills"] = indices["end"]["lvl"]
+    indices["half"]["kills"] = indices["start"]["kills"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["kills"] = indices["start"]["kills"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["deaths"] = indices["end"]["kills"]
+    indices["half"]["deaths"] = indices["start"]["deaths"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["deaths"] = indices["start"]["deaths"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["assists"] = indices["end"]["deaths"]
+    indices["half"]["assists"] = indices["start"]["assists"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["assists"] = indices["start"]["assists"] + game_constants.CHAMPS_PER_GAME
+
+    indices["start"]["baron"] = indices["end"]["assists"]
+    indices["half"]["baron"] = indices["start"]["baron"] + 1
+    indices["end"]["baron"] = indices["start"]["baron"] + 2
+
+    indices["start"]["elder"] = indices["end"]["baron"]
+    indices["half"]["elder"] = indices["start"]["elder"] + 1
+    indices["end"]["elder"] = indices["start"]["elder"] + 2
+
+    indices["start"]["dragons_killed"] = indices["end"]["elder"]
+    indices["half"]["dragons_killed"] = indices["start"]["dragons_killed"] + 4
+    indices["end"]["dragons_killed"] = indices["start"]["dragons_killed"] + 8
+
+    indices["start"]["dragon_soul_type"] = indices["end"]["dragons_killed"]
+    indices["half"]["dragon_soul_type"] = indices["start"]["dragon_soul_type"] + 4
+    indices["end"]["dragon_soul_type"] = indices["start"]["dragon_soul_type"] + 8
+
+    indices["start"]["turrets_destroyed"] = indices["end"]["dragon_soul_type"]
+    indices["half"]["turrets_destroyed"] = indices["start"]["turrets_destroyed"] + 1
+    indices["end"]["turrets_destroyed"] = indices["start"]["turrets_destroyed"] + 2
+
+    indices["start"]["blue_side"] = indices["end"]["turrets_destroyed"]
+    indices["half"]["blue_side"] = indices["start"]["blue_side"] + 1
+    indices["end"]["blue_side"] = indices["half"]["blue_side"] + 1
+
+    # indices["start"]["total_gold_diff"] = indices["end"]["blue_side"]
+    # indices["half"]["total_gold_diff"] = indices["start"][
+    #                                          "total_gold_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["total_gold_diff"] = indices["start"]["total_gold_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["cs_diff"] = indices["end"]["total_gold_diff"]
+    # indices["half"]["cs_diff"] = indices["start"]["cs_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["cs_diff"] = indices["start"]["cs_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["lvl_diff"] = indices["end"]["cs_diff"]
+    # indices["half"]["lvl_diff"] = indices["start"]["lvl_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["lvl_diff"] = indices["start"]["lvl_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["kills_diff"] = indices["end"]["lvl_diff"]
+    # indices["half"]["kills_diff"] = indices["start"]["kills_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["kills_diff"] = indices["start"]["kills_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["deaths_diff"] = indices["end"]["kills_diff"]
+    # indices["half"]["deaths_diff"] = indices["start"]["deaths_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["deaths_diff"] = indices["start"]["deaths_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["assists_diff"] = indices["end"]["deaths_diff"]
+    # indices["half"]["assists_diff"] = indices["start"]["assists_diff"] + game_constants.CHAMPS_PER_TEAM
+    # indices["end"]["assists_diff"] = indices["start"]["assists_diff"] + game_constants.CHAMPS_PER_GAME
+    #
+    # indices["start"]["baron_diff"] = indices["end"]["assists_diff"]
+    # indices["half"]["baron_diff"] = indices["start"]["baron_diff"] + 1
+    # indices["end"]["baron_diff"] = indices["start"]["baron_diff"] + 2
+    #
+    # indices["start"]["elder_diff"] = indices["end"]["baron_diff"]
+    # indices["half"]["elder_diff"] = indices["start"]["elder_diff"] + 1
+    # indices["end"]["elder_diff"] = indices["start"]["elder_diff"] + 2
+    #
+    # indices["start"]["dragons_killed_diff"] = indices["end"]["elder_diff"]
+    # indices["half"]["dragons_killed_diff"] = indices["start"]["dragons_killed_diff"] + 4
+    # indices["end"]["dragons_killed_diff"] = indices["start"]["dragons_killed_diff"] + 8
+    #
+    # indices["start"]["dragon_soul_type_diff"] = indices["end"]["dragons_killed_diff"]
+    # indices["half"]["dragon_soul_type_diff"] = indices["start"]["dragon_soul_type_diff"] + 4
+    # indices["end"]["dragon_soul_type_diff"] = indices["start"]["dragon_soul_type_diff"] + 8
+    #
+    # indices["start"]["turrets_destroyed_diff"] = indices["end"]["dragon_soul_type_diff"]
+    # indices["half"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 1
+    # indices["end"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 2
+
+    indices["start"]["team_odds"] = indices["end"]["blue_side"]
+    indices["half"]["team_odds"] = indices["start"]["team_odds"] + 1
+    indices["end"]["team_odds"] = indices["start"]["team_odds"] + 2
+
+    len = indices["end"]["team_odds"]
+
+    numeric_slices = {'total_gold',
+                      'cs',
+                      'lvl',
+                      'kills',
+                      'deaths',
+                      'assists',
+                      'team_odds',
+                      'turrets_destroyed',
+                      'dragons_killed'}
+
+    all_slices = {"champs", "total_gold", "cs",
+                  "lvl", "kills", "deaths", "assists",
+                  "baron", "elder", "dragons_killed", "team_odds",
+                  "dragon_soul_type", "turrets_destroyed", "blue_side"}
+
+    nonsymmetric_slices = set()
+
+
+    # slices must be scaled uniformly or else you cannot perform derivative features since the scales are different
+    @staticmethod
+    def fit_scale_inputs(X):
+        params = dict()
+        for slice_name in InputWinPred.numeric_slices:
+            input_slice = X[:, InputWinPred.indices["start"][slice_name]:InputWinPred.indices["end"][slice_name]]
+            params[slice_name] = Input.fit(np.reshape(input_slice, (-1, 1)), slice_name)
+        return params
+
+
+    @staticmethod
+    def scale_abs(scale_dict):
+        result = dict(scale_dict)
+        X = np.zeros(InputWinPred.len)
+        for slice_name in InputWinPred.numeric_slices:
+            X[InputWinPred.indices["start"][slice_name]] = scale_dict[slice_name]
+        X = InputWinPred().scale_inputs(X[np.newaxis, :])
+        for slice_name in InputWinPred.numeric_slices:
+            result[slice_name] = X[0][InputWinPred.indices["start"][slice_name]]
+        return result
+
+
+    @staticmethod
+    def scale_rel(scale_dict):
+        result = dict(scale_dict)
+        X = np.zeros(InputWinPred.len)
+        for slice_name in InputWinPred.numeric_slices:
+            X[InputWinPred.indices["start"][slice_name]] = scale_dict[slice_name]
+            X[InputWinPred.indices["start"][slice_name]:InputWinPred.indices["end"][
+                slice_name]] = X[InputWinPred.indices["start"][slice_name]:InputWinPred.indices["end"][
+                slice_name]] / InputWinPred().standard_scalers[
+                                   slice_name].scale_
+            result[slice_name] = X[InputWinPred.indices["start"][slice_name]]
+
+        return result
+
+    @staticmethod
+    def dict2vec(input_dict):
+        x = np.zeros(shape=InputWinPred.len, dtype=np.float32)
+        for slice_name in InputWinPred.all_slices:
+            if slice_name in input_dict:
+                assert np.all(np.array(input_dict[slice_name]) >= 0)
+                x[InputWinPred.indices["start"][slice_name]:InputWinPred.indices["end"][slice_name]] = input_dict[slice_name]
+            else:
+                x[InputWinPred.indices["start"][slice_name]:InputWinPred.indices["end"][slice_name]] = 0
+        return x
+
+    @staticmethod
+    def flip_teams(X):
+        X_copy = np.copy(X)
+        for slice in InputWinPred.all_slices - InputWinPred.nonsymmetric_slices:
+            X_copy[:, InputWinPred.indices["start"][slice]:InputWinPred.indices["half"][slice]] = \
+                X[:, InputWinPred.indices["half"][slice]:InputWinPred.indices["end"][slice]]
+            X_copy[:, InputWinPred.indices["half"][slice]:InputWinPred.indices["end"][slice]] = \
+                X[:, InputWinPred.indices["start"][slice]:InputWinPred.indices["half"][slice]]
+        return X_copy
+
+
+    def __init__(self):
+        if not InputWinPred.instance:
+            InputWinPred.instance = InputWinPred.__Input(InputWinPred.numeric_slices, InputWinPred.indices, InputWinPred.len)
+
+
+    def __getattr__(self, name):
+        return getattr(self.instance, name)
+
+    class __Input(Input._Input__Input):
+
+        def get_params_path(self):
+            return app_constants.asset_paths["input_scales_winpred"]
+
+
+        # def input2inputdelta(self, in_vec):
+        #     in_vec_cont = []
+        #     prev_x = np.zeros((InputWinPred.len))
+        #     slices = ["total_gold", "kills", "deaths", "assists", "cs", "lvl", "baron", "elder", "dragons_killed",
+        #               "dragon_soul_type", "turrets_destroyed"]
+        #     while in_vec.shape[0] > 0:
+        #         x = in_vec[0]
+        #         cont_x = np.concatenate([x, np.zeros(InputDelta.len - x.shape[0], dtype=np.float64)], axis=0)
+        #         for slice in slices:
+        #             cont_x[InputDelta.indices["start"][slice + "_diff"]: InputDelta.indices["end"][slice + "_diff"]] = \
+        #                 x[InputDelta.indices["start"][slice]: InputDelta.indices["end"][slice]] - \
+        #                 prev_x[InputDelta.indices["start"][slice]: InputDelta.indices["end"][slice]]
+        #
+        #         in_vec_cont.append(cont_x)
+        #         prev_x = x
+        #         in_vec = in_vec[1:]
+        #     return in_vec_cont
+
+
+def Input2InputWinPred():
+    X = np.load("training_data/next_items/processed/elite/sorted/uninf/train_sorted_processed.npz")['arr_0']
+    # X = X[::1000]
+    result = []
+    result_gameids = []
+    print("now starting the loop")
+    i = 0
+    while X.shape[0] > 0:
+        row = X[0]
+        new_x = np.zeros(InputWinPred.len, dtype=np.float32)
+        for slice in InputWinPred.all_slices:
+            try:
+                new_x[InputWinPred.indices["start"][slice]:InputWinPred.indices["end"][slice]] = \
+                    row[Input.indices["start"][slice]:Input.indices["end"][slice]]
+            except KeyError:
+                continue
+        result_gameids.append(row[Input.indices["start"]["gameid"]])
+
+        result.append(new_x)
+        X = X[1:]
+        # print(X.shape)
+        i += 1
+
+    with open("training_data/win_pred/train_elite_winpred.npz", "wb") as writer:
+        np.savez_compressed(writer, result)
+    with open("training_data/win_pred/train_elite_winpred_gameids.npz", "wb") as writer:
+        np.savez_compressed(writer, result_gameids)
+
+# def run_init_fit_scale():
+#     X = np.load("training_data/win_pred/train_winpred_odds.npz")['arr_0']
+#     params = InputWinPred.fit_scale_inputs(X)
+#     with open(app_constants.asset_paths["input_scales_winpred"], "w") as f:
+#         f.write(json.dumps(params))
+
+if __name__ == "__main__":
+    Input2InputWinPred()
+    # run_init_fit_scale()
+
+    # def run_init_fit_scale():
+    #         dataloader_elite = SortedNextItemsDataLoader(app_constants.train_paths[
+    #                                                                          "next_items_processed_elite_sorted_inf"])
+    #         X_elite, _ = dataloader_elite.get_train_data()
+    #         params = Input.fit_scale_inputs(X_elite)
+    #         with open(app_constants.asset_paths["input_scales_win"], "w") as f:
+    #                 f.write(json.dumps(params))
+
+

@@ -10,7 +10,7 @@ from constants import app_constants, game_constants
 from tflearn.data_utils import to_categorical
 from utils.artifact_manager import ChampManager, ItemManager
 import sklearn
-from train_model.input_vector import Input
+from train_model.input_vector import Input, InputWinPred
 
 legacy_indices = dict()
 legacy_indices["start"] = dict()
@@ -458,18 +458,3 @@ class PositionsDataLoader(DataLoaderBase):
         for index, train_fname in enumerate(self.train_x_filenames[:round(len(self.train_x_filenames)/10 + 1)]):
             train_index = train_fname.rfind("train")
             os.rename(train_fname, train_fname[:train_index] + f"test_{index}.npz")
-
-
-def run_init_fit_scale():
-        dataloader_elite = SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                         "next_items_processed_elite_sorted_inf"])
-        X_elite, _ = dataloader_elite.get_train_data()
-        params = Input.fit_scale_inputs(X_elite)
-        with open(app_constants.asset_paths["input_scales"], "w") as f:
-                f.write(json.dumps(params))
-
-
-
-# import time
-# time.sleep(5)
-# run_init_fit_scale()

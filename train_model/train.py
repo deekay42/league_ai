@@ -6,7 +6,7 @@ import sys
 from collections import Counter
 from multiprocessing import Process, JoinableQueue, Queue
 import random
-
+from scipy.special import softmax, expit
 from sklearn.metrics import auc, \
     classification_report, precision_recall_curve, precision_recall_fscore_support
 
@@ -19,9 +19,16 @@ from utils.artifact_manager import ChampManager, ItemManager, SimpleManager, Sel
 import sklearn
 from tflearn.data_utils import to_categorical
 from scipy import spatial
-from train_model.input_vector import Input
+from train_model.input_vector import Input, InputWinPred
 from prettytable import PrettyTable
 
+import numpy as np
+from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
+
+
+def sigmoid(x):
+    return expit(x)
 
 
 class MonitorCallback(tflearn.callbacks.Callback):
@@ -237,7 +244,7 @@ class WinPredTrainer(Trainer):
                       "blue_side": 0.0,
                       "champs": 0.0,
                       "turrets_destroyed": 0.0,
-                      "current_gold": 0.0}
+                      "team_odds": 0.00}
 
         gauss_noise = {"kills": 0.5,
                          "deaths": 0.5,
@@ -251,12 +258,12 @@ class WinPredTrainer(Trainer):
                          "blue_side": 0.2,
                          "champs": 0.1,
                          "turrets_destroyed": 0.4,
-                         "current_gold": 125}
+                         "team_odds": 0.05}
 
         self.network_config = dict()
         self.network_config["train"] = {
                 "learning_rate": 0.001,
-                "stats_dropout": 0.8,
+                "stats_dropout": 1.0,
                 "champ_dropout": 0.2,
                 "noise": no_noise}
 
@@ -288,7 +295,7 @@ class WinPredTrainer(Trainer):
         self.train_path = app_constants.model_paths["train"]["win_pred_standard"]
         self.best_path = app_constants.model_paths["best"]["win_pred_standard"]
         for config in self.network_config:
-            self.network_config[config]["noise"] = Input.scale_rel(self.network_config[config]["noise"])
+            self.network_config[config]["noise"] = InputWinPred.scale_rel(self.network_config[config]["noise"])
 
         # game_constants.min_clip_scaled = dict()
         # game_constants.max_clip_scaled = dict()
@@ -351,41 +358,110 @@ class WinPredTrainer(Trainer):
     #     self.build_new_model()
 
 
-
     def train(self):
+        gameIds = {
+            # LCS
+            104174992730350781, 104174992730350782, 104174992730350783,
+            104174992730350775, 104174992730350776, 104174992730350777, 104174992730350778, 104174992730350779,
+            104174992730350787, 104174992730350788, 104174992730350789,
+            104174992730350793, 104174992730350794, 104174992730350795,
+            104174992730350805, 104174992730350806, 104174992730350807, 104174992730350808,
+            104174992730350799, 104174992730350800, 104174992730350801,
+            104174992730350817, 104174992730350818, 104174992730350819,
+            104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
+            104174992730350829, 104174992730350830, 104174992730350831, 104174992730350832,
+            104174992730350823, 104174992730350824, 104174992730350825, 104174992730350826, 104174992730350827,
+            104174992730350835, 104174992730350836, 104174992730350837, 104174992730350838, 104174992730350839,
+            # LCK
+            104174613333860706, 104174613333860707,
+            104174613333926330, 104174613333926331, 104174613333926332,
+            104174613333860666, 104174613333860667,
+            104174613333860746, 104174613333860747,
+            104174613353718215, 104174613353783752, 104174613353783753,
+            104174613353783755, 104174613353783756, 104174613353783757,
 
-        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_elite_sorted_uninf"])
-        dataloader_pro = data_loader.SortedNextItemsDataLoader(app_constants.train_paths["win_pred"])
-        dataloader_lower = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-                                                                     "next_items_processed_lower_sorted_uninf"])
+            # LEC
+            104169295295132788, 104169295295132789, 104169295295132790,
+            104169295295132800, 104169295295132801, 104169295295132802, 104169295295132803,
+            104169295295132794, 104169295295132795, 104169295295132796,
+            104169295295198348, 104169295295198349, 104169295295198350, 104169295295198351,
+            104169295295132806, 104169295295132807, 104169295295198344, 104169295295198345, 104169295295198346,
+            104169295295198354, 104169295295198355, 104169295295198356,
+            104169295295198360, 104169295295198361, 104169295295198362, 104169295295198363, 104169295295198364,
+            104169295295198366, 104169295295198367, 104169295295198368,
+        }
         print("Loading elite train data")
-        X_elite, _ = dataloader_elite.get_train_data()
-        # X_lower, _ = dataloader_lower.get_train_data()
-        # self.X = np.concatenate([X_elite, X_lower], axis=0)
-        self.X = X_elite
-        # self.X = np.load("small.npy")
-        # self.X = np.zeros((100,226))
-        # self.X = self.X[::100][:50000]
-        # self.X = np.tile(self.X[self.X[:,Input.indices["start"]["total_gold"]]>500], (10, 1))
-        # self.X = self.X[self.X[:, Input.indices["start"]["total_gold"]] > 500][::1000]
-        # X_test_raw_pro, _ = dataloader_pro.get_test_data()
-        # X_test_raw_pro = np.zeros((100, 226))
+        X_pro = np.load("training_data/win_pred/train_winpred_odds.npz")['arr_0']
+        gameids = np.load("training_data/win_pred/train_winpred_gameids.npz")['arr_0']
+        # X_pro = X_pro[::10]
+        # gameids = gameids[::10]
+        X_pro, X_test_raw_pro = X_pro[:int(0.8*X_pro.shape[0])], X_pro[int(0.8*X_pro.shape[0]):]
+        train_gameids, test_gameids = gameids[:int(0.8*X_pro.shape[0])], gameids[int(0.8*X_pro.shape[0]):]
+        # self.X = np.load("training_data/win_pred/train_winpred_odds.npz")['arr_0']
+        # gameids = np.load("training_data/win_pred/train_elite_gameids.npz")['arr_0']
+
+
+        # X_pro = X_pro[np.logical_not(np.isin(gameids, list(gameIds)))]
+
+        # self.X = np.array(self.input2inputdelta(X_pro))
+
         print("Loading elite test data")
-        X_test_raw, _ = dataloader_elite.get_test_data()
+        # X_test_raw, _ = dataloader_elite.get_test_data()
         # X_test_raw = np.zeros((10000, 226))
 
-        X_test_raw_pro = np.load("training_data/win_pred/test_x.npz")['arr_0']
-        # X_test_raw = X_test_raw[::100][:5000]
-        # X_test_raw_pro = X_test_raw_pro[::100][:5000]
+        # X_test_raw_pro = np.load("training_data/win_pred/test_winpred.npz")['arr_0']
+        # test_gameids = np.load("training_data/win_pred/test_winpred_gameids.npz")['arr_0']
+        # X_test_raw_pro = np.array(self.input2inputdelta(X_test_raw_pro))
+        # self.X = X_pro
 
+        self.X = InputWinPred().scale_inputs(X_pro)
 
-        self.X = Input().scale_inputs(self.X)
-
-        self.X_unflipped = self.X
-        self.Y_unflipped = np.reshape([1.0] * self.X.shape[0], (-1,1))
 
         self.X, self.Y = self.flip_data(self.X)
+
+        # from keras.layers import Dense, Activation, BatchNormalization, Input
+        # from keras.models import Model, Sequential
+        # from keras.optimizers import SGD, Adam
+        # from keras.losses import CategoricalCrossentropy
+        #
+        # def create_model():
+        #     X_input = Input(batch_shape=(None, 2))
+        #
+        #     X = Dense(2)(X_input)
+        #     X = Activation('linear')(X)
+        #
+        #     model = Model(inputs=X_input, outputs=X)
+        #     return model
+        #
+        # def create_tf_model():
+        #     in_vec = input_data(shape=[None, 2])
+        #     logits = fully_connected(in_vec, 2, activation='sigmoid')
+        #     return regression(logits,
+        #                       optimizer='adam',
+        #                       n_classes=2,
+        #                       shuffle_batches=True,
+        #                       learning_rate=0.03,
+        #                       loss='binary_crossentropy')
+        #
+        # with tf.device("/gpu:0"):
+        #     with tf.Graph().as_default():
+        #         with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
+        #             tflearn.is_training(True)
+        #
+        #             model = tflearn.DNN(create_tf_model(), session=sess)
+        #             sess.run(tf.global_variables_initializer())
+        #             model.fit(self.X[:,InputWinPred.indices['start']['team_odds']:InputWinPred.indices['end']['team_odds']],
+        #                 self.Y, n_epoch=1, shuffle=True, validation_set=None,
+        #               show_metric=True, batch_size=128)
+        #
+        # model = create_model()
+        # optimizer = Adam(lr=0.03, beta_1=0.9, beta_2=0.999)
+        # model.compile(optimizer=optimizer, loss=CategoricalCrossentropy(from_logits=True), \
+        #               metrics=['accuracy'])
+        #
+        # model.fit(self.X[:,InputWinPred.indices['start']['team_odds']:InputWinPred.indices['end']['team_odds']],
+        #           self.Y, epochs=100, batch_size=128)
+
 
         # self.X = np.zeros((100000, Input.len))
         # self.X[::2,Input.indices["start"]["total_gold"]] = 1
@@ -397,44 +473,44 @@ class WinPredTrainer(Trainer):
 
         self.test_sets = {}
 
-        for test_set_type, tst_desc in zip([X_test_raw, X_test_raw_pro], ["elite", "pro"]):
+        for test_set_type, tst_desc in zip([X_test_raw_pro], ["pro"]):
             self.test_sets[tst_desc] = dict()
             # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
 
-            self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
+            # self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
 
-            num_drags_killed = np.sum(test_set_type[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"][
+            num_drags_killed = np.sum(test_set_type[:, InputWinPred.indices["start"]["dragons_killed"]:InputWinPred.indices["end"][
                 "dragons_killed"]], axis=1)
-            num_kills = np.sum(test_set_type[:, Input.indices["start"]["kills"]:Input.indices["end"][
+            num_kills = np.sum(test_set_type[:, InputWinPred.indices["start"]["kills"]:InputWinPred.indices["end"][
                 "kills"]], axis=1)
-            num_towers = np.sum(test_set_type[:, Input.indices["start"]["turrets_destroyed"]: Input.indices["end"][
+            num_towers = np.sum(test_set_type[:, InputWinPred.indices["start"]["turrets_destroyed"]: InputWinPred.indices["end"][
                 "turrets_destroyed"]], axis=1)
-            max_lvl = np.max(test_set_type[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]],
+            max_lvl = np.max(test_set_type[:, InputWinPred.indices["start"]["lvl"]:InputWinPred.indices["end"]["lvl"]],
                              axis=1)
 
-            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                      num_drags_killed == 1)
-            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                      num_kills == 1)
-            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                       num_towers == 1)
-            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, max_lvl == 1)
-            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, test_gameids, max_lvl == 1)
+            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                       max_lvl == 6)
-            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                        max_lvl == 11)
-            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type,
+            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type, test_gameids,
                                                                                        max_lvl == 16)
 
-        self.Y_test = self.X_test = []
+        self.X_test = InputWinPred().scale_inputs(X_test_raw_pro)
         self.build_new_model()
 
 
-    def process_win_pred_measure(self, X, cond):
-        X_result = self.extract_first_occurence_per_match(X, cond)
-        X_result = Input().scale_inputs(X_result)
+    def process_win_pred_measure(self, X, gameids, cond):
+        indices = self.extract_first_occurence_per_match(X, gameids, cond)
+        # X_result = Input().scale_inputs(X_result)
         # return self.flip_data(X_result)
-        return X_result
+        return indices
 
 
     def percentage_score(self, preds, targets):
@@ -448,22 +524,174 @@ class WinPredTrainer(Trainer):
         return np.mean(corrects)
 
 
-    def eval(self, model, X_test, tile_factor):
-        Y_test = [[1.]] * X_test.shape[0]
-        Y_test_flipped = [[0.]] * X_test.shape[0]
+    def preds2scores(self, y_pred, y_true):
+        percentage_score = self.percentage_score(y_pred, y_true)
+        abs_score = self.abs_score(y_pred, y_true)
+        return percentage_score, abs_score
+
+
+    def get_sym_preds(self, preds_reg, preds_flipped, y_true):
+        div_by = (preds_reg + preds_flipped)
+        preds_sym = np.full(preds_reg.shape, 0.5)
+        valid_indices = div_by != 0
+        valid_regs = preds_reg[valid_indices]
+        valid_flipped = preds_flipped[valid_indices]
+        preds_sym[valid_indices] = valid_regs / (valid_regs + valid_flipped)
+        return self.preds2scores(preds_sym, y_true)
+
+
+    def run_network_configs(self, model, tile_factor):
+        model.load_model()
+        X_test = self.X_test
+        Y_test = np.array([[1.]] * X_test.shape[0])
+        Y_test_flipped = np.array([[0.]] * X_test.shape[0])
         accuracies = dict()
-        preds_reg, _ = model.bayes_predict(X_test, tile_factor=tile_factor)
-        accuracies["%_reg"] = self.percentage_score(preds_reg, Y_test)
-        accuracies["abs_reg"] = self.abs_score(preds_reg, Y_test)
 
-        X_test_flipped = Input().flip_teams(X_test)
-        preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
-        accuracies["%_flipped"] = self.percentage_score(preds_flipped, Y_test_flipped)
-        accuracies["abs_flipped"] = self.abs_score(preds_flipped, Y_test_flipped)
+        for test_set_name in self.test_sets:
+            accuracies[test_set_name] = dict()
+            preds_reg, _ = model.bayes_predict(X_test, tile_factor=tile_factor)
+            X_test_flipped = InputWinPred().flip_teams(X_test)
+            preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
 
-        preds_sym = preds_reg / (preds_reg + preds_flipped)
-        accuracies["%_sym"] = self.percentage_score(preds_sym, Y_test)
-        accuracies["abs_sym"] = self.abs_score(preds_sym, Y_test)
+            # div_by = (preds_reg + preds_flipped)
+            # preds_sym = np.full(preds_reg.shape, 0.5)
+            # valid_indices = div_by != 0
+            # valid_regs = preds_reg[valid_indices]
+            # valid_flipped = preds_flipped[valid_indices]
+            # preds_sym[valid_indices] = valid_regs / (valid_regs + valid_flipped)
+
+            accuracies[test_set_name]["all"] = self.get_accuracies(preds_reg, preds_flipped, Y_test, Y_test_flipped,
+                                                    [True] * preds_reg.shape[0])
+            sym_pred = preds_reg + np.transpose([preds_flipped[:, 1], preds_flipped[:, 0]], [1, 0])
+            preds_sym = softmax(sym_pred, axis=1)[:, 0]
+            # sym_pred = (preds_reg - preds_flipped) / 2
+            # preds_sym = sigmoid(sym_pred)
+
+            for i in range(1, 5):
+                confidence = 0.5 + 0.1 * i
+                inv_confidence = 1 - confidence
+                matching_indices = np.logical_or(preds_sym >= confidence, preds_sym <= inv_confidence)
+                accuracies[test_set_name]["all_" + str(confidence)] = dict()
+                accuracies[test_set_name]["all_" + str(confidence)]["%_sym"], accuracies[test_set_name]["all_" + str(confidence)][
+                    "abs_sym"] = \
+                    self.preds2scores(preds_sym[matching_indices], Y_test[matching_indices])
+                accuracies[test_set_name]["all_" + str(confidence)]["%_reg"], accuracies[test_set_name]["all_" + str(confidence)][
+                    "abs_reg"] = \
+                    accuracies[test_set_name]["all_" + str(confidence)]["%_flip"], accuracies[test_set_name]["all_" + str(
+                        confidence)]["abs_flip"]\
+                    = \
+                    accuracies[test_set_name]["all_" + str(confidence)]["%_sym"], accuracies[test_set_name]["all_" + str(
+                        confidence)]["abs_sym"]
+
+            for test_name, indices in self.test_sets[test_set_name].items():
+                accuracies[test_set_name][test_name] = self.get_accuracies(preds_reg, preds_flipped, Y_test,
+                                                                        Y_test_flipped,
+                                                                indices)
+        return accuracies
+
+
+    # asymptotic function with asymptote at 0.5 and origin at 0.0
+    # @staticmethod
+    # def f(x, c):
+    #     return 0.5 * (1 - np.exp(-c * x))
+    #
+    # def get_curve_params(self, pred):
+    #     interval = 0.01
+    #     x_y = np.array([(x, np.sum(np.logical_and(pred > x, pred < x + interval)) / (
+    #         np.sum(np.logical_and(pred < -x, pred > -x - interval)) + np.sum(
+    #         np.logical_and(pred > x, pred < x + interval)))) for x in
+    #                   np.arange(0, np.max(np.abs(pred)), interval)])
+    #     x = x_y[:,0]
+    #     y = x_y[:,1]
+    #     y[np.isnan(y)] = 1.0
+    #     y = np.clip(y, 0.5, 1.0)
+    #     y -= 0.5
+    #     popt, pcov = curve_fit(self.f, x, y)
+    #     return popt
+    #
+    #     # plt.scatter(x, y)
+    #     # plt.plot(x, f(x, *popt), 'r-')
+    #     # plt.show()
+
+    def get_accuracies(self, preds_reg, preds_flipped, Y_test, Y_test_flipped, indices):
+        result = dict()
+        try:
+            y_pred = preds_reg[indices]
+            y_true = Y_test[indices]
+        except IndexError:
+            print("No indices for test")
+            result["%_reg"], result["abs_reg"], result["%_flip"], result["abs_flip"], result["%_sym"], \
+            result["abs_sym"] = 0,0,0,0,0,0
+            return result
+
+
+        y_pred_sm = softmax(y_pred, axis=1)[:,0]
+        # y_pred_sm = sigmoid(y_pred)
+        result["%_reg"], result["abs_reg"] = self.preds2scores(y_pred_sm, y_true)
+
+
+        y_pred_flipped = preds_flipped[indices]
+        y_pred_flipped_sm = softmax(y_pred_flipped, axis=1)[:,0]
+        #
+        # y_pred_flipped_sm = sigmoid(y_pred_flipped)
+        result["%_flip"], result["abs_flip"] = self.preds2scores(y_pred_flipped_sm,Y_test_flipped[indices])
+        # result["%_sym"], result["abs_sym"] = self.get_sym_preds(y_pred, y_pred_flipped,
+        #                                                                               Y_test[indices])
+
+
+        sym_pred = y_pred + np.transpose([y_pred_flipped[:,1],y_pred_flipped[:,0]], [1,0])
+        sym_pred_sm = softmax(sym_pred, axis=1)[:,0]
+        # sym_pred = (y_pred - y_pred_flipped)/2
+        # sym_pred_sm = sigmoid(sym_pred)
+        result["%_sym"], result["abs_sym"] = self.preds2scores(sym_pred_sm, Y_test[indices])
+
+
+        return result
+
+
+    def eval_model(self, model, epoch, X_test, Y_test):
+        accuracies = dict()
+        for output in [sys.stdout, self.logfile]:
+            output.write("Epoch {0}\n".format(epoch + 1))
+
+        model_path = app_constants.model_paths["train"]["win_pred_standard"] + "my_model" + str(epoch + 1)
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard"])
+        accuracies["standard"] = self.run_network_configs(model, 1)
+
+        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
+        accuracies["gauss"] = self.run_network_configs(model, 4)
+
+        # accuracies["gold"] = dict()
+        # for test_set_name in self.test_sets:
+        #     accuracies["gold"][test_set_name] = dict()
+        #     for test_name, X in self.test_sets[test_set_name].items():
+        #         accuracies["gold"][test_set_name][test_name] = self.calc_gold_based_win(X)
+        #
+        # accuracies["kills"] = dict()
+        # for test_set_name in self.test_sets:
+        #     accuracies["kills"][test_set_name] = dict()
+        #     for test_name, X in self.test_sets[test_set_name].items():
+        #         accuracies["kills"][test_set_name][test_name] = self.calc_kda_based_win(X)
+
+        for model_name in accuracies:
+            print(model_name.upper() +"  " +"*"*50)
+            t = PrettyTable([' ', '', '%_sym', 'abs_sym', '% reg', '% flip', 'abs reg', 'abs flip'])
+            for test_set_name in accuracies[model_name]:
+                t.add_row([test_set_name, '','','','','','',''])
+                for test_name in accuracies[model_name][test_set_name]:
+                    tmp = accuracies[model_name][test_set_name][test_name]
+                    tmp = [tmp["%_sym"], tmp["abs_sym"], tmp["%_reg"], tmp["%_flip"], tmp["abs_reg"],
+                           tmp["abs_flip"]]
+                    tmp = np.round(tmp, decimals=3).astype(str).tolist()
+                    t.add_row(['', test_name] + tmp)
+            for output in [sys.stdout, self.logfile]:
+                output.write(t.get_string())
+                output.write('\n\n')
+
+
+        for output in [sys.stdout, self.logfile]:
+            output.write("\n\n")
+            output.flush()
 
         return accuracies
 
@@ -527,82 +755,28 @@ class WinPredTrainer(Trainer):
         return accuracies
 
 
-    def run_network_configs(self, model, tile_factor):
-        accuracies = dict()
-        model.load_model()
-        for test_set_name in self.test_sets:
-            accuracies[test_set_name] = dict()
-            for test_name, X in self.test_sets[test_set_name].items():
-                accuracies[test_set_name][test_name] = self.eval(model, X, tile_factor)
-        return accuracies
+    def extract_first_occurence_per_match(self, X, gameids, cond):
+        indices = []
 
-
-    def eval_model(self, model, epoch, X_test, Y_test):
-        accuracies = dict()
-        for output in [sys.stdout, self.logfile]:
-            output.write("Epoch {0}\n".format(epoch + 1))
-
-        model_path = app_constants.model_paths["train"]["win_pred_standard"] + "my_model" + str(epoch + 1)
-        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["standard"])
-        accuracies["standard"] = self.run_network_configs(model, 1)
-
-        model = WinPredModel("standard", model_path=model_path, network_config=self.network_config["gauss"])
-        accuracies["gauss"] = self.run_network_configs(model, 4)
-
-        accuracies["gold"] = dict()
-        for test_set_name in self.test_sets:
-            accuracies["gold"][test_set_name] = dict()
-            for test_name, X in self.test_sets[test_set_name].items():
-                accuracies["gold"][test_set_name][test_name] = self.calc_gold_based_win(X)
-
-        accuracies["kills"] = dict()
-        for test_set_name in self.test_sets:
-            accuracies["kills"][test_set_name] = dict()
-            for test_name, X in self.test_sets[test_set_name].items():
-                accuracies["kills"][test_set_name][test_name] = self.calc_kda_based_win(X)
-
-        for model_name in accuracies:
-            print(model_name.upper() +"  " +"*"*50)
-            t = PrettyTable([' ', '', '%_sym', 'abs_sym', '% reg', '% flip', 'abs reg', 'abs flip'])
-            for test_set_name in accuracies[model_name]:
-                t.add_row([test_set_name, '','','','','','',''])
-                for test_name in accuracies[model_name][test_set_name]:
-                    tmp = accuracies[model_name][test_set_name][test_name]
-                    tmp = [tmp["%_sym"], tmp["abs_sym"], tmp["%_reg"], tmp["%_flipped"], tmp["abs_reg"],
-                           tmp["abs_flipped"]]
-                    tmp = np.round(tmp, decimals=3).astype(str).tolist()
-                    t.add_row(['', test_name] + tmp)
-            for output in [sys.stdout, self.logfile]:
-                output.write(t.get_string())
-                output.write('\n\n')
-
-
-        for output in [sys.stdout, self.logfile]:
-            output.write("\n\n")
-            output.flush()
-
-        return accuracies
-
-
-    def extract_first_occurence_per_match(self, X, cond):
-        X_result = []
         match_id_blacklist = set()
-        for i, example in enumerate(X[cond]):
-            current_matchid = example[Input.indices["start"]["gameid"]]
-            if current_matchid in match_id_blacklist:
+        for i, (gameid, example) in enumerate(zip(gameids, X)):
+            if not cond[i]:
+                continue
+
+            if gameid in match_id_blacklist:
                 continue
             else:
-                match_id_blacklist.add(current_matchid)
-                X_result.append(example)
-        return np.array(X_result)
+                match_id_blacklist.add(gameid)
+                indices.append(i)
+        return np.array(indices)
 
 
     def flip_data(self, X):
-        X_result = np.concatenate([Input.flip_teams(X), X], axis=0)
-        Y_result = [0] * (len(X_result) // 2) + [1] * (len(X_result) // 2)
-        Y_result = np.array(Y_result)[:, np.newaxis]
-
-
+        X_result = np.concatenate([InputWinPred.flip_teams(X), X], axis=0)
+        Y_result = [0,1] * (len(X_result) // 2) + [1,0] * (len(X_result) // 2)
+        Y_result = np.reshape(Y_result, (-1, 2))
+        # Y_result = np.reshape(Y_result, (-1, 1))
+        
         return X_result, Y_result
 
 
@@ -2055,8 +2229,8 @@ if __name__ == "__main__":
     # t.train()
     # t = StarterItemsTrainer()
     # t.train()
-    t = NextItemsTrainer()
-    t.build_next_items_standard_game_model()
+    # t = NextItemsTrainer()
+    # t.build_next_items_standard_game_model()
 
 
 
@@ -2067,8 +2241,8 @@ if __name__ == "__main__":
     # s.build_new_img_model()
     # s = SelfTrainer()
     # s.build_new_img_model()
-    # t = WinPredTrainer()
-    # t.train()
+    t = WinPredTrainer()
+    t.train()
     #
     # t.build_champ_embeddings_model()
 
