@@ -15,7 +15,7 @@ from tflearn.initializations import variance_scaling
 from constants import game_constants
 from constants.ui_constants import ResConverter
 from utils.artifact_manager import ChampManager, ItemManager, SimpleManager
-from train_model.input_vector import Input
+from train_model.input_vector import Input, InputWinPred
 
 
 class Network(ABC):
@@ -373,8 +373,8 @@ class WinPredNetwork(LolNetwork):
         if network_config:
             self.network_config = network_config
 
-        self.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
-        self.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
+        self.min_clip_scaled = InputWinPred.scale_abs(game_constants.min_clip)
+        self.max_clip_scaled = InputWinPred.scale_abs(game_constants.max_clip)
 
 
     def calc_noise(self, flat_in_vec, noise_name):
@@ -438,33 +438,45 @@ class WinPredNetwork(LolNetwork):
 
 
     def build(self):
-        in_vec = input_data(shape=[None, Input.len], name='input')
+        in_vec = input_data(shape=[None, InputWinPred.len], name='input')
         #  1 elements long
-        pos = in_vec[:, 0]
-        pos = tf.cast(pos, tf.int32)
 
         n = tf.shape(in_vec)[0]
         batch_index = tf.range(n)
 
-        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
-        cs = in_vec[:, Input.indices["start"]["cs"]:Input.indices["end"]["cs"]]
-        lvl = in_vec[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]]
-        kills = in_vec[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
-        deaths = in_vec[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]]
-        assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
+        champ_ints = tf.cast(in_vec[:, InputWinPred.indices["start"]["champs"]:InputWinPred.indices["end"]["champs"]], tf.int32)
+        cs = in_vec[:, InputWinPred.indices["start"]["cs"]:InputWinPred.indices["end"]["cs"]]
+        lvl = in_vec[:, InputWinPred.indices["start"]["lvl"]:InputWinPred.indices["end"]["lvl"]]
+        kills = in_vec[:, InputWinPred.indices["start"]["kills"]:InputWinPred.indices["end"]["kills"]]
+        deaths = in_vec[:, InputWinPred.indices["start"]["deaths"]:InputWinPred.indices["end"]["deaths"]]
+        assists = in_vec[:, InputWinPred.indices["start"]["assists"]:InputWinPred.indices["end"]["assists"]]
 
-        total_gold = in_vec[:, Input.indices["start"]["total_gold"]:Input.indices["end"]["total_gold"]]
-        baron = in_vec[:, Input.indices["start"]["baron"]:Input.indices["end"]["baron"]]
-        elder = in_vec[:, Input.indices["start"]["elder"]:Input.indices["end"]["elder"]]
-        dragons_killed = in_vec[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]]
-        dragon_soul_type = in_vec[:,Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]]
-        turrets_destroyed = in_vec[:, Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
-        blue_side = in_vec[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]]
+        total_gold = in_vec[:, InputWinPred.indices["start"]["total_gold"]:InputWinPred.indices["end"]["total_gold"]]
+        baron = in_vec[:, InputWinPred.indices["start"]["baron"]:InputWinPred.indices["end"]["baron"]]
+        elder = in_vec[:, InputWinPred.indices["start"]["elder"]:InputWinPred.indices["end"]["elder"]]
+        dragons_killed = in_vec[:, InputWinPred.indices["start"]["dragons_killed"]:InputWinPred.indices["end"]["dragons_killed"]]
+        dragon_soul_type = in_vec[:,InputWinPred.indices["start"]["dragon_soul_type"]:InputWinPred.indices["end"]["dragon_soul_type"]]
+        turrets_destroyed = in_vec[:, InputWinPred.indices["start"]["turrets_destroyed"]:InputWinPred.indices["end"]["turrets_destroyed"]]
+        blue_side = in_vec[:, InputWinPred.indices["start"]["blue_side"]:InputWinPred.indices["end"]["blue_side"]]
 
         dragons_killed = tf.identity(dragons_killed, name='dragons_killed')
         dragons_killed = self.apply_noise(dragons_killed, "dragons_killed")
         dragons_killed = tf.identity(dragons_killed, name='dragons_killed_noised')
         dragons_killed_sum = tf.reduce_sum(tf.reshape(dragons_killed, (-1, 2, 4)), axis=2)
+
+        # kills_diff_self = in_vec[:, InputWinPred.indices["start"]["kills_diff"]:InputWinPred.indices["end"]["kills_diff"]]
+        # deaths_diff_self = in_vec[:, InputWinPred.indices["start"]["kills_diff"]:InputWinPred.indices["end"]["kills_diff"]]
+        # baron_diff_self = in_vec[:, InputWinPred.indices["start"]["baron_diff"]:InputWinPred.indices["end"]["baron_diff"]]
+        # dragons_killed_diff_self = in_vec[:, InputWinPred.indices["start"]["dragons_killed_diff"]:InputWinPred.indices["end"]["dragons_killed_diff"]]
+        # turrets_destroyed_diff_self = in_vec[:, InputWinPred.indices["start"]["turrets_destroyed_diff"]:InputWinPred.indices["end"][
+        #     "turrets_destroyed_diff"]]
+        # lvl_diff_self = in_vec[:, InputWinPred.indices["start"]["lvl_diff"]:InputWinPred.indices["end"][
+        #     "lvl_diff"]]
+        # total_gold_diff_self = in_vec[:, InputWinPred.indices["start"]["total_gold_diff"]:InputWinPred.indices["end"][
+        #     "total_gold_diff"]]
+
+        team1_odds = tf.reshape(in_vec[:, InputWinPred.indices["start"]["team_odds"]], (-1,1))
+        team2_odds = tf.reshape(in_vec[:, InputWinPred.indices["half"]["team_odds"]], (-1,1))
 
 
         dragon_soul_obtained = tf.reduce_sum(tf.reshape(dragon_soul_type, (-1,2,4)), axis=2)
@@ -489,6 +501,8 @@ class WinPredNetwork(LolNetwork):
         turrets_destroyed = tf.identity(turrets_destroyed, name='turrets_destroyed')
         turrets_destroyed = self.apply_noise(turrets_destroyed, "turrets_destroyed")
         turrets_destroyed = tf.identity(turrets_destroyed, name='turrets_destroyed_noised')
+        td_diff = turrets_destroyed[:,0] - turrets_destroyed[:,1]
+        td_diff = tf.reshape(td_diff, (-1,1))
 
         champ_ints = tf.identity(champ_ints, name='champs')
         champ_ints = self.apply_noise_ints(champ_ints, "champs")
@@ -534,23 +548,27 @@ class WinPredNetwork(LolNetwork):
         team2_champs_one_hot = tf.reshape(team2_champs_one_hot, (-1, self.game_config["champs_per_team"] *
                                                                  self.game_config["total_num_champs"]))
 
+
         stats_layer = merge(
             [
-                # total_gold,
+                # kills_diff_self,
+                # deaths_diff_self,
+                # baron_diff_self,
+                # dragons_killed_diff_self,
+                # turrets_destroyed_diff_self,
+                # lvl_diff_self,
+                # total_gold_diff_self,
+                total_gold,
                 total_gold_diff,
                 team_gold_diff,
+                team1_odds,
+                team2_odds,
+                1/team1_odds,
+                1/team2_odds,
                 # team1_total_kills,
                 # team2_total_kills,
-                # team_kills_diff,
-                # kd,
-                # kills_diff,
-                # deaths_diff,
-                # assists_diff,
-                # lvl_diff,
-                # cs_diff,
-                # kda,
                 lvl,
-                # total_cs,
+                lvl_diff,
                 baron,
                 elder,
                 dragons_killed,
@@ -558,10 +576,33 @@ class WinPredNetwork(LolNetwork):
                 dragon_soul_obtained,
                 dragon_soul_type,
                 turrets_destroyed,
+                td_diff,
                 blue_side
             ], mode='concat', axis=1)
+
+        extra_stats_layer = merge(
+            [
+                team_kills_diff,
+                kd,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
+
+                cs_diff,
+                kills,
+                deaths,
+                assists,
+                cs
+            ], mode='concat', axis=1)
+
+        # extra_stats_layer = dropout(extra_stats_layer, 0.8)
         stats_layer = tf.identity(stats_layer, "stats")
 
+        stats_layer = merge(
+        [
+            stats_layer,
+            extra_stats_layer
+        ], mode='concat', axis=1)
 
         if self.network_config["stats_dropout"] > 0:
             stats_layer = dropout(stats_layer, self.network_config["stats_dropout"])
@@ -581,29 +622,69 @@ class WinPredNetwork(LolNetwork):
         # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',
         #                                           weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',
-                                                  weights_init=variance_scaling(uniform=True)))
+        #net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',
+        #                                          weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',
-                                                  weights_init=variance_scaling(uniform=True)))
+        #net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',
+        #                                          weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
-        net = batch_normalization(fully_connected(net, 8, bias=False, activation='relu',
-                                                  weights_init=variance_scaling(uniform=True)))
 
-        net = fully_connected(net, 1, weights_init="xavier", activation='tanh', name="final_output")
-        net = (net+1)/2
+        # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',regularizer="L2",
+        #                                           weights_init=variance_scaling(uniform=True)))
+        # net = dropout(net, 0.7)
+        # net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',regularizer="L2",
+        #                                          weights_init=variance_scaling(uniform=True)))
+        # net = dropout(net, 0.8)
+        # net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
+        #                                          weights_init=variance_scaling(uniform=True)))
+        # net = dropout(net, 0.9)
+        net = fully_connected(net, 64, activation='linear')
+        net = fully_connected(net, 32, activation='linear')
+        net = fully_connected(net, 16, activation='linear')
 
-        return regression(net, optimizer='adam',
+        # net = fully_connected(net, 1, weights_init="xavier", activation='tanh', name="final_output")
+        # net = (net+1)/2
+
+        logits = fully_connected(net, 2, activation='linear', name="final_output")
+
+
+        # logits = fully_connected(net, 2, activation='linear')
+        # is_training = tflearn.get_training_mode()
+        # inference_output = tf.nn.softmax(logits)
+        # net = tf.cond(is_training, lambda: logits, lambda: inference_output)
+        # net = logits
+
+
+        return regression(logits,
+                                 optimizer='adam', to_one_hot=False,
+                                 n_classes=2,
                                  shuffle_batches=True,
                                  learning_rate=self.network_config["learning_rate"],
-                                 loss='binary_crossentropy',
-                                 name='target', metric=self.bin_acc)
+                                 loss=self.custom_loss,
+                                 name='target',
+                                metric=self.cross_e_metric)
+
+    @staticmethod
+    def custom_loss(y_pred, y_true):
+        return tf.reduce_mean(tf.abs(y_pred - y_true))
 
 
     @staticmethod
+    def cross_e_metric(preds, targets, input_):
+        # preds = tf.nn.softmax(preds)
+        preds = tf.reshape(preds, (-1,))
+        targets = tf.reshape(targets, (-1,))
+        max_score = tf.cast(tf.shape(targets)[0], tf.float32)
+        error = tf.reduce_sum(tf.abs(targets - preds))
+        score = (max_score - error)/max_score
+        return score
+
+    @staticmethod
     def bin_acc(preds, targets, input_):
+
         preds = tf.reshape(preds, (-1,))
         preds = tf.identity(preds, name="preds")
+        preds = tf.nn.sigmoid(preds)
         targets = tf.reshape(targets, (-1,))
         targets = tf.identity(targets, name="targets")
         preds = tf.round(preds)

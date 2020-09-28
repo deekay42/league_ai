@@ -2,6 +2,7 @@ import time
 import threading
 import importlib
 from utils import heavy_imports
+from scipy.special import softmax, expit
 import glob
 # import threading
 from abc import ABC, abstractmethod
@@ -23,8 +24,8 @@ from numpy.ctypeslib import ndpointer
 import importlib
 import logging
 import sys
-from train_model.input_vector import Input
-
+from train_model.input_vector import Input, InputWinPred
+from scipy.special import softmax
 logger = logging.getLogger("python")
 
 # if platform.system() == "Windows":
@@ -32,6 +33,9 @@ logger = logging.getLogger("python")
 tflearn = None
 tf = None
 network = None
+
+def sigmoid(x):
+    return expit(x)
 
 class Model(ABC):
 
@@ -755,7 +759,7 @@ class WinPredModel(GameModel):
             self.model_path = model_path
 
         self.network_config = network_config
-        self.input_len = Input.len
+        self.input_len = InputWinPred.len
         # self.output_node_name = "Sigmoid"
 
         if dll_hook:
@@ -778,27 +782,28 @@ class WinPredModel(GameModel):
         #         y = [self.session.run(['final_output/Sigmoid:0'], feed_dict={"input/X:0": x_batch}) for x_batch in
         #              chunks(x, batch_size)]
         # else:
-        y = np.empty((0,1))
+        y = []
         num_samples_per_batch = batch_size//tile_factor
         for samples in chunks(x, num_samples_per_batch):
             x_batch = np.tile(samples, [1, tile_factor])
-            x_batch = np.reshape(x_batch, (-1, Input.len))
-            y = np.concatenate([y,self.model.predict(x_batch)],axis=0)
-
-        y = np.reshape(y, (-1, tile_factor))
+            x_batch = np.reshape(x_batch, (-1, InputWinPred.len))
+            y.extend(self.model.predict(x_batch))
+        y = np.reshape(y, (-1, tile_factor, 2))
+        # y = np.reshape(y, (-1, tile_factor))
         y_mean = np.mean(y, axis=1)
         y_std = np.std(y, axis=1)
         return y_mean, y_std
 
 
-
-
     def bayes_predict_sym(self, x, tile_factor):
-        x_flipped = Input().flip_teams(x)
+        x_flipped = InputWinPred().flip_teams(x)
         blue_team_wins_score, blue_team_wins_std  = self.bayes_predict(x, tile_factor)
         red_team_wins_score, red_team_wins_std = self.bayes_predict(x_flipped, tile_factor)
-        total_score = blue_team_wins_score + red_team_wins_score
-        return blue_team_wins_score/total_score
+        sym_pred = blue_team_wins_score + np.transpose([red_team_wins_score[:, 1], red_team_wins_score[:, 0]], [1, 0])
+        sym_pred_sm = softmax(sym_pred, axis=1)[:, 0]
+        # sym_pred = (blue_team_wins_score - red_team_wins_score) / 2
+        # sym_pred_sm = sigmoid(sym_pred)
+        return sym_pred_sm
 
 
     def predict(self, x, blackout_indices=None):
