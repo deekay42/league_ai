@@ -70,6 +70,9 @@ class ScrapeEsportsData:
         self.prev_elder_active_raw = [0, 0]
         self.prev_blue_team_dragons = None
         self.prev_red_team_dragons = None
+        self.last_dragon_slain_time = None
+        self.last_baron_slain_time = None
+        self.last_elder_slain_time = None
         self.dragon2cap = {"cloud": "AIR_DRAGON", "mountain": "EARTH_DRAGON", "infernal": "FIRE_DRAGON",
                            "ocean": "WATER_DRAGON"}
 
@@ -262,9 +265,11 @@ class ScrapeEsportsData:
         assert len(game_ids) == len(outcomes)
         print("-"*50 + f"  Got all game IDs: {len(game_ids)} "+"-"*50)
 
-        x = await self.gameids2vec(game_ids, outcomes)
-        with open(app_constants.train_paths["win_pred"] + "train.npz", "wb") as result_file:
+        # x, meta_x = self.gameids2vec([104841804589413358,104841804589413358], [1,0])
+        with open(app_constants.train_paths["win_pred"] + "train_new.npz", "wb") as result_file:
             np.savez_compressed(result_file, x)
+        with open(app_constants.train_paths["win_pred"] + "train_new_meta.npz", "wb") as result_file:
+            np.savez_compressed(result_file, meta_x)
         print("done")
 
 
@@ -283,10 +288,13 @@ class ScrapeEsportsData:
         dotindex = patch.index('.')
         patch = patch[dotindex+1:]
         try:
-            dotindex
+            dotindex = patch.index('.')
+        except ValueError:
+            dotindex = len(patch)
+        patch = float(patch[:dotindex])
 
         for frame in data['frames']:
-            frame_timestamp = dt.parse(frame['rfc460Timestamp'])
+
             total_gold = [participant["totalGold"] for participant in frame['blueTeam']['participants'] + frame['redTeam'][
                 'participants']]
             kda = [[participant["kills"],participant["deaths"],participant["assists"]] for participant in frame[
@@ -295,18 +303,65 @@ class ScrapeEsportsData:
                 'blueTeam']['participants'] + frame['redTeam']['participants']]
             lvl = [participant['level'] for participant in frame[
                 'blueTeam']['participants'] + frame['redTeam']['participants']]
+            max_healths = [participant['maxHealth'] for participant in frame[
+                'blueTeam']['participants'] + frame['redTeam']['participants']]
+            current_healths = [participant['currentHealth'] for participant in frame[
+                'blueTeam']['participants'] + frame['redTeam']['participants']]
             towers = [frame['blueTeam']['towers'],frame['redTeam']['towers']]
-
+            frame_timestamp = dt.parse(frame['rfc460Timestamp'])
+            frame_timestamp_seconds = frame_timestamp.timestamp()
+            if np.sum(max_healths) == 0:
+                self.last_baron_slain_time = frame_timestamp_seconds
+                self.last_elder_slain_time = frame_timestamp_seconds
+                self.last_dragon_slain_time = frame_timestamp_seconds
+                self.start_time = frame_timestamp_seconds
+            game_time = frame_timestamp_seconds - self.start_time
 
             dragon_soul_blue = [0,0,0,0]
             dragon_soul_red = [0,0,0,0]
 
-            if (self.baron_active[0] or self.baron_active[1]) and frame_timestamp > \
-                    self.baron_start_timer + datetime.timedelta(seconds=game_constants.BARON_DURATION):
-                self.baron_active = [0, 0]
-            if (self.elder_active[0] or self.elder_active[1]) and frame_timestamp > \
-                    self.elder_start_timer + datetime.timedelta(seconds=game_constants.ELDER_DURATION):
-                self.elder_active = [0, 0]
+            baron_left = 0
+            elder_left = 0
+            if self.baron_active[0] or self.baron_active[1]:
+                elapsed = frame_timestamp_seconds - self.baron_start_timer
+                blue_all_dead = np.sum(current_healths[:5]) == 0
+                red_all_dead = np.sum(current_healths[5:]) == 0
+                if elapsed > game_constants.BARON_DURATION or \
+                    self.baron_active[0] and blue_all_dead or \
+                    self.baron_active[1] and red_all_dead:
+                    self.baron_active = [0, 0]
+                else:
+                    baron_left = game_constants.BARON_DURATION - elapsed
+            if self.elder_active[0] or self.elder_active[1]:
+                elapsed = frame_timestamp_seconds - self.elder_start_timer
+                blue_all_dead = np.sum(current_healths[:5]) == 0
+                red_all_dead = np.sum(current_healths[5:]) == 0
+                if elapsed > game_constants.ELDER_DURATION or \
+                    self.elder_active[0] and blue_all_dead or \
+                    self.elder_active[1] and red_all_dead:
+                    self.elder_active = [0, 0]
+                else:
+                    elder_left = game_constants.ELDER_DURATION - elapsed
+
+            dragon_countdown = game_constants.DRAGON_RESPAWN_TIMER - (frame_timestamp_seconds -
+                                                                      self.last_dragon_slain_time)
+            if dragon_countdown < 0:
+                dragon_countdown = 0
+
+            if game_time - game_constants.BARON_INIT_SPAWN < 0:
+                baron_countdown = game_constants.BARON_INIT_SPAWN - game_time
+            else:
+                baron_countdown = game_constants.BARON_RESPAWN_TIMER - (frame_timestamp_seconds - self.last_baron_slain_time)
+
+            if game_time - game_constants.ELDER_INIT_SPAWN < 0:
+                elder_countdown = game_constants.ELDER_INIT_SPAWN - game_time
+            else:
+                elder_countdown = game_constants.ELDER_RESPAWN_TIMER - (frame_timestamp_seconds -
+                                                                        self.last_elder_slain_time)
+            if baron_countdown < 0:
+                baron_countdown = 0
+            if elder_countdown < 0:
+                elder_countdown = 0
 
             dragons_killed = np.zeros((2,4))
             blue_team_dragons = frame['blueTeam']['dragons']
@@ -315,15 +370,19 @@ class ScrapeEsportsData:
             if "elder" in set(blue_team_dragons + red_team_dragons):
                 if blue_team_dragons != self.prev_blue_team_dragons:
                     self.elder_active = [1, 0]
-                    self.elder_start_timer = frame_timestamp
+                    self.elder_start_timer = frame_timestamp_seconds
+                    self.last_elder_slain_time = frame_timestamp_seconds
                 elif red_team_dragons != self.prev_red_team_dragons:
                     self.elder_active = [0, 1]
-                    self.elder_start_timer = frame_timestamp
+                    self.elder_start_timer = frame_timestamp_seconds
+                    self.last_elder_slain_time = frame_timestamp_seconds
                 self.prev_blue_team_dragons = blue_team_dragons
                 self.prev_red_team_dragons = red_team_dragons
                 blue_team_dragons = list(filter(lambda a: a != "elder", blue_team_dragons))
                 red_team_dragons = list(filter(lambda a: a != "elder", red_team_dragons))
             else:
+                if blue_team_dragons != self.prev_blue_team_dragons or red_team_dragons != self.prev_red_team_dragons:
+                    self.last_dragon_slain_time = frame_timestamp_seconds
                 self.prev_blue_team_dragons = blue_team_dragons
                 self.prev_red_team_dragons = red_team_dragons
 
@@ -341,7 +400,8 @@ class ScrapeEsportsData:
             if baron_active != self.prev_baron_active_raw:
                 new_baron = np.array(baron_active) - np.array(self.prev_baron_active_raw)
                 self.baron_active = new_baron
-                self.baron_start_timer = frame_timestamp
+                self.baron_start_timer = frame_timestamp_seconds
+                self.last_baron_slain_time = frame_timestamp_seconds
 
             self.prev_baron_active_raw = baron_active
 
@@ -349,7 +409,6 @@ class ScrapeEsportsData:
 
             kda = np.ravel(kda)
             input_ = {
-                          "gameid": int(data['esportsGameId']),
                           "champs": champs,
                           "total_gold": total_gold,
                           "blue_side": [1, 0],
@@ -358,32 +417,53 @@ class ScrapeEsportsData:
                           "kills": kda[0::3],
                           "deaths": kda[1::3],
                           "assists": kda[2::3],
-                          "baron": self.baron_active,
-                          "elder": self.elder_active,
-                          "dragons_killed": np.ravel(dragons_killed),
-                          "dragon_soul_type": dragon_soul_blue + dragon_soul_red,
                           "turrets_destroyed": towers,
-                        "team_odds": odds,
-                        "timestamp": frame_timestamp.timestamp(),
-                        "patch":
+                            "team_odds": odds,
+                            "max_health": max_healths,
+                            "current_health": current_healths,
+
+                            "baron_countdown": baron_countdown,
+                            "baron": self.baron_active,
+                            "baron_time_left": baron_left,
+
+                            "dragon_countdown": dragon_countdown,
+                            "dragons_killed": np.ravel(dragons_killed),
+                            "dragon_soul_type": dragon_soul_blue + dragon_soul_red,
+
+                            "elder_countdown": elder_countdown,
+                            "elder": self.elder_active,
+                            "elder_time_left": elder_left,
+
             }
             try:
                 x = InputWinPred.dict2vec(input_)
             except AssertionError:
                 print("some vals were negative")
                 raise
-
-            yield x
+            x_meta = [int(data['esportsGameId']), frame_timestamp.timestamp(), patch]
+            yield x, x_meta
 
 
     async def game2vec(self, gameId):
         game_snapshots = await self.download_finished_game(gameId)
-        return [self.snapshot2vec(snapshot) for snapshot in game_snapshots]
+        return [self.snapshot2vec(snapshot, [0,0]) for snapshot in game_snapshots]
+
+    def game2vec_sync(self, gameId):
+        game_snapshots = self.generate_live_feed(gameId)
+        result = []
+        while True:
+            try:
+                snapshot = next(game_snapshots)
+                vec = list(self.snapshot2vec(snapshot, [0, 0]))
+                result.append(vec)
+            except StopIteration:
+                vec = np.array([y[0] for x in result for y in x], dtype=np.float32)
+                meta = np.array([y[1] for x in result for y in x], dtype=np.uint64)
+                return vec,meta
+
 
 
     def live_game2odds(self, gameId):
-
-
         gauss_noise = {"kills": 0.5,
                        "deaths": 0.5,
                        "assists": 0.5,
@@ -478,7 +558,7 @@ class ScrapeEsportsData:
 
             try:
                 snapshot = next(snapshots)
-                x = np.array(list(self.snapshot2vec(snapshot, odds)))
+                x = np.array(list(self.snapshot2vec(snapshot, odds)))[:,0]
 
                 self.check_events(x)
                 x = InputWinPred().scale_inputs(x)
@@ -579,20 +659,22 @@ class ScrapeEsportsData:
 
 
 
-    async def gameids2vec(self, gameIds, game_results):
+    def gameids2vec(self, gameIds, game_results):
         x = []
+        meta_x = []
         error_matches = set()
         for gameId, game_result in zip(gameIds, game_results):
             self.reset()
             try:
-                data_x = await self.game2vec(gameId)
-                data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen], dtype=np.uint64)
+                data_x,meta = self.game2vec_sync(gameId)
+                # data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen], dtype=np.uint64)
                 data_x = np.reshape(data_x, (-1, InputWinPred.len))
                 # if champs is not None:
                 #     data_x[:,Input.indices["start"]["champs"]:Input.indices["end"]["champs"]] = champs
                 if game_result == [0]:
                     data_x = InputWinPred.flip_teams(data_x)
                 x.append(data_x)
+                meta_x.append(meta)
             except Exception as e:
                 logger.exception(
                     f"Error while downloading game {gameId}. Skip."
@@ -603,7 +685,7 @@ class ScrapeEsportsData:
                 )
                 continue
         print(f"Complete. Error matches: {error_matches}")
-        return np.concatenate(x, axis=0)
+        return np.concatenate(x, axis=0), np.concatenate(meta_x, axis=0)
 
     def get_schedule(self, region):
         schedule = []
@@ -911,10 +993,11 @@ class ScrapePlayerStats:
 
 async def run_async():
     s = ScrapeEsportsData()
-    s.scrape_games()
+    # s.gameids2vec([104841804589413358], [1])
+    await s.scrape_games()
     # a = s.fetch_payload(url="https://feed.lolesports.com/livestats/v1/window/104174613353783764")
 
-    # x = await s.game2vec(104174613333794954)
+    # x = await s.game2vec(104841804589413358)
     # print(x)
     # s.scrape_stats("bjergsen", "summer")
 
@@ -1004,8 +1087,8 @@ if __name__ == "__main__":
     1,0,0
     ]
 
-    s = ScrapeChampStats()
-    s.scrape_all_stats()
+    # s = ScrapeChampStats()
+    # s.scrape_all_stats()
 
     # s = ScrapeEsportsData()
     # s.scrape_all_stats()
@@ -1085,8 +1168,9 @@ if __name__ == "__main__":
     #         current_index = 0
     #     return new_out
     #
-
-
+    # s = ScrapeEsportsData()
+    # s.game2vec_sync(104841804589413358)
+    # s.scrape_games()
     asyncio.run(run_async())
 
 
