@@ -211,24 +211,24 @@ class ScrapeEsportsData:
 
 
 
-    async def eventids2gameids(self, event_ids):
+    def eventids2gameids(self, event_ids):
         url = "https://esports-api.lolesports.com/persisted/gw/getEventDetails?hl=en-US&id="
-        futures = [self.fetch_html(url + str(event_id), headers={"x-api-key":
-                                                                         "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"})
-                   for event_id in event_ids]
-        payloads = await asyncio.gather(*futures)
+
+        # payloads = await asyncio.gather(*futures)
         game_ids = []
-        for payload in payloads:
+        for event_id in event_ids:
+            payload = self.fetch_payload(url + str(event_id), headers={"x-api-key":
+                                                                         "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"})
             match_game_ids = []
             for game in payload['data']['event']['match']['games']:
                 if game['state'] =="completed":
-                    match_game_ids.append(game['id'])
-            game_ids.append(match_game_ids)
+                    match_game_ids.append(int(game['id']))
+            game_ids.extend(match_game_ids)
         return game_ids
 
 
 
-    async def scrape_games(self):
+    def scrape_games(self):
         leagues = ["LCK", "LEC", "LCS"]
         outcomes_file_prefix = "outcomes_"
         event_ids_file_prefix = "event_ids_"
@@ -249,7 +249,7 @@ class ScrapeEsportsData:
         # outcomes = [0,0]
         # event_ids = [103540364360759369]
 
-        game_ids = await self.eventids2gameids(event_ids)
+        game_ids = self.eventids2gameids(event_ids)
         game_ids = np.ravel(game_ids).tolist()
 
         # outcomes = outcomes[:len(game_ids)]
@@ -265,7 +265,7 @@ class ScrapeEsportsData:
         assert len(game_ids) == len(outcomes)
         print("-"*50 + f"  Got all game IDs: {len(game_ids)} "+"-"*50)
 
-        # x, meta_x = self.gameids2vec([104841804589413358,104841804589413358], [1,0])
+        x, meta_x = self.gameids2vec(game_ids, outcomes)
         with open(app_constants.train_paths["win_pred"] + "train_new.npz", "wb") as result_file:
             np.savez_compressed(result_file, x)
         with open(app_constants.train_paths["win_pred"] + "train_new_meta.npz", "wb") as result_file:
@@ -1086,7 +1086,8 @@ if __name__ == "__main__":
     1,0,0,0,0,
     1,0,0
     ]
-
+    s = ScrapeEsportsData()
+    s.scrape_games()
     # s = ScrapeChampStats()
     # s.scrape_all_stats()
 
@@ -1171,7 +1172,7 @@ if __name__ == "__main__":
     # s = ScrapeEsportsData()
     # s.game2vec_sync(104841804589413358)
     # s.scrape_games()
-    asyncio.run(run_async())
+    # asyncio.run(run_async())
 
 
     #
