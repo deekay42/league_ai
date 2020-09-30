@@ -295,6 +295,34 @@ class InputWinPred():
     indices["half"]["blue_side"] = indices["start"]["blue_side"] + 1
     indices["end"]["blue_side"] = indices["half"]["blue_side"] + 1
 
+    indices["start"]["current_health"] = indices["end"]["blue_side"]
+    indices["half"]["current_health"] = indices["start"]["current_health"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["current_health"] = indices["half"]["current_health"] + game_constants.CHAMPS_PER_TEAM
+
+    indices["start"]["max_health"] = indices["end"]["current_health"]
+    indices["half"]["max_health"] = indices["start"]["max_health"] + game_constants.CHAMPS_PER_TEAM
+    indices["end"]["max_health"] = indices["half"]["max_health"] + game_constants.CHAMPS_PER_TEAM
+
+    indices["start"]["dragon_countdown"] = indices["end"]["max_health"]
+    indices["half"]["dragon_countdown"] = indices["start"]["dragon_countdown"] + 1
+    indices["end"]["dragon_countdown"] = indices["half"]["dragon_countdown"]
+
+    indices["start"]["baron_countdown"] = indices["end"]["dragon_countdown"]
+    indices["half"]["baron_countdown"] = indices["start"]["baron_countdown"] + 1
+    indices["end"]["baron_countdown"] = indices["half"]["baron_countdown"]
+
+    indices["start"]["elder_countdown"] = indices["end"]["baron_countdown"]
+    indices["half"]["elder_countdown"] = indices["start"]["elder_countdown"] + 1
+    indices["end"]["elder_countdown"] = indices["half"]["elder_countdown"]
+
+    indices["start"]["baron_time_left"] = indices["end"]["elder_countdown"]
+    indices["half"]["baron_time_left"] = indices["start"]["baron_time_left"] + 1
+    indices["end"]["baron_time_left"] = indices["half"]["baron_time_left"]
+
+    indices["start"]["elder_time_left"] = indices["end"]["baron_time_left"]
+    indices["half"]["elder_time_left"] = indices["start"]["elder_time_left"] + 1
+    indices["end"]["elder_time_left"] = indices["half"]["elder_time_left"]
+
     # indices["start"]["total_gold_diff"] = indices["end"]["blue_side"]
     # indices["half"]["total_gold_diff"] = indices["start"][
     #                                          "total_gold_diff"] + game_constants.CHAMPS_PER_TEAM
@@ -340,7 +368,7 @@ class InputWinPred():
     # indices["half"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 1
     # indices["end"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 2
 
-    indices["start"]["team_odds"] = indices["end"]["blue_side"]
+    indices["start"]["team_odds"] = indices["end"]["elder_time_left"]
     indices["half"]["team_odds"] = indices["start"]["team_odds"] + 1
     indices["end"]["team_odds"] = indices["start"]["team_odds"] + 2
 
@@ -354,14 +382,19 @@ class InputWinPred():
                       'assists',
                       'team_odds',
                       'turrets_destroyed',
-                      'dragons_killed'}
+                      'dragons_killed', "current_health", "max_health", "baron_countdown", "dragon_countdown",
+                      "elder_countdown",
+                      "baron_time_left", "elder_time_left"}
 
     all_slices = {"champs", "total_gold", "cs",
                   "lvl", "kills", "deaths", "assists",
                   "baron", "elder", "dragons_killed", "team_odds",
-                  "dragon_soul_type", "turrets_destroyed", "blue_side"}
+                  "dragon_soul_type", "turrets_destroyed", "blue_side", "current_health", "max_health",
+                  "baron_countdown", "dragon_countdown","elder_countdown",
+                      "baron_time_left", "elder_time_left"}
 
-    nonsymmetric_slices = set()
+    nonsymmetric_slices = {"baron_countdown", "dragon_countdown","elder_countdown",
+                      "baron_time_left", "elder_time_left"}
 
 
     # slices must be scaled uniformly or else you cannot perform derivative features since the scales are different
