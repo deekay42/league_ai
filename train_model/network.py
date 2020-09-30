@@ -595,7 +595,7 @@ class WinPredNetwork(LolNetwork):
                 cs
             ], mode='concat', axis=1)
 
-        # extra_stats_layer = dropout(extra_stats_layer, 0.8)
+        extra_stats_layer = dropout(extra_stats_layer, 0.3)
         stats_layer = tf.identity(stats_layer, "stats")
 
         stats_layer = merge(
@@ -629,18 +629,16 @@ class WinPredNetwork(LolNetwork):
         #                                          weights_init=variance_scaling(uniform=True)))
         # net = dropout(net, self.stats_dropout)
 
-        # net = batch_normalization(fully_connected(net, 64, bias=False, activation='relu',regularizer="L2",
-        #                                           weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, 0.7)
-        # net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',regularizer="L2",
-        #                                          weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, 0.8)
-        # net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
-        #                                          weights_init=variance_scaling(uniform=True)))
-        # net = dropout(net, 0.9)
-        net = fully_connected(net, 64, activation='linear')
-        net = fully_connected(net, 32, activation='linear')
-        net = fully_connected(net, 16, activation='linear')
+
+        net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
+                                                 weights_init=variance_scaling(uniform=True)))
+        net = dropout(net, 0.5)
+        net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
+                                                 weights_init=variance_scaling(uniform=True)))
+        net = dropout(net, 0.6)
+        # net = fully_connected(net, 64, activation='linear')
+        # net = fully_connected(net, 32, activation='linear')
+        # net = fully_connected(net, 16, activation='linear')
 
         # net = fully_connected(net, 1, weights_init="xavier", activation='tanh', name="final_output")
         # net = (net+1)/2
@@ -658,20 +656,17 @@ class WinPredNetwork(LolNetwork):
         return regression(logits,
                                  optimizer='adam', to_one_hot=False,
                                  n_classes=2,
-                                 shuffle_batches=True,
+                                 shuffle_batches=False,
                                  learning_rate=self.network_config["learning_rate"],
-                                 loss=self.custom_loss,
+                                 loss='softmax_categorical_crossentropy',
                                  name='target',
                                 metric=self.cross_e_metric)
 
-    @staticmethod
-    def custom_loss(y_pred, y_true):
-        return tf.reduce_mean(tf.abs(y_pred - y_true))
 
 
     @staticmethod
     def cross_e_metric(preds, targets, input_):
-        # preds = tf.nn.softmax(preds)
+        preds = tf.nn.softmax(preds)
         preds = tf.reshape(preds, (-1,))
         targets = tf.reshape(targets, (-1,))
         max_score = tf.cast(tf.shape(targets)[0], tf.float32)

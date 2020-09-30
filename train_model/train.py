@@ -214,7 +214,9 @@ class Trainer(ABC):
         indices = []
         for y_indices in self.Y_indices:
             if y_indices:
-                indices.extend(np.random.choice(y_indices, size=num_examples_per_item))
+                indices.append(np.random.choice(y_indices, size=num_examples_per_item))
+        indices = np.transpose(indices, [1,0])
+        indices = np.ravel(indices)
         print("epoch built")
         return self.X[indices], self.Y[indices]
 
@@ -321,8 +323,8 @@ class WinPredTrainer(Trainer):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data()
-                        model.fit(x, y, n_epoch=1, shuffle=True, validation_set=None,
+                        x, y = self.get_train_data_balanced(500000)
+                        model.fit(x, y, n_epoch=1, shuffle=False, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
                         model.save(self.train_path + self.model_name + str(epoch + 1))
@@ -416,8 +418,11 @@ class WinPredTrainer(Trainer):
 
         self.X = InputWinPred().scale_inputs(X_pro)
 
-
+        self.Y_indices = [list(range(0, self.X.shape[0])), list(range(self.X.shape[0], 2 * self.X.shape[0]))]
         self.X, self.Y = self.flip_data(self.X)
+
+
+
 
         # from keras.layers import Dense, Activation, BatchNormalization, Input
         # from keras.models import Model, Sequential
@@ -553,35 +558,32 @@ class WinPredTrainer(Trainer):
             X_test_flipped = InputWinPred().flip_teams(X_test)
             preds_flipped, _ = model.bayes_predict(X_test_flipped, tile_factor=tile_factor)
 
-            # div_by = (preds_reg + preds_flipped)
-            # preds_sym = np.full(preds_reg.shape, 0.5)
-            # valid_indices = div_by != 0
-            # valid_regs = preds_reg[valid_indices]
-            # valid_flipped = preds_flipped[valid_indices]
-            # preds_sym[valid_indices] = valid_regs / (valid_regs + valid_flipped)
+            accuracies[test_set_name]['all'] = dict()
+            y_pred_sm = softmax(preds_reg, axis=1)[:, 0]
+            accuracies[test_set_name]['all']["%_reg"], accuracies[test_set_name]['all']["abs_reg"] = self.preds2scores(y_pred_sm, Y_test)
+            y_pred_flipped_sm = softmax(preds_flipped, axis=1)[:, 0]
+            accuracies[test_set_name]['all']["%_flip"], accuracies[test_set_name]['all']["abs_flip"] = self.preds2scores(y_pred_flipped_sm, Y_test_flipped)
+            sym_pred_sm = (y_pred_sm + (1 - y_pred_flipped_sm)) / 2
+            accuracies[test_set_name]['all']["%_sym"], accuracies[test_set_name]['all']["abs_sym"] = self.preds2scores(sym_pred_sm, Y_test)
 
-            accuracies[test_set_name]["all"] = self.get_accuracies(preds_reg, preds_flipped, Y_test, Y_test_flipped,
-                                                    [True] * preds_reg.shape[0])
-            sym_pred = preds_reg + np.transpose([preds_flipped[:, 1], preds_flipped[:, 0]], [1, 0])
-            preds_sym = softmax(sym_pred, axis=1)[:, 0]
-            # sym_pred = (preds_reg - preds_flipped) / 2
-            # preds_sym = sigmoid(sym_pred)
 
             for i in range(1, 5):
                 confidence = 0.5 + 0.1 * i
                 inv_confidence = 1 - confidence
-                matching_indices = np.logical_or(preds_sym >= confidence, preds_sym <= inv_confidence)
                 accuracies[test_set_name]["all_" + str(confidence)] = dict()
+                matching_indices = np.logical_or(sym_pred_sm >= confidence, sym_pred_sm <= inv_confidence)
                 accuracies[test_set_name]["all_" + str(confidence)]["%_sym"], accuracies[test_set_name]["all_" + str(confidence)][
                     "abs_sym"] = \
-                    self.preds2scores(preds_sym[matching_indices], Y_test[matching_indices])
+                    self.preds2scores(sym_pred_sm[matching_indices], Y_test[matching_indices])
+
+                matching_indices = np.logical_or(y_pred_sm >= confidence, y_pred_sm <= inv_confidence)
                 accuracies[test_set_name]["all_" + str(confidence)]["%_reg"], accuracies[test_set_name]["all_" + str(confidence)][
-                    "abs_reg"] = \
-                    accuracies[test_set_name]["all_" + str(confidence)]["%_flip"], accuracies[test_set_name]["all_" + str(
+                    "abs_reg"] = self.preds2scores(y_pred_sm[matching_indices], Y_test[matching_indices])
+
+                matching_indices = np.logical_or(y_pred_flipped_sm >= confidence, y_pred_flipped_sm <= inv_confidence)
+                accuracies[test_set_name]["all_" + str(confidence)]["%_flip"], accuracies[test_set_name]["all_" + str(
                         confidence)]["abs_flip"]\
-                    = \
-                    accuracies[test_set_name]["all_" + str(confidence)]["%_sym"], accuracies[test_set_name]["all_" + str(
-                        confidence)]["abs_sym"]
+                    = self.preds2scores(y_pred_flipped_sm[matching_indices], Y_test_flipped[matching_indices])
 
             for test_name, indices in self.test_sets[test_set_name].items():
                 accuracies[test_set_name][test_name] = self.get_accuracies(preds_reg, preds_flipped, Y_test,
@@ -600,7 +602,14 @@ class WinPredTrainer(Trainer):
     #     x_y = np.array([(x, np.sum(np.logical_and(pred > x, pred < x + interval)) / (
     #         np.sum(np.logical_and(pred < -x, pred > -x - interval)) + np.sum(
     #         np.logical_and(pred > x, pred < x + interval)))) for x in
-    #                   np.arange(0, np.max(np.abs(pred)), interval)])
+    #                   np.arange(0, 0.5, interval)])
+    #
+        np.array([(x, np.sum(np.logical_and(pred > 0.5 + x, pred < 0.5 + x + interval)) / (
+            np.sum(np.logical_and(pred < 0.5 - x, pred > 0.5 - x - interval)) + np.sum(
+            np.logical_and(pred > 0.5 + x, pred < 0.5 + x + interval)))) for x in
+                  np.arange(0, 0.5, interval)])
+    #
+    #
     #     x = x_y[:,0]
     #     y = x_y[:,1]
     #     y[np.isnan(y)] = 1.0
@@ -639,8 +648,12 @@ class WinPredTrainer(Trainer):
         #                                                                               Y_test[indices])
 
 
-        sym_pred = y_pred + np.transpose([y_pred_flipped[:,1],y_pred_flipped[:,0]], [1,0])
-        sym_pred_sm = softmax(sym_pred, axis=1)[:,0]
+        # this does not work. summing up logits will result in inferior predictions.
+        # the logits are chosen in such a specific relation to each other that their softmax minimizes the loss
+        # changing that relation by summing will not minimize the loss anymore
+        # sym_pred = y_pred + np.transpose([y_pred_flipped[:,1],y_pred_flipped[:,0]], [1,0])
+        # sym_pred_sm = softmax(sym_pred, axis=1)[:,0]
+        sym_pred_sm = (y_pred_sm + (1-y_pred_flipped_sm))/2
         # sym_pred = (y_pred - y_pred_flipped)/2
         # sym_pred_sm = sigmoid(sym_pred)
         result["%_sym"], result["abs_sym"] = self.preds2scores(sym_pred_sm, Y_test[indices])

@@ -279,11 +279,6 @@ class ScrapeEsportsData:
         champ_names = [participant['championId'] for participant in data['gameMetadata']['blueTeamMetadata'][
             'participantMetadata']] + [participant['championId'] for participant in data['gameMetadata'][
             'redTeamMetadata']['participantMetadata']]
-        patch = data['gameMetadata']['patchVersion']
-        dotindex = patch.index('.')
-        patch = patch[dotindex+1:]
-        try:
-            dotindex
 
         for frame in data['frames']:
             frame_timestamp = dt.parse(frame['rfc460Timestamp'])
@@ -363,9 +358,8 @@ class ScrapeEsportsData:
                           "dragons_killed": np.ravel(dragons_killed),
                           "dragon_soul_type": dragon_soul_blue + dragon_soul_red,
                           "turrets_destroyed": towers,
-                        "team_odds": odds,
-                        "timestamp": frame_timestamp.timestamp(),
-                        "patch":
+                        "team_odds": odds
+
             }
             try:
                 x = InputWinPred.dict2vec(input_)
@@ -433,20 +427,25 @@ class ScrapeEsportsData:
         # update swap_teams
         # update gameid
         #update xpath
-        gameId = 104942405977919501
-        odds = (1.304, 3.56)
+        gameId = 104841804589478928
+        odds = (1.72, 1.95)
         swap_odds = False
         snapshots = s.generate_live_feed(gameId)
 
         urls = [
-            'https://www.pinnacle.com/en/esports/league-of-legends-world-championship/liquid-map-1-vs-legacy-map-1/1181650796',
-                'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18557471/legacy-esports-vs-papara-supermassive-bo1']
+            'https://sports.betway.com/en/sports/evt/6483646',
+            # 'https://www.pinnacle.com/en/esports/league-of-legends-world-championship/rainbow7-match-vs-lgd-gaming-match/1181384607',
+            #     'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18616680/rainbow7-vs-lgd-gaming-bo5'
+        ]
         css_scrapers = [
-            lambda: drivers[0].find_elements_by_xpath("//span[contains(text(),'Money Line – Map "
-                                                      "1')]/../following-sibling::div/div/a/span[@class='price']"),
-                       lambda: drivers[1].find_elements_by_xpath("//h2[contains(text(),"
-                                                                 "'Match Betting')]/../following-sibling::div//span["
-                                                                 "@class='betbutton__odds']")]
+                           lambda: drivers[0].find_elements_by_xpath('//span[contains(text(),'
+                                                                     '"Map 3 Winner")]/../../../following-sibling::div//div[@class="odds"]'),
+            # lambda: drivers[0].find_elements_by_xpath("//span[contains(text(),'Money Line – Map "
+            #                                           "3')]/../following-sibling::div/div/a/span[@class='price']"),
+            #            lambda: drivers[1].find_elements_by_xpath("//h2[contains(text(),"
+            #                                                      "'Match Betting')]/../following-sibling::div//span["
+            #                                                      "@class='betbutton__odds']")],
+        ]
 
         options = webdriver.ChromeOptions()
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
@@ -485,7 +484,7 @@ class ScrapeEsportsData:
                 pred_odds_blue = [model.bayes_predict_sym(np.array([x_]), 1024)[0] for x_ in x]
             except GameNotStarted:
                 print("Game not started yet")
-                pred_odds_blue = 0.5
+                pred_odds_blue = [0.5]
                 time.sleep(1)
                 snapshots = s.generate_live_feed(gameId)
 
@@ -1004,8 +1003,8 @@ if __name__ == "__main__":
     1,0,0
     ]
 
-    s = ScrapeChampStats()
-    s.scrape_all_stats()
+    s = ScrapeEsportsData()
+    s.live_game2odds(0)
 
     # s = ScrapeEsportsData()
     # s.scrape_all_stats()
@@ -1087,7 +1086,7 @@ if __name__ == "__main__":
     #
 
 
-    asyncio.run(run_async())
+    # asyncio.run(run_async())
 
 
     #

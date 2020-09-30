@@ -27,6 +27,7 @@ asset_paths["cs_json"] = asset_paths["jsons"] + "cs2id.json"
 asset_paths["lvl_json"] = asset_paths["jsons"] + "lvl2id.json"
 asset_paths["xp_table"] = asset_paths["jsons"] + "xp_table.json"
 asset_paths["input_scales"] = asset_paths["jsons"] + "input_scales.json"
+asset_paths["input_scales_winpred"] = asset_paths["jsons"] + "input_scales_winpred.json"
 asset_paths["diamond_league_ids"] = asset_paths["jsons"] + os.sep + "diamond_league_ids"
 if platform.system() == "Windows":
     asset_paths["tesseract_tmp_files"] = os.path.join(os.getenv('LOCALAPPDATA'),"League IQ", "tesseract")
