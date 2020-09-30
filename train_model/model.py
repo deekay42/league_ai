@@ -799,8 +799,10 @@ class WinPredModel(GameModel):
         x_flipped = InputWinPred().flip_teams(x)
         blue_team_wins_score, blue_team_wins_std  = self.bayes_predict(x, tile_factor)
         red_team_wins_score, red_team_wins_std = self.bayes_predict(x_flipped, tile_factor)
-        sym_pred = blue_team_wins_score + np.transpose([red_team_wins_score[:, 1], red_team_wins_score[:, 0]], [1, 0])
-        sym_pred_sm = softmax(sym_pred, axis=1)[:, 0]
+        # sym_pred = blue_team_wins_score + np.transpose([red_team_wins_score[:, 1], red_team_wins_score[:, 0]], [1, 0])
+        blue_team_wins_sm = softmax(blue_team_wins_score, axis=1)[:, 0]
+        red_team_wins_sm = softmax(red_team_wins_score, axis=1)[:, 0]
+        sym_pred_sm = (blue_team_wins_sm + (1-red_team_wins_sm))/2
         # sym_pred = (blue_team_wins_score - red_team_wins_score) / 2
         # sym_pred_sm = sigmoid(sym_pred)
         return sym_pred_sm

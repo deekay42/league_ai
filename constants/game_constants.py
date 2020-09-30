@@ -8,6 +8,11 @@ SPELLS_PER_GAME = SPELLS_PER_CHAMP * CHAMPS_PER_GAME
 NUM_FEATURES = CHAMPS_PER_GAME + CHAMPS_PER_GAME * SPELLS_PER_CHAMP + CHAMPS_PER_GAME * MAX_ITEMS_PER_CHAMP
 BARON_DURATION = 180
 ELDER_DURATION = 150
+DRAGON_RESPAWN_TIMER = 300
+BARON_INIT_SPAWN = 1200
+ELDER_INIT_SPAWN = 2100
+ELDER_RESPAWN_TIMER = 360
+BARON_RESPAWN_TIMER = 360
 ROLE_ORDER = ["top", "jg", "mid", "adc", "sup"]
 
 ELITE_LEAGUES = ["Challenger", "Grandmaster", "Master"]
@@ -28,14 +33,14 @@ max_clip = {"kills": 20,"deaths": 20,"assists": 30, "total_gold": 20000,
                                           "lvl": 18,
                                           "dragons_killed": 4.0,
                                           "turrets_destroyed": 11.0,
-                               "current_gold": 4000.0}
+                               "current_gold": 4000.0, "team_odds": 100}
 min_clip = {"kills": 0, "deaths": 0, "assists": 0,
                                           "total_gold": 500,
                                           "cs": 0,
                                           "lvl": 1,
                                           "dragons_killed": 0.0,
                                           "turrets_destroyed": 0.0,
-                                          "current_gold": 0.0}
+                                          "current_gold": 0.0, "team_odds": 1}
 region2int = {"KR":100, "EUW":200, "NA":300, "EUNE":400, "BR":500, "TR":600, "LAS":700, "LAN":800, "RU":900, \
                      "JP":1000, "OCE":1100}
 
