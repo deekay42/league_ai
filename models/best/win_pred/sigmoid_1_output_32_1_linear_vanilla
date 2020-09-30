@@ -1,0 +1,57 @@
+---------------------------------
+Run id: whaddup_glib_globs0
+Log directory: /tmp/tflearn_logs/
+---------------------------------
+Training samples: 5287128
+Validation samples: 0
+--
+Training Step: 41306  | total loss: 0.45142 | time: 126.998s
+| Adam | epoch: 001 | loss: 0.45142 - Mean: 0.7555 -- iter: 5287128/5287128
+--
+Epoch 1
+W0928 01:30:57.986107 4527074752 deprecation.py:323] From /Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/tensorflow/python/training/saver.py:1276: checkpoint_exists (from tensorflow.python.training.checkpoint_management) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use standard file APIs to check for files with this prefix.
+W0928 01:31:08.593548 4527074752 deprecation.py:323] From /Users/DorjeeBaro/code/lol/python/train_model/network.py:383: Normal.__init__ (from tensorflow.python.ops.distributions.normal) is deprecated and will be removed after 2019-01-01.
+Instructions for updating:
+The TensorFlow Distributions library has moved to TensorFlow Probability (https://github.com/tensorflow/probability). You should update all references to use `tfp.distributions` instead of `tf.distributions`.
+W0928 01:31:08.608381 4527074752 deprecation.py:323] From /Library/Frameworks/Python.framework/Versions/3.7/lib/python3.7/site-packages/tensorflow/python/ops/distributions/normal.py:160: Distribution.__init__ (from tensorflow.python.ops.distributions.distribution) is deprecated and will be removed after 2019-01-01.
+Instructions for updating:
+The TensorFlow Distributions library has moved to TensorFlow Probability (https://github.com/tensorflow/probability). You should update all references to use `tfp.distributions` instead of `tf.distributions`.
+STANDARD  **************************************************
++-----+--------------+-------+---------+-------+--------+---------+----------+
+|     |              | %_sym | abs_sym | % reg | % flip | abs reg | abs flip |
++-----+--------------+-------+---------+-------+--------+---------+----------+
+| pro |              |       |         |       |        |         |          |
+|     |     all      | 0.668 |  0.721  | 0.662 | 0.673  |  0.663  |  0.771   |
+|     |   all_0.6    | 0.728 |  0.783  | 0.728 | 0.728  |  0.783  |  0.783   |
+|     |   all_0.7    | 0.781 |   0.83  | 0.781 | 0.781  |   0.83  |   0.83   |
+|     |   all_0.8    | 0.836 |  0.872  | 0.836 | 0.836  |  0.872  |  0.872   |
+|     |   all_0.9    | 0.899 |  0.922  | 0.899 | 0.899  |  0.922  |  0.922   |
+|     |  first_drag  | 0.566 |   0.65  | 0.538 | 0.594  |  0.563  |  0.727   |
+|     |  first_kill  | 0.529 |  0.579  | 0.494 | 0.565  |  0.374  |  0.807   |
+|     | first_tower  | 0.637 |  0.698  | 0.627 | 0.647  |  0.687  |  0.715   |
+|     |     init     | 0.501 |  0.574  | 0.454 | 0.547  |   0.0   |   1.0    |
+|     | first_lvl_6  | 0.519 |  0.594  | 0.482 | 0.556  |   0.45  |   0.7    |
+|     | first_lvl_11 | 0.672 |  0.753  | 0.664 |  0.68  |  0.742  |  0.758   |
+|     | first_lvl_16 | 0.783 |  0.799  | 0.795 | 0.769  |  0.822  |  0.787   |
++-----+--------------+-------+---------+-------+--------+---------+----------+
+
+GAUSS  **************************************************
++-----+--------------+-------+---------+-------+--------+---------+----------+
+|     |              | %_sym | abs_sym | % reg | % flip | abs reg | abs flip |
++-----+--------------+-------+---------+-------+--------+---------+----------+
+| pro |              |       |         |       |        |         |          |
+|     |     all      | 0.667 |  0.716  | 0.663 |  0.67  |  0.674  |  0.752   |
+|     |   all_0.6    | 0.726 |  0.781  | 0.726 | 0.726  |  0.781  |  0.781   |
+|     |   all_0.7    |  0.78 |  0.829  |  0.78 |  0.78  |  0.829  |  0.829   |
+|     |   all_0.8    | 0.836 |  0.872  | 0.836 | 0.836  |  0.872  |  0.872   |
+|     |   all_0.9    | 0.898 |  0.922  | 0.898 | 0.898  |  0.922  |  0.922   |
+|     |  first_drag  | 0.567 |  0.639  | 0.542 | 0.592  |  0.574  |  0.716   |
+|     |  first_kill  | 0.528 |  0.538  | 0.498 | 0.558  |  0.409  |  0.749   |
+|     | first_tower  | 0.637 |  0.693  | 0.628 | 0.646  |  0.676  |  0.721   |
+|     |     init     | 0.501 |  0.523  |  0.46 | 0.543  |  0.074  |  0.898   |
+|     | first_lvl_6  | 0.521 |  0.572  | 0.487 | 0.555  |  0.461  |  0.678   |
+|     | first_lvl_11 | 0.672 |  0.725  | 0.667 | 0.675  |  0.725  |  0.753   |
+|     | first_lvl_16 | 0.785 |  0.805  | 0.797 | 0.771  |  0.822  |  0.793   |
++-----+--------------+-------+---------+-------+--------+---------+----------+
