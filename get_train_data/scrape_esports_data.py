@@ -207,28 +207,24 @@ class ScrapeEsportsData:
         return payload
 
 
-
-
-
-
-    def eventids2gameids(self, event_ids):
+    async def eventids2gameids(self, event_ids):
         url = "https://esports-api.lolesports.com/persisted/gw/getEventDetails?hl=en-US&id="
-
-        # payloads = await asyncio.gather(*futures)
+        futures = [self.fetch_html(url + str(event_id), headers={"x-api-key":
+                                                                     "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"})
+                   for event_id in event_ids]
+        payloads = await asyncio.gather(*futures)
         game_ids = []
-        for event_id in event_ids:
-            payload = self.fetch_payload(url + str(event_id), headers={"x-api-key":
-                                                                         "0TvQnueqKa5mxJntVWt0w4LpLfEkrV1Ta8rQBb9Z"})
+        for payload in payloads:
             match_game_ids = []
             for game in payload['data']['event']['match']['games']:
-                if game['state'] =="completed":
-                    match_game_ids.append(int(game['id']))
-            game_ids.extend(match_game_ids)
+                if game['state'] == "completed":
+                    match_game_ids.append(game['id'])
+            game_ids.append(match_game_ids)
         return game_ids
 
 
 
-    def scrape_games(self):
+    async def scrape_games(self):
         leagues = ["LCK", "LEC", "LCS"]
         outcomes_file_prefix = "outcomes_"
         event_ids_file_prefix = "event_ids_"
@@ -249,7 +245,7 @@ class ScrapeEsportsData:
         # outcomes = [0,0]
         # event_ids = [103540364360759369]
 
-        game_ids = self.eventids2gameids(event_ids)
+        game_ids = await self.eventids2gameids(event_ids)
         game_ids = np.ravel(game_ids).tolist()
 
         # outcomes = outcomes[:len(game_ids)]
@@ -265,7 +261,7 @@ class ScrapeEsportsData:
         assert len(game_ids) == len(outcomes)
         print("-"*50 + f"  Got all game IDs: {len(game_ids)} "+"-"*50)
 
-        x, meta_x = self.gameids2vec(game_ids, outcomes)
+        x, meta_x = await self.gameids2vec(game_ids, outcomes)
         with open(app_constants.train_paths["win_pred"] + "train_new.npz", "wb") as result_file:
             np.savez_compressed(result_file, x)
         with open(app_constants.train_paths["win_pred"] + "train_new_meta.npz", "wb") as result_file:
@@ -519,15 +515,19 @@ class ScrapeEsportsData:
         snapshots = s.generate_live_feed(gameId)
 
         urls = [
-            'https://www.pinnacle.com/en/esports/league-of-legends-world-championship/liquid-map-1-vs-legacy-map-1/1181650796',
-                'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18557471/legacy-esports-vs-papara-supermassive-bo1']
+            'https://sports.betway.com/en/sports/evt/6483646',
+            # 'https://www.pinnacle.com/en/esports/league-of-legends-world-championship/rainbow7-match-vs-lgd-gaming-match/1181384607',
+            #     'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18616680/rainbow7-vs-lgd-gaming-bo5'
+        ]
         css_scrapers = [
-            lambda: drivers[0].find_elements_by_xpath("//span[contains(text(),'Money Line – Map "
-                                                      "1')]/../following-sibling::div/div/a/span[@class='price']"),
-                       lambda: drivers[1].find_elements_by_xpath("//h2[contains(text(),"
-                                                                 "'Match Betting')]/../following-sibling::div//span["
-                                                                 "@class='betbutton__odds']")]
-
+            lambda: drivers[0].find_elements_by_xpath('//span[contains(text(),'
+                                                      '"Map 3 Winner")]/../../../following-sibling::div//div[@class="odds"]'),
+            # lambda: drivers[0].find_elements_by_xpath("//span[contains(text(),'Money Line – Map "
+            #                                           "3')]/../following-sibling::div/div/a/span[@class='price']"),
+            #            lambda: drivers[1].find_elements_by_xpath("//h2[contains(text(),"
+            #                                                      "'Match Betting')]/../following-sibling::div//span["
+            #                                                      "@class='betbutton__odds']")],
+        ]
         options = webdriver.ChromeOptions()
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
