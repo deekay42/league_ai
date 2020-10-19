@@ -24,6 +24,7 @@ from bs4 import BeautifulSoup
 import logging
 from selenium.webdriver.remote.remote_connection import LOGGER
 
+
 LOGGER.setLevel(logging.WARNING)
 
 logging.basicConfig(
@@ -219,7 +220,7 @@ class ScrapeEsportsData:
             for game in payload['data']['event']['match']['games']:
                 if game['state'] == "completed":
                     match_game_ids.append(game['id'])
-            game_ids.append(match_game_ids)
+            game_ids.extend(match_game_ids)
         return game_ids
 
 
@@ -436,27 +437,26 @@ class ScrapeEsportsData:
             except AssertionError:
                 print("some vals were negative")
                 raise
-            x_meta = [int(data['esportsGameId']), frame_timestamp.timestamp(), patch]
+            x_meta = np.array([int(data['esportsGameId']), frame_timestamp.timestamp(), patch], dtype=np.float32)
             yield x, x_meta
 
 
     async def game2vec(self, gameId):
+        # game_snapshots = self.generate_live_feed(gameId)
         game_snapshots = await self.download_finished_game(gameId)
-        return [self.snapshot2vec(snapshot, [0,0]) for snapshot in game_snapshots]
-
-    def game2vec_sync(self, gameId):
-        game_snapshots = self.generate_live_feed(gameId)
-        result = []
-        while True:
-            try:
-                snapshot = next(game_snapshots)
-                vec = list(self.snapshot2vec(snapshot, [0, 0]))
-                result.append(vec)
-            except StopIteration:
-                vec = np.array([y[0] for x in result for y in x], dtype=np.float32)
-                meta = np.array([y[1] for x in result for y in x], dtype=np.uint64)
-                return vec,meta
-
+        result = [list(self.snapshot2vec(snapshot, [0, 0])) for snapshot in game_snapshots]
+        vec = np.array([y[0] for x in result for y in x], dtype=np.float32)
+        meta = np.array([y[1] for x in result for y in x], dtype=np.uint64)
+        return vec, meta
+        # while True:
+        #     try:
+        #         snapshot = next(game_snapshots)
+        #         vec = list(self.snapshot2vec(snapshot, [0, 0]))
+        #         result.append(vec)
+        #     except StopIteration:
+        #         vec = np.array([y[0] for x in result for y in x], dtype=np.float32)
+        #         meta = np.array([y[1] for x in result for y in x], dtype=np.uint64)
+        #         return vec,meta
 
 
     def live_game2odds(self, gameId):
@@ -504,24 +504,27 @@ class ScrapeEsportsData:
         }
 
 
+
         network_config["noise"] = InputWinPred.scale_rel(network_config["noise"])
 
         # update swap_teams
         # update gameid
         #update xpath
-        gameId = 104841804589478928
-        odds = (1.72, 1.95)
+        gameId = 104841804589544540
+        odds = (1.35, 2.8)
         swap_odds = False
         snapshots = s.generate_live_feed(gameId)
 
         urls = [
-            'https://sports.betway.com/en/sports/evt/6483646',
-            # 'https://www.pinnacle.com/en/esports/league-of-legends-world-championship/rainbow7-match-vs-lgd-gaming-match/1181384607',
+            'https://sports.betway.com/en/sports/evt/6416568',
+            'https://www.betfair.com/sport/e-sports/lol-world-championship/top-esports-dragonx/30027771',
             #     'https://sports.williamhill.com/betting/en-gb/e-sports/OB_EV18616680/rainbow7-vs-lgd-gaming-bo5'
         ]
         css_scrapers = [
             lambda: drivers[0].find_elements_by_xpath('//span[contains(text(),'
-                                                      '"Map 3 Winner")]/../../../following-sibling::div//div[@class="odds"]'),
+                                                      '"Match Winner")]/../../../following-sibling::div//div[@class="odds"]'),
+            lambda: drivers[1].find_elements_by_xpath('//span[contains(@class, "ui-runner-price")]'),
+
             # lambda: drivers[0].find_elements_by_xpath("//span[contains(text(),'Money Line – Map "
             #                                           "3')]/../following-sibling::div/div/a/span[@class='price']"),
             #            lambda: drivers[1].find_elements_by_xpath("//h2[contains(text(),"
@@ -546,6 +549,14 @@ class ScrapeEsportsData:
         p_odds_red = np.zeros((len(drivers),))
         raw_blue = ["" for _ in range(len(drivers))]
         raw_red = ["" for _ in range(len(drivers))]
+        import pandas as pd
+        champ_comp = pd.read_csv('training_data/win_pred/competitive_champs_norm.csv')
+        champ_comp = champ_comp.to_numpy()
+        champ_comp = {ChampManager().lookup_by('name', c[1])['id']: c[2:] for c in champ_comp}
+        champ_wrs = np.load("training_data/win_pred/champ_wr_by_patch.npz")
+        champ_early_late = np.load("training_data/win_pred/champ_early_late.npz")
+        champ_syns = np.load("training_data/win_pred/syn_stats.npz")
+        champ_counters = np.load("training_data/win_pred/counter_stats.npz")
 
         model = WinPredModel("standard", network_config=network_config)
         model2 = WinPredModel("standard", network_config=network_config2)
@@ -553,14 +564,24 @@ class ScrapeEsportsData:
         model2.load_model()
         logging.getLogger("urllib3").setLevel(logging.CRITICAL)
         logging.getLogger("requests").setLevel(logging.CRITICAL)
-
+        new_data = None
         while True:
 
             try:
                 snapshot = next(snapshots)
-                x = np.array(list(self.snapshot2vec(snapshot, odds)))[:,0]
+                x = list(self.snapshot2vec(snapshot, odds))
+                x = np.array([a[0] for a in x])
 
                 self.check_events(x)
+
+                if new_data is None:
+                    new_data1 = get_team_stats(x[0], 0, champ_comp, champ_counters, champ_syns, champ_wrs,
+                                               champ_early_late, 19)
+                    new_data2 = get_team_stats(x[0], 1, champ_comp, champ_counters, champ_syns, champ_wrs,
+                                               champ_early_late, 19)
+                    new_data = np.concatenate([new_data1, new_data2], axis=0)
+
+                x[:, InputWinPred.indices['start']['champ_wr']:InputWinPred.indices['end']['champ_wr']] = np.tile(new_data, [x.shape[0],1])
                 x = InputWinPred().scale_inputs(x)
                 pred_odds_blue = [model.bayes_predict_sym(np.array([x_]), 1024)[0] for x_ in x]
             except GameNotStarted:
@@ -609,10 +630,10 @@ class ScrapeEsportsData:
 
                 acc = 1.0
                 if scraped_odds_blue[i] * pred_odds_blue > scraped_odds_red[i] * (1-pred_odds_blue):
-                    print("\tYou should bet on BLUE. Expected payout: " + str(scraped_odds_blue[i] * pred_odds_blue)
+                    print("\tYou should bet on BLUE. Expected payout: " + str(scraped_odds_blue[i] * pred_odds_blue * 0.95)
                           + f" scaled payout: {acc * scraped_odds_blue[i] * pred_odds_blue}")
                 else:
-                    print("\tYou should bet on RED. Expected payout: " + str(scraped_odds_red[i] * (1-pred_odds_blue))
+                    print("\tYou should bet on RED. Expected payout: " + str(scraped_odds_red[i] * (1-pred_odds_blue) * 0.95)
                           + f" scaled payout: {acc * scraped_odds_red[i] * (1-pred_odds_blue)}")
                 print("\n")
             print("-" * 100)
@@ -666,7 +687,7 @@ class ScrapeEsportsData:
         for gameId, game_result in zip(gameIds, game_results):
             self.reset()
             try:
-                data_x,meta = await self.game2vec_sync(gameId)
+                data_x,meta = await self.game2vec(gameId)
                 # data_x = np.array([list(frame_gen) for ss_gen in data_x for frame_gen in ss_gen], dtype=np.uint64)
                 data_x = np.reshape(data_x, (-1, InputWinPred.len))
                 # if champs is not None:
@@ -685,7 +706,16 @@ class ScrapeEsportsData:
                 )
                 continue
         print(f"Complete. Error matches: {error_matches}")
-        return np.concatenate(x, axis=0), np.concatenate(meta_x, axis=0)
+        try:
+            np.save("tmp1.npz", x)
+            np.save("tmp2.npz", meta_x)
+        except:
+            pass
+        x = [a for a in x if a.shape[0]!=0]
+        meta_x = [a for a in meta_x if a.shape[0]!=0]
+        x = np.concatenate(x, axis=0)
+        meta_x = np.concatenate(meta_x, axis=0)
+        return x, meta_x
 
     def get_schedule(self, region):
         schedule = []
@@ -986,14 +1016,262 @@ class ScrapePlayerStats:
             return dict(zip(champs_arr, stats_arr.tolist()))
 
 
+def get_team_stats(game_row, side, champ_comp, champ_counters, champ_syns, champ_wrs, champ_early_late, patch):
 
+    start_index = InputWinPred.indices["start"]["champs"]
+    end_index = InputWinPred.indices["half"]["champs"]
+    opp_start_index = InputWinPred.indices["half"]["champs"]
+    opp_end_index = InputWinPred.indices["end"]["champs"]
+
+    new_data = []
+    if side == 1:
+        start_index, opp_start_index = opp_start_index, start_index
+        end_index, opp_end_index = opp_end_index, end_index
+
+    for lane, champ in enumerate(game_row[start_index:end_index]):
+        champ_id = int(ChampManager().lookup_by("int", champ)["id"])
+        new_data.extend(champ_comp[str(champ_id)])
+        try:
+            new_data.extend(champ_wrs[str((champ_id, patch, lane))])
+        except KeyError:
+            new_data.extend([0.0,0.0])
+        new_data.extend(champ_early_late[str(champ_id)])
+        for team_champ in game_row[start_index:end_index]:
+            if team_champ == champ:
+                continue
+            team_champ_id = int(ChampManager().lookup_by("int", team_champ)["id"])
+            new_data.append(float(champ_syns[str((champ_id, team_champ_id))]))
+        for opp_lane, opp_champ in enumerate(game_row[opp_start_index:opp_end_index]):
+            opp_champ_id = int(ChampManager().lookup_by("int", opp_champ)["id"])
+            if opp_lane == lane:
+                new_data.append(champ_counters[str((champ_id, opp_champ_id))][0])
+            else:
+                new_data.append(champ_counters[str((champ_id, opp_champ_id))][1])
+    return np.ravel(new_data)
+
+
+def build_champ_wr_table():
+
+    ["champ", "patch", "lane", "num_games", "won", "num_length0_15", "num_length15_20",
+     "num_length20_25", "num_length25_30", "num_length30_35", "num_length35_40", "num_length40+",
+     "won_length0_15", "won_length15_20",
+     "won_length20_25", "won_length25_30", "won_length30_35", "won_length35_40", "won_length40+",
+     "top_wr"]
+
+
+    champ_i = 0
+    lane_i = 2
+    patch_i = 1
+
+    champ_early_late = dict()
+    champ_wr_by_patch = dict()
+
+    champs_stats = np.load("champ_stats.npz", allow_pickle=True)['arr_0']
+    import pandas as pd
+    champ_comp_stats = pd.read_csv('training_data/win_pred/competitive_champs.csv')
+    for col in ['KDA', 'CSM', 'DPM', 'CSD@15', 'WR']:
+        champ_comp_stats[col] = (champ_comp_stats[col] - champ_comp_stats[col].mean()) / champ_comp_stats[col].std()
+    champ_comp_stats.to_csv('training_data/win_pred/competitive_champs_norm.csv')
+
+    num_games_i_champ_stats = 3
+    num_wins_i_champ_stats = 4
+    cum_by_patch = dict()
+    champ_total_wr = dict()
+    for row in champs_stats:
+        champ = row[champ_i]
+        if champ not in champ_early_late:
+            champ_early_late[champ] = np.array([0]*14)
+        champ_early_late[champ] += np.array(row[6:20])
+        key = champ,row[patch_i], row[lane_i]
+        patch_wins = row[num_wins_i_champ_stats]
+        patch_games = row[num_games_i_champ_stats]
+        cum_key = champ,row[lane_i]
+        if cum_key not in cum_by_patch:
+            cum_by_patch[cum_key] = np.array([1,1])
+        if champ not in champ_total_wr:
+            champ_total_wr[champ] = np.array([0,0])
+        if key not in champ_wr_by_patch:
+            cum_wr = cum_by_patch[champ, row[lane_i]] + np.array([patch_wins, patch_games])
+            cum_wr = cum_wr[0]/cum_wr[1]
+            champ_wr = patch_wins/patch_games
+            champ_wr_by_patch[key] = [champ_wr, cum_wr]
+        champ_total_wr[champ] += np.array([patch_wins,patch_games])
+        cum_by_patch[cum_key] += np.array([patch_wins, patch_games])
+    champ_wr_by_patch = {str(k):(np.array(v)-0.5)/0.1 for k,v in champ_wr_by_patch.items()}
+    champ_total_wr = {k:v[0]/v[1] for k,v in champ_total_wr.items()}
+
+
+    champ_early_late = build_early_late_stats(champ_early_late, champ_total_wr)
+
+    syn_stats, counter_stats = build_syn_counter_stats(champ_total_wr)
+
+
+    # champ_early_late_pd = pd.Dataframe.from_dict(champ_early_late)
+    # champ_early_late_pd.to_csv('champ_early_late')
+    with open(f'champ_early_late.npz', 'wb') as fp:
+        np.savez_compressed(fp, **champ_early_late)
+    with open(f'syn_stats.npz', 'wb') as fp:
+        np.savez_compressed(fp, **syn_stats)
+    with open(f'counter_stats.npz', 'wb') as fp:
+        np.savez_compressed(fp, **counter_stats)
+    with open(f'champ_wr_by_patch.npz', 'wb') as fp:
+        np.savez_compressed(fp, **champ_wr_by_patch)
+    print('all done')
+
+
+def build_early_late_stats(champ_early_late, champ_total_wr):
+    for champ in champ_early_late:
+        wrs = champ_early_late[champ][7:] / champ_early_late[champ][:7]
+        wrs_relative = wrs - champ_total_wr[champ]
+        champ_early_late[champ] = wrs_relative
+
+    champ_early_late_arr = np.array(list([[k, *v] for k, v in champ_early_late.items()]))
+    champ_ids = champ_early_late_arr[:, :1]
+    early_late = champ_early_late_arr[:, 1:]
+    early_late_mean = np.mean(early_late[:, 1:])
+    early_late_std = np.std(early_late[:, 1:])
+    early_late = [(v - early_late_mean) / early_late_std for v in early_late]
+    champ_early_late = np.concatenate([champ_ids, early_late], axis=1)
+    champ_early_late = {str(int(c[0])): c[1:] for c in champ_early_late}
+    return champ_early_late
+
+
+def relative_counter_stats(result_stats, champ_total_wrs):
+    result = []
+    for champ_id, champ in result_stats.items():
+        current_champ_diffs_l = []
+        current_champ_diffs_nl = []
+        current_champ_opp_ids = []
+        current_champ_ids = []
+        for opp_id, team_champ in result_stats[champ_id].items():
+            try:
+                expected_wr = champ_total_wrs[champ_id] / (champ_total_wrs[champ_id] + champ_total_wrs[
+                    opp_id])
+            except KeyError:
+                continue
+            actual_wr_lane_opp = result_stats[champ_id][opp_id][0][1] / result_stats[champ_id][
+                opp_id][0][0]
+            actual_wr_non_lane_opp = result_stats[champ_id][opp_id][1][1] / result_stats[champ_id][
+                opp_id][1][0]
+            diff_lane_opp = actual_wr_lane_opp - expected_wr
+            diff_non_lane_opp = actual_wr_non_lane_opp - expected_wr
+            current_champ_diffs_l.append(diff_lane_opp)
+            current_champ_diffs_nl.append(diff_non_lane_opp)
+            current_champ_opp_ids.append(opp_id)
+            current_champ_ids.append(champ_id)
+
+        current_champ_diffs_l = (current_champ_diffs_l - np.mean(current_champ_diffs_l)) / np.std(current_champ_diffs_l)
+        current_champ_diffs_nl = (current_champ_diffs_nl - np.mean(current_champ_diffs_nl)) / np.std(
+            current_champ_diffs_nl)
+        new_data = np.transpose([current_champ_ids, current_champ_opp_ids, current_champ_diffs_l, current_champ_diffs_nl], [1, 0])
+        result.append(new_data)
+
+    result = np.concatenate(result, axis=0)
+    result_dict = {str((int(my_champ), int(opp_champ))): (wr_lane, wr_nl) for my_champ, opp_champ, wr_lane,
+                                                                       wr_nl in result}
+    return result_dict
+
+
+def build_syn_counter_stats(champ_total_wrs):
+    syn_stats = np.load("syn_stats.npz", allow_pickle=True)['arr_0']
+    counter_stats = np.load("counter_stats.npz", allow_pickle=True)['arr_0']
+    syn_stats_aggregated = dict()
+    counter_stats_aggregated = dict()
+    champ_i = 0
+    opp_champ_i = 2
+    num_games_i = 5
+    num_wins_i = 6
+    lane_champ1_i = 3
+    lane_champ2_i = 4
+
+    for stats, result_stats in zip([syn_stats, counter_stats], [syn_stats_aggregated, counter_stats_aggregated]):
+        for row in stats:
+            champ = row[champ_i]
+            opp_champ = row[opp_champ_i]
+            if champ not in result_stats:
+                result_stats[champ] = dict()
+            if opp_champ not in result_stats[champ]:
+                result_stats[champ][opp_champ] = np.array([[1, 1], [1, 1]])
+            if row[lane_champ1_i] == row[lane_champ2_i]:
+                result_stats[champ][opp_champ][0] += np.array([row[num_games_i], row[num_wins_i]])
+            else:
+                result_stats[champ][opp_champ][1] += np.array([row[num_games_i], row[num_wins_i]])
+    syn_stats = relative_syn_stats(syn_stats_aggregated, champ_total_wrs)
+    counter_stats = relative_counter_stats(counter_stats_aggregated, champ_total_wrs)
+    return syn_stats, counter_stats
+
+
+def relative_syn_stats(result_stats, champ_total_wrs):
+    result = []
+
+    for champ_id, champ in result_stats.items():
+        current_champ_diffs = []
+        current_champ_team_ids = []
+        current_champ_ids = []
+        for team_champ_id, team_champ in result_stats[champ_id].items():
+            try:
+                expected_wr = (champ_total_wrs[champ_id] + champ_total_wrs[team_champ_id])/2
+            except KeyError:
+                continue
+            actual_wr = result_stats[champ_id][team_champ_id][1][1] / result_stats[champ_id][team_champ_id][1][0]
+            diff = actual_wr - expected_wr
+            current_champ_diffs.append(diff)
+            current_champ_team_ids.append(team_champ_id)
+            current_champ_ids.append(champ_id)
+
+        current_champ_diffs = (current_champ_diffs - np.mean(current_champ_diffs))/np.std(current_champ_diffs)
+        new_data = np.transpose([current_champ_ids, current_champ_team_ids, current_champ_diffs], [1,0])
+        result.append(new_data)
+
+    result = np.concatenate(result, axis=0)
+    result_dict = {str((int(my_champ), int(team_champ))):wr for my_champ, team_champ, wr in result}
+    return result_dict
+
+
+def fold_in_champ_wrs():
+    import pandas as pd
+    champ_comp = pd.read_csv('training_data/win_pred/competitive_champs_norm.csv')
+    champ_comp = champ_comp.to_numpy()
+    champ_comp = {ChampManager().lookup_by('name',c[1])['id']:c[2:] for c in champ_comp}
+    champ_wrs = np.load("training_data/win_pred/champ_wr_by_patch.npz")
+    champ_early_late = np.load("training_data/win_pred/champ_early_late.npz")
+    champ_syns = np.load("training_data/win_pred/syn_stats.npz")
+    champ_counters = np.load("training_data/win_pred/counter_stats.npz")
+
+    X = np.load("training_data/win_pred/train_new_winpred_odds.npz")['arr_0']
+    meta = np.load("training_data/win_pred/train_new_meta.npz")['arr_0']
+    gameids = meta[:, 0]
+    patches = meta[:,2]
+    gameids2champwr = dict()
+    new_X = []
+    while X.shape[0] > 0:
+        game_row = X[0]
+        game_id = gameids[0]
+        patch = patches[0]
+        if str(game_id) in gameids2champwr:
+            new_data = gameids2champwr[str(game_id)]
+        else:
+            new_data1 = get_team_stats(game_row, 0, champ_comp, champ_counters, champ_syns, champ_wrs,
+                                       champ_early_late, patch)
+            new_data2 = get_team_stats(game_row, 1, champ_comp, champ_counters, champ_syns, champ_wrs,
+                                       champ_early_late, patch)
+            new_data = np.concatenate([new_data1,new_data2],axis=0)
+            gameids2champwr[str(game_id)] = new_data
+        # new_row = np.concatenate([game_row,new_data], axis=0)
+        # new_X.append(new_row)
+        X = X[1:]
+        gameids = gameids[1:]
+        patches = patches[1:]
+
+    with open("training_data/win_pred/wrs_dict.npz", "wb") as writer:
+        np.savez_compressed(writer, **gameids2champwr)
 
 
 
 
 async def run_async():
     s = ScrapeEsportsData()
-    s.scrape_games()
+    await s.scrape_games()
     # a = s.fetch_payload(url="https://feed.lolesports.com/livestats/v1/window/104174613353783764")
 
     # x = await s.game2vec(104174613333794954)
@@ -1002,97 +1280,18 @@ async def run_async():
 
 
 if __name__ == "__main__":
-    #
-    #
-    #
-    # gameIds = [104242514815381917, 104242514815381915, 104242514815381913, 104242514815381919, 104242514815381911,
-    #                    104242514815381921, 104242514816168363, 104242514816168357, 104242514816168355, 104242514816168365,
-    #                    104242514816168361, 104242514816168359, 104251966834409897, 104252200467817589, 104242514817020336,
-    #                    104242514817020337, 104242514817020338, 104242514817020339, 104242514817020342, 104242514817020343,
-    #                    104242514817020344, 104242514817020348, 104242514817020349, 104242514817020350, 104242514817020351]
-    # game_results = [0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0]
-    gameIds = [
-        #LCS
-        104174992730350781, 104174992730350782, 104174992730350783,
-               104174992730350775, 104174992730350776, 104174992730350777, 104174992730350778, 104174992730350779,
-               104174992730350787, 104174992730350788, 104174992730350789,
-               104174992730350793, 104174992730350794, 104174992730350795,
-               104174992730350805, 104174992730350806, 104174992730350807, 104174992730350808,
-    104174992730350799, 104174992730350800, 104174992730350801,
-    104174992730350817,104174992730350818,104174992730350819,
-    104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
-    104174992730350829,104174992730350830,104174992730350831,104174992730350832,
-    104174992730350823,104174992730350824,104174992730350825,104174992730350826,104174992730350827,
-    104174992730350835,104174992730350836,104174992730350837,104174992730350838,104174992730350839,
-    #LCK
-    104174613333860706, 104174613333860707,
-    104174613333926330, 104174613333926331, 104174613333926332,
-    104174613333860666,104174613333860667,
-    104174613333860746, 104174613333860747,
-    104174613353718215,104174613353783752,104174613353783753,
-    104174613353783755,104174613353783756,104174613353783757,
-
-    #LPL
-    #does not have live stats
-    # 104282610721221959,104282610721221960,104282610721221961,104282610721221962,
-    # 104282610721221965,104282610721221966,104282610721221967,104282610721221968,
-    # 104282610721221971,104282610721221972,104282610721221973,104282610721221974,
-    # 104282610721221977,104282610721221978,104282610721221979,
-    #LEC
-    104169295295132788,104169295295132789,104169295295132790,
-    104169295295132800, 104169295295132801,104169295295132802,104169295295132803,
-    104169295295132794,104169295295132795,104169295295132796,
-    104169295295198348,104169295295198349,104169295295198350,104169295295198351,
-    104169295295132806,104169295295132807,104169295295198344,104169295295198345,104169295295198346,
-    104169295295198354,104169295295198355,104169295295198356,
-    104169295295198360,104169295295198361,104169295295198362,104169295295198363,104169295295198364,
-    104169295295198366,104169295295198367,104169295295198368,
-               ]
-    game_results = [
-        #LCS
-        0,0,1,
-                    1,0,1,0,1,
-                    0,0,1,
-                    1,0,1,
-                    0,1,1,0,
-    1,1,1,
-    1,0,0,
-    1,1,1,1,1,
-    0,0,0,1,
-    0,1,1,1,1,
-        1,1,0,1,0,
-    #LCK
-    1,0,
-    0,0,1,
-    0,1,
-    0,1,
-    0,1,0,
-    1,1,1,
 
 
-    #LPL
-    # 1,1,0,0,
-    # 1,1,0,1,
-    # 0,1,0,1,
-    # 0,0,1,
-    #LEC
-    0,0,1,
-    1,0,1,1,
-    0,0,0,
-    0,1,0,0,
-    0,1,0,1,0,
-    1,0,0,
-    1,0,0,0,0,
-    1,0,0
-    ]
+    # build_champ_wr_table()
+    # fold_in_champ_wrs()
     s = ScrapeEsportsData()
-    s.scrape_games()
-    # s = ScrapeChampStats()
+    # s.scrape_games()
+    # s = ScrapePlayerStats()
     # s.scrape_all_stats()
 
     # s = ScrapeEsportsData()
     # s.scrape_all_stats()
-    print('hi')
+    # print('hi')
     # gameIds = [104242514815381919]
     # game_results = [0]
 
@@ -1102,7 +1301,7 @@ if __name__ == "__main__":
     #     console.log(a[i].textContent)
 
 
-    # s.live_game2odds(0)
+    s.live_game2odds(0)
 
     # x = s.tournament2vec(gameIds, game_results)
     # out_dir = app_constants.train_paths["win_pred"]
@@ -1170,7 +1369,7 @@ if __name__ == "__main__":
     #
 
 
-    asyncio.run(run_async())
+    # asyncio.run(run_async())
 
 
     #

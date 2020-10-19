@@ -9,7 +9,7 @@ import random
 from scipy.special import softmax, expit
 from sklearn.metrics import auc, \
     classification_report, precision_recall_curve, precision_recall_fscore_support
-
+import pandas as pd
 from constants.ui_constants import ResConverter
 from train_model import generate, data_loader
 from train_model.model import *
@@ -299,11 +299,30 @@ class WinPredTrainer(Trainer):
         for config in self.network_config:
             self.network_config[config]["noise"] = InputWinPred.scale_rel(self.network_config[config]["noise"])
 
+
+
+
+
         # game_constants.min_clip_scaled = dict()
         # game_constants.max_clip_scaled = dict()
         #
         # game_constants.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
         # game_constants.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
+
+    def get_train_data(self, num_examples_per_item):
+        new_X = np.empty((num_examples_per_item, InputWinPred.len),dtype=np.float32)
+        indices = np.random.randint(self.X.shape[0], size=num_examples_per_item)
+        X = self.X[indices]
+        new_X[:,:X.shape[1]] = X
+
+        gameids = self.train_gameids[indices]
+        wrs = np.array([self.wrs[str(gameid)] for gameid in gameids])
+        new_X[:,X.shape[1]:] = wrs
+        length = new_X.shape[0]
+        X, Y = self.flip_data(new_X)
+        X = np.reshape(np.concatenate(np.array([X[:length], X[length:]]), axis=1), (-1, InputWinPred.len))
+        Y = np.reshape(np.concatenate([Y[:length], Y[length:]], axis=1), (-1, 2))
+        return X,Y
 
 
 
@@ -323,7 +342,7 @@ class WinPredTrainer(Trainer):
                         model.set_weights(embeddingWeights, self.opp_champ_embs)
                     scores = []
                     for epoch in range(self.num_epochs):
-                        x, y = self.get_train_data_balanced(500000)
+                        x,y = self.get_train_data(10000)
                         model.fit(x, y, n_epoch=1, shuffle=False, validation_set=None,
                                   show_metric=True, batch_size=self.batch_size, run_id='whaddup_glib_globs' + str(epoch),
                                   callbacks=self.monitor_callback)
@@ -359,46 +378,23 @@ class WinPredTrainer(Trainer):
     #     self.Y_test = self.X_test = []
     #     self.build_new_model()
 
-
     def train(self):
-        gameIds = {
-            # LCS
-            104174992730350781, 104174992730350782, 104174992730350783,
-            104174992730350775, 104174992730350776, 104174992730350777, 104174992730350778, 104174992730350779,
-            104174992730350787, 104174992730350788, 104174992730350789,
-            104174992730350793, 104174992730350794, 104174992730350795,
-            104174992730350805, 104174992730350806, 104174992730350807, 104174992730350808,
-            104174992730350799, 104174992730350800, 104174992730350801,
-            104174992730350817, 104174992730350818, 104174992730350819,
-            104174992730350811, 104174992730350812, 104174992730350813, 104174992730350814, 104174992730350815,
-            104174992730350829, 104174992730350830, 104174992730350831, 104174992730350832,
-            104174992730350823, 104174992730350824, 104174992730350825, 104174992730350826, 104174992730350827,
-            104174992730350835, 104174992730350836, 104174992730350837, 104174992730350838, 104174992730350839,
-            # LCK
-            104174613333860706, 104174613333860707,
-            104174613333926330, 104174613333926331, 104174613333926332,
-            104174613333860666, 104174613333860667,
-            104174613333860746, 104174613333860747,
-            104174613353718215, 104174613353783752, 104174613353783753,
-            104174613353783755, 104174613353783756, 104174613353783757,
 
-            # LEC
-            104169295295132788, 104169295295132789, 104169295295132790,
-            104169295295132800, 104169295295132801, 104169295295132802, 104169295295132803,
-            104169295295132794, 104169295295132795, 104169295295132796,
-            104169295295198348, 104169295295198349, 104169295295198350, 104169295295198351,
-            104169295295132806, 104169295295132807, 104169295295198344, 104169295295198345, 104169295295198346,
-            104169295295198354, 104169295295198355, 104169295295198356,
-            104169295295198360, 104169295295198361, 104169295295198362, 104169295295198363, 104169295295198364,
-            104169295295198366, 104169295295198367, 104169295295198368,
-        }
         print("Loading elite train data")
-        X_pro = np.load("training_data/win_pred/train_winpred_odds.npz")['arr_0']
-        gameids = np.load("training_data/win_pred/train_winpred_gameids.npz")['arr_0']
+        X_pro = np.load("training_data/win_pred/train_new_winpred_odds.npz")['arr_0']
+
+
+        gameids = np.load("training_data/win_pred/train_new_meta.npz")['arr_0']
+        self.wrs = dict(np.load("training_data/win_pred/wrs_dict.npz"))
+        gameids = gameids[:,0]
+        # X_pro = X_pro[:1000]
+        # gameids = gameids[:1000]
+
         # X_pro = X_pro[::10]
         # gameids = gameids[::10]
-        X_pro, X_test_raw_pro = X_pro[:int(0.8*X_pro.shape[0])], X_pro[int(0.8*X_pro.shape[0]):]
-        train_gameids, test_gameids = gameids[:int(0.8*X_pro.shape[0])], gameids[int(0.8*X_pro.shape[0]):]
+        train_test_cut = int(0.9*X_pro.shape[0])
+        X_pro, X_test_raw_pro = X_pro[:train_test_cut], X_pro[train_test_cut:]
+        self.train_gameids, self.test_gameids = gameids[:train_test_cut], gameids[train_test_cut:]
         # self.X = np.load("training_data/win_pred/train_winpred_odds.npz")['arr_0']
         # gameids = np.load("training_data/win_pred/train_elite_gameids.npz")['arr_0']
 
@@ -414,12 +410,12 @@ class WinPredTrainer(Trainer):
         # X_test_raw_pro = np.load("training_data/win_pred/test_winpred.npz")['arr_0']
         # test_gameids = np.load("training_data/win_pred/test_winpred_gameids.npz")['arr_0']
         # X_test_raw_pro = np.array(self.input2inputdelta(X_test_raw_pro))
-        # self.X = X_pro
+        self.X = X_pro
 
         self.X = InputWinPred().scale_inputs(X_pro)
 
-        self.Y_indices = [list(range(0, self.X.shape[0])), list(range(self.X.shape[0], 2 * self.X.shape[0]))]
-        self.X, self.Y = self.flip_data(self.X)
+        # self.Y_indices = [list(range(0, self.X.shape[0])), list(range(self.X.shape[0], 2 * self.X.shape[0]))]
+        # self.X, self.Y = self.flip_data(self.X)
 
 
 
@@ -493,22 +489,31 @@ class WinPredTrainer(Trainer):
             max_lvl = np.max(test_set_type[:, InputWinPred.indices["start"]["lvl"]:InputWinPred.indices["end"]["lvl"]],
                              axis=1)
 
-            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                      num_drags_killed == 1)
-            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                      num_kills == 1)
-            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                       num_towers == 1)
-            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, test_gameids, max_lvl == 1)
-            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, self.test_gameids, max_lvl == 1)
+            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                       max_lvl == 6)
-            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                        max_lvl == 11)
-            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type, test_gameids,
+            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
                                                                                        max_lvl == 16)
 
         self.X_test = InputWinPred().scale_inputs(X_test_raw_pro)
+        self.add_wrs_to_test()
         self.build_new_model()
+
+    def add_wrs_to_test(self):
+        new_X = []
+        for x, gameid in zip(self.X_test, self.test_gameids):
+            wrs = self.wrs[str(gameid)]
+            new_x = np.concatenate([x,wrs],axis=0)
+            new_X.append(new_x)
+        self.X_test = np.array(new_X)
 
 
     def process_win_pred_measure(self, X, gameids, cond):
@@ -789,7 +794,7 @@ class WinPredTrainer(Trainer):
         Y_result = [0,1] * (len(X_result) // 2) + [1,0] * (len(X_result) // 2)
         Y_result = np.reshape(Y_result, (-1, 2))
         # Y_result = np.reshape(Y_result, (-1, 1))
-        
+
         return X_result, Y_result
 
 
@@ -2250,12 +2255,12 @@ if __name__ == "__main__":
 
     # t = ItemImgTrainer()
     # t.build_new_img_model()
-    # s = ChampImgTrainer()
-    # s.build_new_img_model()
+    s = ChampImgTrainer()
+    s.build_new_img_model()
     # s = SelfTrainer()
     # s.build_new_img_model()
-    t = WinPredTrainer()
-    t.train()
+    # t = WinPredTrainer()
+    # t.train()
     #
     # t.build_champ_embeddings_model()
 
@@ -2328,12 +2333,3 @@ if __name__ == "__main__":
     # ax.set_zlabel('Z Label')
     #
     # plt.show()
-
-
-
-
-
-
-
-
-

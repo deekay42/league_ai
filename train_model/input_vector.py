@@ -323,56 +323,16 @@ class InputWinPred():
     indices["half"]["elder_time_left"] = indices["start"]["elder_time_left"] + 1
     indices["end"]["elder_time_left"] = indices["half"]["elder_time_left"]
 
-    # indices["start"]["total_gold_diff"] = indices["end"]["blue_side"]
-    # indices["half"]["total_gold_diff"] = indices["start"][
-    #                                          "total_gold_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["total_gold_diff"] = indices["start"]["total_gold_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["cs_diff"] = indices["end"]["total_gold_diff"]
-    # indices["half"]["cs_diff"] = indices["start"]["cs_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["cs_diff"] = indices["start"]["cs_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["lvl_diff"] = indices["end"]["cs_diff"]
-    # indices["half"]["lvl_diff"] = indices["start"]["lvl_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["lvl_diff"] = indices["start"]["lvl_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["kills_diff"] = indices["end"]["lvl_diff"]
-    # indices["half"]["kills_diff"] = indices["start"]["kills_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["kills_diff"] = indices["start"]["kills_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["deaths_diff"] = indices["end"]["kills_diff"]
-    # indices["half"]["deaths_diff"] = indices["start"]["deaths_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["deaths_diff"] = indices["start"]["deaths_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["assists_diff"] = indices["end"]["deaths_diff"]
-    # indices["half"]["assists_diff"] = indices["start"]["assists_diff"] + game_constants.CHAMPS_PER_TEAM
-    # indices["end"]["assists_diff"] = indices["start"]["assists_diff"] + game_constants.CHAMPS_PER_GAME
-    #
-    # indices["start"]["baron_diff"] = indices["end"]["assists_diff"]
-    # indices["half"]["baron_diff"] = indices["start"]["baron_diff"] + 1
-    # indices["end"]["baron_diff"] = indices["start"]["baron_diff"] + 2
-    #
-    # indices["start"]["elder_diff"] = indices["end"]["baron_diff"]
-    # indices["half"]["elder_diff"] = indices["start"]["elder_diff"] + 1
-    # indices["end"]["elder_diff"] = indices["start"]["elder_diff"] + 2
-    #
-    # indices["start"]["dragons_killed_diff"] = indices["end"]["elder_diff"]
-    # indices["half"]["dragons_killed_diff"] = indices["start"]["dragons_killed_diff"] + 4
-    # indices["end"]["dragons_killed_diff"] = indices["start"]["dragons_killed_diff"] + 8
-    #
-    # indices["start"]["dragon_soul_type_diff"] = indices["end"]["dragons_killed_diff"]
-    # indices["half"]["dragon_soul_type_diff"] = indices["start"]["dragon_soul_type_diff"] + 4
-    # indices["end"]["dragon_soul_type_diff"] = indices["start"]["dragon_soul_type_diff"] + 8
-    #
-    # indices["start"]["turrets_destroyed_diff"] = indices["end"]["dragon_soul_type_diff"]
-    # indices["half"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 1
-    # indices["end"]["turrets_destroyed_diff"] = indices["start"]["turrets_destroyed_diff"] + 2
-
     indices["start"]["team_odds"] = indices["end"]["elder_time_left"]
     indices["half"]["team_odds"] = indices["start"]["team_odds"] + 1
     indices["end"]["team_odds"] = indices["start"]["team_odds"] + 2
 
-    len = indices["end"]["team_odds"]
+    # competitive 5, wr 2, early_late 7, syn 4, counter 5,
+    indices["start"]["champ_wr"] = indices["end"]["team_odds"]
+    indices["half"]["champ_wr"] = indices["start"]["champ_wr"] + game_constants.CHAMPS_PER_TEAM*23
+    indices["end"]["champ_wr"] = indices["half"]["champ_wr"] + game_constants.CHAMPS_PER_TEAM*23
+
+    len = indices["end"]["champ_wr"]
 
     numeric_slices = {'total_gold',
                       'cs',
@@ -382,16 +342,18 @@ class InputWinPred():
                       'assists',
                       'team_odds',
                       'turrets_destroyed',
-                      'dragons_killed', "current_health", "max_health", "baron_countdown", "dragon_countdown",
-                      "elder_countdown",
-                      "baron_time_left", "elder_time_left"}
+                      'dragons_killed',
+                      # "current_health", "max_health", "baron_countdown", "dragon_countdown","elder_time_left",
+                      # "elder_countdown",
+                      # "baron_time_left", }
+                      }
 
     all_slices = {"champs", "total_gold", "cs",
                   "lvl", "kills", "deaths", "assists",
                   "baron", "elder", "dragons_killed", "team_odds",
                   "dragon_soul_type", "turrets_destroyed", "blue_side", "current_health", "max_health",
                   "baron_countdown", "dragon_countdown","elder_countdown",
-                      "baron_time_left", "elder_time_left"}
+                      "baron_time_left", "elder_time_left", "champ_wr"}
 
     nonsymmetric_slices = {"baron_countdown", "dragon_countdown","elder_countdown",
                       "baron_time_left", "elder_time_left"}
