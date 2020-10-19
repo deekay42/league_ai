@@ -458,6 +458,8 @@ class WinPredNetwork(LolNetwork):
         dragon_soul_type = in_vec[:,InputWinPred.indices["start"]["dragon_soul_type"]:InputWinPred.indices["end"]["dragon_soul_type"]]
         turrets_destroyed = in_vec[:, InputWinPred.indices["start"]["turrets_destroyed"]:InputWinPred.indices["end"]["turrets_destroyed"]]
         blue_side = in_vec[:, InputWinPred.indices["start"]["blue_side"]:InputWinPred.indices["end"]["blue_side"]]
+        champ_wr = in_vec[:, InputWinPred.indices["start"]["champ_wr"]:InputWinPred.indices["end"][
+            "champ_wr"]]
 
         dragons_killed = tf.identity(dragons_killed, name='dragons_killed')
         dragons_killed = self.apply_noise(dragons_killed, "dragons_killed")
@@ -567,6 +569,7 @@ class WinPredNetwork(LolNetwork):
                 1/team2_odds,
                 # team1_total_kills,
                 # team2_total_kills,
+
                 lvl,
                 lvl_diff,
                 baron,
@@ -587,7 +590,7 @@ class WinPredNetwork(LolNetwork):
                 kills_diff,
                 deaths_diff,
                 assists_diff,
-
+                champ_wr,
                 cs_diff,
                 kills,
                 deaths,
@@ -595,13 +598,15 @@ class WinPredNetwork(LolNetwork):
                 cs
             ], mode='concat', axis=1)
 
-        extra_stats_layer = dropout(extra_stats_layer, 0.3)
+        extra_stats_layer = dropout(extra_stats_layer, 0.5)
+        champ_wr = dropout(champ_wr, 0.4)
         stats_layer = tf.identity(stats_layer, "stats")
 
         stats_layer = merge(
         [
             stats_layer,
-            extra_stats_layer
+            extra_stats_layer,
+            champ_wr
         ], mode='concat', axis=1)
 
         if self.network_config["stats_dropout"] > 0:
@@ -632,10 +637,10 @@ class WinPredNetwork(LolNetwork):
 
         net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
                                                  weights_init=variance_scaling(uniform=True)))
-        net = dropout(net, 0.5)
+        net = dropout(net, 0.6)
         net = batch_normalization(fully_connected(net, 16, bias=False, activation='relu',regularizer="L2",
                                                  weights_init=variance_scaling(uniform=True)))
-        net = dropout(net, 0.6)
+        net = dropout(net, 0.7)
         # net = fully_connected(net, 64, activation='linear')
         # net = fully_connected(net, 32, activation='linear')
         # net = fully_connected(net, 16, activation='linear')

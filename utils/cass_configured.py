@@ -1,10 +1,7 @@
 import time
-print("cass")
-starttime = time.time()
 from cassiopeia import get_default_config, set_default_region, apply_settings, Item, Patch, Tier, Division, Side, \
     get_challenger_league, LeagueEntries, get_grandmaster_league, get_master_league, Queue, Lane, get_match
 from cassiopeia.core.match import EventData
-print(f"cass Took {time.time() - starttime} s")
 
 config = get_default_config()
 # config['pipeline']['ChampionGG'] = {
@@ -13,7 +10,7 @@ config = get_default_config()
 # }
 
 config['pipeline']['RiotAPI'] = {
-    "api_key": "RGAPI-39e77a14-355a-4826-8cfb-6f5cc68bdc7c",
+    "api_key": "RGAPI-8aa60c8e-77c5-4ea8-9de4-1646faefc3a9",
     "limiting_share": 1.0,
     "request_error_handling": {
         "404": {

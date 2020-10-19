@@ -218,8 +218,9 @@ def fold_in_odds():
         with open("game_ids2odds" + league + ".json") as f:
             odds.update(json.loads(f.read()))
 
-    X = np.load("training_data/win_pred/train_winpred.npz")['arr_0']
-    gameids = np.load("training_data/win_pred/train_winpred_gameids.npz")['arr_0']
+    X = np.load("training_data/win_pred/train_new.npz")['arr_0']
+    gameids = np.load("training_data/win_pred/train_new_meta.npz")['arr_0']
+    gameids = gameids[:,0]
     # X = X[:1000]
 
 
@@ -239,11 +240,11 @@ def fold_in_odds():
         game_row[InputWinPred.indices["start"]["team_odds"]:InputWinPred.indices["start"]["team_odds"] + 2] = \
             odds_for_side
 
-    with open("training_data/win_pred/train_winpred_odds.npz", "wb") as writer:
+    with open("training_data/win_pred/train_new_winpred_odds.npz", "wb") as writer:
         np.savez_compressed(writer, X)
 
 
 
 if __name__ == "__main__":
-    # fold_in_odds()
-    asyncio.run(main())
+    fold_in_odds()
+    # asyncio.run(main())

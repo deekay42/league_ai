@@ -1026,6 +1026,9 @@ if __name__ == "__main__":
     # s = train.PositionsTrainer()
     # s.train()
     l.update_roles()
+    t = train.ChampsEmbeddingTrainer()
+    t.load_champ_item_dist()
+    t.build_champ_embeddings_model()
     t = NextItemsTrainer()
     print("NOW TRAINING EARLY GAME")
     try:
@@ -1037,3 +1040,6 @@ if __name__ == "__main__":
         t.build_next_items_late_game_model()
     except Exception as e:
         print(e)
+
+    #1. uncomment positions model
+    #

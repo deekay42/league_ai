@@ -26,7 +26,13 @@ class ArtifactManager(ABC):
     def lookup_by(self, lookup, val):
         try:
             if lookup == "name":
-                return self._by[lookup][val.lower()]
+                try:
+                    return self._by[lookup][val.lower().replace(" ", "")]
+                except KeyError:
+                    for elem in self._by[lookup].values():
+                        if 'alt_name' in elem and elem['alt_name'].strip().lower() == val.strip().lower():
+                            return elem
+                    raise
             else:
                 return self._by[lookup][val]
         except KeyError as e:
@@ -63,7 +69,7 @@ class ArtifactManager(ABC):
         json_artifact["img_int"] = img_int_counter
         for lookup in self.supported_lookups:
             if lookup == "name":
-                self._by[lookup][json_artifact[lookup].lower()] = json_artifact
+                self._by[lookup][json_artifact[lookup].lower().replace(" ", "")] = json_artifact
             else:
                 self._by[lookup][json_artifact[lookup]] = json_artifact
 
