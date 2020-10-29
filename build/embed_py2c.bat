@@ -40,10 +40,13 @@ set TK_LIBRARY=C:\Program Files\Python37\tcl\tk8.6
 set TFL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\tflearn
 set PKG_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pkg_resources
 set SKL_LIBRARY=C:\Program Files\Python37\Lib\site-packages\sklearn
+set SR_LIBRARY=C:\Program Files\Python37\Lib\site-packages\screen_recorder_sdk
+set PN_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pynput
 
 python -c "from train_model import model; model.export_models()"
-
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=sklearn --hidden-import=cassiopeia --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
+echo ------------------------------------------------------  EXPORT MODELS COMPLETE ---------------------------------------------
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%PN_LIBRARY%;pynput" --add-data "%SR_LIBRARY%;screen_recorder_sdk" --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=sklearn --hidden-import=cassiopeia --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
+echo ------------------------------------------------------  PYINSTALLER COMPLETE ---------------------------------------------
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
 rmdir /s /q .\tmp_build\main\utils
@@ -52,6 +55,7 @@ rmdir /s /q .\tmp_build\main\constants
 
 mkdir tmp_build\tmp
 python "build/setup.py" build_ext --build-lib tmp_build\tmp
+echo ------------------------------------------------------  SETUP.PY COMPLETE ---------------------------------------------
 del /Q /S .\tmp_build\tmp\*.c
 del /Q /S .\tmp_build\tmp\*.pyc
 ROBOCOPY /NFL /NDL  tmp_build\tmp tmp_build\main *.* /S /MOVE
@@ -59,6 +63,7 @@ MOVE tmp_build\main tmp_build\py_libs
 echo #cython: language_level=3 >cython_main.pyx
 echo import os; os.environ["TCL_LIBRARY"]="py_libs\\tcl"; os.environ["TK_LIBRARY"]="py_libs\\tk"; import sys; sys.path = ["py_libs/base_library.zip", "py_libs"]; sys.argv = ["cython_main.pyx"]; import main; main.debug = False;print("now running py"); m = main.Main(); m.run()>>cython_main.pyx
 cython cython_main.pyx --embed
+echo ------------------------------------------------------  CYTHON COMPLETE ---------------------------------------------
 del /Q cython_main.pyx
 
 sed -i "s#int wmain.*#int runCythonCode(){  int argc = 0;  wchar_t** argv = nullptr; Py_SetPath(L\"py_libs;py_libs/base_library.zip\");#" cython_main.c
@@ -104,6 +109,8 @@ REM COPY %PYTHONDIR%\..\assets\tesseract\sep.png %OUT_DIR%\assets\tesseract
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\tessdata %OUT_DIR%\tessdata *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\fonts %OUT_DIR%\assets\fonts *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\imgs %OUT_DIR%\assets\imgs *.* /S
+ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\champs %OUT_DIR%\assets\train_imgs\champs *.* /S
+ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\items %OUT_DIR%\assets\train_imgs\items *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\item_imgs %OUT_DIR%\assets\item_imgs *.* /S
 ROBOCOPY /NFL /NDL  %PYTHONDIR%\..\assets\train_imgs\kda %OUT_DIR%\assets\train_imgs\kda *.* /S
 
