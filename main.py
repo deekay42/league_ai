@@ -160,7 +160,7 @@ class Main(FileSystemEventHandler):
         show_names_in_sb = False
         hud_scale = 0.5
         
-        self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
+        self.config = configparser.ConfigParser().read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         if self.config == []:
             logger.info("Looks like game.cfg wasnt found")
             logger.error(e)
@@ -726,11 +726,11 @@ class Main(FileSystemEventHandler):
             logger.info("Now trying to predict image")
             screenshot = heavy_imports.cv.imread(img_path)
             y_dim,x_dim,_ = screenshot.shape
-            show_names_in_sb, hud_scale = self.read_config()
-            logger.info(f"{x_dim}, {y_dim} - hud_scale: {hud_scale}, show_names: {show_names_in_sb}")
+            # show_names_in_sb, hud_scale = self.read_config()
+            # logger.info(f"{x_dim}, {y_dim} - hud_scale: {hud_scale}, show_names: {show_names_in_sb}")
             # res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
             res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=0.02,
-                                                      summ_names_displayed=show_names_in_sb)
+                                                      summ_names_displayed=False)
             self.champ_img_model.set_res_cvt(res_converter)
             self.kda_img_model.set_res_cvt(res_converter)
             self.item_img_model.set_res_cvt(res_converter)
@@ -902,8 +902,8 @@ class Main(FileSystemEventHandler):
             logger.error(e)
             logger.error(traceback.print_exc())
             out_string = "0"
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
-            f.write(out_string)
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "last"), "w") as f:
+        #     f.write(out_string)
         
         self.skipped = False
         self.skipped_item = None
@@ -958,9 +958,9 @@ class Main(FileSystemEventHandler):
 m = Main()
 # m.run()
 
-m.process_image(f"test_data/resolutions/Screen478.png")
-# for i in range(35,58):
-    # m.process_image(f"test_data/screenshots/Screen{i}.png")
+m.process_image(f"test_data/resolutions/Screen482.png")
+# for i in range(73,87):
+#     m.process_image(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
 
