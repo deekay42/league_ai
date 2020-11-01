@@ -52,16 +52,16 @@ class NoMoreItemSlots(Exception):
 
 
 class Main(FileSystemEventHandler):
-        
 
-    def __init__(self):       
+
+    def __init__(self):
         self.cv = threading.Condition()
         self.swapped = False
         self.holding_key = False
-        self.last_time_tab = 0 
+        self.last_time_tab = 0
         self.screenshot_thread = None
         self.onTimeout = False
-        self.holding_tab = False   
+        self.holding_tab = False
         # self.loldir = ""
         self.loldir = misc.get_lol_dir()
         self.listener_dir = os.path.join(self.loldir, "Screenshots")
@@ -133,7 +133,7 @@ class Main(FileSystemEventHandler):
                                 "Elixir of Wrath", "Elixir of "
                                                    "Iron",
                                 "Elixir of Sorcery"]
-        
+
         num_full_items = [0, 1, 2, 3, 4, 5]
         thresholds = [0, 0.1, 0.25, .7, 1.1]
         max_leftover_gold_threshold = [349, 499, 1999, 1999, 1999, 1999]
@@ -145,7 +145,7 @@ class Main(FileSystemEventHandler):
         self.force_late_after_standard = False
         self.force_boots_network_after_first_item = False
         self.max_leftover_gold_thresholds_dict = dict(zip(num_full_items, max_leftover_gold_threshold))
-        
+
         self.commonality_to_items = dict()
         for i in range(len(thresholds)-1):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
@@ -170,13 +170,13 @@ class Main(FileSystemEventHandler):
         logger.info("Reading config")
         show_names_in_sb = False
         hud_scale = 0.5
-        
+
         self.config.read(self.loldir + os.sep +"Config" + os.sep + "game.cfg")
         print(self.config)
         if self.config == []:
             logger.info("Looks like game.cfg wasnt found")
             return show_names_in_sb, hud_scale
-    
+
         # while True:
         #     try:
         #     # res = 1440,810
@@ -189,43 +189,43 @@ class Main(FileSystemEventHandler):
         #         print(repr(e))
         #         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "loldir"))
         #         misc.get_lol_dir()
-        
+
         try:
             logger.info("Reading summondernamesinscoreboard")
             show_names_in_sb = bool(int(self.config['HUD']['ShowSummonerNamesInScoreboard']))
         except KeyError as e:
             logger.info(repr(e))
-        
+
         try:
             logger.info("Reading mirroredscoreboard")
             flipped_sb = bool(int(self.config['HUD']['MirroredScoreboard']))
         except KeyError as e:
             logger.info(repr(e))
             flipped_sb = False
-        
+
         try:
             logger.info("Reading globalscale")
             hud_scale = float(self.config['HUD']['GlobalScale'])
         except KeyError as e:
             logger.info(repr(e))
-        
+
         if flipped_sb:
             logger.info("Scoreboard is flipped. Oh no.")
             Tk().withdraw()
             messagebox.showinfo("Error",
                                 "League AI does not work if the scoreboard is mirrored. Please untick the \"Mirror Scoreboard\" checkbox in the game settings (Press Esc while in-game)")
             raise Exception("League AI does not work if the scoreboard is mirrored.")
-        
+
         # too_many_screenshots = len(glob.glob(self.loldir+os.sep + "Screenshots" + os.sep + "*")) > 300
-        
+
         # if too_many_screenshots:
         #     logger.info("Too many screenshots. Oh no.")
         #     Tk().withdraw()
         #     messagebox.showinfo("Warning",
         #                         f"The screenshots folder at {self.loldir}\\Screenshots has over 300 screenshots. League AI may stop working if the folder grows too large. Make sure to delete old screenshots.")
-        
+
         return show_names_in_sb, hud_scale
-        
+
 
     @staticmethod
     def test_connection(timeout=0):
@@ -281,8 +281,8 @@ class Main(FileSystemEventHandler):
     def predict_next_item(self, model=None, role=None, champs=None, items=None, cs=None, lvl=None, kills=None,
                           deaths=None, assists=None,
                           delta_items=Counter()):
-        
-                
+
+
         if role is None:
             role = self.role
         if champs is None:
@@ -581,7 +581,7 @@ class Main(FileSystemEventHandler):
 
 
     def add_aux_items(self, result, next_items, abs_items):
-        if self.network_type == "starter":            
+        if self.network_type == "starter":
             if abs_items != []:
                 self.items[self.role] = abs_items[-1]
             result.extend(next_items)
@@ -655,14 +655,14 @@ class Main(FileSystemEventHandler):
         if self.onTimeout:
             return
         file_path = event.src_path
-        
-        if self.listener_dir == self.loldir:        
+
+        if self.listener_dir == self.loldir:
             if file_path[-11:] == "Screenshots":
                 self.screenshot_dir_created = True
                 return
             else:
                 return
-        
+
 
 
         # stupid busy waiting until file finishes writing
@@ -730,7 +730,7 @@ class Main(FileSystemEventHandler):
 
 
     def process_image(self, screenshot):
-        
+
         try:
             logger.info("Now trying to predict image")
             y_dim,x_dim,_ = screenshot.shape
@@ -896,14 +896,14 @@ class Main(FileSystemEventHandler):
             items_to_buy = self.deflate_items(items_to_buy)
             logger.info(f"This is the result for summ_index {self.role}: ")
             logger.info(items_to_buy)
-            
-            
-            
+
+
+
         except Exception as e:
             logger.error("Unable to predict next item")
             logger.error(e)
             logger.error(traceback.print_exc())
-            out_string = "0"                                                                
+            out_string = "0"
 
         # print(f"self.role is {self.role}")
         if self.swapped:
@@ -934,10 +934,10 @@ class Main(FileSystemEventHandler):
         result['deaths'] = np.array(out_deaths, dtype=np.uint16).tolist()
         result['assists'] = np.array(out_assists, dtype=np.uint16).tolist()
         result['items'] = [int(item['id']) for item in items_to_buy]
-        
+
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "last"), "w") as f:
             f.write(json.dumps(result))
-        
+
         self.skipped = False
         self.skipped_item = None
         self.force_late_after_standard = False
@@ -947,10 +947,10 @@ class Main(FileSystemEventHandler):
     @staticmethod
     def shouldTerminate():
         return os.path.isfile(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
-    
 
 
-    
+
+
 
     def run(self):
         sc = ScreenshotBuffer(self.cv, self.process_image)
@@ -967,9 +967,9 @@ class Main(FileSystemEventHandler):
             # print("key pressed")
             if key==keyboard.Key.tab:
                 if not self.holding_tab and time.time() - self.last_time_tab > 1:
-                    self.holding_tab = True 
+                    self.holding_tab = True
                     self.last_time_tab = time.time()
-                    
+
                     #thread might still be busy. discard request then.
                     if self.cv.acquire(blocking=False):
                         sc.new_screenshot = True
@@ -987,8 +987,8 @@ class Main(FileSystemEventHandler):
                 while not Main.shouldTerminate():
                     time.sleep(1)
         sc.join()
-        os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))   
-        print("python is now done")        
+        os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
+        print("python is now done")
         # self.process_image(event.src_path)
         # observer = Observer()
         # logger.info(f"Now listening for screenshots at: {self.listener_dir}")
@@ -999,11 +999,11 @@ class Main(FileSystemEventHandler):
         #     self.listener_dir = self.loldir
         #     logger.info(f"Error. Screenshots dir does not exist. Now listening for screenshots at: {self.listener_dir}")
         #     observer.unschedule_all()
-        #     observer.stop()   
+        #     observer.stop()
         #     observer = Observer()
         #     observer.schedule(self, path=self.listener_dir)
         #     observer.start()
-            
+
         # try:
         #     with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
         #         f.write("true")
@@ -1023,7 +1023,7 @@ class Main(FileSystemEventHandler):
         #             observer.schedule(self, path=self.listener_dir)
         #             observer.start()
         #             self.screenshot_dir_created = False
-            
+
         #     observer.stop()
         #     os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
         # except KeyboardInterrupt:
@@ -1041,7 +1041,7 @@ class ScreenshotBuffer(threading.Thread):
         self.frame_buffer = np.zeros (max_pixels * 4).astype (np.uint8)
         self.width = np.zeros (1).astype (np.int64)
         self.height = np.zeros (1).astype (np.int64)
-        
+
         # screen_recorder.enable_dev_log()
         screen_recorder.disable_log()
         self.init()
@@ -1057,7 +1057,7 @@ class ScreenshotBuffer(threading.Thread):
                 return pid
             time.sleep(1)
 
-    
+
     @staticmethod
     def findProcessIdByName(processName):
         '''
@@ -1075,24 +1075,24 @@ class ScreenshotBuffer(threading.Thread):
             except (psutil.NoSuchProcess, psutil.AccessDenied , psutil.ZombieProcess) :
                 pass
         else:
-            return -1 
+            return -1
 
-                            
+
     def init(self):
         while not Main.shouldTerminate():
             try:
-                params = screen_recorder.RecorderParams(pid=self.get_pid())    
+                params = screen_recorder.RecorderParams(pid=self.get_pid())
                 screen_recorder.init_resources(params)
                 res = screen_recorder.ScreenRecorderDLL.get_instance().GetScreenShot (1, self.frame_buffer, self.width, self.height)
                 if res != screen_recorder.RecorderExitCodes.STATUS_OK.value:
                     raise screen_recorder.RecorderError ('unable to capture FrameBuffer', res)
-                return 
+                return
             except screen_recorder.RecorderError as e:
                 logger.info("error while trying to take screenshot. trying again...")
                 logger.info(e)
                 self.free_resources()
                 time.sleep(1)
-            
+
 
     def free_resources(self):
         res = screen_recorder.free_resources()
@@ -1100,7 +1100,7 @@ class ScreenshotBuffer(threading.Thread):
     def __del__(self):
         self.free_resources()
 
-    
+
     def run(self):
         while not Main.shouldTerminate():
             with self.cv:
@@ -1118,7 +1118,7 @@ class ScreenshotBuffer(threading.Thread):
                     logger.info("run: error while trying to grab screenshot. reinitializing now")
                     self.free_resources()
                     self.init()
-                    
+
                 self.new_screenshot = False
 
 
