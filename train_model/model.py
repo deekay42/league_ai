@@ -997,90 +997,90 @@ class NextItemModel(GameModel):
         return items, np.max(y, axis=1)
 
 
-class PositionsModel(Model):
+# class PositionsModel(Model):
 
-    def __init__(self):
-        self.elements = "positions"
-        self.model_path = app_constants.model_paths["best"]["positions"]
-        super().__init__()
-        self.network = network.PositionsNetwork()
+#     def __init__(self):
+#         self.elements = "positions"
+#         self.model_path = app_constants.model_paths["best"]["positions"]
+#         super().__init__()
+#         self.network = network.PositionsNetwork()
 
-        keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
-        self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
-        self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
-        self.champ_manager = ChampManager()
-        self.spell_manager = SimpleManager("spells")
+#         keys = [(1, 0, 0, 0, 0), (0, 1, 0, 0, 0), (0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1)]
+#         self.roles = dict(zip(keys, game_constants.ROLE_ORDER))
+#         self.permutations = dict(zip(keys, [0, 1, 2, 3, 4]))
+#         self.champ_manager = ChampManager()
+#         self.spell_manager = SimpleManager("spells")
 
-        self.load_model()
-        self.lock = threading.Lock()
-
-
-    def predict(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict([x])
-                with tf.Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)[0]
-            champ_roles = [self.roles[tuple(role)] for role in final_pred]
-
-            # the champ ids need to be ints, otherwise jq fails
-            champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
-                                                                                                    :game_constants.CHAMPS_PER_TEAM]]
-            return dict(zip(champ_roles, champ_ids))
+#         self.load_model()
+#         self.lock = threading.Lock()
 
 
-    def multi_predict_perm(self, x):
-        with self.lock:
-            with self.graph.as_default():
-                with tf.Session() as sess:
-                    x = network.PositionsNetwork.permutate_inputs(x)
+#     def predict(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict([x])
+#                 with tf.Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)[0]
+#             champ_roles = [self.roles[tuple(role)] for role in final_pred]
 
-                    chunk_len = 1000
-                    x = tf.reshape(x, (-1,120,55))
-                    i = 0
-                    final_pred = []
-                    while i < int(x.shape[0]):
-                        print(i/int(x.shape[0]))
-                        next_chunk = x[i:i+chunk_len]
-                        next_chunk = tf.reshape(next_chunk, (-1,55))
-                        chunk_pred = self.model.predict(sess.run(next_chunk))
-                        i += chunk_len
-                        best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
-                        final_pred.extend(sess.run(best_perms).tolist())
-
-        result = []
-        for sorted_team in final_pred:
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-        return result
+#             # the champ ids need to be ints, otherwise jq fails
+#             champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in x[
+#                                                                                                     :game_constants.CHAMPS_PER_TEAM]]
+#             return dict(zip(champ_roles, champ_ids))
 
 
+#     def multi_predict_perm(self, x):
+#         with self.lock:
+#             with self.graph.as_default():
+#                 with tf.Session() as sess:
+#                     x = network.PositionsNetwork.permutate_inputs(x)
 
-    def multi_predict(self, x):
+#                     chunk_len = 1000
+#                     x = tf.reshape(x, (-1,120,55))
+#                     i = 0
+#                     final_pred = []
+#                     while i < int(x.shape[0]):
+#                         print(i/int(x.shape[0]))
+#                         next_chunk = x[i:i+chunk_len]
+#                         next_chunk = tf.reshape(next_chunk, (-1,55))
+#                         chunk_pred = self.model.predict(sess.run(next_chunk))
+#                         i += chunk_len
+#                         best_perms = network.PositionsNetwork.select_best_input_perm(np.array(chunk_pred))
+#                         final_pred.extend(sess.run(best_perms).tolist())
+
+#         result = []
+#         for sorted_team in final_pred:
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#         return result
+
+
+
+#     def multi_predict(self, x):
         
-        with self.lock:
-            with self.graph.as_default():
-                pred = self.model.predict(x)
-                with Session() as sess:
-                    final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
-                    final_pred = sess.run(final_pred)
-        result = []
-        for sorted_team, unsorted_team in zip(final_pred, x):
-            sorted_team_perm = [0] * 5
-            for i, pos in enumerate(sorted_team):
-                sorted_team_perm[self.permutations[tuple(pos)]] = i
-            result.append(sorted_team_perm)
-            # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
+#         with self.lock:
+#             with self.graph.as_default():
+#                 pred = self.model.predict(x)
+#                 with Session() as sess:
+#                     final_pred = network.PositionsNetwork.best_permutations_one_hot(pred)
+#                     final_pred = sess.run(final_pred)
+#         result = []
+#         for sorted_team, unsorted_team in zip(final_pred, x):
+#             sorted_team_perm = [0] * 5
+#             for i, pos in enumerate(sorted_team):
+#                 sorted_team_perm[self.permutations[tuple(pos)]] = i
+#             result.append(sorted_team_perm)
+#             # champ_roles = [self.roles[tuple(role)] for role in sorted_team]
 
-            # the champ ids need to be ints, otherwise jq fails
-            # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
-            #                                                                             :game_constants.CHAMPS_PER_TEAM]]
-            # result.append(dict(zip(champ_roles, champ_ids)))
+#             # the champ ids need to be ints, otherwise jq fails
+#             # champ_ids = [int(self.champ_manager.lookup_by("int", champ_int)["id"]) for champ_int in unsorted_team[
+#             #                                                                             :game_constants.CHAMPS_PER_TEAM]]
+#             # result.append(dict(zip(champ_roles, champ_ids)))
 
-        return result
+#         return result
 
 
 
