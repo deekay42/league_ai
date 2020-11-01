@@ -905,6 +905,7 @@ class Main(FileSystemEventHandler):
             logger.error(traceback.print_exc())
             out_string = "0"                                                                
 
+        # print(f"self.role is {self.role}")
         if self.swapped:
             out_champs = self.swap_teams(self.champs)
             out_lvl = self.swap_teams(self.lvl)
@@ -919,6 +920,8 @@ class Main(FileSystemEventHandler):
             out_deaths = self.deaths
             out_assists = self.assists
             out_role = self.role
+
+        # print(f"out_role is {out_role}")
 
         out_string = ""
         result = dict()
