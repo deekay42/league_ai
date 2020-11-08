@@ -122,6 +122,7 @@ def get_lol_dir():
             return loldir
 
 
+
 def query_lol_dir():
     Tk().withdraw()
     messagebox.showinfo("Information",

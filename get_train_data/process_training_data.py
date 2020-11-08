@@ -18,7 +18,7 @@ from utils.artifact_manager import *
 import arrow
 from utils import misc
 from train_model.model import NextItemModel
-from train_model.train import NextItemsTrainer
+from train_model.train import NextItemsTrainer, BootsTrainer, FirstItemsTrainer, StarterItemsTrainer, ChampImgTrainer
 from train_model.input_vector import Input
 import uuid
 
@@ -1020,16 +1020,17 @@ if __name__ == "__main__":
 
     start_date = cass.Patch.latest(region="NA").start
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
-    # l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
+    l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
 
     # l.start_processing([3422740467], "NA", ".", ".", ".", 1,0, "lol")
-    # s = train.PositionsTrainer()
-    # s.train()
+    s = train.PositionsTrainer()
+    s.train()
     l.update_roles()
     t = train.ChampsEmbeddingTrainer()
     t.load_champ_item_dist()
     t.build_champ_embeddings_model()
     t = NextItemsTrainer()
+
     print("NOW TRAINING EARLY GAME")
     try:
         t.build_next_items_standard_game_model()
@@ -1040,6 +1041,37 @@ if __name__ == "__main__":
         t.build_next_items_late_game_model()
     except Exception as e:
         print(e)
+    print("NOW TRAINING BOOTS GAME")
+    try:
+        b = BootsTrainer()
+        b.train()
+    except Exception as e:
+        print(e)
+
+    print("NOW TRAINING starter GAME")
+    try:
+        st = StarterItemsTrainer()
+        st.train()
+    except Exception as e:
+        print(e)
+
+    print("NOW TRAINING first item GAME")
+    try:
+        fi = FirstItemsTrainer()
+        fi.train()
+    except Exception as e:
+        print(e)
+
+    print("NOW TRAINING champ img GAME")
+    try:
+        ci = ChampImgTrainer()
+        ci.train()
+    except Exception as e:
+        print(e)
+
+
+
+
 
     #1. uncomment positions model
     #

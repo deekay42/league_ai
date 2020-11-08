@@ -1476,18 +1476,18 @@ class NextItemsTrainer(Trainer):
         self.class_weights = (1.0 - 0.99) / np.array(effective_num)
         self.class_weights = self.class_weights / np.sum(self.class_weights) * int(ItemManager().get_num("int"))
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
-        #executioners
-        self.class_weights[106] *= 3
-        #qss
-        self.class_weights[113] *= 2
-        #cull
-        self.class_weights[27] *= 2.5
-        #last whisper
-        self.class_weights[62] *= 3
-        #stopwatch
-        self.class_weights[45] *= 2
-        #dark seal
-        self.class_weights[26] *= 1.5
+        # #executioners
+        # self.class_weights[106] *= 3
+        # #qss
+        # self.class_weights[113] *= 2
+        # #cull
+        # self.class_weights[27] *= 2.5
+        # #last whisper
+        # self.class_weights[62] *= 3
+        # #stopwatch
+        # self.class_weights[45] *= 2
+        # #dark seal
+        # self.class_weights[26] *= 1.5
 
         # self.class_weights = np.array([1.0]*int(ItemManager().get_num("int")))
         self.network.network_config["class_weights"] = self.class_weights
@@ -2235,20 +2235,40 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    # t = ChampsEmbeddingTrainer()
-    # t.load_champ_item_dist()
-    # t.build_champ_embeddings_model()
+    print("NOW TRAINING BOOTS GAME")
+    try:
+        b = BootsTrainer()
+        b.train()
+    except Exception as e:
+        print(e)
 
-    #t = NextItemsTrainer()
-    #t.build_next_items_late_game_model()
-    t = FirstItemsTrainer()
-    t.train()
-    t = BootsTrainer()
-    t.train()
-    t = StarterItemsTrainer()
-    t.train()
-    # t = NextItemsTrainer()
-    # t.build_next_items_standard_game_model()
+    print("NOW TRAINING starter GAME")
+    try:
+        st = StarterItemsTrainer()
+        st.train()
+    except Exception as e:
+        print(e)
+
+    print("NOW TRAINING first item GAME")
+    try:
+        fi = FirstItemsTrainer()
+        fi.train()
+    except Exception as e:
+        print(e)
+
+    print("NOW TRAINING champ img GAME")
+    try:
+        ci = ChampImgTrainer()
+        ci.train()
+    except Exception as e:
+        print(e)
+    print("NOW TRAINING LATE GAME")
+    try:
+        t = NextItemsTrainer()
+        t.build_next_items_late_game_model()
+    except Exception as e:
+        print(e)
+
 
 
 
