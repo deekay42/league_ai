@@ -458,5 +458,95 @@
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
     "target": ["Liandry's Torment", "Luden's Echo", "Hextech GLP-800", "Lich Bane", "Hextech Protobelt-01", "Archangel's Staff", "Rod of Ages", "Liandry's Torment"]
+  },
+  "75" : {
+    "target_summ": "XinZhao",
+    "role": 1,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre"]
+  },
+  "76" : {
+    "target_summ": "MasterYi",
+    "role": 1,
+    "opp_team": ["Sion", "Kindred", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Skirmisher's Sabre: Bloodrazor: Sabre"]
+  },
+  "77" : {
+    "target_summ": "Amumu",
+    "role": 1,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Stalker's Blade: Cinderhulk", "Stalker's Blade: Runic Echoes"]
+  },
+  "78" : {
+    "target_summ": "Kayn",
+    "role": 1,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Stalker's Blade: Warrior", "Skirmisher's Sabre: Warrior"]
+  },
+  "79" : {
+    "target_summ": "Vayne",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Blade of the Ruined King"]
+  },
+  "80" : {
+    "target_summ": "Ashe",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Blade of the Ruined King", "Essence Reaver"]
+  },
+  "81" : {
+    "target_summ": "Twitch",
+    "role": 3,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Infinity Edge"]
+  },
+  "82" : {
+    "target_summ": "Fizz",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Hextech Protobelt-01"]
+  },
+  "83" : {
+    "target_summ": "Ryze",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Tear of the Goddess"]
+  },
+  "84" : {
+    "target_summ": "Talon",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Tiamat"]
+  },
+  "85" : {
+    "target_summ": "Irelia",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Blade of the Ruined King"]
+  },
+  "86" : {
+    "target_summ": "Rumble",
+    "role": 0,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Liandry's Torment"]
+  },
+  "87" : {
+    "target_summ": "Singed",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Liandry's Torment", "Rylai's Crystal Scepter"]
+  },
+  "88" : {
+    "target_summ": "Maokai",
+    "role": 2,
+    "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Bramble Vest", "Spirit Visage", "Sunfire Cape"]
+  },
+  "89" : {
+    "target_summ": "Sion",
+    "role": 2,
+    "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
+    "target": ["Adaptive Helm", "Bramble Vest", "Sunfire Cape"]
   }
 }

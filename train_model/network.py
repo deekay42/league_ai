@@ -1167,6 +1167,7 @@ class StandardNextItemNetwork(NextItemNetwork):
                                                   regularizer="L2"))
         # net = dropout(net, 0.85)
         net = batch_normalization(fully_connected(net, 256, bias=False, activation='relu', regularizer="L2"))
+
         net = self.final_layer(net)
         return regression_custom(net,original_input=in_vec, target_summ_items=target_summ_items_sparse,
                                  optimizer='adam', to_one_hot=True,
@@ -1376,21 +1377,31 @@ class NextItemFirstItemNetwork(NextItemNetwork):
         pos = tf.cast(tf.reshape(in_vec[:, Input.indices["start"]["pos"]:Input.indices["end"]["pos"]], (-1,)),
                       tf.int32)
         champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
+        item_ints = tf.cast(in_vec[:, Input.indices["start"]["items"]:Input.indices["end"]["items"]], tf.int32)
         pos_index = tf.transpose([batch_index, pos], (1, 0))
         opp_index_no_offset = tf.transpose([batch_index, pos], (1, 0))
         my_team_champ_ints = champ_ints[:, :5]
         opp_team_champ_ints = champ_ints[:, 5:]
         target_summ_champ_emb_dropout_flat, _ = self.get_champ_embeddings_v2(my_team_champ_ints, "my_champ_embs",
-                                                                             [0.1], pos_index, n, 1.0)
+                                                                             [0.01], pos_index, n, 1.0)
         opp_summ_champ_emb_dropout_flat, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "opp_champ_embs", [0.1], opp_index_no_offset, n, 1.0)
         pos_one_hot = tf.one_hot(pos, depth=self.game_config["champs_per_team"])
+
+        items_by_champ = tf.reshape(item_ints, [-1, self.game_config["champs_per_game"], self.game_config[
+            "items_per_champ"], 2])
+        items = self.get_items(n, items_by_champ)
+        items_by_champ_k_hot = items[:, :, 1:]
+        target_summ_items = tf.gather_nd(items_by_champ_k_hot, pos_index)
+        target_summ_items = dropout(target_summ_items, 0.5)
+
         high_prio_inputs = merge(
             [
                 pos_one_hot,
                 opp_summ_champ_emb_dropout_flat,
                 opp_team_champ_embs_dropout_flat,
-                target_summ_champ_emb_dropout_flat
+                target_summ_champ_emb_dropout_flat,
+                target_summ_items
             ], mode='concat', axis=1)
         net = batch_normalization(fully_connected(high_prio_inputs, 32, bias=False,
                                                   activation='relu',

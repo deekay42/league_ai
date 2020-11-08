@@ -33,6 +33,7 @@ import logging
 import sys
 from screen_recorder_sdk import screen_recorder
 import psutil
+import requests as req
 logger = logging.getLogger("python")
 logger.propagate = False
 if (logger.hasHandlers()):
@@ -63,61 +64,61 @@ class Main(FileSystemEventHandler):
         self.onTimeout = False
         self.holding_tab = False
         # self.loldir = ""
-        self.loldir = misc.get_lol_dir()
-        self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        self.screenshot_dir_created = False
-        logger.info("Go tlol dir !")
-        self.config = configparser.ConfigParser()
+        # self.loldir = misc.get_lol_dir()
+        # self.listener_dir = os.path.join(self.loldir, "Screenshots")
+        # self.screenshot_dir_created = False
+        # logger.info("Go tlol dir !")
+        # self.config = configparser.ConfigParser()
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        dll_hook = CPredict()
-        # dll_hook = None
+        # dll_hook = CPredict()
+        dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        if Main.shouldTerminate():
-            return
-        self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
-        self.champ_img_model.load_model()
-        if Main.shouldTerminate():
-            return
-        self.item_img_model = ItemImgModel(dll_hook=dll_hook)
-        self.item_img_model.load_model()
-        if Main.shouldTerminate():
-            return
-        self.self_img_model = SelfImgModel(dll_hook=dll_hook)
-        self.self_img_model.load_model()
-        if Main.shouldTerminate():
-            return
-        self.kda_img_model = KDAImgModel(dll_hook=dll_hook)
-        self.kda_img_model.load_model()
-        if Main.shouldTerminate():
-            return
-        self.tesseract_models = MultiTesseractModel([LvlImgModel(),
-                                                     CSImgModel(),
-                                                     CurrentGoldImgModel()])
+        # if Main.shouldTerminate():
+        #     return
+        # self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
+        # self.champ_img_model.load_model()
+        # if Main.shouldTerminate():
+        #     return
+        # self.item_img_model = ItemImgModel(dll_hook=dll_hook)
+        # self.item_img_model.load_model()
+        # if Main.shouldTerminate():
+        #     return
+        # self.self_img_model = SelfImgModel(dll_hook=dll_hook)
+        # self.self_img_model.load_model()
+        # if Main.shouldTerminate():
+        #     return
+        # self.kda_img_model = KDAImgModel(dll_hook=dll_hook)
+        # self.kda_img_model.load_model()
+        # if Main.shouldTerminate():
+        #     return
+        # self.tesseract_models = MultiTesseractModel([LvlImgModel(),
+        #                                              CSImgModel(),
+        #                                              CurrentGoldImgModel()])
         logger.info("All models loaded!")
         self.previous_champs = None
         self.previous_kda = None
@@ -136,6 +137,7 @@ class Main(FileSystemEventHandler):
 
         num_full_items = [0, 1, 2, 3, 4, 5]
         thresholds = [0, 0.1, 0.25, .7, 1.1]
+        self.max_gold_threshold = 1500
         max_leftover_gold_threshold = [349, 499, 1999, 1999, 1999, 1999]
         self.threshold = 0.3
         self.gold_tolerance = 50
@@ -151,8 +153,8 @@ class Main(FileSystemEventHandler):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
-                f.write("true")
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
+        #         f.write("true")
         Main.test_connection()
 
 
@@ -281,8 +283,6 @@ class Main(FileSystemEventHandler):
     def predict_next_item(self, model=None, role=None, champs=None, items=None, cs=None, lvl=None, kills=None,
                           deaths=None, assists=None,
                           delta_items=Counter()):
-
-
         if role is None:
             role = self.role
         if champs is None:
@@ -319,7 +319,8 @@ class Main(FileSystemEventHandler):
             if items[role]:
                 summ_owned_completes = list(self.get_blackout_items(items[role] + delta_items))
 
-        return model.predict_easy(role, champs_int, items_id, cs, lvl, kills, deaths, assists, self.current_gold,
+        return model.predict_easy(role, champs_int, items_id, cs, lvl, kills, deaths, assists, max(self.current_gold,
+                                                                                                   self.max_gold_threshold),
                                   summ_owned_completes)
 
 
@@ -498,6 +499,8 @@ class Main(FileSystemEventHandler):
         if self.role > 4:
             self.swap_teams_all()
         result = []
+        if self.current_gold == 0:
+            return []
         while self.current_gold > 0:
             self.select_right_network()
             if itemslots_left(self.items[self.role]) <= 0:
@@ -581,7 +584,7 @@ class Main(FileSystemEventHandler):
 
 
     def add_aux_items(self, result, next_items, abs_items):
-        if self.network_type == "starter":
+        if hasattr(self, "network_type") and self.network_type == "starter":
             if abs_items != []:
                 self.items[self.role] = abs_items[-1]
             result.extend(next_items)
@@ -594,7 +597,8 @@ class Main(FileSystemEventHandler):
                 result.append(elixir)
                 self.current_gold -= heavy_imports.Item(id=(int(elixir["id"])), region="EUW").gold.base
 
-        while self.network_type != "standard" and self.current_gold > 0 and itemslots_left(self.items[self.role]) > 0:
+        while hasattr(self, "network_type") and self.network_type != "standard" and self.current_gold > 0 and \
+            itemslots_left(self.items[self.role]) > 0:
             next_extra_item , _, _ = self.predict_with_threshold(model="standard")
             if next_extra_item != [] and (next_extra_item[0]["name"] in {"Control Ward", "Health Potion"} or \
                 (next_extra_item[0]["name"] in {"Refillable Potion"} and self.network_type == "starter")):
@@ -675,7 +679,7 @@ class Main(FileSystemEventHandler):
                 oldsize = size
                 time.sleep(0.05)
 
-        self.process_image(event.src_path)
+        self.process_next_recommendation(event.src_path)
 
         # pr.disable()
         # s = io.StringIO()
@@ -728,15 +732,14 @@ class Main(FileSystemEventHandler):
                     predictions[i] = avg
         return predictions
 
-
     def process_image(self, screenshot):
-
         try:
             logger.info("Now trying to predict image")
-            y_dim,x_dim,_ = screenshot.shape
+            y_dim, x_dim, _ = screenshot.shape
             show_names_in_sb, hud_scale = self.read_config()
             logger.info(f"{x_dim}, {y_dim} - hud_scale: {hud_scale}, show_names: {show_names_in_sb}")
-            res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale, summ_names_displayed=show_names_in_sb)
+            res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=hud_scale,
+                                                      summ_names_displayed=show_names_in_sb)
             # res_converter = ui_constants.ResConverter(x_dim, y_dim, hud_scale=0.02,
             #                                           summ_names_displayed=show_names_in_sb)
             self.champ_img_model.set_res_cvt(res_converter)
@@ -751,16 +754,17 @@ class Main(FileSystemEventHandler):
 
             self.champs = np.array(list(self.champ_img_model.predict(screenshot)))
             mask = [1 if champ['name'] != 'Empty' else 0 for champ in self.champs]
-            self.champs[~np.array(mask).astype(bool)] = [ChampManager().lookup_by("name", "Pantheon")]*(10-sum(mask))
+            self.champs[~np.array(mask).astype(bool)] = [ChampManager().lookup_by("name", "Pantheon")] * (
+                    10 - sum(mask))
             logger.info(f"Champs: {self.champs}\n")
             print(mask)
             try:
                 self.tmp_kda = np.array(list(self.kda_img_model.predict(screenshot, mask)))
-                self.kills = self.tmp_kda[:,0]
+                self.kills = self.tmp_kda[:, 0]
                 self.deaths = self.tmp_kda[:, 1]
                 self.assists = self.tmp_kda[:, 2]
             except Exception as e:
-                self.kills = [0]*10
+                self.kills = [0] * 10
                 self.deaths = [0] * 10
                 self.assists = [0] * 10
             self.kills = self.repair_failed_predictions(self.kills, 0, 25, mask)
@@ -779,7 +783,7 @@ class Main(FileSystemEventHandler):
             self.lvl = self.repair_failed_predictions(self.lvl, 1, 18, mask)
 
             try:
-                self.cs = tesseract_result[sum(mask):2*sum(mask)]
+                self.cs = tesseract_result[sum(mask):2 * sum(mask)]
             except Exception as e:
                 logger.error(e)
                 self.cs = [0] * 10
@@ -803,10 +807,10 @@ class Main(FileSystemEventHandler):
             logger.info("Trying to predict item imgs. \nHere are the raw items: ")
             self.items = list(self.item_img_model.predict(screenshot))
             # for i, item in enumerate(self.items):
-                # logger.info(f"{divmod(i, 7)}: {item}")
+            # logger.info(f"{divmod(i, 7)}: {item}")
             if sum(mask) < 10:
                 self.items = np.reshape(self.items, (-1, 7))
-                new_pred = np.full((10,7), ItemManager().lookup_by("name","Empty"))
+                new_pred = np.full((10, 7), ItemManager().lookup_by("name", "Empty"))
                 new_pred[np.array(mask).astype(bool)] = self.items[np.array(mask).astype(bool)]
                 self.items = np.ravel(new_pred)
 
@@ -871,12 +875,12 @@ class Main(FileSystemEventHandler):
             logger.info(e)
             return
 
-        # remove items that the network is not trained on, such as control wards
+            # remove items that the network is not trained on, such as control wards
         self.items = [item if (item["name"] != "Warding Totem (Trinket)" and item[
             "name"] != "Farsight Alteration" and item["name"] != "Oracle Lens") else self.item_manager.lookup_by("int",
                                                                                                                  0) for
-                 item in
-                 self.items]
+                      item in
+                      self.items]
 
         # we don't care about the trinkets
         self.items = np.delete(self.items, np.arange(6, len(self.items), 7))
@@ -890,22 +894,132 @@ class Main(FileSystemEventHandler):
         # if np.any(self.cs != 0):
         #     self.current_gold += 30
 
+    def get_pid(self):
+        while not Main.shouldTerminate():
+            pid = self.findProcessIdByName("League of Legends.exe")
+            if pid != -1:
+                return pid
+            time.sleep(1)
 
+    def run__(self):
+        # self.get_pid()
+        self.poll_api()
+
+    def poll_api(self):
+        prev_items_to_buy = None
+        # while not Main.shouldTerminate():
+        while True:
+            time.sleep(1)
+            try:
+                self.champs, self.items, self.cs, self.kills, self.deaths, self.assists, self.lvl, \
+                self.current_gold, self.role = self.read_api()
+                items_to_buy = self.analyze_champ()
+                items_to_buy = self.deflate_items(items_to_buy)
+                logger.info(f"This is the result for summ_index {self.role}: ")
+                logger.info(items_to_buy)
+
+                # except Exception as e:
+                #     logger.error("Unable to predict next item")
+                #     logger.error(e)
+                #     logger.error(traceback.print_exc())
+                #     out_string = "0"
+                # print(f"self.role is {self.role}")
+                if prev_items_to_buy != items_to_buy:
+                    self.dump_results(items_to_buy)
+                self.reset()
+
+            except Exception as e:
+                logger.error(e)
+                logger.error(traceback.print_exc())
+                pass
+
+
+    def read_api(self):
+        url = "https://static.developer.riotgames.com/docs/lol/liveclientdata_sample.json"
+        content = req.get(url).content
+        game_data = json.loads(content)
         try:
-            items_to_buy = self.analyze_champ()
-            items_to_buy = self.deflate_items(items_to_buy)
-            logger.info(f"This is the result for summ_index {self.role}: ")
-            logger.info(items_to_buy)
+            current_gold = int(game_data["activePlayer"]["currentGold"])
+        except KeyError:
+            current_gold = 1000
+        try:
+            self_name = game_data["activePlayer"]["summonerName"]
+        except KeyError:
+            self_name = ""
+            role = 0
+        items = np.empty((10,7), dtype=np.object)
+        champs = np.empty((10,), dtype=np.object)
+        kills = np.zeros(10,)
+        deaths = np.zeros(10, )
+        assists = np.zeros(10, )
+        level = np.zeros(10, )
+        cs = np.zeros(10, )
+        for i in range(10):
+            try:
+                if game_data["allPlayers"][i]["summonerName"] == self_name:
+                    role = i
+            except (KeyError,IndexError):
+                pass
+
+            for j in range(7):
+                try:
+                    items[i][j] = self.item_manager.lookup_by("id", game_data["allPlayers"][i]["items"][j]["id"])
+                except (KeyError,IndexError):
+                    items[i][j] = self.item_manager.lookup_by("id", "0")
+            try:
+                champs[i] = ChampManager().lookup_by("name", game_data["allPlayers"][i]["championName"])
+            except (KeyError,IndexError):
+                champs[i] = ChampManager().lookup_by("name", "Pantheon")
+            try:
+                kills[i] = game_data["allPlayers"][i]["scores"]["kills"]
+            except (KeyError,IndexError):
+                kills[i] = 0
+            try:
+                deaths[i] = game_data["allPlayers"][i]["scores"]["deaths"]
+            except (KeyError,IndexError):
+                deaths[i] = 0
+            try:
+                assists[i] = game_data["allPlayers"][i]["scores"]["assists"]
+            except (KeyError,IndexError):
+                assists[i] = 0
+            try:
+                cs[i] = game_data["allPlayers"][i]["scores"]["creepScore"]
+            except (KeyError, IndexError):
+                cs[i] = 0
+            try:
+                level[i] = game_data["allPlayers"][i]["level"]
+            except (KeyError, IndexError):
+                level[i] = 0
+
+        return champs, items, cs, kills, deaths, assists, level, current_gold, role
 
 
+    # def process_next_recommendation(self, screenshot):
+    #     self.process_image(screenshot)
+    #     try:
+    #         items_to_buy = self.analyze_champ()
+    #         items_to_buy = self.deflate_items(items_to_buy)
+    #         logger.info(f"This is the result for summ_index {self.role}: ")
+    #         logger.info(items_to_buy)
+    #
+    #     except Exception as e:
+    #         logger.error("Unable to predict next item")
+    #         logger.error(e)
+    #         logger.error(traceback.print_exc())
+    #         out_string = "0"
+    #     # print(f"self.role is {self.role}")
+    #     self.dump_results()
+    #     self.reset()
 
-        except Exception as e:
-            logger.error("Unable to predict next item")
-            logger.error(e)
-            logger.error(traceback.print_exc())
-            out_string = "0"
 
-        # print(f"self.role is {self.role}")
+    def reset(self):
+        self.skipped = False
+        self.skipped_item = None
+        self.force_late_after_standard = False
+        self.force_boots_network_after_first_item = False
+
+
+    def dump_results(self, items_to_buy):
         if self.swapped:
             out_champs = self.swap_teams(self.champs)
             out_lvl = self.swap_teams(self.lvl)
@@ -914,7 +1028,7 @@ class Main(FileSystemEventHandler):
             out_assists = self.swap_teams(self.assists)
             out_role = self.role
         else:
-            out_champs =self.champs
+            out_champs = self.champs
             out_lvl = self.lvl
             out_kills = self.kills
             out_deaths = self.deaths
@@ -923,7 +1037,7 @@ class Main(FileSystemEventHandler):
 
         # print(f"out_role is {out_role}")
 
-#
+        #
         out_string = ""
         result = dict()
         result['patch'] = 10.21
@@ -939,12 +1053,6 @@ class Main(FileSystemEventHandler):
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "last"), "w") as f:
             f.write(json.dumps(result))
 
-        self.skipped = False
-        self.skipped_item = None
-        self.force_late_after_standard = False
-        self.force_boots_network_after_first_item = False
-
-
     @staticmethod
     def shouldTerminate():
         return os.path.isfile(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
@@ -954,7 +1062,7 @@ class Main(FileSystemEventHandler):
 
 
     def run(self):
-        sc = ScreenshotBuffer(self.cv, self.process_image)
+        sc = ScreenshotBuffer(self.cv, self.process_next_recommendation)
         sc.start()
 
         #holding_key is bad because re-initialize is not trigger when alt-tabbing out
@@ -990,7 +1098,7 @@ class Main(FileSystemEventHandler):
         sc.join()
         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
         print("python is now done")
-        # self.process_image(event.src_path)
+        # self.process_next_recommendation(event.src_path)
         # observer = Observer()
         # logger.info(f"Now listening for screenshots at: {self.listener_dir}")
         # observer.schedule(self, path=self.listener_dir)
@@ -1018,7 +1126,7 @@ class Main(FileSystemEventHandler):
         #             self.listener_dir = os.path.join(self.loldir, "Screenshots")
         #             try:
         #                 screenshot_path = glob.glob(self.listener_dir+"/*")[-1]
-        #                 self.process_image(screenshot_path)
+        #                 self.process_next_recommendation(screenshot_path)
         #             except IndexError as e:
         #                 logger.info("No screenshot included this time.")
         #             observer.schedule(self, path=self.listener_dir)
@@ -1113,7 +1221,7 @@ class ScreenshotBuffer(threading.Thread):
                 try:
                     self.callback(img)
                 except Exception as e:
-                    logger.info("Exception in process_image")
+                    logger.info("Exception in process_next_recommendation")
                     logger.info(e)
                     logger.info(traceback.print_exc())
                     logger.info("run: error while trying to grab screenshot. reinitializing now")
@@ -1137,12 +1245,12 @@ class ScreenshotBuffer(threading.Thread):
         width = int (self.width[0])
         return np.reshape(self.frame_buffer[0:width*height*4], (height, width, 4))[:,:,:3]
 
-# m = Main()
-# m.run()
+m = Main()
+m.run__()
 
-# m.process_image(f"test_data/resolutions/Screen478.png")
+# m.process_next_recommendation(f"test_data/resolutions/Screen478.png")
 # for i in range(35,58):
-    # m.process_image(f"test_data/screenshots/Screen{i}.png")
+    # m.process_next_recommendation(f"test_data/screenshots/Screen{i}.png")
 
 # m.run_test_games()
 
@@ -1182,7 +1290,7 @@ class ScreenshotBuffer(threading.Thread):
 #         m.set_res_converter(ui_constants.ResConverter(*(test_image_y["res"].split(",")), elems[key]["hud_scale"],
 #                                                       elems[key]["summ_names_displayed"]))
 
-#         m.process_image(base_path + test_image_y["filename"])
+#         m.process_next_recommendation(base_path + test_image_y["filename"])
 
 # KDAImgModel(res_cvt).predict(test_image_x)
 
