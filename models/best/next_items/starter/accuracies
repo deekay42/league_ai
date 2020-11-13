@@ -1,250 +1,250 @@
-Epoch 1 accuracy 0.51 | loss 4.95
+Epoch 1 accuracy 0.03 | loss 5.22
 Epoch 1
+1. Acc 0.0808
+
+
+Epoch 2 accuracy 0.06 | loss 5.22
+Epoch 2
+1. Acc 0.1212
+
+
+Epoch 3 accuracy 0.09 | loss 5.22
+Epoch 3
+1. Acc 0.0808
+
+
+Epoch 4 accuracy 0.13 | loss 5.21
+Epoch 4
+1. Acc 0.1313
+
+
+Epoch 5 accuracy 0.25 | loss 5.19
+Epoch 5
+1. Acc 0.1616
+
+
+Epoch 6 accuracy 0.31 | loss 5.18
+Epoch 6
+1. Acc 0.2121
+
+
+Epoch 7 accuracy 0.31 | loss 5.18
+Epoch 7
+1. Acc 0.2323
+
+
+Epoch 8 accuracy 0.33 | loss 5.17
+Epoch 8
+1. Acc 0.2626
+
+
+Epoch 9 accuracy 0.35 | loss 5.16
+Epoch 9
+1. Acc 0.3030
+
+
+Epoch 10 accuracy 0.39 | loss 5.15
+Epoch 10
+1. Acc 0.3333
+
+
+Epoch 11 accuracy 0.40 | loss 5.14
+Epoch 11
+1. Acc 0.3636
+
+
+Epoch 12 accuracy 0.44 | loss 5.13
+Epoch 12
+1. Acc 0.3838
+
+
+Epoch 13 accuracy 0.48 | loss 5.10
+Epoch 13
+1. Acc 0.4040
+
+
+Epoch 14 accuracy 0.49 | loss 5.10
+Epoch 14
+1. Acc 0.4141
+
+
+Epoch 15 accuracy 0.48 | loss 5.09
+Epoch 15
+1. Acc 0.4040
+
+
+Epoch 16 accuracy 0.53 | loss 5.07
+Epoch 16
+1. Acc 0.4141
+
+
+Epoch 17 accuracy 0.54 | loss 5.06
+Epoch 17
+1. Acc 0.4343
+
+
+Epoch 18 accuracy 0.55 | loss 5.05
+Epoch 18
+1. Acc 0.4343
+
+
+Epoch 19 accuracy 0.55 | loss 5.04
+Epoch 19
+1. Acc 0.4343
+
+
+Epoch 20 accuracy 0.57 | loss 5.02
+Epoch 20
+1. Acc 0.4242
+
+
+Epoch 21 accuracy 0.57 | loss 5.01
+Epoch 21
+1. Acc 0.4444
+
+
+Epoch 22 accuracy 0.56 | loss 5.00
+Epoch 22
+1. Acc 0.4545
+
+
+Epoch 23 accuracy 0.56 | loss 4.98
+Epoch 23
+1. Acc 0.4848
+
+
+Epoch 24 accuracy 0.58 | loss 4.96
+Epoch 24
+1. Acc 0.4848
+
+
+Epoch 25 accuracy 0.58 | loss 4.95
+Epoch 25
+1. Acc 0.4848
+
+
+Epoch 26 accuracy 0.59 | loss 4.93
+Epoch 26
+1. Acc 0.4848
+
+
+Epoch 27 accuracy 0.58 | loss 4.92
+Epoch 27
+1. Acc 0.4949
+
+
+Epoch 28 accuracy 0.63 | loss 4.86
+Epoch 28
+1. Acc 0.4848
+
+
+Epoch 29 accuracy 0.61 | loss 4.86
+Epoch 29
+1. Acc 0.4949
+
+
+Epoch 30 accuracy 0.61 | loss 4.84
+Epoch 30
+1. Acc 0.4848
+
+
+Epoch 31 accuracy 0.59 | loss 4.83
+Epoch 31
+1. Acc 0.4848
+
+
+Epoch 32 accuracy 0.60 | loss 4.80
+Epoch 32
+1. Acc 0.4848
+
+
+Epoch 33 accuracy 0.58 | loss 4.79
+Epoch 33
+1. Acc 0.4848
+
+
+Epoch 34 accuracy 0.58 | loss 4.77
+Epoch 34
+1. Acc 0.4848
+
+
+Epoch 35 accuracy 0.57 | loss 4.76
+Epoch 35
+1. Acc 0.4848
+
+
+Epoch 36 accuracy 0.58 | loss 4.73
+Epoch 36
+1. Acc 0.4848
+
+
+Epoch 37 accuracy 0.57 | loss 4.72
+Epoch 37
 1. Acc 0.4646
 
 
-Epoch 2 accuracy 0.58 | loss 4.67
-Epoch 2
-1. Acc 0.6465
-
-
-Epoch 3 accuracy 0.58 | loss 4.34
-Epoch 3
-1. Acc 0.6364
-
-
-Epoch 4 accuracy 0.56 | loss 3.97
-Epoch 4
-1. Acc 0.5556
-
-
-Epoch 5 accuracy 0.54 | loss 3.58
-Epoch 5
-1. Acc 0.5051
-
-
-Epoch 6 accuracy 0.52 | loss 3.18
-Epoch 6
-1. Acc 0.4848
-
-
-Epoch 7 accuracy 0.51 | loss 2.76
-Epoch 7
-1. Acc 0.4848
-
-
-Epoch 8 accuracy 0.53 | loss 2.39
-Epoch 8
-1. Acc 0.5455
-
-
-Epoch 9 accuracy 0.54 | loss 2.06
-Epoch 9
-1. Acc 0.4949
-
-
-Epoch 10 accuracy 0.55 | loss 1.81
-Epoch 10
-1. Acc 0.4949
-
-
-Epoch 11 accuracy 0.55 | loss 1.63
-Epoch 11
-1. Acc 0.4949
-
-
-Epoch 12 accuracy 0.56 | loss 1.48
-Epoch 12
-1. Acc 0.5051
-
-
-Epoch 13 accuracy 0.58 | loss 1.36
-Epoch 13
-1. Acc 0.5253
-
-
-Epoch 14 accuracy 0.57 | loss 1.30
-Epoch 14
-1. Acc 0.5556
-
-
-Epoch 15 accuracy 0.59 | loss 1.24
-Epoch 15
-1. Acc 0.5556
-
-
-Epoch 16 accuracy 0.59 | loss 1.18
-Epoch 16
-1. Acc 0.5758
-
-
-Epoch 17 accuracy 0.59 | loss 1.15
-Epoch 17
-1. Acc 0.5758
-
-
-Epoch 18 accuracy 0.61 | loss 1.10
-Epoch 18
-1. Acc 0.5354
-
-
-Epoch 19 accuracy 0.59 | loss 1.12
-Epoch 19
-1. Acc 0.6162
-
-
-Epoch 20 accuracy 0.62 | loss 1.03
-Epoch 20
-1. Acc 0.6263
-
-
-Epoch 21 accuracy 0.62 | loss 1.05
-Epoch 21
-1. Acc 0.6263
-
-
-Epoch 22 accuracy 0.62 | loss 1.03
-Epoch 22
-1. Acc 0.6162
-
-
-Epoch 23 accuracy 0.62 | loss 0.98
-Epoch 23
-1. Acc 0.6263
-
-
-Epoch 24 accuracy 0.62 | loss 0.99
-Epoch 24
-1. Acc 0.6162
-
-
-Epoch 25 accuracy 0.63 | loss 0.98
-Epoch 25
-1. Acc 0.6263
-
-
-Epoch 26 accuracy 0.63 | loss 0.97
-Epoch 26
-1. Acc 0.6263
-
-
-Epoch 27 accuracy 0.62 | loss 0.99
-Epoch 27
-1. Acc 0.6465
-
-
-Epoch 28 accuracy 0.63 | loss 0.99
-Epoch 28
-1. Acc 0.6465
-
-
-Epoch 29 accuracy 0.65 | loss 0.92
-Epoch 29
-1. Acc 0.6566
-
-
-Epoch 30 accuracy 0.63 | loss 0.96
-Epoch 30
-1. Acc 0.6566
-
-
-Epoch 31 accuracy 0.65 | loss 0.95
-Epoch 31
-1. Acc 0.6364
-
-
-Epoch 32 accuracy 0.66 | loss 0.91
-Epoch 32
-1. Acc 0.6768
-
-
-Epoch 33 accuracy 0.66 | loss 0.94
-Epoch 33
-1. Acc 0.6869
-
-
-Epoch 34 accuracy 0.66 | loss 0.89
-Epoch 34
-1. Acc 0.6465
-
-
-Epoch 35 accuracy 0.67 | loss 0.93
-Epoch 35
-1. Acc 0.6768
-
-
-Epoch 36 accuracy 0.65 | loss 0.92
-Epoch 36
-1. Acc 0.6263
-
-
-Epoch 37 accuracy 0.65 | loss 0.91
-Epoch 37
-1. Acc 0.6465
-
-
-Epoch 38 accuracy 0.65 | loss 0.91
+Epoch 38 accuracy 0.62 | loss 4.65
 Epoch 38
-1. Acc 0.6566
+1. Acc 0.4646
 
 
-Epoch 39 accuracy 0.66 | loss 0.89
+Epoch 39 accuracy 0.59 | loss 4.64
 Epoch 39
-1. Acc 0.6667
+1. Acc 0.4646
 
 
-Epoch 40 accuracy 0.66 | loss 0.90
+Epoch 40 accuracy 0.58 | loss 4.64
 Epoch 40
-1. Acc 0.6263
+1. Acc 0.4646
 
 
-Epoch 41 accuracy 0.66 | loss 0.89
+Epoch 41 accuracy 0.57 | loss 4.61
 Epoch 41
-1. Acc 0.6667
+1. Acc 0.4646
 
 
-Epoch 42 accuracy 0.67 | loss 0.88
+Epoch 42 accuracy 0.56 | loss 4.60
 Epoch 42
-1. Acc 0.6566
+1. Acc 0.4646
 
 
-Epoch 43 accuracy 0.67 | loss 0.87
+Epoch 43 accuracy 0.55 | loss 4.58
 Epoch 43
-1. Acc 0.6465
+1. Acc 0.4646
 
 
-Epoch 44 accuracy 0.66 | loss 0.88
+Epoch 44 accuracy 0.56 | loss 4.56
 Epoch 44
-1. Acc 0.6566
+1. Acc 0.4646
 
 
-Epoch 45 accuracy 0.66 | loss 0.89
+Epoch 45 accuracy 0.56 | loss 4.54
 Epoch 45
-1. Acc 0.6768
+1. Acc 0.4747
 
 
-Epoch 46 accuracy 0.67 | loss 0.87
+Epoch 46 accuracy 0.55 | loss 4.53
 Epoch 46
-1. Acc 0.6566
+1. Acc 0.4646
 
 
-Epoch 47 accuracy 0.67 | loss 0.85
+Epoch 47 accuracy 0.55 | loss 4.51
 Epoch 47
-1. Acc 0.7071
+1. Acc 0.4848
 
 
-Epoch 48 accuracy 0.67 | loss 0.87
+Epoch 48 accuracy 0.59 | loss 4.42
 Epoch 48
-1. Acc 0.6970
+1. Acc 0.4848
 
 
-Epoch 49 accuracy 0.67 | loss 0.84
+Epoch 49 accuracy 0.59 | loss 4.42
 Epoch 49
-1. Acc 0.6970
+1. Acc 0.4848
 
 
-Epoch 50 accuracy 0.68 | loss 0.85
+Epoch 50 accuracy 0.58 | loss 4.41
 Epoch 50
-1. Acc 0.7273
+1. Acc 0.4848
 
 
