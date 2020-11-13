@@ -895,13 +895,13 @@ class ProcessNextItemsTrainingData:
         for path in out_paths_elite + out_paths_lower + out_paths_positions:
             misc.remove_old_files(path)
 
-        # number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
-        number_of_top_games = [10000,0,0]
+        number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
+        # number_of_top_games = [10000,0,0]
         number_of_lower_games = [number_of_lower_games//(game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)]*(
                 game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)
 
-        # self.scraper.get_match_ids(number_of_top_games, number_of_lower_games,
-        #                                                               regions, start_date)
+        self.scraper.get_match_ids(number_of_top_games, number_of_lower_games,
+                                                                      regions, start_date)
 
 
         # elite_match_ids = [4585558064]
@@ -1015,10 +1015,11 @@ if __name__ == "__main__":
 
     #takes roughly 1 hour to download 1000 games
     #about 1800 pure challenger games are played across all regions in a day
-    number_of_top_games = 10000
-    number_of_lower_games = 20000
+    number_of_top_games = 1000
+    number_of_lower_games = 2000
 
     start_date = cass.Patch.latest(region="NA").start
+    # start_date = start_date.shift(days=1)
     #### start_date = arrow.Arrow(2019, 11, 28, 0, 0, 0)
     l.start(number_of_top_games, number_of_lower_games,regions=regions, start_date=start_date)
 
@@ -1062,12 +1063,12 @@ if __name__ == "__main__":
     except Exception as e:
         print(e)
 
-    print("NOW TRAINING champ img GAME")
-    try:
-        ci = ChampImgTrainer()
-        ci.train()
-    except Exception as e:
-        print(e)
+    # print("NOW TRAINING champ img GAME")
+    # try:
+    #     ci = ChampImgTrainer()
+    #     ci.train()
+    # except Exception as e:
+    #     print(e)
 
 
 
