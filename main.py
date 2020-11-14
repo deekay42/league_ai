@@ -32,7 +32,7 @@ import configparser
 import logging
 import sys
 from screen_recorder_sdk import screen_recorder
-import psutil
+
 import requests as req
 logger = logging.getLogger("python")
 logger.propagate = False
@@ -71,35 +71,35 @@ class Main(FileSystemEventHandler):
         # self.config = configparser.ConfigParser()
 
         self.item_manager = ItemManager()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        # dll_hook = CPredict()
-        dll_hook = None
+        dll_hook = CPredict()
+        # dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        # if Main.shouldTerminate():
-        #     return
+        if Main.shouldTerminate():
+            return
         # self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
         # self.champ_img_model.load_model()
         # if Main.shouldTerminate():
@@ -153,8 +153,8 @@ class Main(FileSystemEventHandler):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
-        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
-        #         f.write("true")
+        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
+                f.write("true")
         Main.test_connection()
 
 
@@ -894,25 +894,35 @@ class Main(FileSystemEventHandler):
         # if np.any(self.cs != 0):
         #     self.current_gold += 30
 
+
     def get_pid(self):
         while not Main.shouldTerminate():
-            pid = self.findProcessIdByName("League of Legends.exe")
+            pid = misc.findProcessIdByName("League of Legends.exe")
             if pid != -1:
                 return pid
-            time.sleep(1)
+            time.sleep(10)
 
-    def run__(self):
-        # self.get_pid()
-        self.poll_api()
+
+    def run(self):
+        while not Main.shouldTerminate():
+            self.get_pid()
+            print("Got the PID")
+            self.poll_api()
+            print("instance terminated")
+
+        os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
+        print("python is now done")
+
 
     def poll_api(self):
         prev_items_to_buy = None
-        # while not Main.shouldTerminate():
-        while True:
-            time.sleep(1)
+        while not Main.shouldTerminate():
+        # while True:
+            time.sleep(5)
             try:
                 self.champs, self.items, self.cs, self.kills, self.deaths, self.assists, self.lvl, \
                 self.current_gold, self.role = self.read_api()
+                print(f"{self.champs} {self.items}")
                 items_to_buy = self.analyze_champ()
                 items_to_buy = self.deflate_items(items_to_buy)
                 logger.info(f"This is the result for summ_index {self.role}: ")
@@ -924,20 +934,33 @@ class Main(FileSystemEventHandler):
                 #     logger.error(traceback.print_exc())
                 #     out_string = "0"
                 # print(f"self.role is {self.role}")
-                if prev_items_to_buy != items_to_buy:
+                print(f"\n\nprev: {prev_items_to_buy}\n")
+                print(f"items: {items_to_buy}\n")
+                if prev_items_to_buy is None or (sorted([item["int"] for item in prev_items_to_buy]) != sorted([item["int"] for item in items_to_buy])):
                     self.dump_results(items_to_buy)
                 self.reset()
+                prev_items_to_buy = items_to_buy
 
             except Exception as e:
+                
                 logger.error(e)
                 logger.error(traceback.print_exc())
+                if misc.findProcessIdByName("League of Legends.exe") == -1:
+                    print("lol not active anymore. pid not found.")
+                    break
                 pass
 
 
     def read_api(self):
-        url = "https://static.developer.riotgames.com/docs/lol/liveclientdata_sample.json"
-        content = req.get(url).content
+        url = "https://127.0.0.1:2999/liveclientdata/allgamedata"
+
+        response = req.get(url, verify=False)
+        if response.status_code != 200:
+            print("Unable to reach server")
+            raise Exception()
+        content = response.content
         game_data = json.loads(content)
+        # print(game_data)
         try:
             current_gold = int(game_data["activePlayer"]["currentGold"])
         except KeyError:
@@ -947,7 +970,7 @@ class Main(FileSystemEventHandler):
         except KeyError:
             self_name = ""
             role = 0
-        items = np.empty((10,7), dtype=np.object)
+        items = [Counter() for _ in range(10)]
         champs = np.empty((10,), dtype=np.object)
         kills = np.zeros(10,)
         deaths = np.zeros(10, )
@@ -960,12 +983,16 @@ class Main(FileSystemEventHandler):
                     role = i
             except (KeyError,IndexError):
                 pass
+            
+            summ_items = []
+            try:
+                summ_items = [ItemManager().lookup_by("id", str(item["itemID"]))["int"] for item in game_data["allPlayers"][i]["items"]]
+                items[i] = Counter(summ_items)
+                if 0 in items[i]:
+                    del items[i][0]
+            except:
+                pass
 
-            for j in range(7):
-                try:
-                    items[i][j] = self.item_manager.lookup_by("id", game_data["allPlayers"][i]["items"][j]["id"])
-                except (KeyError,IndexError):
-                    items[i][j] = self.item_manager.lookup_by("id", "0")
             try:
                 champs[i] = ChampManager().lookup_by("name", game_data["allPlayers"][i]["championName"])
             except (KeyError,IndexError):
@@ -1049,7 +1076,11 @@ class Main(FileSystemEventHandler):
         result['deaths'] = np.array(out_deaths, dtype=np.uint16).tolist()
         result['assists'] = np.array(out_assists, dtype=np.uint16).tolist()
         result['items'] = [int(item['id']) for item in items_to_buy]
-
+        try:
+            os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "last"))
+        except OSError as e:
+            print("py Unable to remove previous file")
+            pass
         with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "last"), "w") as f:
             f.write(json.dumps(result))
 
@@ -1061,83 +1092,83 @@ class Main(FileSystemEventHandler):
 
 
 
-    def run(self):
-        sc = ScreenshotBuffer(self.cv, self.process_next_recommendation)
-        sc.start()
+    # def run(self):
+    #     sc = ScreenshotBuffer(self.cv, self.process_next_recommendation)
+    #     sc.start()
 
-        #holding_key is bad because re-initialize is not trigger when alt-tabbing out
-        def on_release(key):
-            # print("key released")
-            if key == keyboard.Key.tab:
-                self.holding_tab = False
-                # print("released its tab")
+    #     #holding_key is bad because re-initialize is not trigger when alt-tabbing out
+    #     def on_release(key):
+    #         # print("key released")
+    #         if key == keyboard.Key.tab:
+    #             self.holding_tab = False
+    #             # print("released its tab")
 
-        def on_press(key):
-            # print("key pressed")
-            if key==keyboard.Key.tab:
-                if not self.holding_tab and time.time() - self.last_time_tab > 1:
-                    self.holding_tab = True
-                    self.last_time_tab = time.time()
+    #     def on_press(key):
+    #         # print("key pressed")
+    #         if key==keyboard.Key.tab:
+    #             if not self.holding_tab and time.time() - self.last_time_tab > 1:
+    #                 self.holding_tab = True
+    #                 self.last_time_tab = time.time()
 
-                    #thread might still be busy. discard request then.
-                    if self.cv.acquire(blocking=False):
-                        sc.new_screenshot = True
-                        self.cv.notify()
-                        self.cv.release()
-            else:
-                # print("someting else pressed")
-                self.holding_tab = False
+    #                 #thread might still be busy. discard request then.
+    #                 if self.cv.acquire(blocking=False):
+    #                     sc.new_screenshot = True
+    #                     self.cv.notify()
+    #                     self.cv.release()
+    #         else:
+    #             # print("someting else pressed")
+    #             self.holding_tab = False
 
 
-        # Collect events until released
-        with keyboard.Listener(
-                on_press=on_press,
-                on_release=on_release) as listener:
-                while not Main.shouldTerminate():
-                    time.sleep(1)
-        sc.join()
-        os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
-        print("python is now done")
-        # self.process_next_recommendation(event.src_path)
-        # observer = Observer()
-        # logger.info(f"Now listening for screenshots at: {self.listener_dir}")
-        # observer.schedule(self, path=self.listener_dir)
-        # try:
-        #     observer.start()
-        # except FileNotFoundError:
-        #     self.listener_dir = self.loldir
-        #     logger.info(f"Error. Screenshots dir does not exist. Now listening for screenshots at: {self.listener_dir}")
-        #     observer.unschedule_all()
-        #     observer.stop()
-        #     observer = Observer()
-        #     observer.schedule(self, path=self.listener_dir)
-        #     observer.start()
+    #     # Collect events until released
+    #     with keyboard.Listener(
+    #             on_press=on_press,
+    #             on_release=on_release) as listener:
+    #             while not Main.shouldTerminate():
+    #                 time.sleep(1)
+    #     sc.join()
+    #     os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
+    #     print("python is now done")
+    #     # self.process_next_recommendation(event.src_path)
+    #     # observer = Observer()
+    #     # logger.info(f"Now listening for screenshots at: {self.listener_dir}")
+    #     # observer.schedule(self, path=self.listener_dir)
+    #     # try:
+    #     #     observer.start()
+    #     # except FileNotFoundError:
+    #     #     self.listener_dir = self.loldir
+    #     #     logger.info(f"Error. Screenshots dir does not exist. Now listening for screenshots at: {self.listener_dir}")
+    #     #     observer.unschedule_all()
+    #     #     observer.stop()
+    #     #     observer = Observer()
+    #     #     observer.schedule(self, path=self.listener_dir)
+    #     #     observer.start()
 
-        # try:
-        #     with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
-        #         f.write("true")
-        #     while not Main.shouldTerminate():
-        #         time.sleep(1)
-        #         if self.screenshot_dir_created:
-        #             logger.info("screenshot dir created!")
-        #             observer.unschedule_all()
-        #             observer.stop()
-        #             observer = Observer()
-        #             self.listener_dir = os.path.join(self.loldir, "Screenshots")
-        #             try:
-        #                 screenshot_path = glob.glob(self.listener_dir+"/*")[-1]
-        #                 self.process_next_recommendation(screenshot_path)
-        #             except IndexError as e:
-        #                 logger.info("No screenshot included this time.")
-        #             observer.schedule(self, path=self.listener_dir)
-        #             observer.start()
-        #             self.screenshot_dir_created = False
+    #     # try:
+    #     #     with open(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "ai_loaded"), 'w') as f:
+    #     #         f.write("true")
+    #     #     while not Main.shouldTerminate():
+    #     #         time.sleep(1)
+    #     #         if self.screenshot_dir_created:
+    #     #             logger.info("screenshot dir created!")
+    #     #             observer.unschedule_all()
+    #     #             observer.stop()
+    #     #             observer = Observer()
+    #     #             self.listener_dir = os.path.join(self.loldir, "Screenshots")
+    #     #             try:
+    #     #                 screenshot_path = glob.glob(self.listener_dir+"/*")[-1]
+    #     #                 self.process_next_recommendation(screenshot_path)
+    #     #             except IndexError as e:
+    #     #                 logger.info("No screenshot included this time.")
+    #     #             observer.schedule(self, path=self.listener_dir)
+    #     #             observer.start()
+    #     #             self.screenshot_dir_created = False
 
-        #     observer.stop()
-        #     os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
-        # except KeyboardInterrupt:
-        #     observer.stop()
-        # observer.join()
+    #     #     observer.stop()
+    #     #     os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League IQ", "terminate"))
+    #     # except KeyboardInterrupt:
+    #     #     observer.stop()
+    #     # observer.join()
 
 
 class ScreenshotBuffer(threading.Thread):
@@ -1167,24 +1198,7 @@ class ScreenshotBuffer(threading.Thread):
             time.sleep(1)
 
 
-    @staticmethod
-    def findProcessIdByName(processName):
-        '''
-        Get a list of all the PIDs of a all the running process whose name contains
-        the given string processName
-        '''
-        listOfProcessObjects = []
-        #Iterate over the all the running process
-        for proc in psutil.process_iter():
-            try:
-                pinfo = proc.as_dict(attrs=['pid', 'name', 'create_time'])
-                # Check if process name contains the given name string.
-                if processName.lower().replace(' ', '') in pinfo['name'].lower().replace(' ', '') :
-                    return pinfo['pid']
-            except (psutil.NoSuchProcess, psutil.AccessDenied , psutil.ZombieProcess) :
-                pass
-        else:
-            return -1
+    
 
 
     def init(self):
@@ -1245,8 +1259,6 @@ class ScreenshotBuffer(threading.Thread):
         width = int (self.width[0])
         return np.reshape(self.frame_buffer[0:width*height*4], (height, width, 4))[:,:,:3]
 
-m = Main()
-m.run__()
 
 # m.process_next_recommendation(f"test_data/resolutions/Screen478.png")
 # for i in range(35,58):

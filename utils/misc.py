@@ -14,9 +14,26 @@ from utils.artifact_manager import ItemManager
 from constants import game_constants,app_constants
 # from train_model import data_loader
 from train_model.input_vector import Input
+import psutil
 
 
-
+def findProcessIdByName(processName):
+    '''
+    Get a list of all the PIDs of a all the running process whose name contains
+    the given string processName
+    '''
+    listOfProcessObjects = []
+    #Iterate over the all the running process
+    for proc in psutil.process_iter():
+        try:
+            pinfo = proc.as_dict(attrs=['pid', 'name', 'create_time'])
+            # Check if process name contains the given name string.
+            if processName.lower().replace(' ', '') in pinfo['name'].lower().replace(' ', '') :
+                return pinfo['pid']
+        except (psutil.NoSuchProcess, psutil.AccessDenied , psutil.ZombieProcess) :
+            pass
+    else:
+        return -1
 
 def num_itemslots(items):
     if not items:

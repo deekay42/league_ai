@@ -45,7 +45,7 @@ set PN_LIBRARY=C:\Program Files\Python37\Lib\site-packages\pynput
 
 python -c "from train_model import model; model.export_models()"
 echo ------------------------------------------------------  EXPORT MODELS COMPLETE ---------------------------------------------
-python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%PN_LIBRARY%;pynput" --add-data "%SR_LIBRARY%;screen_recorder_sdk" --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=sklearn --hidden-import=cassiopeia --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
+python -m PyInstaller -d noarchive main.py --distpath tmp_build --add-data "%PN_LIBRARY%;pynput" --add-data "%SR_LIBRARY%;screen_recorder_sdk" --add-data "%TCL_LIBRARY%;tcl" --add-data "%TK_LIBRARY%;tk" --add-data "%TFL_LIBRARY%;tflearn" --add-data "%PKG_LIBRARY%;pkg_resources" --hidden-import=sklearn --hidden-import=cassiopeia --hidden-import=tesserocr --exclude-module tensorflow_core --exclude-module tensorflow --path "C:\Program Files\Python37\Library"
 echo ------------------------------------------------------  PYINSTALLER COMPLETE ---------------------------------------------
 MOVE tmp_build\main\*.dll tmp_build
 del /Q /S .\tmp_build\main\*.exe
