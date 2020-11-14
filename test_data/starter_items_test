@@ -3,205 +3,205 @@
     "target_summ": "Varus",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "2" : {
     "target_summ": "Vayne",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "3" : {
     "target_summ": "Twitch",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "4" : {
     "target_summ": "Ashe",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "5" : {
     "target_summ": "Xayah",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "6" : {
     "target_summ": "Caitlyn",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "7" : {
     "target_summ": "Ezreal",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "8" : {
     "target_summ": "Varus",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "9" : {
     "target_summ": "Aphelios",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "10" : {
     "target_summ": "Fizz",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "11" : {
     "target_summ": "Annie",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "12" : {
     "target_summ": "Vladimir",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "12" : {
     "target_summ": "Rumble",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "13" : {
     "target_summ": "Viktor",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "14" : {
     "target_summ": "Kayle",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "15" : {
     "target_summ": "Soraka",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "16" : {
     "target_summ": "Zilean",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "17" : {
     "target_summ": "Nami",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "18" : {
     "target_summ": "Sona",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "19" : {
     "target_summ": "Ziggs",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "20" : {
     "target_summ": "Alistar",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "21" : {
     "target_summ": "Thresh",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "22" : {
     "target_summ": "Nautilus",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "23" : {
     "target_summ": "Galio",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "24" : {
     "target_summ": "Braum",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "25" : {
     "target_summ": "Blitzcrank",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "26" : {
     "target_summ": "Ornn",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "1" : {
     "target_summ": "Sion",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Talisman"]
+    "target": ["Hailblade"]
   },
   "27" : {
     "target_summ": "Darius",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "28" : {
     "target_summ": "Garen",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "29" : {
     "target_summ": "Aatrox",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "30" : {
     "target_summ": "Riven",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "31" : {
     "target_summ": "Urgot",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "32" : {
     "target_summ": "Renekton",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Hunter's Machete"]
+    "target": ["Emberknife"]
   },
   "33" : {
     "target_summ": "Amumu",

@@ -17,7 +17,8 @@ def uniq:
               ($current.participantId | tonumber) as $participantsIdKey |
               ([$participants[].participantId] | index($participantsIdKey)) as $key |
               if $current.type=="ITEM_PURCHASED" then
-                if $current.itemId==3901 or $current.itemId==3902 or $current.itemId==3903 or $current.itemId==0 then
+                if $current.itemId==3901 or $current.itemId==3902 or $current.itemId==3903 or $current.itemId==0 or
+                $current.itemId>7000 then
                     .
                 else
                     .[$key] |= .+ [$current.itemId]
@@ -44,7 +45,8 @@ def uniq:
                         .[$key] |= .+ [2421]
                     end
                 elif $current.itemId==3004 or $current.itemId==3003 or $current.itemId==2138 or $current.itemId==2139 or
-                 $current.itemId==2140 then
+                 $current.itemId==2140 or $current.itemId==6664 or $current.itemId==6662 or $current.itemId==3068 or
+                 $current.itemId==2065 or $current.itemId==4005 or $current.itemId==3190 or $current.itemId==6672 or $current.itemId==6673 or $current.itemId==4636 or $current.itemId==3152 or $current.itemId==6653 or $current.itemId==4633 or $current.itemId==6655 or $current.itemId==6656 or $current.itemId==3078 or $current.itemId==6631 or $current.itemId==6632 or $current.itemId==6630 or $current.itemId==6692 or $current.itemId==6693 or $current.itemId==6691 then
                     .
                 else
                     .[$key][[$current.itemId]][0] as $del_index |
