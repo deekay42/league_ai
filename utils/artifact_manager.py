@@ -27,7 +27,7 @@ class ArtifactManager(ABC):
         try:
             if lookup == "name":
                 try:
-                    return self._by[lookup][val.lower().replace(" ", "")]
+                    return self._by[lookup][val.lower().replace(" ", "").replace("'", "").replace(".", "")]
                 except KeyError:
                     for elem in self._by[lookup].values():
                         if 'alt_name' in elem and elem['alt_name'].strip().lower() == val.strip().lower():
@@ -69,7 +69,7 @@ class ArtifactManager(ABC):
         json_artifact["img_int"] = img_int_counter
         for lookup in self.supported_lookups:
             if lookup == "name":
-                self._by[lookup][json_artifact[lookup].lower().replace(" ", "")] = json_artifact
+                self._by[lookup][json_artifact[lookup].lower().replace(" ", "").replace("'","").replace(".","")] = json_artifact
             else:
                 self._by[lookup][json_artifact[lookup]] = json_artifact
 
@@ -220,16 +220,11 @@ class ItemManager:
                 if item in completes:
                     yield item
 
-
         def extract_full_items(self, summ_items_counter):
             completes = set(self.get_full_item_ints())
             for item in summ_items_counter:
                 if item in completes:
                     yield item
-
-
-        
-
 
         def get_starter_ints(self):
             return {item["int"] for key, item in self._by["int"].items() if "starter" in item and item["starter"]}
