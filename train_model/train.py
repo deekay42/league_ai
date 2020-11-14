@@ -2235,6 +2235,14 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
 if __name__ == "__main__":
+    t = NextItemsTrainer()
+
+    print("NOW TRAINING EARLY GAME")
+    try:
+        t.build_next_items_standard_game_model()
+    except Exception as e:
+        print(e)
+
     # print("NOW TRAINING BOOTS GAME")
     # try:
     #     b = BootsTrainer()
@@ -2249,12 +2257,12 @@ if __name__ == "__main__":
     # except Exception as e:
     #     print(e)
 
-    print("NOW TRAINING first item GAME")
-    try:
-        fi = FirstItemsTrainer()
-        fi.train()
-    except Exception as e:
-        print(e)
+    # print("NOW TRAINING first item GAME")
+    # try:
+    #     fi = FirstItemsTrainer()
+    #     fi.train()
+    # except Exception as e:
+    #     print(e)
 
     # print("NOW TRAINING champ img GAME")
     # try:

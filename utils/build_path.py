@@ -259,9 +259,9 @@ def score_build_path(build_path, existing_items, current_gold):
 
         multiplier = 1 + (cass_item.tier-1)/10
         # jg items must be finished first before enchantment
-        if item==3706 or item==3715 or item==1400 or item==1401 or item==1402 or item==1412 or item==1413 or \
-                item==1414 or item==1416 or item==1419 or item==1039 or item==1041:
-            multiplier *= 2
+        # if item==3706 or item==3715 or item==1400 or item==1401 or item==1402 or item==1412 or item==1413 or \
+        #         item==1414 or item==1416 or item==1419 or item==1039 or item==1041:
+        #     multiplier *= 2
         score += cass_item.gold.total * multiplier
 
     score += sum([heavy_imports.Item(id=item, region="EUW").gold.total for item in existing_items_copy])
