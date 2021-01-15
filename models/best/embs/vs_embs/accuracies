@@ -1,4 +1,4 @@
-Epoch 1  loss 3.94
-Raw test accuracy 0.0987 | Epoch 2  loss 3.18
-Raw test accuracy 0.4145 | Epoch 3  loss 2.49
-Raw test accuracy 0.6053 | 
+Epoch 1  loss 4.01
+Raw test accuracy 0.1118 | Epoch 2  loss 3.98
+Raw test accuracy 0.1316 | Epoch 3  loss 3.29
+Raw test accuracy 0.4276 | 

@@ -1,3 +1,4 @@
+
 import time
 import threading
 import importlib
@@ -743,7 +744,7 @@ class GameModel(Model):
 
 
 class WinPredModel(GameModel):
-
+    bayes_predict_sym
     def __init__(self, type, dll_hook=None, model_path=None, network_config=None):
 
         if type == "standard":

@@ -1,3 +1,4 @@
+
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -364,6 +365,21 @@ class LolNetwork(Network):
         return result
 
 
+    @staticmethod
+    def bin_acc(preds, targets, input_):
+
+        preds = tf.reshape(preds, (-1,))
+        preds = tf.identity(preds, name="preds")
+        preds = tf.nn.sigmoid(preds)
+        targets = tf.reshape(targets, (-1,))
+        targets = tf.identity(targets, name="targets")
+        preds = tf.round(preds)
+        correct_prediction = tf.equal(preds, targets)
+        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+        return acc
+
+
 
 
 class WinPredNetwork(LolNetwork):
@@ -679,19 +695,6 @@ class WinPredNetwork(LolNetwork):
         score = (max_score - error)/max_score
         return score
 
-    @staticmethod
-    def bin_acc(preds, targets, input_):
-
-        preds = tf.reshape(preds, (-1,))
-        preds = tf.identity(preds, name="preds")
-        preds = tf.nn.sigmoid(preds)
-        targets = tf.reshape(targets, (-1,))
-        targets = tf.identity(targets, name="targets")
-        preds = tf.round(preds)
-        correct_prediction = tf.equal(preds, targets)
-        acc = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-
-        return acc
 
     #sigmoid is not a probabiliti density function and shouldn't be interpreted as probabilities
     # @staticmethod
@@ -703,6 +706,135 @@ class WinPredNetwork(LolNetwork):
     #     acc = tf.reduce_mean(score)
     #
     #     return acc
+
+
+class WinPredNetworkRanked(LolNetwork):
+
+    def  __init__(self, network_config=None):
+        super().__init__()
+        if network_config:
+            self.network_config = network_config
+
+        self.min_clip_scaled = Input.scale_abs(game_constants.min_clip)
+        self.max_clip_scaled = Input.scale_abs(game_constants.max_clip)
+
+
+    def build(self):
+        in_vec = input_data(shape=[None, Input.len], name='input')
+        #  1 elements long
+
+        n = tf.shape(in_vec)[0]
+        batch_index = tf.range(n)
+
+        champ_ints = tf.cast(in_vec[:, Input.indices["start"]["champs"]:Input.indices["end"]["champs"]], tf.int32)
+        cs = in_vec[:, Input.indices["start"]["cs"]:Input.indices["end"]["cs"]]
+        lvl = in_vec[:, Input.indices["start"]["lvl"]:Input.indices["end"]["lvl"]]
+        kills = in_vec[:, Input.indices["start"]["kills"]:Input.indices["end"]["kills"]]
+        deaths = in_vec[:, Input.indices["start"]["deaths"]:Input.indices["end"]["deaths"]]
+        assists = in_vec[:, Input.indices["start"]["assists"]:Input.indices["end"]["assists"]]
+
+
+        baron = in_vec[:, Input.indices["start"]["baron"]:Input.indices["end"]["baron"]]
+        elder = in_vec[:, Input.indices["start"]["elder"]:Input.indices["end"]["elder"]]
+        dragons_killed = in_vec[:, Input.indices["start"]["dragons_killed"]:Input.indices["end"]["dragons_killed"]]
+        dragon_soul_type = in_vec[:,Input.indices["start"]["dragon_soul_type"]:Input.indices["end"]["dragon_soul_type"]]
+        turrets_destroyed = in_vec[:, Input.indices["start"]["turrets_destroyed"]:Input.indices["end"]["turrets_destroyed"]]
+        blue_side = in_vec[:, Input.indices["start"]["blue_side"]:Input.indices["end"]["blue_side"]]
+
+
+        dragons_killed = self.apply_noise(dragons_killed, "dragons_killed")
+        dragons_killed_sum = tf.reduce_sum(tf.reshape(dragons_killed, (-1, 2, 4)), axis=2)
+        dragon_soul_obtained = tf.reduce_sum(tf.reshape(dragon_soul_type, (-1,2,4)), axis=2)
+        kills = self.apply_noise(kills, "kills")
+        deaths = self.apply_noise(deaths, "deaths")
+        assists = self.apply_noise(assists, "assists")
+        cs = self.apply_noise(cs, "cs")
+        lvl = self.apply_noise(lvl, "lvl")
+        turrets_destroyed = self.apply_noise(turrets_destroyed, "turrets_destroyed")
+        td_diff = turrets_destroyed[:,0] - turrets_destroyed[:,1]
+        td_diff = tf.reshape(td_diff, (-1,1))
+        champ_ints = self.apply_noise_ints(champ_ints, "champs")
+
+        all_champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
+        all_champs_one_hot = tf.reshape(all_champs_one_hot, (-1, self.game_config["champs_per_game"], self.game_config["total_num_champs"]))
+
+
+        baron = self.apply_noise_flip_one_hot(baron, "baron")
+        elder = self.apply_noise_flip_one_hot(elder, "elder")
+        blue_side = self.apply_noise_flip_one_hot(blue_side, "blue_side")
+        kd = kills-deaths
+        kills_diff = self.calc_team_diff(kills)
+        deaths_diff = self.calc_team_diff(deaths)
+        assists_diff = self.calc_team_diff(assists)
+        lvl_diff = self.calc_team_diff(lvl)
+        cs_diff = self.calc_team_diff(cs)
+        team_kills_diff = tf.reduce_sum(kills_diff, keep_dims=True, axis=1)
+
+        team1_champs_one_hot = all_champs_one_hot[:, :self.game_config["champs_per_team"]]
+        team2_champs_one_hot = all_champs_one_hot[:, self.game_config["champs_per_team"]:]
+        if self.network_config["champ_dropout"] > 0:
+            team1_champs_one_hot = dropout(team1_champs_one_hot, self.network_config["champ_dropout"],
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+            team2_champs_one_hot = dropout(team2_champs_one_hot, self.network_config["champ_dropout"],
+                                       noise_shape=[n, self.game_config["champs_per_team"], 1])
+
+        team1_champs_one_hot = tf.reshape(team1_champs_one_hot, (-1, self.game_config["champs_per_team"] *
+                                                                 self.game_config["total_num_champs"]))
+        team2_champs_one_hot = tf.reshape(team2_champs_one_hot, (-1, self.game_config["champs_per_team"] *
+                                                                 self.game_config["total_num_champs"]))
+
+
+        stats_layer = merge(
+            [
+                lvl,
+                lvl_diff,
+                baron,
+                elder,
+                dragons_killed,
+                dragons_killed_sum,
+                dragon_soul_obtained,
+                dragon_soul_type,
+                turrets_destroyed,
+                td_diff,
+                blue_side,
+                team_kills_diff,
+                kd,
+                kills_diff,
+                deaths_diff,
+                assists_diff,
+                cs_diff,
+                kills,
+                deaths,
+                assists,
+                cs
+            ], mode='concat', axis=1)
+
+        if self.network_config["stats_dropout"] > 0:
+            stats_layer = dropout(stats_layer, self.network_config["stats_dropout"])
+
+        final_input_layer = merge(
+            [
+                team1_champs_one_hot,
+                team2_champs_one_hot,
+                stats_layer
+            ], mode='concat', axis=1)
+
+        net = final_input_layer
+
+        net = batch_normalization(fully_connected(net, 512, bias=False, activation='relu',regularizer="L2",
+                                                 weights_init=variance_scaling(uniform=True)))
+        net = dropout(net, 0.8)
+        net = batch_normalization(fully_connected(net, 32, bias=False, activation='relu',regularizer="L2",
+                                                 weights_init=variance_scaling(uniform=True)))
+        net = dropout(net, 0.9)
+
+        net = fully_connected(net, 1, activation='sigmoid')
+
+        return regression(net, optimizer='adam',
+                          shuffle_batches=True,
+                          learning_rate=self.network_config["learning_rate"],
+                          loss='binary_crossentropy',
+                          name='target', metric=LolNetwork.bin_acc)
 
 
 class WinPredNetworkInit(LolNetwork):
@@ -1136,7 +1268,7 @@ class StandardNextItemNetwork(NextItemNetwork):
         opp_team_champ_ints = champ_ints[:, 5:]
         champs_one_hot = tf.one_hot(tf.cast(champ_ints, tf.int32), depth=self.game_config["total_num_champs"])
         opp_champs_one_hot = champs_one_hot[:, self.game_config["champs_per_team"]:]
-        opp_champs_one_hot = dropout(opp_champs_one_hot, 0.6, noise_shape=[n, self.game_config["champs_per_team"], 1])
+        # opp_champs_one_hot = dropout(opp_champs_one_hot, 0.6, noise_shape=[n, self.game_config["champs_per_team"], 1])
         opp_champs_k_hot = tf.reduce_sum(opp_champs_one_hot, axis=1)
         target_summ_one_hot = tf.gather_nd(champs_one_hot, pos_index)
         opp_summ_one_hot = tf.gather_nd(opp_champs_one_hot, pos_index)
@@ -1150,12 +1282,28 @@ class StandardNextItemNetwork(NextItemNetwork):
         _, opp_team_champ_embs_dropout_flat = self.get_champ_embeddings_v2(
             opp_team_champ_ints, "my_champ_embs", [0.01], opp_index_no_offset, n, 1.0)
 
+        opp_champs = merge(
+            [
+                kills_diff,
+                deaths_diff,
+                assists_diff,
+                lvl_diff,
+                cs_diff,
+                pos_one_hot,
+                target_summ_one_hot,
+                tf.reshape(opp_champs_one_hot, (-1,self.game_config["champs_per_team"] * self.game_config["total_num_champs"])),
+            ], mode='concat', axis=1)
+
+        opp_champs = batch_normalization(fully_connected(opp_champs, 256, bias=False, activation='relu',
+                                                  regularizer="L2"))
+        opp_champs = batch_normalization(fully_connected(opp_champs, 32, bias=False, activation='relu',
+                                                  regularizer="L2"))
         final_input_layer = merge(
             [
                 # target_summ_champ_emb_dropout_flat,
                 # opp_summ_champ_emb_dropout_flat,
-                opp_team_champ_embs_dropout_flat,
-                # opp_champs_k_hot,
+                # opp_team_champ_embs_dropout_flat,
+                opp_champs,
                 target_summ_one_hot,
                 opp_summ_one_hot,
                 pos_one_hot,

@@ -1,3 +1,4 @@
+
 #this script inserts a new itemstate if a potion is consumed(ITEM_DESTROYED) or more than 1 potion is bought
 
 def uniq:

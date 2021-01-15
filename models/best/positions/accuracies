@@ -1,60 +1,60 @@
-Epoch 1 accuracy 0.91 | loss 0.06
-Raw test accuracy 0.6883 | 
+Epoch 1 accuracy 0.91 | loss 0.05
+Raw test accuracy 0.4532 | 
 
-Epoch 2 accuracy 0.89 | loss 0.06
-Raw test accuracy 0.6915 | 
+Epoch 2 accuracy 0.90 | loss 0.07
+Raw test accuracy 0.7795 | 
 
-Epoch 3 accuracy 0.89 | loss 0.07
-Raw test accuracy 0.6140 | 
+Epoch 3 accuracy 0.92 | loss 0.06
+Raw test accuracy 0.7026 | 
 
-Epoch 4 accuracy 0.91 | loss 0.05
-Raw test accuracy 0.7865 | 
+Epoch 4 accuracy 0.89 | loss 0.06
+Raw test accuracy 0.7547 | 
 
-Epoch 5 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.6285 | 
+Epoch 5 accuracy 0.91 | loss 0.06
+Raw test accuracy 0.7471 | 
 
-Epoch 6 accuracy 0.89 | loss 0.07
-Raw test accuracy 0.7683 | 
+Epoch 6 accuracy 0.90 | loss 0.06
+Raw test accuracy 0.6730 | 
 
-Epoch 7 accuracy 0.90 | loss 0.05
-Raw test accuracy 0.8048 | 
+Epoch 7 accuracy 0.90 | loss 0.06
+Raw test accuracy 0.7776 | 
 
-Epoch 8 accuracy 0.89 | loss 0.07
-Raw test accuracy 0.7291 | 
+Epoch 8 accuracy 0.90 | loss 0.05
+Raw test accuracy 0.7864 | 
 
 Epoch 9 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.6916 | 
+Raw test accuracy 0.8080 | 
 
 Epoch 10 accuracy 0.91 | loss 0.05
-Raw test accuracy 0.7120 | 
+Raw test accuracy 0.6885 | 
 
-Epoch 11 accuracy 0.90 | loss 0.05
-Raw test accuracy 0.7588 | 
+Epoch 11 accuracy 0.89 | loss 0.06
+Raw test accuracy 0.7849 | 
 
-Epoch 12 accuracy 0.91 | loss 0.05
-Raw test accuracy 0.7848 | 
+Epoch 12 accuracy 0.90 | loss 0.06
+Raw test accuracy 0.7233 | 
 
-Epoch 13 accuracy 0.91 | loss 0.05
-Raw test accuracy 0.8048 | 
+Epoch 13 accuracy 0.90 | loss 0.06
+Raw test accuracy 0.7973 | 
 
-Epoch 14 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.6252 | 
+Epoch 14 accuracy 0.90 | loss 0.05
+Raw test accuracy 0.8582 | 
 
-Epoch 15 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.6793 | 
+Epoch 15 accuracy 0.91 | loss 0.06
+Raw test accuracy 0.8580 | 
 
-Epoch 16 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.8095 | 
+Epoch 16 accuracy 0.91 | loss 0.06
+Raw test accuracy 0.8626 | 
 
-Epoch 17 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.8321 | 
+Epoch 17 accuracy 0.90 | loss 0.07
+Raw test accuracy 0.7993 | 
 
 Epoch 18 accuracy 0.90 | loss 0.06
-Raw test accuracy 0.7951 | 
+Raw test accuracy 0.7625 | 
 
-Epoch 19 accuracy 0.92 | loss 0.05
-Raw test accuracy 0.7529 | 
+Epoch 19 accuracy 0.89 | loss 0.06
+Raw test accuracy 0.7888 | 
 
 Epoch 20 accuracy 0.89 | loss 0.06
-Raw test accuracy 0.7889 | 
+Raw test accuracy 0.8403 | 
 

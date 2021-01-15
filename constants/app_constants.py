@@ -1,3 +1,4 @@
+
 import os
 import platform
 
@@ -122,6 +123,7 @@ for label in ["train", "best"]:
         "next_items_boots": paths["base"] + "next_items" + os.sep + "boots" + os.sep,
         "win_pred_standard": paths["base"] + "win_pred" + os.sep + "standard" + os.sep,
         "win_pred_init": paths["base"] + "win_pred" + os.sep + "init" + os.sep,
+        "win_pred_ranked": paths["base"] + "win_pred" + os.sep + "ranked" + os.sep,
         "champ_embs": paths["base"] + "embs" + os.sep + "embs" + os.sep,
         "vs_champ_embs": paths["base"] + "embs" + os.sep + "vs_embs" + os.sep,
         "positions": paths["base"] + "positions" + os.sep})

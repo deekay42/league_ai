@@ -1,3 +1,4 @@
+
 import numpy as np
 
 SCOREBOARD_SCALING = 0.5
