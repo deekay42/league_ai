@@ -1,3 +1,4 @@
+
 #DONT CHANGE THESE IMPORTS. PYINSTALLER NEEDS THESE
 import time
 import cv2 as cv
@@ -71,35 +72,35 @@ class Main(FileSystemEventHandler):
         # self.config = configparser.ConfigParser()
 
         self.item_manager = ItemManager()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         with open(app_constants.asset_paths["champ_vs_roles"], "r") as f:
             self.champ_vs_roles = json.load(f)
 
         logger.info("Now loading models!")
-        dll_hook = CPredict()
-        # dll_hook = None
+        # dll_hook = CPredict()
+        dll_hook = None
 
         self.next_item_model_standard = NextItemModel("standard", dll_hook=dll_hook)
         self.next_item_model_standard.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_late = NextItemModel("late", dll_hook=dll_hook)
         self.next_item_model_late.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_starter = NextItemModel("starter", dll_hook=dll_hook)
         self.next_item_model_starter.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_first_item = NextItemModel("first_item", dll_hook=dll_hook)
         self.next_item_model_first_item.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         self.next_item_model_boots = NextItemModel("boots", dll_hook=dll_hook)
         self.next_item_model_boots.load_model()
-        if Main.shouldTerminate():
-            return
+        # if Main.shouldTerminate():
+        #     return
         # self.champ_img_model = ChampImgModel(dll_hook=dll_hook)
         # self.champ_img_model.load_model()
         # if Main.shouldTerminate():
@@ -153,9 +154,9 @@ class Main(FileSystemEventHandler):
             self.commonality_to_items[(thresholds[i], thresholds[i + 1])] = num_full_items[i]
         self.commonality_to_items = RangeKeyDict(self.commonality_to_items)
         logger.info("init complete!")
-        with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
-                f.write("true")
-        Main.test_connection()
+        # with open(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "ai_loaded"), 'w') as f:
+        #         f.write("true")
+        # Main.test_connection()
 
 
     def set_res_converter(self, res_cvt):
@@ -319,7 +320,7 @@ class Main(FileSystemEventHandler):
             if items[role]:
                 summ_owned_completes = list(self.get_blackout_items(items[role] + delta_items))
 
-        return model.predict_easy(role, champs_int, items_id, cs, lvl, kills, deaths, assists, max(self.current_gold,
+        return model.predict_easy(role, champs_int, items_id, cs, lvl, kills, deaths, assists, min(self.current_gold,
                                                                                                    self.max_gold_threshold),
                                   summ_owned_completes)
 
@@ -913,18 +914,24 @@ class Main(FileSystemEventHandler):
         os.remove(os.path.join(os.getenv('LOCALAPPDATA'), "League AI", "terminate"))
         print("python is now done")
 
+    def winpred(self):
+
+        self.win_pred_model.bayes_predict_sym(x, 128)
 
     def poll_api(self):
         prev_items_to_buy = None
-        while not Main.shouldTerminate():
-        # while True:
+        # while not Main.shouldTerminate():
+        while True:
             time.sleep(5)
             try:
                 self.champs, self.items, self.cs, self.kills, self.deaths, self.assists, self.lvl, \
-                self.current_gold, self.role = self.read_api()
+                self.current_gold, self.role, self.baron_active, self.baron_countdown, \
+               self.baron_left, self.dragons_killed, self.dragon_countdown, self.elder_countdown, self.elder_active, \
+                self.elder_left, self.towers = self.read_api()
                 print(f"{self.champs} {self.items}")
                 items_to_buy = self.analyze_champ()
                 items_to_buy = self.deflate_items(items_to_buy)
+                win_pred = self.winpred()
                 logger.info(f"This is the result for summ_index {self.role}: ")
                 logger.info(items_to_buy)
 
@@ -954,12 +961,15 @@ class Main(FileSystemEventHandler):
     def read_api(self):
         url = "https://127.0.0.1:2999/liveclientdata/allgamedata"
 
-        response = req.get(url, verify=False)
-        if response.status_code != 200:
-            print("Unable to reach server")
-            raise Exception()
-        content = response.content
-        game_data = json.loads(content)
+        # response = req.get(url, verify=False)
+        # if response.status_code != 200:
+        #     print("Unable to reach server")
+        #     raise Exception()
+        # content = response.content
+        # game_data = json.loads(content)
+
+        game_data = json.loads(open("allgamedata.json").read())
+        role = 0
         # print(game_data)
         try:
             current_gold = int(game_data["activePlayer"]["currentGold"])
@@ -1018,7 +1028,120 @@ class Main(FileSystemEventHandler):
             except (KeyError, IndexError):
                 level[i] = 0
 
-        return champs, items, cs, kills, deaths, assists, level, current_gold, role
+
+        players2team = {player['summonerName']: (0 if i < 5 else 1) for i, player in enumerate(game_data['allPlayers'])}
+        dragon2cap = {"Air": "AIR_DRAGON", "Earth": "EARTH_DRAGON", "Fire": "FIRE_DRAGON",
+                      "Water": "WATER_DRAGON"}
+        dragons_killed = np.zeros((2, 4))
+        towers = [0, 0]
+        blue_all_dead = sum([1 if p['isDead'] else 0 for p in game_data['allPlayers'][:5]]) == 5
+        red_all_dead = sum([1 if p['isDead'] else 0 for p in game_data['allPlayers']][5:]) == 5
+
+        elder_start_timer = None
+        baron_start_timer = None
+        baron_active = [0, 0]
+        elder_active = [0, 0]
+        last_dragon_slain_time = 0
+        last_baron_slain_time = 0
+        last_elder_slain_time = 0
+        rift_type = None
+        baron_left = 0
+        elder_left = 0
+        baron_countdown = 0
+        elder_countdown = 0
+        dragon_countdown = 0
+
+        for event in game_data['events']['Events']:
+            game_time = int(event['EventTime'])
+            dragon_soul_blue = [0, 0, 0, 0]
+            dragon_soul_red = [0, 0, 0, 0]
+
+            baron_left = 0
+            elder_left = 0
+            if baron_active[0] or baron_active[1]:
+                elapsed = game_time - baron_start_timer
+                if elapsed > game_constants.BARON_DURATION or \
+                    baron_active[0] and blue_all_dead or \
+                    baron_active[1] and red_all_dead:
+                    baron_active = [0, 0]
+                else:
+                    baron_left = game_constants.BARON_DURATION - elapsed
+            if elder_active[0] or elder_active[1]:
+                elapsed = game_time - elder_start_timer
+                if elapsed > game_constants.ELDER_DURATION or \
+                    elder_active[0] and blue_all_dead or \
+                    elder_active[1] and red_all_dead:
+                    elder_active = [0, 0]
+                else:
+                    elder_left = game_constants.ELDER_DURATION - elapsed
+
+            dragon_countdown = game_constants.DRAGON_RESPAWN_TIMER - (game_time - last_dragon_slain_time)
+            if dragon_countdown < 0:
+                dragon_countdown = 0
+
+            if game_time - game_constants.BARON_INIT_SPAWN < 0:
+                baron_countdown = game_constants.BARON_INIT_SPAWN - game_time
+            else:
+                baron_countdown = game_constants.BARON_RESPAWN_TIMER - (game_time - last_baron_slain_time)
+
+            if game_time - game_constants.ELDER_INIT_SPAWN < 0:
+                elder_countdown = game_constants.ELDER_INIT_SPAWN - game_time
+            else:
+                elder_countdown = game_constants.ELDER_RESPAWN_TIMER - (game_time - last_elder_slain_time)
+            if baron_countdown < 0:
+                baron_countdown = 0
+            if elder_countdown < 0:
+                elder_countdown = 0
+
+            if event["EventName"] == "DragonKill":
+                try:
+                    team = players2team[event["KillerName"]]
+                    dragon = event["DragonType"]
+
+                    if dragon == "elder":
+                        if team == 0:
+                            elder_active = [1, 0]
+                            elder_start_timer = game_time
+                            last_elder_slain_time = game_time
+                        else:
+                            elder_active = [0, 1]
+                            elder_start_timer = game_time
+                            last_elder_slain_time = game_time
+                    else:
+                        last_dragon_slain_time = game_time
+                        dragons_killed[team][game_constants.dragon2index[dragon2cap[dragon]]] += 1
+                        if sum(dragons_killed[0]) + sum(dragons_killed[1]) == 3:
+                            rift_type = dragon
+                    if sum(dragons_killed[0]) >= 4:
+                        dragon_soul_blue[game_constants.dragon2index[dragon2cap[rift_type]]] = 1
+                    elif sum(dragons_killed[1]) >= 4:
+                        dragon_soul_red[game_constants.dragon2index[dragon2cap[rift_type]]] = 1
+                except KeyError:
+                    pass
+            elif event["EventName"] == "TurretKilled":
+                try:
+                    team = players2team[event["KillerName"]]
+                    towers[team] += 1
+                except KeyError:
+                    pass
+            elif event["EventName"] == "BaronKill":
+                try:
+                    team = players2team[event["KillerName"]]
+                    baron_active[team] = 1
+                    baron_start_timer = game_time
+                    last_baron_slain_time = game_time
+                except KeyError:
+                    pass
+
+        return champs, items, cs, kills, deaths, assists, level, current_gold, role, baron_active, baron_countdown, \
+               baron_left, np.ravel(dragons_killed), dragon_countdown, elder_countdown, elder_active, elder_left, towers
+
+
+
+
+
+
+
 
 
     # def process_next_recommendation(self, screenshot):
@@ -1260,6 +1383,9 @@ class ScreenshotBuffer(threading.Thread):
         return np.reshape(self.frame_buffer[0:width*height*4], (height, width, 4))[:,:,:3]
 
 
+
+print('lol')
+# Main().poll_api()
 # m.process_next_recommendation(f"test_data/resolutions/Screen478.png")
 # for i in range(35,58):
     # m.process_next_recommendation(f"test_data/screenshots/Screen{i}.png")
@@ -1343,3 +1469,6 @@ class ScreenshotBuffer(threading.Thread):
 #             print("Unable to open best model files")
 #             raise e
 #         print("hi")
+
+
+

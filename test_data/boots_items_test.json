@@ -123,85 +123,85 @@
     "target_summ": "Alistar",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "21" : {
     "target_summ": "Thresh",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "22" : {
     "target_summ": "Nautilus",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "23" : {
     "target_summ": "Galio",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "24" : {
     "target_summ": "Braum",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "25" : {
     "target_summ": "Blitzcrank",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "26" : {
     "target_summ": "Ornn",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "1" : {
     "target_summ": "Sion",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "27" : {
     "target_summ": "Darius",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "28" : {
     "target_summ": "Garen",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "29" : {
     "target_summ": "Aatrox",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "30" : {
     "target_summ": "Riven",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "31" : {
     "target_summ": "Urgot",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "32" : {
     "target_summ": "Renekton",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "33" : {
     "target_summ": "Amumu",
@@ -213,7 +213,7 @@
     "target_summ": "Amumu",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
 
   "35" : {
@@ -226,7 +226,7 @@
     "target_summ": "Alistar",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
 
   "37" : {
@@ -239,7 +239,7 @@
     "target_summ": "Nautilus",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
 
   "39" : {
@@ -252,7 +252,7 @@
     "target_summ": "Braum",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
 
   "41" : {
@@ -265,7 +265,7 @@
     "target_summ": "Sejuani",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "43" : {
     "target_summ": "Kaisa",
@@ -355,265 +355,265 @@
     "target_summ": "XinZhao",
     "role": 0,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "58" : {
     "target_summ": "XinZhao",
     "role": 3,
     "opp_team": ["Darius", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "59" : {
     "target_summ": "Zilean",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "60" : {
     "target_summ": "Janna",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "61" : {
     "target_summ": "Alistar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "62" : {
     "target_summ": "Nautilus",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "63" : {
     "target_summ": "Nami",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "64" : {
     "target_summ": "Nunu",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "65" : {
     "target_summ": "Shyvana",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "66" : {
     "target_summ": "Evelynn",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "67" : {
     "target_summ": "Katarina",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "68" : {
     "target_summ": "Rengar",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "69" : {
     "target_summ": "Fiora",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "70" : {
     "target_summ": "Camille",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "71" : {
     "target_summ": "Volibear",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "72" : {
     "target_summ": "Mordekaiser",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "73" : {
     "target_summ": "Urgot",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads"]
+    "target": ["Plated Steelcaps", "Mercury's Treads"]
   },
   "74" : {
     "target_summ": "Ryze",
     "role": 3,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads"]
   },
   "75" : {
     "target_summ": "Nunu",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "76" : {
     "target_summ": "Shyvana",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "77" : {
     "target_summ": "Evelynn",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "78" : {
     "target_summ": "Katarina",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "79" : {
     "target_summ": "Rengar",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "80" : {
     "target_summ": "Fiora",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "81" : {
     "target_summ": "Camille",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "82" : {
     "target_summ": "Volibear",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "83" : {
     "target_summ": "Mordekaiser",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "84" : {
     "target_summ": "Urgot",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "85" : {
     "target_summ": "Ryze",
     "role": 4,
     "opp_team": ["Sion", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "86" : {
     "target_summ": "Darius",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "87" : {
     "target_summ": "Garen",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "88" : {
     "target_summ": "Aatrox",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "89" : {
     "target_summ": "Riven",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "90" : {
     "target_summ": "Urgot",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "91" : {
     "target_summ": "Renekton",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "92" : {
     "target_summ": "Amumu",
     "role": 4,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "93" : {
     "target_summ": "Ekko",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "94" : {
     "target_summ": "AurelionSol",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "95" : {
     "target_summ": "Fizz",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "96" : {
     "target_summ": "Zac",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "97" : {
     "target_summ": "Rumble",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "98" : {
     "target_summ": "Diana",
     "role": 4,
     "opp_team": ["Aatrox", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "99" : {
     "target_summ": "Nasus",
     "role": 4,
     "opp_team": ["Mordekaiser", "MasterYi", "Fizz", "Caitlyn", "Soraka"],
-    "target": ["Sorcerer's Shoes", "Ninja Tabi", "Mercury's Treads", "Boots of Mobility"]
+    "target": ["Sorcerer's Shoes", "Plated Steelcaps", "Mercury's Treads", "Boots of Mobility"]
   },
   "100" : {
     "target_summ": "Alistar",
     "role": 1,
     "opp_team": ["Aatrox", "MasterYi", "Talon", "Caitlyn", "Pyke"],
-    "target": ["Ninja Tabi"]
+    "target": ["Plated Steelcaps"]
   },
   "101" : {
     "target_summ": "Thresh",

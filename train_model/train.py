@@ -1,3 +1,4 @@
+
 import json
 import json
 import multiprocessing
@@ -353,30 +354,58 @@ class WinPredTrainer(Trainer):
 
 
 
-    # def train_init(self):
-    #     self.network = WinPredNetworkInit()
-    #
-    #     self.train_path = app_constants.model_paths["train"]["win_pred_init"]
-    #     self.best_path = app_constants.model_paths["best"]["win_pred_init"]
-    #
-    #     print("Loading training data")
-    #     dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
-    #                                                                  "next_items_processed_elite_sorted_inf"])
-    #     print("Loading elite train data")
-    #     self.X, _ = dataloader_elite.get_train_data_raw()
-    #     print("Loading elite test data")
-    #     X_test_raw, _ = dataloader_elite.get_test_data_raw()
-    #     # X_test_raw = X_test_raw[:10000]
-    #     model = NextItemModel("standard")
-    #     self.test_sets = {}
-    #
-    #     max_lvl = np.max(self.X[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-    #     self.X, self.Y = self.process_win_pred_measure(self.X, model, max_lvl == 1)
-    #
-    #     max_lvl = np.max(X_test_raw[:, Input.lvl_start + 1:Input.lvl_end + 1], axis=1)
-    #     self.test_sets["init"] = self.process_win_pred_measure(X_test_raw, model, max_lvl == 1)
-    #     self.Y_test = self.X_test = []
-    #     self.build_new_model()
+    def train_ranked(self):
+        self.network = WinPredNetworkRanked()
+
+        self.train_path = app_constants.model_paths["train"]["win_pred_ranked"]
+        self.best_path = app_constants.model_paths["best"]["win_pred_ranked"]
+
+        print("Loading training data")
+        dataloader_elite = data_loader.SortedNextItemsDataLoader(app_constants.train_paths[
+                                                                     "next_items_processed_elite_sorted_uninf"])
+        print("Loading elite train data")
+        self.X, _ = dataloader_elite.get_train_data_raw()
+        print("Loading elite test data")
+        X_test_raw, _ = dataloader_elite.get_test_data_raw()
+        # X_test_raw = X_test_raw[:10000]
+
+
+        self.X = InputWinPred().scale_inputs(self.X)
+
+        self.test_sets = {}
+        for test_set_type, tst_desc in zip([X_test_raw_pro], ["pro"]):
+            self.test_sets[tst_desc] = dict()
+            # self.test_sets[(tst_desc, "all")] = self.flip_data(test_set_type[:,1:])
+
+            # self.test_sets[tst_desc]["all"] = Input().scale_inputs(test_set_type)
+
+            num_drags_killed = np.sum(test_set_type[:, InputWinPred.indices["start"]["dragons_killed"]:InputWinPred.indices["end"][
+                "dragons_killed"]], axis=1)
+            num_kills = np.sum(test_set_type[:, InputWinPred.indices["start"]["kills"]:InputWinPred.indices["end"][
+                "kills"]], axis=1)
+            num_towers = np.sum(test_set_type[:, InputWinPred.indices["start"]["turrets_destroyed"]: InputWinPred.indices["end"][
+                "turrets_destroyed"]], axis=1)
+            max_lvl = np.max(test_set_type[:, InputWinPred.indices["start"]["lvl"]:InputWinPred.indices["end"]["lvl"]],
+                             axis=1)
+
+            self.test_sets[tst_desc]["first_drag"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                     num_drags_killed == 1)
+            self.test_sets[tst_desc]["first_kill"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                     num_kills == 1)
+            self.test_sets[tst_desc]["first_tower"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                      num_towers == 1)
+            self.test_sets[tst_desc]["init"] = self.process_win_pred_measure(test_set_type, self.test_gameids, max_lvl == 1)
+            self.test_sets[tst_desc]["first_lvl_6"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                      max_lvl == 6)
+            self.test_sets[tst_desc]["first_lvl_11"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                       max_lvl == 11)
+            self.test_sets[tst_desc]["first_lvl_16"] = self.process_win_pred_measure(test_set_type, self.test_gameids,
+                                                                                       max_lvl == 16)
+
+        self.X_test = InputWinPred().scale_inputs(X_test_raw)
+
+        self.Y_test = self.X_test = []
+        self.build_new_model()
 
     def train(self):
 
@@ -420,48 +449,6 @@ class WinPredTrainer(Trainer):
 
 
 
-        # from keras.layers import Dense, Activation, BatchNormalization, Input
-        # from keras.models import Model, Sequential
-        # from keras.optimizers import SGD, Adam
-        # from keras.losses import CategoricalCrossentropy
-        #
-        # def create_model():
-        #     X_input = Input(batch_shape=(None, 2))
-        #
-        #     X = Dense(2)(X_input)
-        #     X = Activation('linear')(X)
-        #
-        #     model = Model(inputs=X_input, outputs=X)
-        #     return model
-        #
-        # def create_tf_model():
-        #     in_vec = input_data(shape=[None, 2])
-        #     logits = fully_connected(in_vec, 2, activation='sigmoid')
-        #     return regression(logits,
-        #                       optimizer='adam',
-        #                       n_classes=2,
-        #                       shuffle_batches=True,
-        #                       learning_rate=0.03,
-        #                       loss='binary_crossentropy')
-        #
-        # with tf.device("/gpu:0"):
-        #     with tf.Graph().as_default():
-        #         with tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False)) as sess:
-        #             tflearn.is_training(True)
-        #
-        #             model = tflearn.DNN(create_tf_model(), session=sess)
-        #             sess.run(tf.global_variables_initializer())
-        #             model.fit(self.X[:,InputWinPred.indices['start']['team_odds']:InputWinPred.indices['end']['team_odds']],
-        #                 self.Y, n_epoch=1, shuffle=True, validation_set=None,
-        #               show_metric=True, batch_size=128)
-        #
-        # model = create_model()
-        # optimizer = Adam(lr=0.03, beta_1=0.9, beta_2=0.999)
-        # model.compile(optimizer=optimizer, loss=CategoricalCrossentropy(from_logits=True), \
-        #               metrics=['accuracy'])
-        #
-        # model.fit(self.X[:,InputWinPred.indices['start']['team_odds']:InputWinPred.indices['end']['team_odds']],
-        #           self.Y, epochs=100, batch_size=128)
 
 
         # self.X = np.zeros((100000, Input.len))
@@ -506,6 +493,7 @@ class WinPredTrainer(Trainer):
         self.X_test = InputWinPred().scale_inputs(X_test_raw_pro)
         self.add_wrs_to_test()
         self.build_new_model()
+
 
     def add_wrs_to_test(self):
         new_X = []
@@ -2235,34 +2223,34 @@ class ChampsEmbeddingTrainer(Trainer):
 
 
 if __name__ == "__main__":
-    t = NextItemsTrainer()
+    #t = NextItemsTrainer()
 
-    print("NOW TRAINING EARLY GAME")
-    try:
-        t.build_next_items_standard_game_model()
-    except Exception as e:
-        print(e)
+    #print("NOW TRAINING EARLY GAME")
+    #try:
+    #    t.build_next_items_standard_game_model()
+    #except Exception as e:
+    #    print(e)
 
-    # print("NOW TRAINING BOOTS GAME")
-    # try:
-    #     b = BootsTrainer()
-    #     b.train()
-    # except Exception as e:
-    #     print(e)
+    #print("NOW TRAINING BOOTS GAME")
+    #try:
+    #    b = BootsTrainer()
+    #    b.train()
+    #except Exception as e:
+    #    print(e)
 
-    # print("NOW TRAINING starter GAME")
-    # try:
-    #     st = StarterItemsTrainer()
-    #     st.train()
-    # except Exception as e:
-    #     print(e)
+    #print("NOW TRAINING starter GAME")
+    #try:
+    #    st = StarterItemsTrainer()
+    #    st.train()
+    #except Exception as e:
+    #    print(e)
 
-    # print("NOW TRAINING first item GAME")
-    # try:
-    #     fi = FirstItemsTrainer()
-    #     fi.train()
-    # except Exception as e:
-    #     print(e)
+    #print("NOW TRAINING first item GAME")
+    #try:
+    #    fi = FirstItemsTrainer()
+    #    fi.train()
+    #except Exception as e:
+    #    print(e)
 
     # print("NOW TRAINING champ img GAME")
     # try:
@@ -2270,12 +2258,12 @@ if __name__ == "__main__":
     #     ci.train()
     # except Exception as e:
     #     print(e)
-    # print("NOW TRAINING LATE GAME")
-    # try:
-    #     t = NextItemsTrainer()
-    #     t.build_next_items_late_game_model()
-    # except Exception as e:
-    #     print(e)
+    print("NOW TRAINING LATE GAME")
+    try:
+        t = NextItemsTrainer()
+        t.build_next_items_late_game_model()
+    except Exception as e:
+        print(e)
 
 
 

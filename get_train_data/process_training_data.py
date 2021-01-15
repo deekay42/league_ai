@@ -1,3 +1,4 @@
+
 import os
 import os
 import time
@@ -200,6 +201,7 @@ class ProcessNextItemsTrainingData:
     # input is a list of games
     def run_next_item_transformations(self, training_data, region):
         transformations = [self.sort_equal_timestamps, lambda x: self.remove_undone_items(x, region),
+                           self.remove_unwanted_items,
                            self.insert_null_items,
                            self.build_abs_timeline,
                            lambda x: self.post_process(x, region)]
@@ -207,6 +209,19 @@ class ProcessNextItemsTrainingData:
         for transformation in transformations:
             result = transformation(result)
         return result
+
+
+    def remove_unwanted_items(self, matches):
+        for match in matches:
+            new_events = []
+            events = match["itemsTimeline"]
+            for event_index, event in enumerate(events):
+                if not (event["type"] == "ITEM_PURCHASED" and event['itemId'] > 7000):
+                    new_events.append(event)
+            match['itemsTimeline'] = new_events
+            yield match
+
+
 
 
     def insert_null_items(self, matches):
@@ -894,15 +909,15 @@ class ProcessNextItemsTrainingData:
                            app_constants.train_paths["next_items_processed_lower_unsorted_complete"]]
         for path in out_paths_elite + out_paths_lower + out_paths_positions:
             misc.remove_old_files(path)
-
-        number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
-        # number_of_top_games = [10000,0,0]
-        number_of_lower_games = [number_of_lower_games//(game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)]*(
-                game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)
-
-        self.scraper.get_match_ids(number_of_top_games, number_of_lower_games,
-                                                                      regions, start_date)
-
+        #
+        # number_of_top_games = [number_of_top_games//game_constants.NUM_ELITE_LEAGUES]*game_constants.NUM_ELITE_LEAGUES
+        # # number_of_top_games = [10000,0,0]
+        # number_of_lower_games = [number_of_lower_games//(game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)]*(
+        #         game_constants.NUM_LEAGUES-game_constants.NUM_ELITE_LEAGUES)
+        #
+        # self.scraper.get_match_ids(number_of_top_games, number_of_lower_games,
+        #                                                               regions, start_date)
+        #
 
         # elite_match_ids = [4585558064]
         match_ids = {"elite":{}, "lower":{}}
@@ -1015,8 +1030,8 @@ if __name__ == "__main__":
 
     #takes roughly 1 hour to download 1000 games
     #about 1800 pure challenger games are played across all regions in a day
-    number_of_top_games = 1000
-    number_of_lower_games = 2000
+    number_of_top_games = 12000
+    number_of_lower_games = 24000
 
     start_date = cass.Patch.latest(region="NA").start
     # start_date = start_date.shift(days=1)

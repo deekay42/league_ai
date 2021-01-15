@@ -1,3 +1,4 @@
+
 import os.path
 
 class burn_after_reading:
