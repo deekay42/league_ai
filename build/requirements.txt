@@ -1,6 +1,6 @@
 absl-py==0.7.1
 argh==0.26.2
-arrow==0.13.1
+arrow==0.15.1
 astor==0.7.1
 cassiopeia==4.0.3
 cassiopeia-championgg==1.0.7
