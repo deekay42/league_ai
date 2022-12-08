@@ -4,7 +4,7 @@ arrow==0.13.1
 astor==0.7.1
 cassiopeia==4.0.3
 cassiopeia-championgg==1.0.7
-certifi==2019.3.9
+certifi==2022.12.7
 chardet==3.0.4
 datapipelines==1.0.7
 decorator==4.4.0
